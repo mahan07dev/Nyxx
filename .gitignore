@@ -1,0 +1,9 @@
+# Cloudflare / Node
+node_modules/
+*.log
+.DS_Store
+*.env
+*.wrangler
+*.dev.vars
+.idea/
+.vscode/
