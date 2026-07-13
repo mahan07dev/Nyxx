@@ -1,5 +1,5 @@
 /**
- * Nyxx – Full Telegram Bot Builder with ReplyKeyboard, Bot Info, and Photo
+ * Nyxx – Full Telegram Bot Builder with ReplyKeyboard, Bot Info
  * 
  * Instructions:
  * 1. Paste this entire script into your Cloudflare Worker.
@@ -745,15 +745,13 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                             <label class="form-label">Short Description (appears when sharing)</label>
                             <input id="bot-short-description" class="form-input" placeholder="Short summary...">
                         </div>
-                        <div>
-                            <label class="form-label">Bot Photo (public image URL)</label>
-                            <div class="flex gap-2 flex-wrap">
-                                <input id="bot-photo-url" class="form-input" style="flex:1;" placeholder="https://example.com/photo.jpg">
-                                <button onclick="setBotPhoto()" class="btn btn-primary btn-sm"><i class="fa-regular fa-image"></i> Set Photo</button>
-                                <button onclick="deleteBotPhoto()" class="btn btn-danger btn-sm"><i class="fa-regular fa-trash-can"></i> Delete Photo</button>
-                            </div>
-                            <p style="color:#94a3b8; font-size:0.75rem; margin-top:0.25rem;">Image must be publicly accessible and at least 100x100px. Telegram will fetch it from the URL.</p>
-                        </div>
+<div class="border-t" style="padding-top:1rem;">
+    <p style="color:#64748b; font-size:0.875rem;">
+        <i class="fa-solid fa-circle-info"></i> 
+        Bot profile photos cannot be changed via the Bot API. 
+        Please set your bot's photo manually in the Telegram app.
+    </p>
+</div>
                         <div class="flex gap-2 flex-wrap">
                             <button onclick="loadBotInfo()" class="btn btn-gray"><i class="fa-solid fa-download"></i> Load from Telegram</button>
                             <button onclick="publishBotInfo()" class="btn btn-success"><i class="fa-solid fa-cloud-arrow-up"></i> Publish Info</button>
@@ -1633,7 +1631,7 @@ function renderFileManager() {
         }
 
         // ============================
-        // BOT INFO & PHOTO (unchanged)
+        // BOT INFO
         // ============================
         function loadBotInfo() {
             var resultDiv = document.getElementById('bot-info-result');
@@ -1673,50 +1671,6 @@ function renderFileManager() {
             .then(function(data) {
                 if (!data.success) throw new Error(data.error || 'Publish failed');
                 resultDiv.innerText = '✅ Published to Telegram!';
-                resultDiv.style.color = '#4ade80';
-            })
-            .catch(function(err) {
-                resultDiv.innerText = '❌ ' + err.message;
-                resultDiv.style.color = '#f87171';
-            });
-        }
-
-        function setBotPhoto() {
-            var url = document.getElementById('bot-photo-url').value.trim();
-            if (!url) { showToast('Please enter a photo URL.', 'error'); return; }
-            var resultDiv = document.getElementById('bot-info-result');
-            resultDiv.classList.remove('hidden');
-            resultDiv.innerText = 'Setting photo...';
-            resultDiv.style.color = '#94a3b8';
-            fetch('/api/bot_photo', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ photo: url })
-            })
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                if (!data.success) throw new Error(data.error || 'Failed to set photo');
-                resultDiv.innerText = '✅ Photo set successfully!';
-                resultDiv.style.color = '#4ade80';
-                document.getElementById('bot-photo-url').value = '';
-            })
-            .catch(function(err) {
-                resultDiv.innerText = '❌ ' + err.message;
-                resultDiv.style.color = '#f87171';
-            });
-        }
-
-        function deleteBotPhoto() {
-            if (!confirm('Delete bot profile photo?')) return;
-            var resultDiv = document.getElementById('bot-info-result');
-            resultDiv.classList.remove('hidden');
-            resultDiv.innerText = 'Deleting photo...';
-            resultDiv.style.color = '#94a3b8';
-            fetch('/api/bot_photo', { method: 'DELETE' })
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                if (!data.success) throw new Error(data.error || 'Failed to delete photo');
-                resultDiv.innerText = '✅ Photo deleted.';
                 resultDiv.style.color = '#4ade80';
             })
             .catch(function(err) {
@@ -1777,11 +1731,29 @@ function renderFileManager() {
             .then(function(res) { return res.json(); })
             .then(function(data) {
                 if (!data.success) throw new Error(data.error || 'Unknown error');
-                logs.innerHTML += data.logs.join('<br>') + '<br><br>✅ Success! Reloading...';
-                // Force reload with cache busting after a delay
-                setTimeout(function() {
-                    window.location.href = window.location.pathname + '?t=' + Date.now();
-                }, 2000);
+// Inside runSetup, after success
+logs.innerHTML += data.logs.join('<br>') + '<br><br>✅ Provisioning succeeded. Waiting for deployment...';
+let attempts = 0;
+const pollStatus = setInterval(async () => {
+    try {
+        const resp = await fetch('/api/status');
+        const status = await resp.json();
+        if (status.d1_bound) {
+            clearInterval(pollStatus);
+            logs.innerHTML += '<br>✅ Deployment ready. Reloading...';
+            setTimeout(() => {
+                window.location.href = window.location.pathname + '?t=' + Date.now();
+            }, 500);
+        } else if (++attempts >= 15) {
+            clearInterval(pollStatus);
+            logs.innerHTML += '<br>⚠️ Timed out waiting for D1 binding. Please reload manually.';
+            btn.innerHTML = 'Provision Infrastructure';
+            btn.disabled = false;
+        }
+    } catch (e) {
+        // ignore errors, continue polling
+    }
+}, 2000);
             })
             .catch(function(err) {
                 logs.innerHTML += '<br>❌ Error: ' + err.message;
@@ -1859,15 +1831,19 @@ export default {
             }
 
             if (request.method === 'GET' && url.pathname === '/api/status') {
-                let d1Bound = typeof env.DB !== 'undefined';
-                let tgConfigured = false;
-                if (d1Bound) {
-                    try {
-                        const stmt = await env.DB.prepare("SELECT value FROM settings WHERE key = 'bot_token'").first();
-                        if (stmt && stmt.value) tgConfigured = true;
-                    } catch (e) {}
-                }
-                return Response.json({ d1_bound: d1Bound, tg_configured: tgConfigured });
+// Inside /api/status handler
+let d1Bound = typeof env.DB !== 'undefined';
+let tgConfigured = false;
+if (d1Bound) {
+    try {
+        await initializeDatabase(env.DB); // ensure tables exist
+        const stmt = await env.DB.prepare("SELECT value FROM settings WHERE key = 'bot_token'").first();
+        if (stmt && stmt.value) tgConfigured = true;
+    } catch (e) {
+        // If DB is bound but queries fail, treat as not configured
+    }
+}
+return Response.json({ d1_bound: d1Bound, tg_configured: tgConfigured });
             }
 
             if (request.method === 'POST' && url.pathname === '/api/setup') {
@@ -1919,14 +1895,6 @@ export default {
             }
             if (request.method === 'POST' && url.pathname === '/api/bot_info') {
                 return await setBotInfo(request, env);
-            }
-
-            // Bot Photo
-            if (request.method === 'POST' && url.pathname === '/api/bot_photo') {
-                return await setBotPhoto(request, env);
-            }
-            if (request.method === 'DELETE' && url.pathname === '/api/bot_photo') {
-                return await deleteBotPhoto(env);
             }
 
             // Factory Reset
@@ -1998,20 +1966,27 @@ async function handleSetupAPI(request, env, originUrl) {
             if (!scriptRes.ok) throw new Error("Could not download worker script.");
             let scriptContent = "";
             const contentType = scriptRes.headers.get('content-type') || '';
-            if (contentType.includes('multipart')) {
-                const text = await scriptRes.text();
-                const boundary = contentType.split('boundary=')[1];
-                const parts = text.split(`--${boundary}`);
-                for (const part of parts) {
-                    if (part.includes('application/javascript')) {
-                        scriptContent = part.split('\r\n\r\n')[1].trim();
-                        break;
-                    }
-                }
-            } else {
-                scriptContent = await scriptRes.text();
+// Inside handleSetupAPI, after fetching scriptRes
+if (contentType.includes('multipart')) {
+    const text = await scriptRes.text();
+    const boundary = contentType.split('boundary=')[1];
+    // Find the part that contains the script
+    const parts = text.split(`--${boundary}`);
+    for (const part of parts) {
+        // Look for Content-Disposition with name="worker.js" or Content-Type: application/javascript
+        if (part.includes('name="worker.js"') || part.includes('application/javascript')) {
+            // Remove headers (everything before first \r\n\r\n)
+            const bodyStart = part.indexOf('\r\n\r\n');
+            if (bodyStart !== -1) {
+                scriptContent = part.substring(bodyStart + 4).trim();
+                break;
             }
-            if (!scriptContent) throw new Error("Failed to parse script content.");
+        }
+    }
+} else {
+    scriptContent = await scriptRes.text();
+}
+if (!scriptContent) throw new Error("Failed to extract script content.");
             logs.push("[2/4] Script fetched.");
 
             logs.push("[3/4] Updating worker bindings...");
@@ -2378,57 +2353,6 @@ async function setBotInfo(request, env) {
             body: JSON.stringify({ short_description })
         }));
         await Promise.all(promises);
-        return Response.json({ success: true });
-    } catch (err) {
-        return Response.json({ error: err.message }, { status: 500 });
-    }
-}
-
-// ============================================================================
-// BOT PHOTO API (unchanged)
-// ============================================================================
-async function setBotPhoto(request, env) {
-    if (!env.DB) return Response.json({ error: "DB not available" }, { status: 500 });
-    try {
-        const body = await request.json();
-        const { photo } = body;
-        if (!photo) return Response.json({ error: "Photo URL required" }, { status: 400 });
-        const tokenRecord = await env.DB.prepare("SELECT value FROM settings WHERE key = 'bot_token'").first();
-        if (!tokenRecord || !tokenRecord.value) {
-            return Response.json({ error: "Bot token not set" }, { status: 400 });
-        }
-        const BOT_TOKEN = tokenRecord.value;
-        const resp = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/setMyPhoto`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ photo: photo })
-        });
-        const data = await resp.json();
-        if (!data.ok) {
-            return Response.json({ error: data.description || "Telegram API error" }, { status: 500 });
-        }
-        return Response.json({ success: true });
-    } catch (err) {
-        return Response.json({ error: err.message }, { status: 500 });
-    }
-}
-
-async function deleteBotPhoto(env) {
-    if (!env.DB) return Response.json({ error: "DB not available" }, { status: 500 });
-    try {
-        const tokenRecord = await env.DB.prepare("SELECT value FROM settings WHERE key = 'bot_token'").first();
-        if (!tokenRecord || !tokenRecord.value) {
-            return Response.json({ error: "Bot token not set" }, { status: 400 });
-        }
-        const BOT_TOKEN = tokenRecord.value;
-        const resp = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/deleteMyPhoto`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-        });
-        const data = await resp.json();
-        if (!data.ok) {
-            return Response.json({ error: data.description || "Telegram API error" }, { status: 500 });
-        }
         return Response.json({ success: true });
     } catch (err) {
         return Response.json({ error: err.message }, { status: 500 });
