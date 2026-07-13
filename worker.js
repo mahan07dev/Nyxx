@@ -20,6 +20,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <link rel="shortcut icon" href="https://raw.githubusercontent.com/mahan07dev/Nyxx/refs/heads/main/logo.webp" type="image/x-icon">
     <title>Nyxx | Dashboard</title>
     <!-- Font Awesome 6.5.1 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -44,11 +45,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             border-bottom: 1px solid #334155;
             padding: 1rem;
             box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
-            position: sticky;
-            top: 0;
             z-index: 40;
-            backdrop-filter: blur(8px);
-            background-opacity: 0.9;
         }
         .navbar-inner {
             display: flex;
@@ -68,10 +65,11 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         .navbar-title i { color: #60a5fa; }
         .navbar-actions {
             display: flex;
-            align-items: center;
+            align-items: flex-end;
+            flex-direction: row;
             gap: 0.75rem;
         }
-        .navbar-actions .info-btn {
+        .navbar-title .info-btn {
             background: transparent;
             border: 1px solid #334155;
             border-radius: 50%;
@@ -84,7 +82,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             align-items: center;
             justify-content: center;
         }
-        .navbar-actions .info-btn:hover {
+        .navbar-title .info-btn:hover {
             background: #1e293b;
             color: #e2e8f0;
         }
@@ -93,6 +91,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             gap: 1rem;
             font-size: 0.875rem;
             color: #94a3b8;
+            flex-direction: column;
         }
         .status-items i { margin-right: 0.25rem; }
 
@@ -192,7 +191,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             cursor: pointer;
             transition: background 0.2s, color 0.2s;
             font-size: 1rem;
-            min-height: 40px;
+            min-height: 35px;
         }
         .btn-primary { background: #3b82f6; color: white; }
         .btn-primary:hover { background: #2563eb; }
@@ -573,9 +572,8 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
     <!-- NAVBAR -->
     <nav class="navbar">
         <div class="navbar-inner">
-            <h1 class="navbar-title"><i class="fa-solid fa-robot"></i> Nyxx</h1>
+            <h1 class="navbar-title"><img src="https://raw.githubusercontent.com/mahan07dev/Nyxx/refs/heads/main/logo.webp" alt="Logo" height="50px"> Nyxx                 <button class="info-btn" onclick="showInfoModal()" title="About Nyxx"><i class="fa-solid fa-question"></i></button></h1>
             <div class="navbar-actions">
-                <button class="info-btn" onclick="showInfoModal()" title="About Nyxx"><i class="fa-solid fa-question"></i></button>
                 <div class="status-items">
                     <span id="status-d1"><i class="fa-solid fa-database"></i> D1: Unbound</span>
                     <span id="status-tg"><i class="fa-brands fa-telegram"></i> Bot: Unlinked</span>
@@ -591,7 +589,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             <div id="step-0" class="step">
                 <h2 class="step-title">Welcome to Nyxx</h2>
                 <div class="panel" style="text-align:center; padding:2rem; margin-bottom:1.5rem;">
-                    <i class="fa-solid fa-robot" style="font-size:4rem; color:#60a5fa;"></i>
+                    <img src="https://raw.githubusercontent.com/mahan07dev/Nyxx/refs/heads/main/logo.webp" alt="Logo" height="100px">
                     <p style="font-size:1.25rem; font-weight:600; margin:1rem 0 0.5rem;">Nyxx – Telegram Bot Builder</p>
                     <p style="color:#94a3b8;">Built with ❤️ by <strong style="color:#e2e8f0;">@Mahan07dev</strong></p>
                     <p style="color:#64748b; font-size:0.875rem; max-width:400px; margin:0.5rem auto;">
@@ -771,11 +769,12 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
     <footer class="footer">
         <div>
             Built with ❤️ by <span class="brand">@Mahan07dev</span>
-            <span style="margin:0 0.5rem;">·</span>
+            <br><br>
             <a href="https://github.com/Mahan07dev" target="_blank"><i class="fa-brands fa-github"></i> GitHub</a>
             <a href="https://t.me/Mahan07dev" target="_blank"><i class="fa-brands fa-telegram"></i> Telegram</a>
             <span style="margin:0 0.5rem;">|</span>
             <span style="color:#475569;">v2.0.0</span>
+            <br><br>
         </div>
     </footer>
 
