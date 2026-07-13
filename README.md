@@ -58,7 +58,7 @@ It provides a visual dashboard (no Tailwind, pure CSS) where you can:
 ### Steps
 
 1. **Create a Worker** on Cloudflare (or use an existing one).
-2. **Copy the entire `worker.js`** from this repository into your Worker’s code editor.
+2. **Copy the entire [`worker.js`](https://github.com/mahan07dev/Nyxx/blob/main/worker.js)** from this repository into your Worker’s code editor.
 3. **Deploy** the Worker.
 4. Visit the Worker’s URL – you’ll see the **Nyxx Setup Wizard**.
 5. Follow the steps:
