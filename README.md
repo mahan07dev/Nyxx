@@ -1,8 +1,24 @@
-# 🤖 Nyxx – Telegram Bot Builder for Cloudflare Workers
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/logo.webp" alt="Nyxx Logo" width="200">
+</p>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-orange)](https://workers.cloudflare.com/)
-[![Telegram Bot API](https://img.shields.io/badge/Telegram-Bot%20API-blue)](https://core.telegram.org/bots/api)
+<h1 align="center">Nyxx</h1>
+
+<p align="center">
+  Telegram Bot Builder for Cloudflare Workers
+</p>
+
+<p align="center">
+  <a href="https://workers.cloudflare.com/">
+    <img src="https://img.shields.io/badge/Cloudflare-Worker-F38020?logo=cloudflare" alt="Cloudflare Worker">
+  </a>
+  <a href="https://core.telegram.org/bots/api">
+    <img src="https://img.shields.io/badge/Telegram-Bot%20API-26A5E4?logo=telegram" alt="Telegram Bot API">
+  </a>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/badge/License-MIT-yellow" alt="MIT License">
+  </a>
+</p>
 
 **Nyxx** is a complete, self‑hosted solution to create and manage Telegram bots directly from your Cloudflare Worker.  
 It provides a visual dashboard (no Tailwind, pure CSS) where you can:
