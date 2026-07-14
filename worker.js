@@ -1,36 +1,23 @@
 /**
  * Nyxx – Full Telegram Bot Builder with ReplyKeyboard, Bot Info
  * 
- * Instructions:
- * 1. Paste this entire script into your Cloudflare Worker.
- * 2. Deploy the Worker.
- * 3. Visit the Worker's URL to access the Nyxx Setup Wizard.
- * 4. Use the Deep-Link button to generate your token, paste it, and the system auto-discovers your configuration.
- * 
  * Built by @Mahan07dev
  * Website: https://mahanverse.ir
- * Nyxx version: 2.0.0
+ * Nyxx version: 2.0.1
  */
 
 // ============================================================================
-// EMBEDDED DASHBOARD HTML (fully custom CSS, no Tailwind, no utility classes)
+// EMBEDDED DASHBOARD HTML (with all improvements)
 // ============================================================================
-// ============================================================
-// worker.js – Nyxx Panel v2.0
-// ============================================================
-// This file is embedded in the installer and uploaded to Cloudflare Workers.
-// It handles login, initial setup, and the full dashboard.
-
 const DASHBOARD_HTML = `<!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <link rel="shortcut icon" href="https://raw.githubusercontent.com/mahan07dev/Nyxx/refs/heads/main/logo.webp" type="image/x-icon">
+    <link rel="shortcut icon" href="https://raw.githubusercontent.com/Mahan07dev/Nyxx/refs/heads/main/logo.webp" type="image/x-icon">
     <title>Nyxx | Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        /* ----- RESET & BASE ----- */
         * { box-sizing: border-box; }
         body {
             margin: 0;
@@ -43,8 +30,6 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         }
         a { color: #60a5fa; text-decoration: none; }
         a:hover { text-decoration: underline; }
-
-        /* ----- NAVBAR ----- */
         .navbar {
             background: #0f172a;
             border-bottom: 1px solid #334155;
@@ -66,6 +51,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             align-items: center;
             gap: 0.5rem;
             color: #e2e8f0;
+            margin: 0;
         }
         .navbar-title i { color: #60a5fa; }
         .navbar-actions {
@@ -103,14 +89,14 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             background: transparent;
             border: 1px solid #dc2626;
             color: #f87171;
-            padding: 0.25rem 0.75rem;
-            border-radius: 8px;
+            height: 32px;
+            width: 32px;
+            border-radius: 50%;
             cursor: pointer;
             font-size: 0.875rem;
         }
+        .logout-btn i { color: red; }
         .logout-btn:hover { background: #dc2626; color: white; }
-
-        /* ----- MAIN CONTAINER & STEPS ----- */
         .main-container {
             flex: 1;
             max-width: 1200px;
@@ -152,6 +138,17 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             font-size: 0.9rem;
         }
         .form-input:focus { border-color: #3b82f6; outline: none; }
+        #bot-description {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 0.6rem 0.75rem;
+            color: #f1f5f9;
+            width: 100%;
+            min-height: 100px;
+            font-family: system-ui, sans-serif;
+            font-size: 0.9rem;
+        }
         .btn {
             display: inline-flex;
             align-items: center;
@@ -184,8 +181,6 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         .hidden { display: none !important; }
         .log-error { color: #f87171; }
         .log-success { color: #4ade80; }
-
-        /* ----- DASHBOARD (old step-3) ----- */
         .dashboard { max-width: 1200px; margin: 0 auto; }
         .tabs-header {
             display: flex;
@@ -193,6 +188,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             gap: 0.5rem;
             border-bottom: 1px solid #334155;
             margin-bottom: 1.5rem;
+            height: 60px;
         }
         .tab-btn {
             padding: 0.5rem 1rem;
@@ -217,7 +213,9 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             font-size: 1.5rem;
             color: #e2e8f0;
             user-select: none;
+            transition: transform 0.2s;
         }
+        .hamburgerfa.open { transform: rotate(90deg); }
         .mobile-tabs {
             display: block;
             max-height: 0;
@@ -253,8 +251,6 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             .tabs-header { display: none; }
             .hamburger { display: block; }
         }
-
-        /* file-manager rows etc. (copied from original) */
         .tree-row {
             display: flex;
             align-items: center;
@@ -436,27 +432,23 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
     </style>
 </head>
 <body>
-    <!-- NAVBAR -->
     <nav class="navbar" id="navbar">
         <div class="navbar-inner">
             <h1 class="navbar-title">
-                <img src="https://raw.githubusercontent.com/mahan07dev/Nyxx/refs/heads/main/logo.webp" alt="Logo" height="50px">
+                <img src="https://raw.githubusercontent.com/Mahan07dev/Nyxx/refs/heads/main/logo.webp" alt="Logo" height="50px">
                 Nyxx
                 <button class="info-btn" onclick="showInfoModal()" title="About Nyxx"><i class="fa-solid fa-question"></i></button>
+                <button id="logout-btn" class="logout-btn hidden" onclick="logout()"><i class="fa-solid fa-sign-out-alt"></i></button>
             </h1>
             <div class="navbar-actions">
                 <div class="status-items">
                     <span id="status-d1"><i class="fa-solid fa-database"></i> D1: Unbound</span>
                     <span id="status-tg"><i class="fa-brands fa-telegram"></i> Bot: Unlinked</span>
                 </div>
-                <button id="logout-btn" class="logout-btn hidden" onclick="logout()"><i class="fa-solid fa-sign-out-alt"></i> Logout</button>
             </div>
         </div>
     </nav>
-
-    <!-- MAIN CONTENT -->
     <main class="main-container">
-        <!-- STEP: D1 Status -->
         <div id="step-status" class="step">
             <div class="card text-center">
                 <div style="font-size: 3rem; margin-bottom: 1rem;"><i class="fa-solid fa-database"></i></div>
@@ -468,15 +460,13 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 </div>
             </div>
         </div>
-
-        <!-- STEP: Initial Setup (admin password + bot token) -->
         <div id="step-setup" class="step step-hidden">
             <div class="card">
                 <h2 class="step-title"><i class="fa-solid fa-user-lock"></i> Initial Setup</h2>
                 <p class="text-sm">Set an admin password to protect your dashboard. You may also connect a bot token now (skip if you want to do it later).</p>
                 <div class="form-group">
                     <label class="form-label">Bot Token (optional)</label>
-                    <input type="password" id="setup-bot-token" class="form-input" placeholder="123456:ABC...">
+                    <input type="password" id="setup-bot-token" class="form-input" placeholder="Get your token from @BotFather">
                     <div class="flex" style="margin-top: 0.25rem;">
                         <label style="font-size: 0.875rem;"><input type="checkbox" id="setup-skip-bot"> Skip bot token for now</label>
                     </div>
@@ -491,10 +481,9 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 </div>
                 <button onclick="submitSetup()" class="btn btn-success btn-block">Save & Continue</button>
                 <div id="setup-error" class="log-error text-sm" style="margin-top: 1rem; display: none;"></div>
+                <p class="text-sm" style="margin-top:1rem;">💡 You can also set an <strong>ADMIN_PASS</strong> environment variable in Cloudflare Worker to override this password.</p>
             </div>
         </div>
-
-        <!-- STEP: Login -->
         <div id="step-login" class="step step-hidden">
             <div class="card">
                 <h2 class="step-title"><i class="fa-solid fa-lock"></i> Login</h2>
@@ -505,12 +494,10 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 </div>
                 <button onclick="submitLogin()" class="btn btn-primary btn-block">Login</button>
                 <div id="login-error" class="log-error text-sm" style="margin-top: 1rem; display: none;"></div>
+                <p class="text-sm" style="margin-top:1rem;">💡 If you set <strong>ADMIN_PASS</strong> environment variable, use that password.</p>
             </div>
         </div>
-
-        <!-- STEP: Dashboard -->
         <div id="step-dashboard" class="step step-hidden">
-            <!-- Desktop Tabs -->
             <div class="tabs-header">
                 <button class="tab-btn active" onclick="switchTab('commands')"><i class="fa-solid fa-list-ul"></i> Commands</button>
                 <button class="tab-btn" onclick="switchTab('menu')"><i class="fa-solid fa-bars"></i> Menu</button>
@@ -518,16 +505,14 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 <button class="tab-btn" onclick="switchTab('settings')"><i class="fa-solid fa-gear"></i> Settings</button>
                 <button class="tab-btn" onclick="switchTab('botinfo')"><i class="fa-solid fa-circle-info"></i> Bot Info</button>
             </div>
-            <div class="hamburger" onclick="toggleHamburger()"><i class="fa-solid fa-bars"></i></div>
+            <div class="hamburger" id="hamburger-btn" onclick="toggleHamburger()"><i class="fa-solid fa-bars hamburgerfa" id="hamburgerfa"></i></div>
             <div id="mobile-tabs" class="mobile-tabs">
-                <button class="active" onclick="switchTab('commands');"><i class="fa-solid fa-list-ul"></i> Commands</button>
-                <button onclick="switchTab('menu');"><i class="fa-solid fa-bars"></i> Menu</button>
-                <button onclick="switchTab('users');"><i class="fa-solid fa-users"></i> Users</button>
-                <button onclick="switchTab('settings');"><i class="fa-solid fa-gear"></i> Settings</button>
-                <button onclick="switchTab('botinfo');"><i class="fa-solid fa-circle-info"></i> Bot Info</button>
+                <button class="active" onclick="switchTab('commands'); closeHamburger();"><i class="fa-solid fa-list-ul"></i> Commands</button>
+                <button onclick="switchTab('menu'); closeHamburger();"><i class="fa-solid fa-bars"></i> Menu</button>
+                <button onclick="switchTab('users'); closeHamburger();"><i class="fa-solid fa-users"></i> Users</button>
+                <button onclick="switchTab('settings'); closeHamburger();"><i class="fa-solid fa-gear"></i> Settings</button>
+                <button onclick="switchTab('botinfo'); closeHamburger();"><i class="fa-solid fa-circle-info"></i> Bot Info</button>
             </div>
-
-            <!-- COMMANDS TAB -->
             <div id="tab-commands" class="tab-content active">
                 <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
                     <h3 class="panel-title" style="margin-bottom:0;">Commands</h3>
@@ -540,8 +525,6 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 </div>
                 <div id="commands-list" class="flex flex-col gap-1"></div>
             </div>
-
-            <!-- MENU TAB -->
             <div id="tab-menu" class="tab-content">
                 <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
                     <h3 class="panel-title" style="margin-bottom:0;">Telegram Menu Commands</h3>
@@ -552,17 +535,14 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 <button onclick="publishMenuCommands()" class="btn btn-success" style="margin-top:1rem;"><i class="fa-solid fa-cloud-arrow-up"></i> Publish to Telegram</button>
                 <div id="menu-publish-result" class="hidden" style="margin-top:0.5rem; font-size:0.875rem;"></div>
             </div>
-
-            <!-- USERS TAB -->
             <div id="tab-users" class="tab-content">
                 <h3 class="panel-title">Users Who Have Interacted</h3>
                 <div class="flex gap-2" style="margin-bottom:1rem;">
                     <input id="user-search" placeholder="Search by username or name..." class="form-input">
+                    <button onclick="loadUsers()" class="btn btn-gray btn-sm"><i class="fa-solid fa-magnifying-glass"></i></button>
                 </div>
                 <div id="users-list" class="panel"></div>
             </div>
-
-            <!-- SETTINGS TAB -->
             <div id="tab-settings" class="tab-content">
                 <h3 class="panel-title">Bot Settings</h3>
                 <div class="panel" style="display:flex; flex-direction:column; gap:1.5rem;">
@@ -573,20 +553,28 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                             <button onclick="toggleTokenVisibility()" class="btn btn-gray btn-sm"><i class="fa-regular fa-eye"></i></button>
                         </div>
                         <button onclick="showChangeTokenModal()" class="btn btn-primary btn-sm" style="margin-top:0.5rem;">Change Bot Token</button>
+                        <p class="text-sm" style="margin-top:0.25rem;">💡 Get your token from <strong>@BotFather</strong> on Telegram.</p>
                     </div>
                     <div>
                         <label class="form-label">Webhook URL</label>
                         <input type="text" id="settings-webhook-url" class="form-input" style="background:#1e293b; border-color:#475569; color:#94a3b8;" readonly>
                         <button onclick="testWebhook()" class="btn btn-gray btn-sm" style="margin-top:0.5rem;">Test Webhook</button>
                     </div>
+                    <div>
+                        <label class="form-label">Change Admin Password (D1)</label>
+                        <div style="display:flex; flex-direction:column; gap:0.5rem;">
+                            <input type="password" id="change-pass-new" class="form-input" placeholder="New password">
+                            <input type="password" id="change-pass-confirm" class="form-input" placeholder="Confirm new password">
+                            <button onclick="changeAdminPassword()" class="btn btn-primary btn-sm">Update Password</button>
+                            <p class="text-sm" style="margin-top:0.25rem;">💡 If <strong>ADMIN_PASS</strong> environment variable is set, it will take priority over this.</p>
+                        </div>
+                    </div>
                     <div class="border-t" style="padding-top:1rem;">
-                        <button onclick="factoryReset()" class="btn btn-danger"><i class="fa-solid fa-arrow-rotate-left"></i> Factory Reset – Delete All Data</button>
+                        <button onclick="factoryReset()" class="btn btn-danger"><i class="fa-solid fa-arrow-rotate-left"></i> Factory Reset</button>
                         <p style="color:#f87171; font-size:0.75rem; margin-top:0.5rem;">Erases all commands, users, settings, and bot info. The bot will be disconnected.</p>
                     </div>
                 </div>
             </div>
-
-            <!-- BOT INFO TAB -->
             <div id="tab-botinfo" class="tab-content">
                 <h3 class="panel-title">Bot Information</h3>
                 <div class="panel" style="display:flex; flex-direction:column; gap:1rem;">
@@ -607,11 +595,11 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                         <button onclick="publishBotInfo()" class="btn btn-success"><i class="fa-solid fa-cloud-arrow-up"></i> Publish Info</button>
                     </div>
                     <div id="bot-info-result" class="hidden" style="font-size:0.875rem;"></div>
+                    <p class="text-sm">💡 To change bot profile picture or other settings not available here, use <strong>@BotFather</strong>.</p>
                 </div>
             </div>
         </div>
     </main>
-
     <footer class="footer">
         <div>
             Built with ❤️ by <span class="brand">@Mahan07dev</span>
@@ -619,19 +607,120 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             <a href="https://github.com/Mahan07dev" target="_blank"><i class="fa-brands fa-github"></i> GitHub</a>
             <a href="https://t.me/Mahan07dev" target="_blank"><i class="fa-brands fa-telegram"></i> Telegram</a>
             <span style="margin:0 0.5rem;">|</span>
-            <span style="color:#475569;">v2.0.0</span>
+            <span style="color:#475569;">v2.0.1</span>
         </div>
     </footer>
 
-    <!-- MODALS (command, token, info) – same as before -->
-    <div id="command-modal" class="modal-overlay hidden">...</div>
-    <div id="token-modal" class="modal-overlay hidden">...</div>
-    <div id="info-modal" class="modal-overlay hidden">...</div>
+    <!-- MODALS -->
+    <div id="command-modal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <h3 class="modal-title" id="command-modal-title">Add Command</h3>
+            <div class="form-group">
+                <label class="form-label">Command (e.g., /start)</label>
+                <input id="modal-command" class="form-input" placeholder="/command">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Parent (optional)</label>
+                <select id="modal-parent" class="form-input"><option value="">None (Root)</option></select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Response Type</label>
+                <select id="modal-type" class="form-input" onchange="toggleMediaField()">
+                    <option value="text">Text</option>
+                    <option value="photo">Photo</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Content</label>
+                <textarea id="modal-content" class="form-input" rows="3" placeholder="Response text..."></textarea>
+            </div>
+            <div class="form-group" id="media-field" style="display:none;">
+                <label class="form-label">Photo URL</label>
+                <input id="modal-media" class="form-input" placeholder="https://example.com/image.jpg">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Buttons (inline keyboard)</label>
+                <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:6px;">
+                    <input id="inline-btn-label" class="form-input" style="flex:1; min-width:80px;" placeholder="Label">
+                    <select id="inline-btn-type" class="form-input" style="flex:0 0 auto; width:auto;">
+                        <option value="callback">Callback</option>
+                        <option value="url">URL</option>
+                        <option value="command">Command</option>
+                    </select>
+                    <input id="inline-btn-value" class="form-input" style="flex:1; min-width:80px;" placeholder="Value/URL">
+                    <select id="inline-btn-command-select" class="form-input hidden" style="flex:1; min-width:80px;"><option value="">Select command...</option></select>
+                    <button onclick="addInlineButton()" class="btn btn-primary btn-sm" style="flex:0 0 auto;">Add</button>
+                </div>
+                <div id="inline-buttons-list" class="panel" style="padding:0.5rem; min-height:30px;"></div>
+            </div>
+            <div class="form-group">
+                <div style="display:flex; align-items:center; gap:0.75rem;">
+                    <span class="form-label" style="margin:0;">Reply Keyboard</span>
+                    <div id="reply-toggle" class="toggle" onclick="toggleReplyKeyboard()"><span class="slider"></span></div>
+                </div>
+                <div id="reply-keyboard-section" class="hidden" style="margin-top:0.5rem;">
+                    <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:6px;">
+                        <input id="reply-btn-label" class="form-input" style="flex:1; min-width:80px;" placeholder="Button text">
+                        <select id="reply-btn-command" class="form-input" style="flex:1; min-width:80px;"><option value="">Select command...</option></select>
+                        <button onclick="addReplyButton()" class="btn btn-primary btn-sm" style="flex:0 0 auto;">Add</button>
+                    </div>
+                    <div id="reply-buttons-list" class="panel" style="padding:0.5rem; min-height:30px;"></div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label style="display:flex; align-items:center; gap:0.5rem;">
+                    <input type="checkbox" id="modal-admin-only"> Admin only
+                </label>
+            </div>
+            <div class="form-group">
+                <label style="display:flex; align-items:center; gap:0.5rem;">
+                    <input type="checkbox" id="modal-enabled" checked> Enabled
+                </label>
+            </div>
+            <div id="modal-error" class="modal-error"></div>
+            <div class="modal-actions">
+                <button onclick="closeCommandModal()" class="btn btn-gray">Cancel</button>
+                <button id="modal-save-btn" onclick="saveCommand()" class="btn btn-success">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="token-modal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <h3 class="modal-title">Update Bot Token</h3>
+            <p class="text-sm">Paste your new Telegram bot token. The webhook will be updated automatically.</p>
+            <div class="form-group">
+                <label class="form-label">New Bot Token</label>
+                <input id="new-token-input" class="form-input" placeholder="Get your token from @BotFather">
+            </div>
+            <div id="token-test-result" class="hidden text-sm" style="margin-top:0.5rem;"></div>
+            <div class="modal-actions">
+                <button onclick="closeTokenModal()" class="btn btn-gray">Cancel</button>
+                <button onclick="updateBotToken()" class="btn btn-success">Update</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="info-modal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <h3 class="modal-title">About Nyxx</h3>
+            <p><strong>Nyxx</strong> is a full-featured Telegram bot builder running on Cloudflare Workers.</p>
+            <p>Built with ❤️ by <a href="https://github.com/Mahan07dev" target="_blank">@Mahan07dev</a></p>
+            <p>Version 2.0.1</p>
+            <div style="margin-top:1rem;">
+                <a href="https://github.com/Mahan07dev/Nyxx" target="_blank" class="btn btn-gray btn-block"><i class="fa-brands fa-github"></i> Source Code</a>
+            </div>
+            <div class="modal-actions">
+                <button onclick="document.getElementById('info-modal').classList.add('hidden')" class="btn btn-primary btn-block">Close</button>
+            </div>
+        </div>
+    </div>
+
     <div id="toast-container" class="toast-container"></div>
 
     <script>
         // ============================
-        // UTILITY & GLOBAL STATE
+        // GLOBAL STATE
         // ============================
         let editingCommand = null;
         let commandsCache = [];
@@ -653,56 +742,72 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             setTimeout(() => toast.remove(), 5000);
         }
 
-        // ============================
-        // STEP MANAGEMENT
-        // ============================
-        function showStep(stepId) {
-            document.querySelectorAll('.step').forEach(s => s.classList.add('step-hidden'));
-            document.getElementById(stepId).classList.remove('step-hidden');
-        }
+function showStep(stepId) {
+    // Hide all steps
+    document.querySelectorAll('.step').forEach(s => s.classList.add('step-hidden'));
+    // Show the requested step if it exists
+    const target = document.getElementById(stepId);
+    if (target) {
+        target.classList.remove('step-hidden');
+    } else {
+        // Fallback: show status step and log error
+        console.error('Step not found:', stepId);
+        const fallback = document.getElementById('step-status');
+        if (fallback) fallback.classList.remove('step-hidden');
+    }
+}
 
         function goToSetup() {
             showStep('step-setup');
         }
 
+        function showInfoModal() {
+            document.getElementById('info-modal').classList.remove('hidden');
+        }
+
         // ============================
         // STATUS CHECK
         // ============================
-        async function checkStatus() {
-            try {
-                const res = await fetch('/api/status');
-                const data = await res.json();
-                document.getElementById('status-d1').innerHTML = data.d1_bound ?
-                    '<i class="fa-solid fa-database" style="color:#4ade80;"></i> D1: Bound' :
-                    '<i class="fa-solid fa-database"></i> D1: Unbound';
+async function checkStatus() {
+    try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
 
-                if (!data.d1_bound) {
-                    document.getElementById('status-message').innerHTML = 'D1 database not bound. Please run the installer.';
-                    document.getElementById('status-actions').classList.remove('hidden');
-                    showStep('step-status');
-                    return;
-                }
-
-                // Check if admin password is set
-                const adminSet = data.admin_password_set;
-                if (!adminSet) {
-                    showStep('step-setup');
-                    return;
-                }
-
-                // Check if already logged in (session)
-                const sessionRes = await fetch('/api/check_session');
-                const sessionData = await sessionRes.json();
-                if (sessionData.logged_in) {
-                    showDashboard();
-                } else {
-                    showStep('step-login');
-                }
-            } catch (e) {
-                document.getElementById('status-message').innerHTML = 'Error checking status: ' + e.message;
-                showStep('step-status');
-            }
+        const statusD1 = document.getElementById('status-d1');
+        if (statusD1) {
+            statusD1.innerHTML = data.d1_bound ?
+                '<i class="fa-solid fa-database" style="color:#4ade80;"></i> D1: Bound' :
+                '<i class="fa-solid fa-database"></i> D1: Unbound';
         }
+
+        if (!data.d1_bound) {
+            const msg = document.getElementById('status-message');
+            if (msg) msg.innerHTML = 'D1 database not bound. Please run the installer.';
+            const actions = document.getElementById('status-actions');
+            if (actions) actions.classList.remove('hidden');
+            showStep('step-status');
+            return;
+        }
+
+        const adminSet = data.admin_password_set;
+        if (!adminSet) {
+            showStep('step-setup');
+            return;
+        }
+
+        const sessionRes = await fetch('/api/check_session');
+        const sessionData = await sessionRes.json();
+        if (sessionData.logged_in) {
+            showDashboard();
+        } else {
+            showStep('step-login');
+        }
+    } catch (e) {
+        const msg = document.getElementById('status-message');
+        if (msg) msg.innerHTML = 'Error checking status: ' + e.message;
+        showStep('step-status');
+    }
+}
 
         // ============================
         // SETUP
@@ -794,9 +899,9 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         // DASHBOARD
         // ============================
         function showDashboard() {
-            showStep('step-dashboard');
-            document.getElementById('logout-btn').classList.remove('hidden');
-            // Update statuses
+    showStep('step-dashboard');
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) logoutBtn.classList.remove('hidden');
             fetch('/api/status')
                 .then(r => r.json())
                 .then(data => {
@@ -816,44 +921,47 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         // ============================
         // TABS
         // ============================
+        let currentTab = 'commands';
         function switchTab(tabId) {
-            // Same as original
+            currentTab = tabId;
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.getElementById('tab-' + tabId).classList.add('active');
-            // Update desktop tabs
             const map = { commands:0, menu:1, users:2, settings:3, botinfo:4 };
             const btns = document.querySelectorAll('.tabs-header .tab-btn');
             btns.forEach((b, i) => b.classList.toggle('active', i === map[tabId]));
-            // Update mobile
             document.querySelectorAll('#mobile-tabs button').forEach((b, i) => {
                 b.classList.toggle('active', i === map[tabId]);
             });
-            // Load data
             if (tabId === 'commands') loadCommands();
             else if (tabId === 'menu') loadMenuCommands();
             else if (tabId === 'users') loadUsers();
             else if (tabId === 'settings') loadSettings();
             else if (tabId === 'botinfo') loadBotInfo();
+            closeHamburger();
         }
 
-        function toggleHamburger() {
-            document.getElementById('mobile-tabs').classList.toggle('open');
-        }
+function toggleHamburger() {
+    const menu = document.getElementById('mobile-tabs');
+    const btn = document.getElementById('hamburgerfa');
+    if (!menu || !btn) return; // safety
+    menu.classList.toggle('open');
+    btn.classList.toggle('open');
+    // btn is the <i> element itself – set its className directly
+    btn.className = menu.classList.contains('open') ? 'fa-solid fa-xmark' : 'fa-solid fa-bars';
+}
+
+function closeHamburger() {
+    const menu = document.getElementById('mobile-tabs');
+    const btn = document.getElementById('hamburgerfa');
+    if (!menu || !btn) return; // safety
+    menu.classList.remove('open');
+    btn.classList.remove('open');
+    btn.className = 'fa-solid fa-bars';
+}
 
         // ============================
         // COMMANDS – File‑Manager UI
         // ============================
-        var editingCommand = null;
-        var commandsCache = [];
-        var inlineButtonsArray = [];
-        var replyButtonsArray = [];
-        var showReplyKeyboard = false;
-
-        // Navigation state
-        var currentParent = null;          // command name or null for root
-        var pathSegments = [];             // array of command names
-        var childrenMap = {};              // parent -> array of commands
-
         function toggleReplyKeyboard() {
             showReplyKeyboard = !showReplyKeyboard;
             document.getElementById('reply-toggle').classList.toggle('active', showReplyKeyboard);
@@ -874,7 +982,6 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 }
             }
             if (editingCommand && editingCommand.parent) parentSelect.value = editingCommand.parent;
-            // If not editing and we are in a folder, default to current parent
             if (!editingCommand && currentParent !== null) {
                 parentSelect.value = currentParent;
             }
@@ -999,7 +1106,6 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             renderReplyChips();
         }
 
-        // Drag events for inline/reply buttons (still used inside modals)
         function attachDragEvents(container) {
             var chips = container.querySelectorAll('[draggable="true"]');
             for (var i = 0; i < chips.length; i++) {
@@ -1032,11 +1138,9 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         }
         function handleDragEnd(e) { var target = e.target.closest('[draggable="true"]'); if (target) target.classList.remove('dragging', 'drag-over'); }
 
-        // ----- File‑Manager navigation -----
         function navigateTo(commandName) {
             var cmd = commandsCache.find(c => c.command === commandName);
             if (!cmd) return;
-            // Only navigate if it's a folder (has children)
             if (!childrenMap[commandName] || childrenMap[commandName].length === 0) {
                 showToast('This command has no children.', 'error');
                 return;
@@ -1059,144 +1163,115 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             renderFileManager();
         }
 
-function renderFileManager() {
-    var container = document.getElementById('commands-list');
-    var breadcrumb = document.getElementById('breadcrumb');
-    var upBtn = document.getElementById('btn-up');
+        function renderFileManager() {
+            var container = document.getElementById('commands-list');
+            var breadcrumb = document.getElementById('breadcrumb');
+            var upBtn = document.getElementById('btn-up');
 
-    // Clear breadcrumb
-    breadcrumb.innerHTML = '';
+            breadcrumb.innerHTML = '';
+            var rootSpan = document.createElement('span');
+            rootSpan.textContent = 'Root';
+            rootSpan.style.color = '#94a3b8';
+            rootSpan.style.cursor = 'pointer';
+            rootSpan.addEventListener('click', function(e) { e.stopPropagation(); navigateToRoot(); });
+            breadcrumb.appendChild(rootSpan);
 
-    // Helper to add a clickable breadcrumb segment
-    function addBreadcrumb(text, command, isLast) {
-        var span = document.createElement('span');
-        span.textContent = text;
-        if (!isLast) {
-            span.className = 'breadcrumb-link';
-            span.style.cursor = 'pointer';
-            span.style.color = '#60a5fa';
-            span.addEventListener('click', function(e) {
-                e.stopPropagation();
-                navigateTo(command);
+            for (var i = 0; i < pathSegments.length; i++) {
+                var seg = pathSegments[i];
+                var sep = document.createElement('span');
+                sep.className = 'breadcrumb-sep';
+                sep.textContent = ' / ';
+                sep.style.color = '#475569';
+                breadcrumb.appendChild(sep);
+                var isLast = (i === pathSegments.length - 1);
+                var span = document.createElement('span');
+                span.textContent = seg;
+                if (!isLast) {
+                    span.className = 'breadcrumb-link';
+                    span.style.cursor = 'pointer';
+                    span.style.color = '#60a5fa';
+                    span.addEventListener('click', function(e) { e.stopPropagation(); navigateTo(seg); });
+                } else {
+                    span.className = 'breadcrumb-current';
+                    span.style.color = '#e2e8f0';
+                }
+                breadcrumb.appendChild(span);
+            }
+
+            upBtn.disabled = (currentParent === null);
+
+            var children = childrenMap[currentParent] || [];
+            if (children.length === 0) {
+                container.innerHTML = '<div style="padding:1rem; text-align:center; color:#94a3b8; font-size:0.875rem;">This folder is empty.</div>';
+                return;
+            }
+
+            children.sort(function(a, b) { return (a.order_idx || 0) - (b.order_idx || 0); });
+
+            var listHtml = '';
+            for (var j = 0; j < children.length; j++) {
+                var cmd = children[j];
+                var hasChildren = childrenMap[cmd.command] && childrenMap[cmd.command].length > 0;
+                var icon = hasChildren ? '<i class="fa-regular fa-folder" style="color:#60a5fa;"></i>' : '<i class="fa-regular fa-file" style="color:#94a3b8;"></i>';
+                var enabled = cmd.enabled !== undefined ? cmd.enabled : 1;
+                var adminBadge = cmd.is_admin_only ? '<span class="badge badge-admin">Admin</span>' : '';
+                var replyBadge = cmd.show_reply_keyboard ? '<span class="badge badge-reply">Reply</span>' : '';
+                var typeBadge = '<span class="badge badge-gray">' + cmd.response_type + '</span>';
+                var statusBadge = '<span class="badge ' + (enabled ? 'badge-enabled' : 'badge-disabled') + '">' + (enabled ? 'Enabled' : 'Disabled') + '</span>';
+
+                var folderClass = hasChildren ? 'folder' : '';
+                var dataAttr = hasChildren ? 'data-command="' + encodeURIComponent(cmd.command) + '"' : '';
+
+                listHtml += '<div class="tree-row" data-command="' + encodeURIComponent(cmd.command) + '">' +
+                    '<span style="width:20px;">' + icon + '</span>' +
+                    '<span class="tree-command-name ' + folderClass + '" ' + dataAttr + '>' + cmd.command + '</span>' +
+                    typeBadge + adminBadge + replyBadge + statusBadge +
+                    '<div class="tree-actions">' +
+                    '<button class="add-child-btn btn btn-sm btn-primary" data-command="' + encodeURIComponent(cmd.command) + '"><i class="fa-solid fa-plus"></i></button>' +
+                    '<button class="edit-btn btn btn-sm btn-gray" data-command="' + encodeURIComponent(cmd.command) + '"><i class="fa-regular fa-pen-to-square"></i></button>' +
+                    '<button class="delete-btn btn btn-sm btn-danger" data-command="' + encodeURIComponent(cmd.command) + '"><i class="fa-regular fa-trash-can"></i></button>' +
+                    '</div></div>';
+            }
+            container.innerHTML = listHtml;
+
+            container.querySelectorAll('.tree-command-name.folder').forEach(function(el) {
+                el.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    var cmdName = decodeURIComponent(this.dataset.command);
+                    navigateTo(cmdName);
+                });
             });
-        } else {
-            span.className = 'breadcrumb-current';
-            span.style.color = '#e2e8f0';
+            container.querySelectorAll('.edit-btn').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    var cmdName = decodeURIComponent(this.dataset.command);
+                    var cmd = commandsCache.find(function(c) { return c.command === cmdName; });
+                    if (cmd) showAddCommandModal(cmd);
+                });
+            });
+            container.querySelectorAll('.delete-btn').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    var cmdName = decodeURIComponent(this.dataset.command);
+                    deleteCommand(cmdName);
+                });
+            });
+            container.querySelectorAll('.add-child-btn').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    var cmdName = decodeURIComponent(this.dataset.command);
+                    showAddCommandModal(null, cmdName);
+                });
+            });
         }
-        breadcrumb.appendChild(span);
-    }
 
-    // Root
-    var rootSpan = document.createElement('span');
-    rootSpan.textContent = 'Root';
-    rootSpan.style.color = '#94a3b8';
-    rootSpan.style.cursor = 'pointer';
-    rootSpan.addEventListener('click', function(e) {
-        e.stopPropagation();
-        navigateToRoot();
-    });
-    breadcrumb.appendChild(rootSpan);
-
-    // Segments
-    for (var i = 0; i < pathSegments.length; i++) {
-        var seg = pathSegments[i];
-        // Separator
-        var sep = document.createElement('span');
-        sep.className = 'breadcrumb-sep';
-        sep.textContent = ' / ';
-        sep.style.color = '#475569';
-        breadcrumb.appendChild(sep);
-
-        var isLast = (i === pathSegments.length - 1);
-        addBreadcrumb(seg, seg, isLast);
-    }
-
-    upBtn.disabled = (currentParent === null);
-
-    // Get children
-    var children = childrenMap[currentParent] || [];
-    if (children.length === 0) {
-        container.innerHTML = '<div style="padding:1rem; text-align:center; color:#94a3b8; font-size:0.875rem;">This folder is empty.</div>';
-        return;
-    }
-
-    children.sort(function(a, b) {
-        return (a.order_idx || 0) - (b.order_idx || 0);
-    });
-
-    var listHtml = '';
-    for (var j = 0; j < children.length; j++) {
-        var cmd = children[j];
-        var hasChildren = childrenMap[cmd.command] && childrenMap[cmd.command].length > 0;
-        var icon = hasChildren ? '<i class="fa-regular fa-folder" style="color:#60a5fa;"></i>' : '<i class="fa-regular fa-file" style="color:#94a3b8;"></i>';
-        var enabled = cmd.enabled !== undefined ? cmd.enabled : 1;
-        var adminBadge = cmd.is_admin_only ? '<span class="badge badge-admin">Admin</span>' : '';
-        var replyBadge = cmd.show_reply_keyboard ? '<span class="badge badge-reply">Reply</span>' : '';
-        var typeBadge = '<span class="badge badge-gray">' + cmd.response_type + '</span>';
-        var statusBadge = '<span class="badge ' + (enabled ? 'badge-enabled' : 'badge-disabled') + '">' + (enabled ? 'Enabled' : 'Disabled') + '</span>';
-
-        // Folder name – we use a data attribute and attach click later
-        var folderClass = hasChildren ? 'folder' : '';
-        var dataAttr = hasChildren ? 'data-command="' + encodeURIComponent(cmd.command) + '"' : '';
-
-        var addChildBtn = '<button class="add-child-btn btn btn-sm btn-primary" data-command="' + encodeURIComponent(cmd.command) + '"><i class="fa-solid fa-plus"></i></button>';
-        var editBtn = '<button class="edit-btn btn btn-sm btn-gray" data-command="' + encodeURIComponent(cmd.command) + '"><i class="fa-regular fa-pen-to-square"></i></button>';
-        var deleteBtn = '<button class="delete-btn btn btn-sm btn-danger" data-command="' + encodeURIComponent(cmd.command) + '"><i class="fa-regular fa-trash-can"></i></button>';
-
-        listHtml += '<div class="tree-row" data-command="' + encodeURIComponent(cmd.command) + '">' +
-            '<span style="width:20px;">' + icon + '</span>' +
-            '<span class="tree-command-name ' + folderClass + '" ' + dataAttr + '>' + cmd.command + '</span>' +
-            typeBadge + adminBadge + replyBadge + statusBadge +
-            '<div class="tree-actions">' +
-            addChildBtn + editBtn + deleteBtn +
-            '</div>' +
-            '</div>';
-    }
-    container.innerHTML = listHtml;
-
-    // Attach click events for folder navigation (delegated)
-    container.querySelectorAll('.tree-command-name.folder').forEach(function(el) {
-        el.addEventListener('click', function(e) {
-            e.stopPropagation();
-            var cmdName = decodeURIComponent(this.dataset.command);
-            navigateTo(cmdName);
-        });
-    });
-
-    // Attach edit, delete, add-child as before
-    container.querySelectorAll('.edit-btn').forEach(function(btn) {
-        btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            var cmdName = decodeURIComponent(this.dataset.command);
-            var cmd = commandsCache.find(function(c) { return c.command === cmdName; });
-            if (cmd) showAddCommandModal(cmd);
-        });
-    });
-    container.querySelectorAll('.delete-btn').forEach(function(btn) {
-        btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            var cmdName = decodeURIComponent(this.dataset.command);
-            deleteCommand(cmdName);
-        });
-    });
-    container.querySelectorAll('.add-child-btn').forEach(function(btn) {
-        btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            var cmdName = decodeURIComponent(this.dataset.command);
-            showAddCommandModal(null, cmdName);
-        });
-    });
-}
-
-        // ----- Load commands from API -----
         function loadCommands() {
             var container = document.getElementById('commands-list');
-            fetch('/api/commands')
+            return fetch('/api/commands')
             .then(function(res) { return res.json().then(function(data) { return { status: res.status, data: data }; }); })
             .then(function(result) {
                 if (result.status >= 400) throw new Error(result.data.error || 'Failed');
                 commandsCache = result.data.commands || [];
-                // Build children map
                 childrenMap = {};
                 for (var i = 0; i < commandsCache.length; i++) {
                     var cmd = commandsCache[i];
@@ -1204,13 +1279,12 @@ function renderFileManager() {
                     if (!childrenMap[parent]) childrenMap[parent] = [];
                     childrenMap[parent].push(cmd);
                 }
-                // If current parent was deleted, reset to root
                 if (currentParent !== null && !commandsCache.some(function(c) { return c.command === currentParent; })) {
                     currentParent = null;
                     pathSegments = [];
                 }
                 renderFileManager();
-                // Update modal dropdowns if modal is open
+                // If modal is open, refresh dropdowns
                 if (!document.getElementById('command-modal').classList.contains('hidden')) {
                     populateDropdowns();
                 }
@@ -1220,8 +1294,9 @@ function renderFileManager() {
             });
         }
 
-        // ----- Show Add/Edit Command Modal -----
-        function showAddCommandModal(command, parent) {
+        async function showAddCommandModal(command, parent) {
+            // Ensure commands are loaded before showing
+            await loadCommands();
             editingCommand = command || null;
             var modal = document.getElementById('command-modal');
             document.getElementById('modal-error').classList.remove('show');
@@ -1251,7 +1326,6 @@ function renderFileManager() {
                 document.getElementById('modal-media').value = '';
                 document.getElementById('modal-admin-only').checked = false;
                 document.getElementById('modal-enabled').checked = true;
-                // Set parent if provided
                 if (parent) {
                     parentSelect.value = parent;
                 } else if (currentParent !== null) {
@@ -1312,7 +1386,7 @@ function renderFileManager() {
                 if (result.status >= 400) throw new Error(result.data.error || 'Failed');
                 closeCommandModal();
                 showToast('Command saved!');
-                loadCommands(); // refresh, stays in same folder if parent still exists
+                loadCommands();
             })
             .catch(function(err) { errorEl.innerText = err.message; errorEl.classList.add('show'); });
         }
@@ -1324,7 +1398,6 @@ function renderFileManager() {
             .then(function(data) {
                 if (!data.success) throw new Error(data.error || 'Delete failed');
                 showToast('Deleted.');
-                // If we deleted the current folder, navigate up
                 if (currentParent === cmdName) {
                     navigateUp();
                 } else {
@@ -1335,9 +1408,8 @@ function renderFileManager() {
         }
 
         // ============================
-        // MENU COMMANDS (unchanged)
+        // MENU COMMANDS
         // ============================
-        var menuCommands = [];
         function loadMenuCommands() {
             fetch('/api/menu_commands')
             .then(function(res) { return res.json(); })
@@ -1396,7 +1468,7 @@ function renderFileManager() {
         }
 
         // ============================
-        // USERS (unchanged)
+        // USERS
         // ============================
         function loadUsers() {
             var container = document.getElementById('users-list');
@@ -1406,7 +1478,7 @@ function renderFileManager() {
             .then(function(res) { return res.json(); })
             .then(function(data) {
                 var users = data.users || [];
-                if (users.length === 0) { container.innerHTML = '<p style="color:#94a3b8; font-size:0.875rem;">No users.</p>'; return; }
+                if (users.length === 0) { container.innerHTML = '<p style="color:#94a3b8; font-size:0.875rem;">No users yet. Interact with the bot to see them here.</p>'; return; }
                 var html = '<div style="overflow-x:auto;"><table style="width:100%; font-size:0.875rem; border-collapse:collapse;"><thead><tr style="border-bottom:1px solid #334155;"><th style="text-align:left; padding:0.5rem;">ID</th><th style="text-align:left; padding:0.5rem;">Username</th><th style="text-align:left; padding:0.5rem;">Name</th><th style="text-align:left; padding:0.5rem;">Role</th><th style="text-align:left; padding:0.5rem;">Last Active</th><th style="text-align:left; padding:0.5rem;">Action</th></tr></thead><tbody>';
                 for (var i = 0; i < users.length; i++) {
                     var u = users[i];
@@ -1428,7 +1500,7 @@ function renderFileManager() {
         }
 
         // ============================
-        // SETTINGS (unchanged)
+        // SETTINGS
         // ============================
         function loadSettings() {
             fetch('/api/settings')
@@ -1489,6 +1561,32 @@ function renderFileManager() {
         }
 
         // ============================
+        // CHANGE PASSWORD
+        // ============================
+        function changeAdminPassword() {
+            const newPass = document.getElementById('change-pass-new').value;
+            const confirm = document.getElementById('change-pass-confirm').value;
+            if (!newPass || newPass.length < 6) { showToast('Password must be at least 6 characters.', 'error'); return; }
+            if (newPass !== confirm) { showToast('Passwords do not match.', 'error'); return; }
+            fetch('/api/change_password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ newPassword: newPass })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('Password updated successfully.');
+                    document.getElementById('change-pass-new').value = '';
+                    document.getElementById('change-pass-confirm').value = '';
+                } else {
+                    throw new Error(data.error || 'Failed');
+                }
+            })
+            .catch(err => showToast(err.message, 'error'));
+        }
+
+        // ============================
         // BOT INFO
         // ============================
         function loadBotInfo() {
@@ -1537,146 +1635,7 @@ function renderFileManager() {
             });
         }
 
-        // ============================
-        // SETUP WIZARD (unchanged)
-        // ============================
-        function openTokenPage() {
-            var permissions = [
-                { "key": "workers_scripts", "type": "edit" },
-                { "key": "d1", "type": "edit" },
-                { "key": "account", "type": "read" }
-            ];
-            var TOKEN_DEEPLINK = "https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=" + encodeURIComponent(JSON.stringify(permissions)) + "&accountId=*&zoneId=all&name=Nyxx%20Platform";
-            window.open(TOKEN_DEEPLINK, "_blank", "noopener");
-        }
-        var debounceTimeout;
-        function handleTokenInput() {
-            clearTimeout(debounceTimeout);
-            debounceTimeout = setTimeout(discoverInfrastructure, 500);
-        }
-        function discoverInfrastructure() {
-            var token = document.getElementById('cf-token').value.trim();
-            if (token.length < 20) return;
-            document.getElementById('discovery-loading').classList.remove('hidden');
-            document.getElementById('auto-fields').classList.add('hidden');
-            var btn = document.getElementById('btn-setup');
-            btn.disabled = true;
-            btn.className = "btn btn-gray btn-block";
-            fetch('/api/setup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'verify_token', cfToken: token, hostname: window.location.hostname }) })
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                if (!data.success) throw new Error(data.error || 'Discovery failed');
-                document.getElementById('cf-account-id').value = data.accountId;
-                document.getElementById('cf-script-name').value = data.scriptName;
-                document.getElementById('auto-fields').classList.remove('hidden');
-                btn.disabled = false;
-                btn.className = "btn btn-primary btn-block";
-            })
-            .catch(function(err) { alert('Discovery failed: ' + err.message); })
-            .finally(function() { document.getElementById('discovery-loading').classList.add('hidden'); });
-        }
-        function runSetup() {
-            var btn = document.getElementById('btn-setup');
-            var logs = document.getElementById('setup-logs');
-            var accId = document.getElementById('cf-account-id').value;
-            var scriptName = document.getElementById('cf-script-name').value;
-            var token = document.getElementById('cf-token').value;
-            btn.innerHTML = '<span class="spinner"></span> Provisioning...';
-            btn.disabled = true;
-            logs.classList.remove('hidden');
-            logs.innerHTML = 'Starting...<br>';
-            fetch('/api/setup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'provision_infra', accountId: accId, scriptName: scriptName, cfToken: token }) })
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                if (!data.success) throw new Error(data.error || 'Unknown error');
-// Inside runSetup, after success
-logs.innerHTML += data.logs.join('<br>') + '<br><br>✅ Provisioning succeeded. Waiting for deployment...';
-let attempts = 0;
-const pollStatus = setInterval(async () => {
-    try {
-        const resp = await fetch('/api/status');
-        const status = await resp.json();
-        if (status.d1_bound) {
-            clearInterval(pollStatus);
-            logs.innerHTML += '<br>✅ Deployment ready. Reloading...';
-            setTimeout(() => {
-                window.location.href = window.location.pathname + '?t=' + Date.now();
-            }, 500);
-        } else if (++attempts >= 15) {
-            clearInterval(pollStatus);
-            logs.innerHTML += '<br>⚠️ Timed out waiting for D1 binding. Please reload manually.';
-            btn.innerHTML = 'Provision Infrastructure';
-            btn.disabled = false;
-        }
-    } catch (e) {
-        // ignore errors, continue polling
-    }
-}, 2000);
-            })
-            .catch(function(err) {
-                logs.innerHTML += '<br>❌ Error: ' + err.message;
-                btn.innerHTML = 'Provision Infrastructure';
-                btn.disabled = false;
-            });
-        }
-        function saveTelegramConfig() {
-            var btn = document.getElementById('btn-tg');
-            var logs = document.getElementById('tg-logs');
-            var token = document.getElementById('tg-token').value;
-            btn.innerHTML = '<span class="spinner"></span> Connecting...';
-            logs.classList.remove('hidden');
-            logs.innerHTML = '';
-            fetch('/api/setup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'set_telegram', botToken: token }) })
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                if (!data.success) throw new Error(data.error || 'Failed');
-                logs.innerHTML = '✅ Bot connected and webhook set!';
-                document.getElementById('status-tg').innerHTML = '<i class="fa-brands fa-telegram" style="color:#60a5fa;"></i> Bot: Active';
-                setTimeout(function() {
-                    document.getElementById('step-2').classList.add('step-hidden');
-                    document.getElementById('step-3').classList.remove('step-hidden');
-                    switchTab('commands');
-                }, 1000);
-            })
-            .catch(function(err) {
-                logs.innerHTML = '❌ Error: ' + err.message;
-                btn.innerHTML = 'Connect & Set Webhook';
-            });
-        }
-
-        window.onload = function() {
-            fetch('/api/status')
-            .then(function(res) { return res.json(); })
-            .then(function(status) {
-                if (status.d1_bound) {
-                    document.getElementById('status-d1').innerHTML = '<i class="fa-solid fa-database" style="color:#4ade80;"></i> D1: Bound';
-                    // D1 bound – skip steps 0,1,2 and go to step 3 (or step2 if bot not configured)
-                    document.getElementById('step-0').classList.add('step-hidden');
-                    document.getElementById('step-1').classList.add('step-hidden');
-                    if (status.tg_configured) {
-                        document.getElementById('status-tg').innerHTML = '<i class="fa-brands fa-telegram" style="color:#60a5fa;"></i> Bot: Active';
-                        document.getElementById('step-3').classList.remove('step-hidden');
-                        switchTab('commands');
-                    } else {
-                        document.getElementById('step-2').classList.remove('step-hidden');
-                    }
-                } else {
-                    // Show step 0, hide others
-                    document.getElementById('step-0').classList.remove('step-hidden');
-                    document.getElementById('step-1').classList.add('step-hidden');
-                    document.getElementById('step-2').classList.add('step-hidden');
-                    document.getElementById('step-3').classList.add('step-hidden');
-                }
-            })
-            .catch(function(e) { console.error("Status check failed", e); });
-        }
-
-        // ============================
-        // INIT
-        // ============================
-        window.onload = function() {
-            checkStatus();
-        };
+        window.onload = function() { checkStatus(); };
     </script>
 </body>
 </html>`;
@@ -1689,7 +1648,7 @@ export default {
         const url = new URL(request.url);
 
         try {
-            // Serve dashboard HTML
+            // Serve dashboard HTML (public)
             if (request.method === 'GET' && url.pathname === '/') {
                 return new Response(DASHBOARD_HTML, {
                     headers: { 'Content-Type': 'text/html; charset=utf-8' }
@@ -1707,6 +1666,12 @@ export default {
 
             if (request.method === 'POST' && url.pathname === '/api/login') {
                 return await handleLogin(request, env);
+            }
+
+            // ==================== WEBHOOK (PUBLIC) ====================
+            // Must be BEFORE session check
+            if (request.method === 'POST' && url.pathname === '/webhook') {
+                return await handleTelegramWebhook(request, env);
             }
 
             // ==================== PROTECTED API ====================
@@ -1758,6 +1723,9 @@ export default {
             if (request.method === 'POST' && url.pathname === '/api/settings/token') {
                 return await updateBotToken(request, env, url.origin);
             }
+            if (request.method === 'POST' && url.pathname === '/api/change_password') {
+                return await changeAdminPassword(request, env);
+            }
 
             // Bot Info
             if (request.method === 'GET' && url.pathname === '/api/bot_info') {
@@ -1777,11 +1745,6 @@ export default {
                 return Response.json({ logged_in: true });
             }
 
-            // Webhook
-            if (request.method === 'POST' && url.pathname === '/webhook') {
-                return await handleTelegramWebhook(request, env);
-            }
-
             return new Response('Not Found', { status: 404 });
         } catch (error) {
             console.error(error);
@@ -1794,13 +1757,13 @@ export default {
 // DATABASE INITIALIZATION
 // ============================================================================
 async function initializeDatabase(db) {
-    const schema = `
-        CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT);
-        CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT, first_name TEXT, role TEXT DEFAULT 'user', is_premium BOOLEAN DEFAULT 0, last_active DATETIME DEFAULT CURRENT_TIMESTAMP);
-        CREATE TABLE IF NOT EXISTS commands (command TEXT PRIMARY KEY, parent TEXT, response_type TEXT DEFAULT 'text', content TEXT, media_url TEXT, buttons_json TEXT, is_admin_only BOOLEAN DEFAULT 0, enabled BOOLEAN DEFAULT 1, show_reply_keyboard BOOLEAN DEFAULT 0, reply_keyboard_json TEXT, order_idx INTEGER DEFAULT 0);
-        CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, user_id INTEGER, created_at DATETIME DEFAULT CURRENT_TIMESTAMP);
-        CREATE TABLE IF NOT EXISTS logs (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, action TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP);
-    `;
+const schema = `
+    CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT);
+    CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT, first_name TEXT, role TEXT DEFAULT 'user', is_premium BOOLEAN DEFAULT 0, last_active DATETIME DEFAULT CURRENT_TIMESTAMP);
+    CREATE TABLE IF NOT EXISTS commands (command TEXT PRIMARY KEY, parent TEXT, response_type TEXT DEFAULT 'text', content TEXT, media_url TEXT, buttons_json TEXT, is_admin_only BOOLEAN DEFAULT 0, enabled BOOLEAN DEFAULT 1, show_reply_keyboard BOOLEAN DEFAULT 0, reply_keyboard_json TEXT, order_idx INTEGER DEFAULT 0);
+    CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, user_id INTEGER UNIQUE, command TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP);
+    CREATE TABLE IF NOT EXISTS logs (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, action TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP);
+`;
     const statements = schema.split(';').filter(s => s.trim().length > 0);
     const batch = statements.map(s => db.prepare(s));
     await db.batch(batch);
@@ -1849,9 +1812,10 @@ async function getStatus(env) {
         await initializeDatabase(env.DB);
         const adminPass = await env.DB.prepare("SELECT value FROM settings WHERE key = 'admin_password'").first();
         const tokenRecord = await env.DB.prepare("SELECT value FROM settings WHERE key = 'bot_token'").first();
+        const envPass = env.ADMIN_PASS || null;
         return Response.json({
             d1_bound: true,
-            admin_password_set: !!adminPass,
+            admin_password_set: !!adminPass || !!envPass,
             tg_configured: !!tokenRecord
         });
     } catch (e) {
@@ -1863,9 +1827,14 @@ async function handleSetup(request, env) {
     if (!env.DB) return Response.json({ error: 'D1 not available' }, { status: 500 });
     await initializeDatabase(env.DB);
 
-    // Check if admin password already set
+    const envPass = env.ADMIN_PASS || null;
+    if (envPass) {
+        // If env var is set, we don't need to store password in D1? But we might still want to allow storing it for fallback? We'll still store but env takes priority.
+        // However, we can skip password requirement? But the user might still want to set a D1 password as fallback. We'll allow it.
+    }
+
     const existing = await env.DB.prepare("SELECT value FROM settings WHERE key = 'admin_password'").first();
-    if (existing) {
+    if (existing && !envPass) {
         return Response.json({ error: 'Admin password already set. Please login.' }, { status: 400 });
     }
 
@@ -1875,15 +1844,13 @@ async function handleSetup(request, env) {
         return Response.json({ error: 'Password must be at least 6 characters.' }, { status: 400 });
     }
 
-    // Save admin password
+    // Store password in D1 (it may be overridden by env var later)
     await env.DB.prepare(`
         INSERT INTO settings (key, value) VALUES ('admin_password', ?)
         ON CONFLICT(key) DO UPDATE SET value = excluded.value
     `).bind(adminPassword).run();
 
-    // If bot token provided, set it and webhook
     if (botToken) {
-        // Validate token
         const tgRes = await fetch(`https://api.telegram.org/bot${botToken}/getMe`);
         const tgData = await tgRes.json();
         if (!tgData.ok) {
@@ -1916,12 +1883,26 @@ async function handleLogin(request, env) {
         return Response.json({ error: 'Password required' }, { status: 400 });
     }
 
+    // Check env var first
+    const envPass = env.ADMIN_PASS || null;
+    if (envPass && envPass === password) {
+        const token = crypto.randomUUID();
+        await env.DB.prepare('INSERT INTO sessions (token) VALUES (?)').bind(token).run();
+        return new Response(JSON.stringify({ success: true }), {
+            status: 200,
+            headers: {
+                'Set-Cookie': `session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400`,
+                'Content-Type': 'application/json'
+            }
+        });
+    }
+
+    // Fallback to D1
     const stored = await env.DB.prepare("SELECT value FROM settings WHERE key = 'admin_password'").first();
     if (!stored || stored.value !== password) {
         return Response.json({ error: 'Invalid password' }, { status: 401 });
     }
 
-    // Create session
     const token = crypto.randomUUID();
     await env.DB.prepare('INSERT INTO sessions (token) VALUES (?)').bind(token).run();
 
@@ -2185,6 +2166,25 @@ async function updateBotToken(request, env, originUrl) {
     }
 }
 
+async function changeAdminPassword(request, env) {
+    if (!env.DB) return Response.json({ error: "DB not available" }, { status: 500 });
+    try {
+        const body = await request.json();
+        const { newPassword } = body;
+        if (!newPassword || newPassword.length < 6) {
+            return Response.json({ error: "Password must be at least 6 characters" }, { status: 400 });
+        }
+        await initializeDatabase(env.DB);
+        await env.DB.prepare(`
+            INSERT INTO settings (key, value) VALUES ('admin_password', ?)
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value
+        `).bind(newPassword).run();
+        return Response.json({ success: true });
+    } catch (err) {
+        return Response.json({ error: err.message }, { status: 500 });
+    }
+}
+
 // ============================================================================
 // BOT INFO API
 // ============================================================================
@@ -2274,39 +2274,39 @@ async function handleTelegramWebhook(request, env) {
 
     const update = await request.json();
     const tokenRecord = await env.DB.prepare("SELECT value FROM settings WHERE key = 'bot_token'").first();
-    if (!tokenRecord || !tokenRecord.value) return new Response('Token not set', { status: 500 });
+    if (!tokenRecord || !tokenRecord.value) {
+        console.error('Bot token not set');
+        return new Response('Token not set', { status: 500 });
+    }
     const BOT_TOKEN = tokenRecord.value;
-    const sendMessage = async (chatId, text, replyMarkup = null) => {
-        const payload = { chat_id: chatId, text: text, parse_mode: 'HTML' };
-        if (replyMarkup) payload.reply_markup = replyMarkup;
-        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-    };
 
     try {
+        // Handle message
         if (update.message && update.message.text) {
             const msg = update.message;
             const chatId = msg.chat.id;
             const text = msg.text.trim();
             const userId = msg.from.id;
 
+            // Register user
             await env.DB.prepare(`
                 INSERT INTO users (id, username, first_name) VALUES (?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET last_active = CURRENT_TIMESTAMP
             `).bind(userId, msg.from.username || '', msg.from.first_name || '').run();
 
-            // Check for reply button match (including "Back")
             let targetCommand = null;
+
+            // Check for "Back" (navigate to parent)
             if (text === "Back") {
                 const session = await env.DB.prepare("SELECT command FROM sessions WHERE user_id = ?").bind(userId).first();
                 if (session && session.command) {
-                    const cmd = await env.DB.prepare("SELECT parent FROM commands WHERE command = ?").bind(session.command).first();
-                    if (cmd && cmd.parent) targetCommand = cmd.parent;
+                    const parentCmd = await env.DB.prepare("SELECT parent FROM commands WHERE command = ?").bind(session.command).first();
+                    if (parentCmd && parentCmd.parent) {
+                        targetCommand = parentCmd.parent;
+                    }
                 }
             } else {
+                // Check reply keyboard buttons
                 const allCmds = await env.DB.prepare("SELECT command, reply_keyboard_json FROM commands WHERE enabled = 1 AND show_reply_keyboard = 1").all();
                 for (const row of allCmds.results) {
                     if (row.reply_keyboard_json) {
@@ -2324,8 +2324,15 @@ async function handleTelegramWebhook(request, env) {
                     }
                     if (targetCommand) break;
                 }
+
+                // If not found and starts with '/', look for command
+                if (!targetCommand && text.startsWith('/')) {
+                    const cmdRecord = await env.DB.prepare("SELECT command FROM commands WHERE command = ? AND enabled = 1").bind(text).first();
+                    if (cmdRecord) targetCommand = cmdRecord.command;
+                }
             }
 
+            // Execute found command
             if (targetCommand) {
                 const cmdRecord = await env.DB.prepare("SELECT * FROM commands WHERE command = ? AND enabled = 1").bind(targetCommand).first();
                 if (cmdRecord) {
@@ -2334,23 +2341,18 @@ async function handleTelegramWebhook(request, env) {
                 }
             }
 
-            // Normal command
-            if (text.startsWith('/')) {
-                const cmdRecord = await env.DB.prepare("SELECT * FROM commands WHERE command = ? AND enabled = 1").bind(text).first();
-                if (cmdRecord) {
-                    await executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env);
-                } else {
-                    // If command is /start and no custom command exists, send default
-                    if (text === '/start') {
-                        await sendDefaultStart(chatId, env, BOT_TOKEN);
-                    } else {
-                        await sendMessage(chatId, "Command not found.");
-                    }
-                }
+            // Fallback: if command is /start and not found, show default
+            if (text === '/start') {
+                await sendDefaultStart(chatId, env, BOT_TOKEN);
                 return new Response('OK', { status: 200 });
             }
+
+            // No command matched
+            await sendMessage(chatId, "Command not found. Use /start to see available options.", BOT_TOKEN);
+            return new Response('OK', { status: 200 });
         }
 
+        // Handle callback query
         if (update.callback_query) {
             const cb = update.callback_query;
             const data = cb.data;
@@ -2380,13 +2382,23 @@ async function handleTelegramWebhook(request, env) {
         }
     } catch (err) {
         console.error("Webhook error:", err);
+        // Optionally send error message to admin
     }
 
     return new Response('OK', { status: 200 });
 }
 
-// ----- Default /start handler -----
+// ============================================================================
+// DEFAULT /start MESSAGE
+// ============================================================================
 async function sendDefaultStart(chatId, env, BOT_TOKEN) {
+    let botName = "Nyxx Bot";
+    try {
+        const nameRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getMyName`);
+        const nameData = await nameRes.json();
+        if (nameData.ok && nameData.result.name) botName = nameData.result.name;
+    } catch(e) {}
+
     let dashboardUrl = "https://dash.cloudflare.com";
     try {
         const webhookSetting = await env.DB.prepare("SELECT value FROM settings WHERE key = 'webhook_url'").first();
@@ -2395,7 +2407,7 @@ async function sendDefaultStart(chatId, env, BOT_TOKEN) {
         }
     } catch(e) {}
 
-    const text = `👋 Welcome to <b>Nyxx</b>!\n\n` +
+    const text = `👋 Welcome to <b>${botName}</b>!\n\n` +
         `This bot is powered by <a href="https://github.com/Mahan07dev/nyxx">Nyxx</a>, ` +
         `an open‑source Telegram bot builder for Cloudflare Workers.\n\n` +
         `Created with ❤️ by <b>@Mahan07dev</b>`;
@@ -2422,12 +2434,12 @@ async function sendDefaultStart(chatId, env, BOT_TOKEN) {
 }
 
 // ============================================================================
-// Helper: execute command with session & reply keyboard
+// COMMAND EXECUTION
 // ============================================================================
 async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env) {
-    // Update session
+    // Update session (using INSERT OR REPLACE to avoid conflicts)
     await env.DB.prepare(`
-        INSERT INTO sessions (user_id, command) VALUES (?, ?)
+        INSERT INTO sessions (user_id, command, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
         ON CONFLICT(user_id) DO UPDATE SET command = excluded.command, updated_at = CURRENT_TIMESTAMP
     `).bind(userId, cmdRecord.command).run();
 
@@ -2435,7 +2447,7 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env) {
     if (cmdRecord.is_admin_only) {
         const user = await env.DB.prepare("SELECT role FROM users WHERE id = ?").bind(userId).first();
         if (!user || user.role !== 'admin') {
-            await sendMessage(chatId, "⚠️ Unauthorized.");
+            await sendMessage(chatId, "⚠️ Unauthorized.", BOT_TOKEN);
             return;
         }
     }
@@ -2456,7 +2468,6 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env) {
                     const row = buttons.slice(i, i + rowSize).map(b => ({ text: b.text }));
                     rows.push(row);
                 }
-                // Auto Back button if parent exists
                 if (cmdRecord.parent) {
                     rows.push([{ text: "Back" }]);
                 }
@@ -2493,11 +2504,14 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env) {
     }
 }
 
-// Helper sendMessage (for admin errors etc.)
-async function sendMessage(chatId, text) {
-    // This is a fallback, but we use the BOT_TOKEN from the outer scope.
-    // The actual sendMessage is defined inside the webhook handler.
-    // We'll use the global fetch.
-    // (In practice, the webhook handler defines its own sendMessage.
-    // For this helper, we'll assume BOT_TOKEN is passed.)
+async function sendMessage(chatId, text, BOT_TOKEN) {
+    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            chat_id: chatId,
+            text: text,
+            parse_mode: 'HTML'
+        })
+    });
 }
