@@ -254,107 +254,113 @@
     // ============================
     // PROVISION (via proxy)
     // ============================
-    async function startProvision() {
-        const token = document.getElementById('cf-token').value.trim();
-        const scriptName = document.getElementById('script-name').value.trim() || 'nyxx-bot';
-        const accountId = discoveredAccountId;
-        if (!token || !accountId) {
-            alert('Missing token or account ID.');
-            return;
-        }
-
-        const btn = document.getElementById('btn-provision');
-        const logs = document.getElementById('provision-logs');
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner"></span> Provisioning...';
-        logs.classList.remove('hidden');
-        logs.innerHTML = '';
-
-        const log = (msg, type = '') => {
-            const line = document.createElement('div');
-            line.textContent = msg;
-            if (type) line.className = type;
-            logs.appendChild(line);
-            logs.scrollTop = logs.scrollHeight;
-        };
-
-        try {
-            // 1. Fetch worker code from same directory
-            log('[1/4] Loading worker code from worker.js...');
-            const workerResponse = await fetch('worker.js');
-            if (!workerResponse.ok) {
-                throw new Error(`Failed to fetch worker.js: ${workerResponse.status}`);
-            }
-            const workerCode = await workerResponse.text();
-            if (!workerCode) {
-                throw new Error('worker.js is empty.');
-            }
-            log('[1/4] ✅ Worker code loaded.', 'log-success');
-            await delay(3000);
-
-            // 2. Create D1 via proxy
-            log('[2/4] Creating D1 database...');
-            const d1Res = await fetch(PROXY_URL + 'accounts/' + accountId + '/d1/database', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ name: `nyxx_db_${Date.now()}` })
-            });
-            const d1Data = await d1Res.json();
-            if (!d1Data.success) {
-                throw new Error('D1 creation failed: ' + JSON.stringify(d1Data.errors));
-            }
-            const d1Uuid = d1Data.result.uuid;
-            log('[2/4] ✅ D1 created: ' + d1Uuid, 'log-success');
-            await delay(3000);
-
-            // 3. Upload worker with binding via proxy
-            log('[3/4] Uploading worker script with D1 binding...');
-            const formData = new FormData();
-            const metadata = {
-                main_module: "worker.js",
-                bindings: [
-                    { type: "d1", name: "DB", id: d1Uuid }
-                ]
-            };
-            formData.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
-            formData.append("worker.js", new Blob([workerCode], { type: "application/javascript+module" }));
-
-            const uploadRes = await fetch(PROXY_URL + 'accounts/' + accountId + '/workers/scripts/' + scriptName, {
-                method: 'PUT',
-                headers: { 'Authorization': `Bearer ${token}` },
-                body: formData
-            });
-            const uploadData = await uploadRes.json();
-            if (!uploadData.success) {
-                throw new Error('Upload failed: ' + JSON.stringify(uploadData.errors));
-            }
-            log('[3/4] ✅ Worker uploaded with binding.', 'log-success');
-            await delay(3000);
-
-            // 4. Build URL
-            log('[4/4] Fetching worker URL...');
-            let workerUrl = `https://${scriptName}.${discoveredSubdomain}.workers.dev`;
-            if (!discoveredSubdomain) {
-                workerUrl = `https://${scriptName}.<subdomain>.workers.dev (check your Cloudflare dashboard)`;
-            }
-            log('[4/4] ✅ Done!', 'log-success');
-
-            // Show final
-            document.getElementById('worker-url-link').href = workerUrl;
-            document.getElementById('worker-url-link').textContent = workerUrl;
-            document.getElementById('final-url').classList.remove('hidden');
-            btn.innerHTML = '✅ Deployed';
-            btn.disabled = true;
-
-        } catch (err) {
-            log('❌ Error: ' + err.message, 'log-error');
-            btn.innerHTML = 'Retry';
-            btn.disabled = false;
-        }
+async function startProvision() {
+    const token = document.getElementById('cf-token').value.trim();
+    const scriptName = document.getElementById('script-name').value.trim() || 'nyxx-bot';
+    const accountId = discoveredAccountId;
+    if (!token || !accountId) {
+        alert('Missing token or account ID.');
+        return;
     }
+
+    const btn = document.getElementById('btn-provision');
+    const logs = document.getElementById('provision-logs');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Provisioning...';
+    logs.classList.remove('hidden');
+    logs.innerHTML = '';
+
+    const log = (msg, type = '') => {
+        const line = document.createElement('div');
+        line.textContent = msg;
+        if (type) line.className = type;
+        logs.appendChild(line);
+        logs.scrollTop = logs.scrollHeight;
+    };
+
+    try {
+        // 1. Fetch worker code from same directory
+        log('[1/4] Loading worker code from worker.js...');
+        const workerResponse = await fetch('worker.js');
+        if (!workerResponse.ok) {
+            throw new Error(`Failed to fetch worker.js: ${workerResponse.status}`);
+        }
+        const workerCode = await workerResponse.text();
+        if (!workerCode) {
+            throw new Error('worker.js is empty.');
+        }
+        log('[1/4] ✅ Worker code loaded. Length: ' + workerCode.length + ' chars', 'log-success');
+        // Log first few lines to ensure it's not empty
+        console.log('First 200 chars:', workerCode.substring(0, 200));
+        await delay(3000);
+
+        // 2. Create D1 via proxy
+        log('[2/4] Creating D1 database...');
+        const d1Res = await fetch(PROXY_URL + 'accounts/' + accountId + '/d1/database', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ name: `nyxx_db_${Date.now()}` })
+        });
+        const d1Data = await d1Res.json();
+        if (!d1Data.success) {
+            throw new Error('D1 creation failed: ' + JSON.stringify(d1Data.errors));
+        }
+        const d1Uuid = d1Data.result.uuid;
+        log('[2/4] ✅ D1 created: ' + d1Uuid, 'log-success');
+        await delay(3000);
+
+        // 3. Upload worker with binding via proxy
+        log('[3/4] Uploading worker script with D1 binding...');
+        const formData = new FormData();
+        const metadata = {
+            main_module: "worker.js",
+            compatibility_date: "2024-12-18",
+            bindings: [
+                { type: "d1", name: "DB", id: d1Uuid }
+            ]
+        };
+        formData.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
+        // Use type application/javascript (not module) to be safe
+        formData.append("worker.js", new Blob([workerCode], { type: "application/javascript" }));
+
+        const uploadRes = await fetch(PROXY_URL + 'accounts/' + accountId + '/workers/scripts/' + scriptName, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData
+        });
+        const uploadData = await uploadRes.json();
+        if (!uploadData.success) {
+            // Log the detailed error
+            const errMsg = uploadData.errors ? JSON.stringify(uploadData.errors) : uploadData.error || 'Unknown error';
+            throw new Error('Upload failed: ' + errMsg);
+        }
+        log('[3/4] ✅ Worker uploaded with binding.', 'log-success');
+        await delay(3000);
+
+        // 4. Build URL
+        log('[4/4] Fetching worker URL...');
+        let workerUrl = `https://${scriptName}.${discoveredSubdomain}.workers.dev`;
+        if (!discoveredSubdomain) {
+            workerUrl = `https://${scriptName}.<subdomain>.workers.dev (check your Cloudflare dashboard)`;
+        }
+        log('[4/4] ✅ Done!', 'log-success');
+
+        // Show final
+        document.getElementById('worker-url-link').href = workerUrl;
+        document.getElementById('worker-url-link').textContent = workerUrl;
+        document.getElementById('final-url').classList.remove('hidden');
+        btn.innerHTML = '✅ Deployed';
+        btn.disabled = true;
+
+    } catch (err) {
+        log('❌ Error: ' + err.message, 'log-error');
+        btn.innerHTML = 'Retry';
+        btn.disabled = false;
+    }
+}
 
     function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 </script>
