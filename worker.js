@@ -161,6 +161,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             cursor: pointer;
             transition: 0.2s;
             font-size: 1rem;
+            min-height: 35px;
         }
         .btn-primary { background: #3b82f6; color: white; }
         .btn-primary:hover { background: #2563eb; }
