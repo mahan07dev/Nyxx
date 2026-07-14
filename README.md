@@ -1,120 +1,575 @@
-<p align="center">
-  <img src="https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/logo.webp" alt="Nyxx Logo" width="200">
+<div align="center">
+
+<img src="https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/logo.webp" width="130" alt="Nyxx Logo">
+
+# Nyxx
+
+### 🚀 Deploy & Manage Powerful Telegram Bots on Cloudflare Workers
+
+A modern, self-hosted Telegram Bot Builder with an intuitive web dashboard, one-click installation, Cloudflare D1 storage, and zero server maintenance.
+
+<p>
+<a href="https://mahan07dev.github.io/Nyxx/installer"><img src="https://img.shields.io/badge/🚀%20One--Click%20Installer-Live-7c3aed?style=for-the-badge" /></a>
+<a href="https://github.com/Mahan07dev/Nyxx/releases">
+  <img src="https://img.shields.io/github/v/release/Mahan07dev/Nyxx?style=for-the-badge" alt="Latest Version">
+</a>
+<a href="https://github.com/Mahan07dev/Nyxx/releases">
+  <img src="https://img.shields.io/github/release-date/Mahan07dev/Nyxx?style=for-the-badge" alt="Latest Release Date">
+</a>
+<a href="https://github.com/Mahan07dev/Nyxx"><img src="https://img.shields.io/github/stars/Mahan07dev/Nyxx?style=for-the-badge" /></a>
+<a href="https://github.com/Mahan07dev/Nyxx/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Mahan07dev/Nyxx?style=for-the-badge" /></a>
 </p>
 
-<h1 align="center">Nyxx</h1>
-
-<p align="center">
-  Telegram Bot Builder for Cloudflare Workers
+<p>
+<img src="https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white">
+<img src="https://img.shields.io/badge/Cloudflare-D1-F38020?logo=cloudflare&logoColor=white">
+<img src="https://img.shields.io/badge/Telegram-Bot_API-26A5E4?logo=telegram&logoColor=white">
+<img src="https://img.shields.io/badge/JavaScript-ES2023-F7DF1E?logo=javascript&logoColor=black">
+<img src="https://img.shields.io/badge/Self-Hosted-success">
+<img src="https://img.shields.io/badge/Responsive-Mobile%20Friendly-blue">
 </p>
 
+---
+
+**Nyxx** lets you build and manage Telegram bots through a beautiful web dashboard instead of editing code.
+
+Deploy everything to your own Cloudflare account in minutes with the built-in installer. No servers, no VPS, no Docker, and no CLI required.
+
+</div>
+
+---
+
+# 🚀 Get Started
+
+The fastest way to install Nyxx is using the automated installer.
+
+## 👉 https://mahan07dev.github.io/Nyxx/installer
+
+The installer automatically:
+
+- ✅ Creates a Cloudflare Worker
+- ✅ Creates a D1 database
+- ✅ Binds the database
+- ✅ Uploads the latest Worker
+- ✅ Deploys everything
+- ✅ Gives you your dashboard URL
+
+No manual configuration required.
+
+---
+
+# ✨ Features
+
+## 🤖 Telegram Bot Management
+
+- Create unlimited commands
+- Nested command system
+- Folder-like command organization
+- Enable / Disable commands
+- Admin-only commands
+- Text responses
+- Photo responses
+- Automatic webhook management
+
+---
+
+## 🎛️ Beautiful Dashboard
+
+- Modern responsive interface
+- Mobile friendly
+- Dark UI
+- Toast notifications
+- Live status indicators
+- Secure login system
+- Password protected dashboard
+- Initial setup wizard
+
+---
+
+## ⌨️ Keyboard Builder
+
+### Inline Keyboards
+
+Create buttons that can:
+
+- Open URLs
+- Trigger callbacks
+- Navigate to other commands
+
+No JSON editing required.
+
+---
+
+### Reply Keyboards
+
+Create Telegram Reply Keyboards visually.
+
+Perfect for menu-driven bots.
+
+---
+
+## 📋 Telegram Menu Commands
+
+Manage Telegram's built-in menu commands directly from the dashboard.
+
+Publish updates to Telegram with one click.
+
+---
+
+## 👥 User Management
+
+View users who interacted with your bot.
+
+Includes:
+
+- Username
+- Display name
+- Search support
+
+---
+
+## ⚙️ Bot Settings
+
+Manage everything from one place.
+
+- Bot Token
+- Webhook
+- Admin Password
+- Factory Reset
+- Connection Status
+
+---
+
+## ℹ️ Bot Information
+
+Update your bot without leaving Nyxx.
+
+Manage:
+
+- Bot Name
+- Description
+- Short Description
+
+Publish directly to Telegram.
+
+---
+
+## ☁️ Cloudflare Powered
+
+Built entirely on Cloudflare's infrastructure.
+
+- Cloudflare Workers
+- Cloudflare D1
+- Global Edge Network
+- No traditional hosting
+
+---
+
+# 🖥️ Screenshots
+
 <p align="center">
-  <a href="https://workers.cloudflare.com/">
-    <img src="https://img.shields.io/badge/Cloudflare-Worker-F38020?logo=cloudflare" alt="Cloudflare Worker">
-  </a>
-  <a href="https://core.telegram.org/bots/api">
-    <img src="https://img.shields.io/badge/Telegram-Bot%20API-26A5E4?logo=telegram" alt="Telegram Bot API">
-  </a>
-  <a href="LICENSE">
-    <img src="https://img.shields.io/badge/License-MIT-yellow" alt="MIT License">
-  </a>
+
+<a href="screenshots/dashboard.webp">
+  <img src="screenshots/dashboard.png" width="80%" alt="Dashboard">
+</a>
+
 </p>
 
-**Nyxx** is a complete, self‑hosted solution to create and manage Telegram bots directly from your Cloudflare Worker.  
-It provides a visual dashboard (no Tailwind, pure CSS) where you can:
+---
 
-- 📝 Create **commands** with nested folders, inline buttons, and reply keyboards
-- 🖼️ Send **photos** with captions
-- 👤 Manage **users** and promote/demote admins
-- 📋 Set the **bot info** (name, description, short description, profile photo)
-- 📌 Publish **menu commands** (the `/` list) to Telegram
-- 🔗 Auto‑provision a **D1 database** and bind it to your Worker
-- ⚡️ Fully **open‑source** – you own your data
+# ⚡ Why Nyxx?
 
-> Built with ❤️ by [@Mahan07dev](https://t.me/Mahan07dev)
+Unlike many Telegram bot panels that require VPS hosting or complicated setup, Nyxx is designed to be deployed entirely on Cloudflare.
+
+That means:
+
+- Extremely low maintenance
+- Global performance
+- No server management
+- Very generous free tier
+- Easy updates
+- Secure deployment
 
 ---
 
-## 🚀 Features
+# 🏗️ Architecture
 
-- **Zero‑config setup** – just paste your Cloudflare API token, and Nyxx creates and binds a D1 database for you.
-- **Intuitive file‑manager** – commands can be nested in folders; you get a breadcrumb navigation.
-- **Rich message formats** – supports HTML (`<b>`, `<i>`, `<a>`), photos, and custom inline keyboards.
-- **Reply keyboards** – define buttons that trigger other commands, plus an automatic **Back** button for parent‑child navigation.
-- **User management** – track who used the bot, search, and assign admin roles.
-- **Bot customisation** – change the bot’s name, description, short description, and profile photo via the dashboard.
-- **Menu commands** – easily set the bot’s command list (`/start`, `/help`, etc.) and publish to Telegram.
-- **Factory reset** – wipe all data and start fresh.
-
----
-
-## 📦 Installation & Deployment
-
-### Prerequisites
-
-- A [Cloudflare account](https://dash.cloudflare.com/)
-- A Telegram bot token from [@BotFather](https://t.me/botfather)
-
-### Steps
-
-1. **Create a Worker** on Cloudflare (or use an existing one).
-2. **Copy the entire [`worker.js`](https://github.com/mahan07dev/Nyxx/blob/main/worker.js)** from this repository into your Worker’s code editor.
-3. **Deploy** the Worker.
-4. Visit the Worker’s URL – you’ll see the **Nyxx Setup Wizard**.
-5. Follow the steps:
-   - **Step 0**: Welcome & credits.
-   - **Step 1**: Generate a Cloudflare API token (with permissions for Workers and D1) and paste it – Nyxx auto‑discovers your account and script name.
-   - **Step 2**: Paste your Telegram bot token – Nyxx sets the webhook automatically.
-   - **Step 3**: Use the full dashboard to build your bot!
-
-> **Note**: Nyxx requires the `DB` D1 binding. The setup wizard creates and binds it for you.
+```
+                GitHub Pages
+                     │
+                     │
+              installer.html
+                     │
+                     ▼
+             Cloudflare Proxy
+                     │
+                     ▼
+           Cloudflare REST API
+                     │
+      ┌──────────────┴──────────────┐
+      ▼                             ▼
+Cloudflare Worker              Cloudflare D1
+      │                             │
+      └──────────────┬──────────────┘
+                     ▼
+             Nyxx Dashboard
+                     │
+                     ▼
+              Telegram Bot API
+```
 
 ---
 
-## 🧩 Usage (Dashboard)
+# 📂 Repository Structure
 
-After setup, you land on the dashboard with five tabs:
-
-- **Commands** – add/edit/delete commands. Commands can be nested (folders). Supports:
-  - Response type: text or photo
-  - Inline buttons (URL, callback, or command)
-  - Reply keyboard buttons (with auto‑Back)
-  - Admin‑only toggle
-- **Menu** – define the bot’s global command list (e.g., `/start`, `/help`) and publish to Telegram.
-- **Users** – view all users who have interacted, search, and change roles.
-- **Settings** – view/change bot token, test webhook, factory reset.
-- **Bot Info** – edit and publish the bot’s name, description, short description, and profile photo.
-
----
-
-## 🔧 Development & Customisation
-
-Nyxx is written as a single **Cloudflare Worker** (ES module).  
-The code is well‑commented; you can extend it easily:
-
-- Add new API endpoints in the router.
-- Modify the HTML/CSS to change the dashboard look.
-- Enhance the Telegram bot logic (e.g., add support for locations, documents, etc.).
-
----
-
-## 📄 License
-
-This project is licensed under the **MIT License** – see the [LICENSE](LICENSE) file for details.
+```
+Nyxx/
+│
+├── installer.html
+│   ├─ One-click installer
+│   ├─ Creates Worker
+│   ├─ Creates D1
+│   └─ Automatic deployment
+│
+├── worker.js
+│   ├─ Telegram Bot Engine
+│   ├─ Dashboard
+│   ├─ API
+│   ├─ Authentication
+│   ├─ Command System
+│   └─ D1 Database Logic
+│
+├── proxy.js
+│   └─ Cloudflare API proxy used by the installer
+│
+├── logo.webp
+│
+└── README.md
+```
 
 ---
 
-## 🙏 Credits
+# 📦 Installation
 
-- **Author**: [@Mahan07dev](https://t.me/Mahan07dev)  
-- **GitHub**: [Mahan07dev](https://github.com/Mahan07dev)  
-- **Built with**: Cloudflare Workers, D1, Telegram Bot API, Font Awesome
+## Option 1 — Automated (Recommended)
+
+Visit:
+
+## 👉 https://mahan07dev.github.io/Nyxx/installer
+
+The installer handles everything automatically.
 
 ---
 
-## 🌟 Support & Contributions
+## Option 2 — Manual
 
-Contributions, issues, and feature requests are welcome!  
-Feel free to open an issue or pull request on [GitHub](https://github.com/Mahan07dev/nyxx).
+If the installer cannot access the Cloudflare API:
 
-If you find Nyxx useful, please ⭐ star the repository and share it with others!
+1. Deploy `proxy.js` to your own Cloudflare Worker.
+2. Replace the proxy URL inside `installer.html`.
+3. Open the installer again.
+4. Continue the automated installation.
+
+This fallback exists so you're never dependent on a single hosted proxy.
+
+---
+
+# 🔒 Security
+
+Nyxx is designed so that deployment happens directly into **your own Cloudflare account**.
+
+- API tokens remain inside your browser during installation.
+- Your Worker runs under your own Cloudflare account.
+- Your database belongs to you.
+- No third-party server stores your bot data.
+
+> The public proxy only forwards requests to the Cloudflare API. If you prefer, you can deploy your own copy using `proxy.js`.
+
+---
+
+# 📖 Requirements
+
+Before installing you'll need:
+
+- A free Cloudflare account
+- A Telegram bot created with **@BotFather**
+- A modern web browser
+
+Cloudflare's free plan is sufficient for most personal projects.
+
+---
+
+# 🖥️ Dashboard Overview
+
+Nyxx includes a modern web dashboard where every aspect of your Telegram bot can be managed visually.
+
+## 📁 Commands
+
+Manage your bot like a file explorer.
+
+- Create commands
+- Edit commands
+- Delete commands
+- Organize commands into folders
+- Navigate using breadcrumbs
+- Enable / Disable commands
+- Restrict commands to admins only
+
+---
+
+## 🎹 Inline Keyboard Builder
+
+Create beautiful Telegram inline keyboards without writing JSON.
+
+Supported button types:
+
+| Type | Description |
+|------|-------------|
+| Callback | Trigger another action |
+| Command | Open another command |
+| URL | Open websites or channels |
+
+---
+
+## ⌨️ Reply Keyboard Builder
+
+Design Reply Keyboards visually.
+
+Features include:
+
+- Drag & organize buttons
+- Link buttons to commands
+- Toggle keyboard visibility
+- No manual JSON editing
+
+---
+
+## 📋 Telegram Menu
+
+Publish Telegram Menu Commands directly from the dashboard.
+
+Perfect for:
+
+- `/help`
+- `/start`
+- `/settings`
+- `/about`
+
+---
+
+## 👥 Users
+
+View everyone who has interacted with your bot.
+
+Quickly search by:
+
+- Username
+- Display name
+
+---
+
+## ⚙️ Settings
+
+Manage everything from a single page.
+
+Available options include:
+
+- Bot Token
+- Webhook
+- Password
+- Factory Reset
+- Connection Status
+
+---
+
+## 🤖 Bot Information
+
+Update your bot's profile directly from Nyxx.
+
+Edit:
+
+- Name
+- Description
+- Short Description
+
+Then publish everything to Telegram instantly.
+
+---
+
+# 📊 Feature Overview
+
+| Feature | Supported |
+|-----------|:--------:|
+| Cloudflare Workers | ✅ |
+| Cloudflare D1 | ✅ |
+| Web Dashboard | ✅ |
+| Mobile Friendly | ✅ |
+| Nested Commands | ✅ |
+| Inline Keyboards | ✅ |
+| Reply Keyboards | ✅ |
+| Telegram Menu Commands | ✅ |
+| User Management | ✅ |
+| Login Protection | ✅ |
+| Admin-only Commands | ✅ |
+| Text Responses | ✅ |
+| Photo Responses | ✅ |
+| Bot Information Editor | ✅ |
+| Automatic Webhook | ✅ |
+| Factory Reset | ✅ |
+| One-click Installer | ✅ |
+| Self Hosted | ✅ |
+
+---
+
+# 🔄 Updating Nyxx
+
+Updating is simple.
+
+1. Download the latest release.
+2. Replace the Worker code.
+3. Deploy again.
+
+Your D1 database and existing bot configuration remain intact.
+
+> Always create a database backup before major updates.
+
+---
+
+# ❓ Frequently Asked Questions
+
+### Is Nyxx free?
+
+Yes.
+
+Nyxx is open-source and designed to work with Cloudflare's generous free plan.
+
+---
+
+### Do I need a VPS?
+
+No.
+
+Everything runs on Cloudflare Workers.
+
+---
+
+### Can I host it myself?
+
+Yes.
+
+Every component belongs to you and can be self-hosted.
+
+---
+
+### What happens if the public proxy goes offline?
+
+Simply deploy your own copy of `proxy.js` and update the proxy URL inside `installer.html`.
+
+The repository includes the proxy source for exactly this reason.
+
+---
+
+### Is my Cloudflare token stored?
+
+No.
+
+The installer is designed so your API token stays inside your browser during installation.
+
+---
+
+### Can I customize the Worker?
+
+Absolutely.
+
+`worker.js` is fully open source and intended to be modified.
+
+---
+
+# 🛣️ Roadmap
+
+Future ideas include:
+
+- [ ] File uploads
+- [ ] Video & audio responses
+- [ ] Rich media support
+- [ ] Multi-language dashboard
+- [ ] Scheduled broadcasts
+- [ ] Analytics dashboard
+- [ ] Import / Export commands
+- [ ] Backup & Restore
+- [ ] Plugin system
+- [ ] Theme customization
+
+---
+
+# 🤝 Contributing
+
+Contributions are always welcome.
+
+You can help by:
+
+- Reporting bugs
+- Suggesting features
+- Improving documentation
+- Opening Pull Requests
+- Sharing ideas
+
+Before submitting major changes, please open an issue to discuss your proposal.
+
+---
+
+# ⭐ Support the Project
+
+If Nyxx helped you, consider supporting the project by giving it a ⭐ on GitHub.
+
+It helps more people discover the project and motivates future development.
+
+---
+
+# 📜 License
+
+This project is licensed under the MIT License.
+
+Feel free to use, modify, and distribute it according to the license terms.
+
+---
+
+# ❤️ Credits
+
+Created and maintained by **Mahan (@Mahan07dev)**.
+
+Special thanks to:
+
+- Cloudflare
+- Telegram
+- Everyone who tests, reports bugs, and contributes to the project.
+
+---
+
+# 📬 Contact
+
+**GitHub**
+
+https://github.com/Mahan07dev
+
+**Telegram**
+
+https://t.me/Mahan07dev
+
+---
+
+<div align="center">
+
+## 🚀 Ready to build your own Telegram Bot?
+
+### Start here:
+
+# 👉 https://mahan07dev.github.io/Nyxx/installer
+
+---
+
+Made with ❤️ using Cloudflare Workers & Telegram Bot API.
+
+If you like this project, don't forget to ⭐ the repository.
+
+</div>
