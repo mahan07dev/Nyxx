@@ -1,6 +1,7 @@
 <div align="center">
 
 <img src="https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/logo.webp" width="130" alt="Nyxx Logo">
+<br>
 
 # Nyxx
 
