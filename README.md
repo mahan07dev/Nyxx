@@ -10,6 +10,7 @@ A modern, self-hosted Telegram Bot Builder with an intuitive web dashboard, one-
 
 <p>
 <a href="https://mahan07dev.github.io/Nyxx/installer"><img src="https://img.shields.io/badge/🚀%20One--Click%20Installer-Live-7c3aed?style=for-the-badge" /></a>
+<br><br>
 <a href="https://github.com/Mahan07dev/Nyxx/releases">
   <img src="https://img.shields.io/github/v/release/Mahan07dev/Nyxx?style=for-the-badge" alt="Latest Version">
 </a>
