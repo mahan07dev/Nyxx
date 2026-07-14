@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nyxx – Installer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: #0f172a;
+            color: #e2e8f0;
+            font-family: system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .container {
+            max-width: 700px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            width: 100%;
+        }
+        .card {
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 2rem;
+            border: 1px solid #334155;
+            box-shadow: 0 20px 40px -12px rgba(0,0,0,0.6);
+        }
+        .step { display: block; }
+        .step-hidden { display: none !important; }
+        .step-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 0.5rem;
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .step-title img { height: 40px; }
+        .form-group { margin-bottom: 1.25rem; }
+        .form-label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.25rem; }
+        .form-input {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 0.6rem 0.75rem;
+            color: #f1f5f9;
+            width: 100%;
+            font-family: ui-monospace, monospace;
+            font-size: 0.9rem;
+        }
+        .form-input:focus { border-color: #3b82f6; outline: none; }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 700;
+            padding: 0.6rem 1.2rem;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 1rem;
+        }
+        .btn-primary { background: #3b82f6; color: white; }
+        .btn-primary:hover { background: #2563eb; }
+        .btn-success { background: #22c55e; color: white; }
+        .btn-success:hover { background: #16a34a; }
+        .btn-gray { background: #334155; color: #e2e8f0; }
+        .btn-gray:hover { background: #475569; }
+        .btn-block { width: 100%; justify-content: center; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .log-container {
+            background: #0f172a;
+            color: #4ade80;
+            font-family: ui-monospace, monospace;
+            font-size: 0.8rem;
+            padding: 0.75rem;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            white-space: pre-wrap;
+            word-break: break-word;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 1rem;
+        }
+        .log-error { color: #f87171; }
+        .log-success { color: #4ade80; }
+        .spinner {
+            border: 3px solid rgba(255,255,255,0.15);
+            border-radius: 50%;
+            border-top: 3px solid #3b82f6;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .footer {
+            text-align: center;
+            padding: 1.5rem 0 0.5rem;
+            border-top: 1px solid #334155;
+            margin-top: 2rem;
+            font-size: 0.875rem;
+            color: #94a3b8;
+        }
+        .footer a { color: #60a5fa; margin: 0 0.5rem; }
+        .flex { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; }
+        .mt-4 { margin-top: 1.5rem; }
+        .text-center { text-align: center; }
+        .hidden { display: none !important; }
+        .text-sm { font-size: 0.875rem; color: #94a3b8; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="card">
+        <!-- STEP 0: Splash -->
+        <div id="step-0" class="step">
+            <div class="step-title">
+                <img src="https://raw.githubusercontent.com/mahan07dev/Nyxx/refs/heads/main/logo.webp" alt="Nyxx">
+                Nyxx Installer
+            </div>
+            <div class="text-center" style="padding: 1rem 0;">
+                <p style="font-size: 1.25rem; font-weight: 600;">Welcome to Nyxx</p>
+                <p style="color: #94a3b8;">This wizard will set up your Cloudflare Worker and D1 database automatically.</p>
+                <p style="color: #64748b; font-size: 0.9rem;">Made with ❤️ by <strong>@Mahan07dev</strong></p>
+                <div style="margin: 1.5rem 0;">
+                    <a href="https://github.com/Mahan07dev" target="_blank" class="btn btn-gray"><i class="fa-brands fa-github"></i> GitHub</a>
+                    <a href="https://t.me/Mahan07dev" target="_blank" class="btn btn-gray"><i class="fa-brands fa-telegram"></i> Telegram</a>
+                </div>
+                <button onclick="goToStep1()" class="btn btn-primary btn-block">Start Setup →</button>
+            </div>
+        </div>
+
+        <!-- STEP 1: Token & Account -->
+        <div id="step-1" class="step step-hidden">
+            <div class="step-title"><i class="fa-solid fa-key"></i> Step 1: Cloudflare Token</div>
+            <p class="text-sm">We need a token with permissions to edit Workers and D1.</p>
+            <div class="form-group">
+                <label class="form-label">1. Get Your Token</label>
+                <button onclick="openTokenPage()" class="btn btn-gray btn-block">
+                    <i class="fa-solid fa-key" style="color:#facc15;"></i> Create Token (opens Cloudflare)
+                </button>
+                <p class="text-sm" style="margin-top: 0.25rem;">The token must have <strong>Edit</strong> permissions for Workers Scripts and D1.</p>
+            </div>
+            <div class="form-group">
+                <label class="form-label">2. Paste Your API Token</label>
+                <input type="password" id="cf-token" class="form-input" placeholder="Paste token here" oninput="autoDiscover()">
+            </div>
+            <div id="discovery-status" class="hidden text-sm" style="padding: 0.5rem 0; color: #94a3b8;"><span class="spinner"></span> Discovering account...</div>
+            <div id="account-info" class="hidden" style="margin: 1rem 0; background: #0f172a; border-radius: 8px; padding: 1rem; border: 1px solid #334155;">
+                <div><strong>Account ID:</strong> <span id="account-id-display">-</span></div>
+                <div><strong>Worker Subdomain:</strong> <span id="subdomain-display">-</span></div>
+                <div class="form-group" style="margin-top: 0.75rem;">
+                    <label class="form-label">Worker Script Name</label>
+                    <input id="script-name" class="form-input" placeholder="nyxx-bot" value="nyxx-bot">
+                </div>
+            </div>
+            <button id="btn-provision" class="btn btn-success btn-block" disabled onclick="startProvision()">🚀 Provision & Deploy</button>
+            <div id="provision-logs" class="log-container hidden"></div>
+            <div id="final-url" class="hidden" style="margin-top: 1.5rem; background: #0f172a; border-radius: 8px; padding: 1rem; border: 1px solid #22c55e; text-align: center;">
+                <p style="color: #4ade80; font-weight: 600;">✅ Deployment successful!</p>
+                <p>Your panel is live at:</p>
+                <p><a id="worker-url-link" href="#" target="_blank" style="font-size: 1.2rem; color: #60a5fa;"></a></p>
+                <button onclick="window.open(document.getElementById('worker-url-link').href, '_blank')" class="btn btn-primary"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open Panel</button>
+                <p class="text-sm" style="margin-top: 0.5rem;">The panel will ask you to set an admin password and (optionally) a bot token.</p>
+            </div>
+        </div>
+    </div>
+    <div class="footer">
+        Built with ❤️ by <span style="color: #60a5fa;">@Mahan07dev</span> &bull; v2.0
+    </div>
+</div>
+
+<script>
+    // ============================
+    // STEP NAVIGATION
+    // ============================
+    function goToStep1() {
+        document.getElementById('step-0').classList.add('step-hidden');
+        document.getElementById('step-1').classList.remove('step-hidden');
+    }
+
+    // ============================
+    // TOKEN DEEP-LINK
+    // ============================
+    function openTokenPage() {
+        const permissions = [
+            { "key": "workers_scripts", "type": "edit" },
+            { "key": "d1", "type": "edit" },
+            { "key": "account", "type": "read" }
+        ];
+        const url = "https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=" +
+            encodeURIComponent(JSON.stringify(permissions)) +
+            "&accountId=*&zoneId=all&name=Nyxx%20Installer";
+        window.open(url, "_blank", "noopener");
+    }
+
+    // ============================
+    // AUTO DISCOVERY
+    // ============================
+    let discoveredAccountId = null;
+    let discoveredSubdomain = null;
+
+    async function autoDiscover() {
+        const token = document.getElementById('cf-token').value.trim();
+        if (token.length < 20) return;
+        const statusEl = document.getElementById('discovery-status');
+        statusEl.classList.remove('hidden');
+        statusEl.innerHTML = '<span class="spinner"></span> Checking token...';
+
+        try {
+            // Get accounts
+            const accRes = await fetch('https://api.cloudflare.com/client/v4/accounts', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const accData = await accRes.json();
+            if (!accData.success || !accData.result || accData.result.length === 0) {
+                throw new Error('No accounts found or invalid token.');
+            }
+            const account = accData.result[0];
+            discoveredAccountId = account.id;
+
+            // Get subdomain
+            const subRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${discoveredAccountId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const subData = await subRes.json();
+            discoveredSubdomain = subData.result.subdomain || '';
+
+            document.getElementById('account-id-display').textContent = discoveredAccountId;
+            document.getElementById('subdomain-display').textContent = discoveredSubdomain || '(not available)';
+            document.getElementById('account-info').classList.remove('hidden');
+            document.getElementById('btn-provision').disabled = false;
+            statusEl.classList.add('hidden');
+        } catch (err) {
+            statusEl.innerHTML = '<span class="log-error">❌ ' + err.message + '</span>';
+        }
+    }
+
+    // ============================
+    // PROVISION
+    // ============================
+    async function startProvision() {
+        const token = document.getElementById('cf-token').value.trim();
+        const scriptName = document.getElementById('script-name').value.trim() || 'nyxx-bot';
+        const accountId = discoveredAccountId;
+        if (!token || !accountId) {
+            alert('Missing token or account ID.');
+            return;
+        }
+
+        const btn = document.getElementById('btn-provision');
+        const logs = document.getElementById('provision-logs');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Provisioning...';
+        logs.classList.remove('hidden');
+        logs.innerHTML = '';
+
+        const log = (msg, type = '') => {
+            const line = document.createElement('div');
+            line.textContent = msg;
+            if (type) line.className = type;
+            logs.appendChild(line);
+            logs.scrollTop = logs.scrollHeight;
+        };
+
+        try {
+            // 1. Fetch worker code from same directory
+            log('[1/4] Loading worker code from worker.js...');
+            const workerResponse = await fetch('worker.js');
+            if (!workerResponse.ok) {
+                throw new Error(`Failed to fetch worker.js: ${workerResponse.status}`);
+            }
+            const workerCode = await workerResponse.text();
+            if (!workerCode) {
+                throw new Error('worker.js is empty.');
+            }
+            log('[1/4] ✅ Worker code loaded.', 'log-success');
+            await delay(3000);
+
+            // 2. Create D1
+            log('[2/4] Creating D1 database...');
+            const d1Res = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name: `nyxx_db_${Date.now()}` })
+            });
+            const d1Data = await d1Res.json();
+            if (!d1Data.success) {
+                throw new Error('D1 creation failed: ' + JSON.stringify(d1Data.errors));
+            }
+            const d1Uuid = d1Data.result.uuid;
+            log('[2/4] ✅ D1 created: ' + d1Uuid, 'log-success');
+            await delay(3000);
+
+            // 3. Upload worker with binding
+            log('[3/4] Uploading worker script with D1 binding...');
+            const formData = new FormData();
+            const metadata = {
+                main_module: "worker.js",
+                bindings: [
+                    { type: "d1", name: "DB", id: d1Uuid }
+                ]
+            };
+            formData.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
+            formData.append("worker.js", new Blob([workerCode], { type: "application/javascript+module" }));
+            const uploadRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${scriptName}`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+            const uploadData = await uploadRes.json();
+            if (!uploadData.success) {
+                throw new Error('Upload failed: ' + JSON.stringify(uploadData.errors));
+            }
+            log('[3/4] ✅ Worker uploaded with binding.', 'log-success');
+            await delay(3000);
+
+            // 4. Build URL
+            log('[4/4] Fetching worker URL...');
+            let workerUrl = `https://${scriptName}.${discoveredSubdomain}.workers.dev`;
+            if (!discoveredSubdomain) {
+                workerUrl = `https://${scriptName}.<subdomain>.workers.dev (check your Cloudflare dashboard)`;
+            }
+            log('[4/4] ✅ Done!', 'log-success');
+
+            // Show final
+            document.getElementById('worker-url-link').href = workerUrl;
+            document.getElementById('worker-url-link').textContent = workerUrl;
+            document.getElementById('final-url').classList.remove('hidden');
+            btn.innerHTML = '✅ Deployed';
+            btn.disabled = true;
+
+        } catch (err) {
+            log('❌ Error: ' + err.message, 'log-error');
+            btn.innerHTML = 'Retry';
+            btn.disabled = false;
+        }
+    }
+
+    function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+</script>
+</body>
+</html>
