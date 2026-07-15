@@ -556,7 +556,7 @@ https://github.com/Mahan07dev
 
 **Telegram**
 
-https://t.me/Mahan07dev
+https://t.me/nyxx_official_channel
 
 ---
 
