@@ -1,7 +1,7 @@
 // ============================================================================
 // GLOBAL VERSION
 // ============================================================================
-const VERSION = '2.0.1'; // bump on each release
+const VERSION = '2.1.0'; // bump on each release
 
 // ============================================================================
 // EMBEDDED DASHBOARD HTML (with update tab)
@@ -549,7 +549,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 <div class="panel" style="display:flex; flex-direction:column; gap:1.5rem;">
                     <div>
                         <label class="form-label">Bot Token</label>
-                        <div class="flex gap-2">
+                        <div class="flex gap-2" style="flex-wrap: nowrap;">
                             <input type="password" id="settings-bot-token" class="form-input" style="background:#1e293b; border-color:#475569; color:#e2e8f0; font-family:monospace;" readonly>
                             <button onclick="toggleTokenVisibility()" class="btn btn-gray btn-sm"><i class="fa-regular fa-eye"></i></button>
                         </div>
@@ -617,7 +617,9 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                     <div>
                         <label class="form-label">Cloudflare API Token</label>
                         <input type="password" id="update-cf-token" class="form-input" placeholder="Your Cloudflare API token (requires Workers Scripts:Edit)">
-                        <button onclick="validateToken()" class="btn btn-primary btn-sm" style="margin-top:0.5rem;"><i class="fa-solid fa-check"></i> Validate Token</button>
+                        <div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.5rem;">
+                            <button onclick="openTokenGenerator()" class="btn btn-gray btn-sm"><i class="fa-solid fa-key"></i> Auto‑Generate API Token</button>
+                        </div>
                         <div id="update-validation-result" class="hidden" style="margin-top:0.5rem; font-size:0.875rem;"></div>
                     </div>
                     <button id="update-btn" class="btn btn-success" disabled><i class="fa-solid fa-cloud-arrow-up"></i> Update to Latest</button>
@@ -736,7 +738,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             <h3 class="modal-title">About Nyxx</h3>
             <p><strong>Nyxx</strong> is a full-featured Telegram bot builder running on Cloudflare Workers.</p>
             <p>Built with ❤️ by <a href="https://github.com/Mahan07dev" target="_blank">@Mahan07dev</a></p>
-            <p>Version 2.0.1</p>
+            <p>Version ${VERSION}</p>
             <div style="margin-top:1rem;">
                 <a href="https://github.com/Mahan07dev/Nyxx" target="_blank" class="btn btn-gray btn-block"><i class="fa-brands fa-github"></i> Source Code</a>
             </div>
@@ -761,6 +763,13 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         let pathSegments = [];
         let childrenMap = {};
         let menuCommands = [];
+
+        // Update-related globals
+        let cfAccountId = null;
+        let cfScriptName = null;
+        let latestVersion = null;
+        let updateAvailable = false;
+        let workerUrl = null;
 
         function showToast(message, type) {
             type = type || 'success';
@@ -941,7 +950,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             else if (tabId === 'users') loadUsers();
             else if (tabId === 'settings') loadSettings();
             else if (tabId === 'botinfo') loadBotInfo();
-            else if (tabId === 'update') checkForUpdate();
+            else if (tabId === 'update') loadUpdateTab();
             closeHamburger();
         }
 
@@ -1466,6 +1475,10 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             .then(function(data) {
                 document.getElementById('settings-bot-token').value = data.bot_token || '';
                 document.getElementById('settings-webhook-url').value = data.webhook_url || '';
+                // Also load saved CF token if present
+                if (data.cf_token) {
+                    document.getElementById('update-cf-token').value = data.cf_token;
+                }
             })
             .catch(function(err) { showToast('Error loading settings: ' + err.message, 'error'); });
         }
@@ -1595,8 +1608,17 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         // ============================
         // UPDATE / SELF-UPDATE
         // ============================
-        let cfAccountId = null;
-        let cfScriptName = null;
+        function openTokenGenerator() {
+            const url = 'https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22edit%22%7D%5D&accountId=*&zoneId=all&name=Nyxx%20Updater';
+            window.open(url, '_blank');
+        }
+
+        async function loadUpdateTab() {
+            // Load saved CF token from settings
+            await loadSettings(); // this will fill the token input if saved
+            // Then check for updates
+            await checkForUpdate();
+        }
 
         async function checkForUpdate() {
             const latestInput = document.getElementById('update-latest-version');
@@ -1608,90 +1630,126 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 const data = await res.json();
                 if (data.latest) {
                     latestInput.value = data.latest;
+                    latestVersion = data.latest;
+                    workerUrl = data.worker_url || null;
                     let details = '';
                     if (data.released) details += '📅 Released: ' + data.released;
                     if (data.notes) details += (details ? ' | ' : '') + '📝 Notes: ' + data.notes;
                     detailsDiv.innerText = details || '';
+                    // Compare versions
+                    updateAvailable = compareVersions(data.latest, data.current) > 0;
                 } else {
                     latestInput.value = 'Error: ' + (data.error || 'unknown');
+                    updateAvailable = false;
                 }
             } catch (e) {
                 latestInput.value = 'Error: ' + e.message;
+                updateAvailable = false;
+            }
+            updateUpdateButtonState();
+        }
+
+        function compareVersions(v1, v2) {
+            const parts1 = v1.split('.').map(Number);
+            const parts2 = v2.split('.').map(Number);
+            for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+                const n1 = parts1[i] || 0;
+                const n2 = parts2[i] || 0;
+                if (n1 > n2) return 1;
+                if (n1 < n2) return -1;
+            }
+            return 0;
+        }
+
+        function updateUpdateButtonState() {
+            const btn = document.getElementById('update-btn');
+            // Enable only if update is available (token validation will happen on click)
+            if (updateAvailable) {
+                btn.disabled = false;
+                btn.title = 'Update available';
+            } else {
+                btn.disabled = true;
+                btn.title = 'No update available or already latest';
             }
         }
 
-        async function validateToken() {
-            const token = document.getElementById('update-cf-token').value.trim();
-            const resultDiv = document.getElementById('update-validation-result');
-            const updateBtn = document.getElementById('update-btn');
+        // The "Update to Latest" button click handler – validates token and then updates
+        document.getElementById('update-btn').addEventListener('click', performUpdate);
 
-            resultDiv.classList.remove('hidden');
-            resultDiv.innerText = 'Validating...';
-            resultDiv.style.color = '#94a3b8';
+        async function performUpdate() {
+            const statusDiv = document.getElementById('update-status');
+            statusDiv.classList.remove('hidden');
+            statusDiv.innerText = 'Preparing...';
+            statusDiv.style.color = '#94a3b8';
 
-            if (!token) {
-                resultDiv.innerText = '❌ Please enter a token.';
-                resultDiv.style.color = '#f87171';
+            // 1. Check if update is available
+            if (!updateAvailable) {
+                statusDiv.innerText = '❌ No update available.';
+                statusDiv.style.color = '#f87171';
                 return;
             }
 
+            // 2. Get token
+            const token = document.getElementById('update-cf-token').value.trim();
+            if (!token) {
+                statusDiv.innerText = '❌ Please enter a Cloudflare API token.';
+                statusDiv.style.color = '#f87171';
+                return;
+            }
+
+            // 3. Validate token and get account/script info
+            const resultDiv = document.getElementById('update-validation-result');
+            resultDiv.classList.remove('hidden');
+            resultDiv.innerText = 'Validating token...';
+            resultDiv.style.color = '#94a3b8';
+
+            let validationData;
             try {
                 const res = await fetch('/api/update/validate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ token })
                 });
-                const data = await res.json();
-                if (!data.valid) {
-                    resultDiv.innerText = '❌ ' + (data.error || 'Invalid token');
-                    resultDiv.style.color = '#f87171';
-                    updateBtn.disabled = true;
-                    return;
+                validationData = await res.json();
+                if (!validationData.valid) {
+                    throw new Error(validationData.error || 'Invalid token');
                 }
-
-                resultDiv.innerText = '✅ Token valid. Auto‑detected Account and Script.';
+                resultDiv.innerText = '✅ Token validated. Account: ' + validationData.accountId + ', Script: ' + validationData.scriptName;
                 resultDiv.style.color = '#4ade80';
-
-                cfAccountId = data.accountId;
-                cfScriptName = data.scriptName;
-                updateBtn.disabled = false;
             } catch (e) {
-                resultDiv.innerText = '❌ ' + e.message;
+                resultDiv.innerText = '❌ Token validation failed: ' + e.message;
                 resultDiv.style.color = '#f87171';
-                updateBtn.disabled = true;
-            }
-        }
-
-        document.getElementById('update-btn').addEventListener('click', performUpdate);
-
-        async function performUpdate() {
-            const token = document.getElementById('update-cf-token').value.trim();
-            const statusDiv = document.getElementById('update-status');
-            statusDiv.classList.remove('hidden');
-            statusDiv.innerText = 'Updating...';
-            statusDiv.style.color = '#94a3b8';
-
-            if (!token || !cfAccountId || !cfScriptName) {
-                statusDiv.innerText = '❌ Token, Account ID, and Script Name required. Please validate first.';
+                statusDiv.innerText = '❌ Update aborted: token invalid.';
                 statusDiv.style.color = '#f87171';
                 return;
             }
 
+            const accountId = validationData.accountId;
+            const scriptName = validationData.scriptName;
+            if (!accountId || !scriptName) {
+                statusDiv.innerText = '❌ Could not determine Account ID or Script Name.';
+                statusDiv.style.color = '#f87171';
+                return;
+            }
+
+            // 4. Perform the update
+            statusDiv.innerText = 'Updating...';
+            statusDiv.style.color = '#94a3b8';
+
             try {
-                const res = await fetch('/api/update', {
+                const updateRes = await fetch('/api/update', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token, accountId: cfAccountId, scriptName: cfScriptName })
+                    body: JSON.stringify({ token, accountId, scriptName, workerUrl })
                 });
-                const data = await res.json();
-                if (!data.success) {
-                    statusDiv.innerText = '❌ ' + (data.error || 'Update failed');
-                    statusDiv.style.color = '#f87171';
-                    return;
+                const updateData = await updateRes.json();
+                if (!updateData.success) {
+                    throw new Error(updateData.error || 'Update failed');
                 }
-                statusDiv.innerText = '✅ Update successful! New version: ' + (data.version || 'unknown');
+                statusDiv.innerText = '✅ Update successful! New version: ' + (updateData.version || 'unknown');
                 statusDiv.style.color = '#4ade80';
-                checkForUpdate();
+                // Refresh version info
+                await checkForUpdate();
                 showToast('Update completed! The worker has been updated.', 'success');
             } catch (e) {
                 statusDiv.innerText = '❌ ' + e.message;
@@ -2003,12 +2061,13 @@ async function handleLogout(request, env) {
     });
 }
 
-// NEW: version info with release date and notes
+// NEW: version info with release date, notes, and worker_url
 async function getVersionInfo(env) {
     const current = VERSION;
     let latest = null;
     let released = null;
     let notes = null;
+    let workerUrl = null;
     try {
         const res = await fetch('https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/version.json');
         if (res.ok) {
@@ -2016,6 +2075,7 @@ async function getVersionInfo(env) {
             latest = data.version || null;
             released = data.released || null;
             notes = data.notes || null;
+            workerUrl = data.worker_url || null;
         } else {
             // Fallback: parse worker.js for VERSION constant
             const workerRes = await fetch('https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/worker.js');
@@ -2028,7 +2088,7 @@ async function getVersionInfo(env) {
     } catch (e) {
         // ignore
     }
-    return Response.json({ current, latest, released, notes });
+    return Response.json({ current, latest, released, notes, worker_url: workerUrl });
 }
 
 // ============================================================================
@@ -2226,7 +2286,7 @@ async function updateUserRole(request, env) {
 }
 
 // ============================================================================
-// SETTINGS API (unchanged)
+// SETTINGS API (extended with CF token)
 // ============================================================================
 async function getSettings(env, originUrl) {
     if (!env.DB) return Response.json({ error: "DB not available" }, { status: 500 });
@@ -2234,9 +2294,15 @@ async function getSettings(env, originUrl) {
         await initializeDatabase(env.DB);
         const token = await env.DB.prepare("SELECT value FROM settings WHERE key = 'bot_token'").first();
         const webhook = await env.DB.prepare("SELECT value FROM settings WHERE key = 'webhook_url'").first();
+        const cfToken = await env.DB.prepare("SELECT value FROM settings WHERE key = 'cf_api_token'").first();
+        const cfAccount = await env.DB.prepare("SELECT value FROM settings WHERE key = 'cf_account_id'").first();
+        const cfScript = await env.DB.prepare("SELECT value FROM settings WHERE key = 'cf_script_name'").first();
         return Response.json({
             bot_token: token ? token.value : '',
-            webhook_url: webhook ? webhook.value : `${originUrl}/webhook`
+            webhook_url: webhook ? webhook.value : `${originUrl}/webhook`,
+            cf_token: cfToken ? cfToken.value : '',
+            cf_account_id: cfAccount ? cfAccount.value : '',
+            cf_script_name: cfScript ? cfScript.value : ''
         });
     } catch (err) {
         return Response.json({ error: err.message }, { status: 500 });
@@ -2476,7 +2542,7 @@ async function validateCloudflareToken(request, env) {
 async function performUpdate(request, env) {
     try {
         const body = await request.json();
-        const { token, accountId, scriptName } = body;
+        const { token, accountId, scriptName, workerUrl } = body;
         if (!token || !accountId || !scriptName) {
             return Response.json({ success: false, error: 'Token, Account ID, and Script Name required' }, { status: 400 });
         }
@@ -2500,32 +2566,18 @@ async function performUpdate(request, env) {
             bindings = settingsData.result.bindings;
         }
 
-        // Determine latest version from GitHub
-        let latestVersion = null;
-        const versionRes = await fetch('https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/version.json');
-        if (versionRes.ok) {
-            const versionData = await versionRes.json();
-            if (versionData.version) latestVersion = versionData.version;
-        }
-        if (!latestVersion) {
-            // Fallback: parse worker.js
-            const workerRes = await fetch('https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/worker.js');
-            if (workerRes.ok) {
-                const text = await workerRes.text();
-                const match = text.match(/const\s+VERSION\s*=\s*['"]([^'"]+)['"]/);
-                if (match) latestVersion = match[1];
-            }
-        }
-        if (!latestVersion) {
-            return Response.json({ success: false, error: 'Could not determine latest version' }, { status: 500 });
-        }
-
-        // Download the new worker script
-        const scriptRes = await fetch('https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/worker.js');
+        // Download the new worker script from the provided workerUrl (or fallback)
+        let scriptUrl = workerUrl || 'https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/worker.js';
+        const scriptRes = await fetch(scriptUrl);
         if (!scriptRes.ok) {
-            return Response.json({ success: false, error: 'Failed to download worker script' }, { status: 500 });
+            return Response.json({ success: false, error: 'Failed to download worker script from ' + scriptUrl }, { status: 500 });
         }
         const scriptText = await scriptRes.text();
+
+        // Extract version from downloaded script (optional, for info)
+        let newVersion = null;
+        const match = scriptText.match(/const\s+VERSION\s*=\s*['"]([^'"]+)['"]/);
+        if (match) newVersion = match[1];
 
         // Prepare upload metadata with bindings
         const metadata = {
@@ -2548,12 +2600,14 @@ async function performUpdate(request, env) {
         }
 
         // Store update version
-        await env.DB.prepare(`
-            INSERT INTO settings (key, value) VALUES ('last_update_version', ?)
-            ON CONFLICT(key) DO UPDATE SET value = excluded.value
-        `).bind(latestVersion).run();
+        if (newVersion) {
+            await env.DB.prepare(`
+                INSERT INTO settings (key, value) VALUES ('last_update_version', ?)
+                ON CONFLICT(key) DO UPDATE SET value = excluded.value
+            `).bind(newVersion).run();
+        }
 
-        return Response.json({ success: true, version: latestVersion });
+        return Response.json({ success: true, version: newVersion || 'unknown' });
     } catch (e) {
         return Response.json({ success: false, error: e.message }, { status: 500 });
     }
