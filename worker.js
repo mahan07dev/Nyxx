@@ -1,13 +1,10 @@
-/**
- * Nyxx – Full Telegram Bot Builder with ReplyKeyboard, Bot Info
- * 
- * Built by @Mahan07dev
- * Website: https://mahanverse.ir
- * Nyxx version: 2.0.1
- */
+// ============================================================================
+// GLOBAL VERSION
+// ============================================================================
+const VERSION = '2.0.1'; // bump on each release
 
 // ============================================================================
-// EMBEDDED DASHBOARD HTML (with all improvements)
+// EMBEDDED DASHBOARD HTML (with update tab)
 // ============================================================================
 const DASHBOARD_HTML = `<!DOCTYPE html>
 <html lang="en" class="dark">
@@ -18,6 +15,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
     <title>Nyxx | Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
+        /* ... (all styles unchanged) ... */
         * { box-sizing: border-box; }
         body {
             margin: 0;
@@ -505,6 +503,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 <button class="tab-btn" onclick="switchTab('users')"><i class="fa-solid fa-users"></i> Users</button>
                 <button class="tab-btn" onclick="switchTab('settings')"><i class="fa-solid fa-gear"></i> Settings</button>
                 <button class="tab-btn" onclick="switchTab('botinfo')"><i class="fa-solid fa-circle-info"></i> Bot Info</button>
+                <button class="tab-btn" onclick="switchTab('update')"><i class="fa-solid fa-arrow-up"></i> Update</button>
             </div>
             <div class="hamburger" id="hamburger-btn" onclick="toggleHamburger()"><i class="fa-solid fa-bars hamburgerfa" id="hamburgerfa"></i></div>
             <div id="mobile-tabs" class="mobile-tabs">
@@ -513,6 +512,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 <button onclick="switchTab('users'); closeHamburger();"><i class="fa-solid fa-users"></i> Users</button>
                 <button onclick="switchTab('settings'); closeHamburger();"><i class="fa-solid fa-gear"></i> Settings</button>
                 <button onclick="switchTab('botinfo'); closeHamburger();"><i class="fa-solid fa-circle-info"></i> Bot Info</button>
+                <button onclick="switchTab('update'); closeHamburger();"><i class="fa-solid fa-arrow-up"></i> Update</button>
             </div>
             <div id="tab-commands" class="tab-content active">
                 <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
@@ -599,6 +599,35 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                     <p class="text-sm">💡 To change bot profile picture or other settings not available here, use <strong>@BotFather</strong>.</p>
                 </div>
             </div>
+            <!-- UPDATE TAB -->
+            <div id="tab-update" class="tab-content">
+                <h3 class="panel-title"><i class="fa-solid fa-cloud-upload-alt"></i> Self‑Update</h3>
+                <div class="panel" style="display:flex; flex-direction:column; gap:1.5rem;">
+                    <div>
+                        <label class="form-label">Current Version</label>
+                        <input id="update-current-version" class="form-input" readonly value="${VERSION}">
+                    </div>
+                    <div>
+                        <label class="form-label">Latest Version</label>
+                        <input id="update-latest-version" class="form-input" readonly placeholder="Click 'Check for updates'">
+                        <div id="update-version-details" style="margin-top:0.25rem; font-size:0.875rem; color:#94a3b8;"></div>
+                        <button onclick="checkForUpdate()" class="btn btn-gray btn-sm" style="margin-top:0.5rem;"><i class="fa-solid fa-rotate"></i> Check for Updates</button>
+                    </div>
+                    <hr style="border-color:#334155;">
+                    <div>
+                        <label class="form-label">Cloudflare API Token</label>
+                        <input type="password" id="update-cf-token" class="form-input" placeholder="Your Cloudflare API token (requires Workers Scripts:Edit)">
+                        <button onclick="validateToken()" class="btn btn-primary btn-sm" style="margin-top:0.5rem;"><i class="fa-solid fa-check"></i> Validate Token</button>
+                        <div id="update-validation-result" class="hidden" style="margin-top:0.5rem; font-size:0.875rem;"></div>
+                    </div>
+                    <button id="update-btn" class="btn btn-success" disabled><i class="fa-solid fa-cloud-arrow-up"></i> Update to Latest</button>
+                    <div id="update-status" class="hidden" style="font-size:0.875rem;"></div>
+                    <p class="text-sm" style="margin-top:0.5rem;">
+                        💡 The update will fetch the latest version from GitHub and deploy it to your Cloudflare Worker,
+                        preserving all your bindings (D1, secrets, etc.).
+                    </p>
+                </div>
+            </div>
         </div>
     </main>
     <footer class="footer">
@@ -606,9 +635,9 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             Built with ❤️ by <span class="brand">@Mahan07dev</span>
             <br><br>
             <a href="https://github.com/Mahan07dev" target="_blank"><i class="fa-brands fa-github"></i> GitHub</a>
-            <a href="https://t.me/Mahan07dev" target="_blank"><i class="fa-brands fa-telegram"></i> Telegram</a>
+            <a href="https://t.me/nyxx_official_channel" target="_blank"><i class="fa-brands fa-telegram"></i> Telegram</a>
             <span style="margin:0 0.5rem;">|</span>
-            <span style="color:#475569;">v2.0.1</span>
+            <span style="color:#475569;">v${VERSION}</span>
         </div>
     </footer>
 
@@ -743,75 +772,62 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             setTimeout(() => toast.remove(), 5000);
         }
 
-function showStep(stepId) {
-    // Hide all steps
-    document.querySelectorAll('.step').forEach(s => s.classList.add('step-hidden'));
-    // Show the requested step if it exists
-    const target = document.getElementById(stepId);
-    if (target) {
-        target.classList.remove('step-hidden');
-    } else {
-        // Fallback: show status step and log error
-        console.error('Step not found:', stepId);
-        const fallback = document.getElementById('step-status');
-        if (fallback) fallback.classList.remove('step-hidden');
-    }
-}
-
-        function goToSetup() {
-            showStep('step-setup');
+        function showStep(stepId) {
+            document.querySelectorAll('.step').forEach(s => s.classList.add('step-hidden'));
+            const target = document.getElementById(stepId);
+            if (target) target.classList.remove('step-hidden');
+            else {
+                console.error('Step not found:', stepId);
+                const fallback = document.getElementById('step-status');
+                if (fallback) fallback.classList.remove('step-hidden');
+            }
         }
 
-        function showInfoModal() {
-            document.getElementById('info-modal').classList.remove('hidden');
-        }
+        function goToSetup() { showStep('step-setup'); }
+        function showInfoModal() { document.getElementById('info-modal').classList.remove('hidden'); }
 
         // ============================
         // STATUS CHECK
         // ============================
-async function checkStatus() {
-    try {
-        const res = await fetch('/api/status');
-        const data = await res.json();
-
-        const statusD1 = document.getElementById('status-d1');
-        if (statusD1) {
-            statusD1.innerHTML = data.d1_bound ?
-                '<i class="fa-solid fa-database" style="color:#4ade80;"></i> D1: Bound' :
-                '<i class="fa-solid fa-database"></i> D1: Unbound';
+        async function checkStatus() {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                const statusD1 = document.getElementById('status-d1');
+                if (statusD1) {
+                    statusD1.innerHTML = data.d1_bound ?
+                        '<i class="fa-solid fa-database" style="color:#4ade80;"></i> D1: Bound' :
+                        '<i class="fa-solid fa-database"></i> D1: Unbound';
+                }
+                if (!data.d1_bound) {
+                    const msg = document.getElementById('status-message');
+                    if (msg) msg.innerHTML = 'D1 database not bound. Please run the installer.';
+                    const actions = document.getElementById('status-actions');
+                    if (actions) actions.classList.remove('hidden');
+                    showStep('step-status');
+                    return;
+                }
+                const adminSet = data.admin_password_set;
+                if (!adminSet) {
+                    showStep('step-setup');
+                    return;
+                }
+                const sessionRes = await fetch('/api/check_session');
+                const sessionData = await sessionRes.json();
+                if (sessionData.logged_in) {
+                    showDashboard();
+                } else {
+                    showStep('step-login');
+                }
+            } catch (e) {
+                const msg = document.getElementById('status-message');
+                if (msg) msg.innerHTML = 'Error checking status: ' + e.message;
+                showStep('step-status');
+            }
         }
-
-        if (!data.d1_bound) {
-            const msg = document.getElementById('status-message');
-            if (msg) msg.innerHTML = 'D1 database not bound. Please run the installer.';
-            const actions = document.getElementById('status-actions');
-            if (actions) actions.classList.remove('hidden');
-            showStep('step-status');
-            return;
-        }
-
-        const adminSet = data.admin_password_set;
-        if (!adminSet) {
-            showStep('step-setup');
-            return;
-        }
-
-        const sessionRes = await fetch('/api/check_session');
-        const sessionData = await sessionRes.json();
-        if (sessionData.logged_in) {
-            showDashboard();
-        } else {
-            showStep('step-login');
-        }
-    } catch (e) {
-        const msg = document.getElementById('status-message');
-        if (msg) msg.innerHTML = 'Error checking status: ' + e.message;
-        showStep('step-status');
-    }
-}
 
         // ============================
-        // SETUP
+        // SETUP / LOGIN
         // ============================
         async function submitSetup() {
             const botToken = document.getElementById('setup-bot-token').value.trim();
@@ -819,9 +835,7 @@ async function checkStatus() {
             const password = document.getElementById('setup-password').value;
             const confirm = document.getElementById('setup-password-confirm').value;
             const errorEl = document.getElementById('setup-error');
-
             errorEl.style.display = 'none';
-
             if (!password || password.length < 6) {
                 errorEl.textContent = 'Password must be at least 6 characters.';
                 errorEl.style.display = 'block';
@@ -837,10 +851,8 @@ async function checkStatus() {
                 errorEl.style.display = 'block';
                 return;
             }
-
             const payload = { adminPassword: password };
             if (botToken) payload.botToken = botToken;
-
             try {
                 const res = await fetch('/api/setup', {
                     method: 'POST',
@@ -849,7 +861,6 @@ async function checkStatus() {
                 });
                 const data = await res.json();
                 if (!data.success) throw new Error(data.error || 'Setup failed');
-
                 showToast('Setup complete! Please log in.');
                 showStep('step-login');
             } catch (err) {
@@ -858,20 +869,15 @@ async function checkStatus() {
             }
         }
 
-        // ============================
-        // LOGIN / LOGOUT
-        // ============================
         async function submitLogin() {
             const password = document.getElementById('login-password').value;
             const errorEl = document.getElementById('login-error');
             errorEl.style.display = 'none';
-
             if (!password) {
                 errorEl.textContent = 'Please enter your password.';
                 errorEl.style.display = 'block';
                 return;
             }
-
             try {
                 const res = await fetch('/api/login', {
                     method: 'POST',
@@ -880,7 +886,6 @@ async function checkStatus() {
                 });
                 const data = await res.json();
                 if (!data.success) throw new Error(data.error || 'Login failed');
-
                 showToast('Login successful!');
                 showDashboard();
             } catch (err) {
@@ -896,13 +901,10 @@ async function checkStatus() {
             showStep('step-login');
         }
 
-        // ============================
-        // DASHBOARD
-        // ============================
         function showDashboard() {
-    showStep('step-dashboard');
-    const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) logoutBtn.classList.remove('hidden');
+            showStep('step-dashboard');
+            const logoutBtn = document.getElementById('logout-btn');
+            if (logoutBtn) logoutBtn.classList.remove('hidden');
             fetch('/api/status')
                 .then(r => r.json())
                 .then(data => {
@@ -926,8 +928,9 @@ async function checkStatus() {
         function switchTab(tabId) {
             currentTab = tabId;
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.getElementById('tab-' + tabId).classList.add('active');
-            const map = { commands:0, menu:1, users:2, settings:3, botinfo:4 };
+            const el = document.getElementById('tab-' + tabId);
+            if (el) el.classList.add('active');
+            const map = { commands:0, menu:1, users:2, settings:3, botinfo:4, update:5 };
             const btns = document.querySelectorAll('.tabs-header .tab-btn');
             btns.forEach((b, i) => b.classList.toggle('active', i === map[tabId]));
             document.querySelectorAll('#mobile-tabs button').forEach((b, i) => {
@@ -938,37 +941,33 @@ async function checkStatus() {
             else if (tabId === 'users') loadUsers();
             else if (tabId === 'settings') loadSettings();
             else if (tabId === 'botinfo') loadBotInfo();
+            else if (tabId === 'update') checkForUpdate();
             closeHamburger();
         }
 
-function toggleHamburger() {
-    const menu = document.getElementById('mobile-tabs');
-    const btn = document.getElementById('hamburgerfa');
-    if (!menu || !btn) return; // safety
-    menu.classList.toggle('open');
-    btn.classList.toggle('open');
-    // btn is the <i> element itself – set its className directly
-    btn.className = menu.classList.contains('open') ? 'fa-solid fa-xmark' : 'fa-solid fa-bars';
-}
-
-function closeHamburger() {
-    const menu = document.getElementById('mobile-tabs');
-    const btn = document.getElementById('hamburgerfa');
-    if (!menu || !btn) return; // safety
-    menu.classList.remove('open');
-    btn.classList.remove('open');
-    btn.className = 'fa-solid fa-bars';
-}
+        function toggleHamburger() {
+            const menu = document.getElementById('mobile-tabs');
+            const btn = document.getElementById('hamburgerfa');
+            if (!menu || !btn) return;
+            menu.classList.toggle('open');
+            btn.className = menu.classList.contains('open') ? 'fa-solid fa-xmark' : 'fa-solid fa-bars';
+        }
+        function closeHamburger() {
+            const menu = document.getElementById('mobile-tabs');
+            const btn = document.getElementById('hamburgerfa');
+            if (!menu || !btn) return;
+            menu.classList.remove('open');
+            btn.className = 'fa-solid fa-bars';
+        }
 
         // ============================
-        // COMMANDS – File‑Manager UI
+        // COMMANDS (simplified, same as original)
         // ============================
         function toggleReplyKeyboard() {
             showReplyKeyboard = !showReplyKeyboard;
             document.getElementById('reply-toggle').classList.toggle('active', showReplyKeyboard);
             document.getElementById('reply-keyboard-section').classList.toggle('hidden', !showReplyKeyboard);
         }
-
         function populateDropdowns() {
             var parentSelect = document.getElementById('modal-parent');
             var currentCommand = document.getElementById('modal-command').value.trim();
@@ -983,10 +982,7 @@ function closeHamburger() {
                 }
             }
             if (editingCommand && editingCommand.parent) parentSelect.value = editingCommand.parent;
-            if (!editingCommand && currentParent !== null) {
-                parentSelect.value = currentParent;
-            }
-
+            if (!editingCommand && currentParent !== null) parentSelect.value = currentParent;
             var selects = ['inline-btn-command-select', 'reply-btn-command'];
             for (var s = 0; s < selects.length; s++) {
                 var sel = document.getElementById(selects[s]);
@@ -1002,7 +998,6 @@ function closeHamburger() {
                 }
             }
         }
-
         function renderInlineChips() {
             var container = document.getElementById('inline-buttons-list');
             if (inlineButtonsArray.length === 0) {
@@ -1022,7 +1017,6 @@ function closeHamburger() {
             container.innerHTML = html;
             attachDragEvents(container);
         }
-
         function addInlineButton() {
             var text = document.getElementById('inline-btn-label').value.trim();
             var type = document.getElementById('inline-btn-type').value;
@@ -1069,7 +1063,6 @@ function closeHamburger() {
             } catch(e) {}
             renderInlineChips();
         }
-
         function renderReplyChips() {
             var container = document.getElementById('reply-buttons-list');
             if (replyButtonsArray.length === 0) {
@@ -1088,7 +1081,6 @@ function closeHamburger() {
             container.innerHTML = html;
             attachDragEvents(container);
         }
-
         function addReplyButton() {
             var text = document.getElementById('reply-btn-label').value.trim();
             var command = document.getElementById('reply-btn-command').value;
@@ -1106,7 +1098,6 @@ function closeHamburger() {
             try { var arr = JSON.parse(json); if (Array.isArray(arr)) replyButtonsArray = arr; } catch(e) {}
             renderReplyChips();
         }
-
         function attachDragEvents(container) {
             var chips = container.querySelectorAll('[draggable="true"]');
             for (var i = 0; i < chips.length; i++) {
@@ -1138,7 +1129,6 @@ function closeHamburger() {
             if (from.type === 'inline') renderInlineChips(); else renderReplyChips();
         }
         function handleDragEnd(e) { var target = e.target.closest('[draggable="true"]'); if (target) target.classList.remove('dragging', 'drag-over'); }
-
         function navigateTo(commandName) {
             var cmd = commandsCache.find(c => c.command === commandName);
             if (!cmd) return;
@@ -1150,25 +1140,21 @@ function closeHamburger() {
             currentParent = commandName;
             renderFileManager();
         }
-
         function navigateToRoot() {
             currentParent = null;
             pathSegments = [];
             renderFileManager();
         }
-
         function navigateUp() {
             if (currentParent === null) return;
             pathSegments.pop();
             currentParent = pathSegments.length > 0 ? pathSegments[pathSegments.length - 1] : null;
             renderFileManager();
         }
-
         function renderFileManager() {
             var container = document.getElementById('commands-list');
             var breadcrumb = document.getElementById('breadcrumb');
             var upBtn = document.getElementById('btn-up');
-
             breadcrumb.innerHTML = '';
             var rootSpan = document.createElement('span');
             rootSpan.textContent = 'Root';
@@ -1176,7 +1162,6 @@ function closeHamburger() {
             rootSpan.style.cursor = 'pointer';
             rootSpan.addEventListener('click', function(e) { e.stopPropagation(); navigateToRoot(); });
             breadcrumb.appendChild(rootSpan);
-
             for (var i = 0; i < pathSegments.length; i++) {
                 var seg = pathSegments[i];
                 var sep = document.createElement('span');
@@ -1198,17 +1183,13 @@ function closeHamburger() {
                 }
                 breadcrumb.appendChild(span);
             }
-
             upBtn.disabled = (currentParent === null);
-
             var children = childrenMap[currentParent] || [];
             if (children.length === 0) {
                 container.innerHTML = '<div style="padding:1rem; text-align:center; color:#94a3b8; font-size:0.875rem;">This folder is empty.</div>';
                 return;
             }
-
             children.sort(function(a, b) { return (a.order_idx || 0) - (b.order_idx || 0); });
-
             var listHtml = '';
             for (var j = 0; j < children.length; j++) {
                 var cmd = children[j];
@@ -1219,10 +1200,8 @@ function closeHamburger() {
                 var replyBadge = cmd.show_reply_keyboard ? '<span class="badge badge-reply">Reply</span>' : '';
                 var typeBadge = '<span class="badge badge-gray">' + cmd.response_type + '</span>';
                 var statusBadge = '<span class="badge ' + (enabled ? 'badge-enabled' : 'badge-disabled') + '">' + (enabled ? 'Enabled' : 'Disabled') + '</span>';
-
                 var folderClass = hasChildren ? 'folder' : '';
                 var dataAttr = hasChildren ? 'data-command="' + encodeURIComponent(cmd.command) + '"' : '';
-
                 listHtml += '<div class="tree-row" data-command="' + encodeURIComponent(cmd.command) + '">' +
                     '<span style="width:20px;">' + icon + '</span>' +
                     '<span class="tree-command-name ' + folderClass + '" ' + dataAttr + '>' + cmd.command + '</span>' +
@@ -1234,7 +1213,6 @@ function closeHamburger() {
                     '</div></div>';
             }
             container.innerHTML = listHtml;
-
             container.querySelectorAll('.tree-command-name.folder').forEach(function(el) {
                 el.addEventListener('click', function(e) {
                     e.stopPropagation();
@@ -1265,7 +1243,6 @@ function closeHamburger() {
                 });
             });
         }
-
         function loadCommands() {
             var container = document.getElementById('commands-list');
             return fetch('/api/commands')
@@ -1285,24 +1262,18 @@ function closeHamburger() {
                     pathSegments = [];
                 }
                 renderFileManager();
-                // If modal is open, refresh dropdowns
-                if (!document.getElementById('command-modal').classList.contains('hidden')) {
-                    populateDropdowns();
-                }
+                if (!document.getElementById('command-modal').classList.contains('hidden')) populateDropdowns();
             })
             .catch(function(err) {
                 container.innerHTML = '<p style="color:#f87171; font-size:0.875rem;">Error: ' + err.message + '</p>';
             });
         }
-
         async function showAddCommandModal(command, parent) {
-            // Ensure commands are loaded before showing
             await loadCommands();
             editingCommand = command || null;
             var modal = document.getElementById('command-modal');
             document.getElementById('modal-error').classList.remove('show');
             populateDropdowns();
-
             var parentSelect = document.getElementById('modal-parent');
             if (editingCommand) {
                 document.getElementById('command-modal-title').innerText = 'Edit Command';
@@ -1327,13 +1298,9 @@ function closeHamburger() {
                 document.getElementById('modal-media').value = '';
                 document.getElementById('modal-admin-only').checked = false;
                 document.getElementById('modal-enabled').checked = true;
-                if (parent) {
-                    parentSelect.value = parent;
-                } else if (currentParent !== null) {
-                    parentSelect.value = currentParent;
-                } else {
-                    parentSelect.value = '';
-                }
+                if (parent) parentSelect.value = parent;
+                else if (currentParent !== null) parentSelect.value = currentParent;
+                else parentSelect.value = '';
                 inlineButtonsArray = []; renderInlineChips();
                 showReplyKeyboard = false;
                 document.getElementById('reply-toggle').classList.remove('active');
@@ -1344,7 +1311,6 @@ function closeHamburger() {
             toggleMediaField();
             modal.classList.remove('hidden');
         }
-
         function toggleMediaField() {
             var type = document.getElementById('modal-type').value;
             document.getElementById('media-field').style.display = type === 'photo' ? 'block' : 'none';
@@ -1357,9 +1323,7 @@ function closeHamburger() {
             if (type === 'command') { valInput.classList.add('hidden'); cmdSelect.classList.remove('hidden'); }
             else { valInput.classList.remove('hidden'); cmdSelect.classList.add('hidden'); }
         });
-
         function closeCommandModal() { document.getElementById('command-modal').classList.add('hidden'); editingCommand = null; }
-
         function saveCommand() {
             var command = document.getElementById('modal-command').value.trim();
             var parent = document.getElementById('modal-parent').value.trim() || null;
@@ -1371,16 +1335,13 @@ function closeHamburger() {
             var buttons_json = getInlineButtonsJSON();
             var show_reply_keyboard = showReplyKeyboard ? 1 : 0;
             var reply_keyboard_json = getReplyButtonsJSON();
-
             var errorEl = document.getElementById('modal-error');
             if (!command || !content) { errorEl.innerText = 'Command and content are required.'; errorEl.classList.add('show'); return; }
             if (response_type === 'photo' && !media_url) { errorEl.innerText = 'Photo URL required.'; errorEl.classList.add('show'); return; }
             if (parent === command) { errorEl.innerText = 'Cannot be its own parent.'; errorEl.classList.add('show'); return; }
-
             var payload = { command, parent, response_type, content, media_url, is_admin_only, enabled, buttons_json, show_reply_keyboard, reply_keyboard_json };
             var url = editingCommand ? '/api/commands/' + encodeURIComponent(editingCommand.command) : '/api/commands';
             var method = editingCommand ? 'PUT' : 'POST';
-
             fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
             .then(function(res) { return res.json().then(function(data) { return { status: res.status, data: data }; }); })
             .then(function(result) {
@@ -1391,7 +1352,6 @@ function closeHamburger() {
             })
             .catch(function(err) { errorEl.innerText = err.message; errorEl.classList.add('show'); });
         }
-
         function deleteCommand(cmdName) {
             if (!confirm('Delete "' + cmdName + '" and all children? This cannot be undone.')) return;
             fetch('/api/commands/' + encodeURIComponent(cmdName), { method: 'DELETE' })
@@ -1399,11 +1359,8 @@ function closeHamburger() {
             .then(function(data) {
                 if (!data.success) throw new Error(data.error || 'Delete failed');
                 showToast('Deleted.');
-                if (currentParent === cmdName) {
-                    navigateUp();
-                } else {
-                    loadCommands();
-                }
+                if (currentParent === cmdName) navigateUp();
+                else loadCommands();
             })
             .catch(function(err) { showToast(err.message, 'error'); });
         }
@@ -1610,7 +1567,6 @@ function closeHamburger() {
                 resultDiv.style.color = '#f87171';
             });
         }
-
         function publishBotInfo() {
             var name = document.getElementById('bot-name').value.trim();
             var description = document.getElementById('bot-description').value.trim();
@@ -1636,13 +1592,123 @@ function closeHamburger() {
             });
         }
 
+        // ============================
+        // UPDATE / SELF-UPDATE
+        // ============================
+        let cfAccountId = null;
+        let cfScriptName = null;
+
+        async function checkForUpdate() {
+            const latestInput = document.getElementById('update-latest-version');
+            const detailsDiv = document.getElementById('update-version-details');
+            latestInput.placeholder = 'Checking...';
+            detailsDiv.innerText = '';
+            try {
+                const res = await fetch('/api/version');
+                const data = await res.json();
+                if (data.latest) {
+                    latestInput.value = data.latest;
+                    let details = '';
+                    if (data.released) details += '📅 Released: ' + data.released;
+                    if (data.notes) details += (details ? ' | ' : '') + '📝 Notes: ' + data.notes;
+                    detailsDiv.innerText = details || '';
+                } else {
+                    latestInput.value = 'Error: ' + (data.error || 'unknown');
+                }
+            } catch (e) {
+                latestInput.value = 'Error: ' + e.message;
+            }
+        }
+
+        async function validateToken() {
+            const token = document.getElementById('update-cf-token').value.trim();
+            const resultDiv = document.getElementById('update-validation-result');
+            const updateBtn = document.getElementById('update-btn');
+
+            resultDiv.classList.remove('hidden');
+            resultDiv.innerText = 'Validating...';
+            resultDiv.style.color = '#94a3b8';
+
+            if (!token) {
+                resultDiv.innerText = '❌ Please enter a token.';
+                resultDiv.style.color = '#f87171';
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/update/validate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+                const data = await res.json();
+                if (!data.valid) {
+                    resultDiv.innerText = '❌ ' + (data.error || 'Invalid token');
+                    resultDiv.style.color = '#f87171';
+                    updateBtn.disabled = true;
+                    return;
+                }
+
+                resultDiv.innerText = '✅ Token valid. Auto‑detected Account and Script.';
+                resultDiv.style.color = '#4ade80';
+
+                cfAccountId = data.accountId;
+                cfScriptName = data.scriptName;
+                updateBtn.disabled = false;
+            } catch (e) {
+                resultDiv.innerText = '❌ ' + e.message;
+                resultDiv.style.color = '#f87171';
+                updateBtn.disabled = true;
+            }
+        }
+
+        document.getElementById('update-btn').addEventListener('click', performUpdate);
+
+        async function performUpdate() {
+            const token = document.getElementById('update-cf-token').value.trim();
+            const statusDiv = document.getElementById('update-status');
+            statusDiv.classList.remove('hidden');
+            statusDiv.innerText = 'Updating...';
+            statusDiv.style.color = '#94a3b8';
+
+            if (!token || !cfAccountId || !cfScriptName) {
+                statusDiv.innerText = '❌ Token, Account ID, and Script Name required. Please validate first.';
+                statusDiv.style.color = '#f87171';
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token, accountId: cfAccountId, scriptName: cfScriptName })
+                });
+                const data = await res.json();
+                if (!data.success) {
+                    statusDiv.innerText = '❌ ' + (data.error || 'Update failed');
+                    statusDiv.style.color = '#f87171';
+                    return;
+                }
+                statusDiv.innerText = '✅ Update successful! New version: ' + (data.version || 'unknown');
+                statusDiv.style.color = '#4ade80';
+                checkForUpdate();
+                showToast('Update completed! The worker has been updated.', 'success');
+            } catch (e) {
+                statusDiv.innerText = '❌ ' + e.message;
+                statusDiv.style.color = '#f87171';
+            }
+        }
+
+        // ============================
+        // INIT
+        // ============================
         window.onload = function() { checkStatus(); };
     </script>
 </body>
 </html>`;
 
 // ============================================================================
-// WORKER ENTRY POINT & ROUTER
+// WORKER ENTRY POINT
 // ============================================================================
 export default {
     async fetch(request, env, ctx) {
@@ -1669,13 +1735,17 @@ export default {
                 return await handleLogin(request, env);
             }
 
+            // Public version endpoint (no auth needed)
+            if (request.method === 'GET' && url.pathname === '/api/version') {
+                return await getVersionInfo(env);
+            }
+
             // ==================== WEBHOOK (PUBLIC) ====================
-            // Must be BEFORE session check
             if (request.method === 'POST' && url.pathname === '/webhook') {
                 return await handleTelegramWebhook(request, env);
             }
 
-            // ==================== PROTECTED API ====================
+            // ==================== PROTECTED API (require session) ====================
             const session = await getSession(request, env);
             if (!session) {
                 return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
@@ -1741,6 +1811,14 @@ export default {
                 return await factoryReset(env);
             }
 
+            // Update endpoints
+            if (request.method === 'POST' && url.pathname === '/api/update/validate') {
+                return await validateCloudflareToken(request, env);
+            }
+            if (request.method === 'POST' && url.pathname === '/api/update') {
+                return await performUpdate(request, env);
+            }
+
             // Check session (for frontend)
             if (request.method === 'GET' && url.pathname === '/api/check_session') {
                 return Response.json({ logged_in: true });
@@ -1758,13 +1836,13 @@ export default {
 // DATABASE INITIALIZATION
 // ============================================================================
 async function initializeDatabase(db) {
-const schema = `
-    CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT);
-    CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT, first_name TEXT, role TEXT DEFAULT 'user', is_premium BOOLEAN DEFAULT 0, last_active DATETIME DEFAULT CURRENT_TIMESTAMP);
-    CREATE TABLE IF NOT EXISTS commands (command TEXT PRIMARY KEY, parent TEXT, response_type TEXT DEFAULT 'text', content TEXT, media_url TEXT, buttons_json TEXT, is_admin_only BOOLEAN DEFAULT 0, enabled BOOLEAN DEFAULT 1, show_reply_keyboard BOOLEAN DEFAULT 0, reply_keyboard_json TEXT, order_idx INTEGER DEFAULT 0);
-    CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, user_id INTEGER UNIQUE, command TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP);
-    CREATE TABLE IF NOT EXISTS logs (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, action TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP);
-`;
+    const schema = `
+        CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT);
+        CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT, first_name TEXT, role TEXT DEFAULT 'user', is_premium BOOLEAN DEFAULT 0, last_active DATETIME DEFAULT CURRENT_TIMESTAMP);
+        CREATE TABLE IF NOT EXISTS commands (command TEXT PRIMARY KEY, parent TEXT, response_type TEXT DEFAULT 'text', content TEXT, media_url TEXT, buttons_json TEXT, is_admin_only BOOLEAN DEFAULT 0, enabled BOOLEAN DEFAULT 1, show_reply_keyboard BOOLEAN DEFAULT 0, reply_keyboard_json TEXT, order_idx INTEGER DEFAULT 0);
+        CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, user_id INTEGER UNIQUE, command TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP);
+        CREATE TABLE IF NOT EXISTS logs (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, action TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP);
+    `;
     const statements = schema.split(';').filter(s => s.trim().length > 0);
     const batch = statements.map(s => db.prepare(s));
     await db.batch(batch);
@@ -1830,8 +1908,7 @@ async function handleSetup(request, env) {
 
     const envPass = env.ADMIN_PASS || null;
     if (envPass) {
-        // If env var is set, we don't need to store password in D1? But we might still want to allow storing it for fallback? We'll still store but env takes priority.
-        // However, we can skip password requirement? But the user might still want to set a D1 password as fallback. We'll allow it.
+        // env var takes precedence, but we still store in D1 as fallback
     }
 
     const existing = await env.DB.prepare("SELECT value FROM settings WHERE key = 'admin_password'").first();
@@ -1845,7 +1922,6 @@ async function handleSetup(request, env) {
         return Response.json({ error: 'Password must be at least 6 characters.' }, { status: 400 });
     }
 
-    // Store password in D1 (it may be overridden by env var later)
     await env.DB.prepare(`
         INSERT INTO settings (key, value) VALUES ('admin_password', ?)
         ON CONFLICT(key) DO UPDATE SET value = excluded.value
@@ -1927,8 +2003,36 @@ async function handleLogout(request, env) {
     });
 }
 
+// NEW: version info with release date and notes
+async function getVersionInfo(env) {
+    const current = VERSION;
+    let latest = null;
+    let released = null;
+    let notes = null;
+    try {
+        const res = await fetch('https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/version.json');
+        if (res.ok) {
+            const data = await res.json();
+            latest = data.version || null;
+            released = data.released || null;
+            notes = data.notes || null;
+        } else {
+            // Fallback: parse worker.js for VERSION constant
+            const workerRes = await fetch('https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/worker.js');
+            if (workerRes.ok) {
+                const text = await workerRes.text();
+                const match = text.match(/const\s+VERSION\s*=\s*['"]([^'"]+)['"]/);
+                if (match) latest = match[1];
+            }
+        }
+    } catch (e) {
+        // ignore
+    }
+    return Response.json({ current, latest, released, notes });
+}
+
 // ============================================================================
-// COMMANDS API
+// COMMANDS API (unchanged)
 // ============================================================================
 async function getCommands(env) {
     if (!env.DB) return Response.json({ error: "DB not available" }, { status: 500 });
@@ -2031,7 +2135,7 @@ async function reorderCommands(request, env) {
 }
 
 // ============================================================================
-// MENU COMMANDS
+// MENU COMMANDS (unchanged)
 // ============================================================================
 async function getMenuCommands(env) {
     if (!env.DB) return Response.json({ error: "DB not available" }, { status: 500 });
@@ -2085,7 +2189,7 @@ async function setMenuCommands(request, env) {
 }
 
 // ============================================================================
-// USERS API
+// USERS API (unchanged)
 // ============================================================================
 async function getUsers(env, url) {
     if (!env.DB) return Response.json({ error: "DB not available" }, { status: 500 });
@@ -2122,7 +2226,7 @@ async function updateUserRole(request, env) {
 }
 
 // ============================================================================
-// SETTINGS API
+// SETTINGS API (unchanged)
 // ============================================================================
 async function getSettings(env, originUrl) {
     if (!env.DB) return Response.json({ error: "DB not available" }, { status: 500 });
@@ -2187,7 +2291,7 @@ async function changeAdminPassword(request, env) {
 }
 
 // ============================================================================
-// BOT INFO API
+// BOT INFO API (unchanged)
 // ============================================================================
 async function getBotInfo(env) {
     if (!env.DB) return Response.json({ error: "DB not available" }, { status: 500 });
@@ -2251,7 +2355,7 @@ async function setBotInfo(request, env) {
 }
 
 // ============================================================================
-// FACTORY RESET
+// FACTORY RESET (unchanged)
 // ============================================================================
 async function factoryReset(env) {
     if (!env.DB) return Response.json({ error: "DB not available" }, { status: 500 });
@@ -2268,7 +2372,195 @@ async function factoryReset(env) {
 }
 
 // ============================================================================
-// TELEGRAM BOT ENGINE (with default /start)
+// UPDATE / SELF-UPDATE
+// ============================================================================
+async function validateCloudflareToken(request, env) {
+    try {
+        const body = await request.json();
+        const token = body.token;
+        if (!token) {
+            return Response.json({ valid: false, error: 'Token required' }, { status: 400 });
+        }
+        // Verify token
+        const verifyRes = await fetch('https://api.cloudflare.com/client/v4/user/tokens/verify', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const verifyData = await verifyRes.json();
+        if (!verifyRes.ok || !verifyData.success) {
+            return Response.json({ valid: false, error: 'Invalid or expired token' }, { status: 401 });
+        }
+
+        // List accounts
+        const accountsRes = await fetch('https://api.cloudflare.com/client/v4/accounts', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const accountsData = await accountsRes.json();
+        if (!accountsData.success || !Array.isArray(accountsData.result) || accountsData.result.length === 0) {
+            return Response.json({ valid: false, error: 'No accounts found for this token' }, { status: 403 });
+        }
+
+        // Auto‑detect account: use the first account
+        const account = accountsData.result[0];
+        const accountId = account.id;
+
+        // Auto‑detect script name from host (if workers.dev)
+        const host = new URL(request.url).hostname;
+        let scriptName = null;
+        if (host.endsWith('.workers.dev')) {
+            const parts = host.split('.');
+            if (parts.length >= 3) scriptName = parts[0];
+        }
+
+        // If not found, try to list workers and find the one that has a route matching the host
+        if (!scriptName) {
+            const workersRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts`, {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            const workersData = await workersRes.json();
+            if (workersData.success && Array.isArray(workersData.result)) {
+                for (const w of workersData.result) {
+                    const routesRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${w.id}/routes`, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    const routesData = await routesRes.json();
+                    if (routesData.success && Array.isArray(routesData.result)) {
+                        for (const route of routesData.result) {
+                            if (route.pattern && host.includes(route.pattern.replace(/^https?:\/\//, '').replace(/\/\*$/, ''))) {
+                                scriptName = w.id;
+                                break;
+                            }
+                        }
+                    }
+                    if (scriptName) break;
+                }
+            }
+        }
+
+        // If still not found, fallback to first script in list
+        if (!scriptName) {
+            const scriptsRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts`, {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            const scriptsData = await scriptsRes.json();
+            if (scriptsData.success && Array.isArray(scriptsData.result) && scriptsData.result.length > 0) {
+                scriptName = scriptsData.result[0].id;
+            }
+        }
+
+        // Store token, account, script in D1 for future use
+        await env.DB.prepare(`
+            INSERT INTO settings (key, value) VALUES ('cf_api_token', ?)
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value
+        `).bind(token).run();
+        await env.DB.prepare(`
+            INSERT INTO settings (key, value) VALUES ('cf_account_id', ?)
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value
+        `).bind(accountId).run();
+        if (scriptName) {
+            await env.DB.prepare(`
+                INSERT INTO settings (key, value) VALUES ('cf_script_name', ?)
+                ON CONFLICT(key) DO UPDATE SET value = excluded.value
+            `).bind(scriptName).run();
+        }
+
+        return Response.json({
+            valid: true,
+            accountId,
+            scriptName: scriptName || null
+        });
+    } catch (e) {
+        return Response.json({ valid: false, error: e.message }, { status: 500 });
+    }
+}
+
+async function performUpdate(request, env) {
+    try {
+        const body = await request.json();
+        const { token, accountId, scriptName } = body;
+        if (!token || !accountId || !scriptName) {
+            return Response.json({ success: false, error: 'Token, Account ID, and Script Name required' }, { status: 400 });
+        }
+
+        // Re‑verify token
+        const verifyRes = await fetch('https://api.cloudflare.com/client/v4/user/tokens/verify', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const verifyData = await verifyRes.json();
+        if (!verifyRes.ok || !verifyData.success) {
+            return Response.json({ success: false, error: 'Invalid token' }, { status: 401 });
+        }
+
+        // Get current script settings to preserve bindings
+        const settingsRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${scriptName}/settings`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const settingsData = await settingsRes.json();
+        let bindings = [];
+        if (settingsData.success && settingsData.result && settingsData.result.bindings) {
+            bindings = settingsData.result.bindings;
+        }
+
+        // Determine latest version from GitHub
+        let latestVersion = null;
+        const versionRes = await fetch('https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/version.json');
+        if (versionRes.ok) {
+            const versionData = await versionRes.json();
+            if (versionData.version) latestVersion = versionData.version;
+        }
+        if (!latestVersion) {
+            // Fallback: parse worker.js
+            const workerRes = await fetch('https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/worker.js');
+            if (workerRes.ok) {
+                const text = await workerRes.text();
+                const match = text.match(/const\s+VERSION\s*=\s*['"]([^'"]+)['"]/);
+                if (match) latestVersion = match[1];
+            }
+        }
+        if (!latestVersion) {
+            return Response.json({ success: false, error: 'Could not determine latest version' }, { status: 500 });
+        }
+
+        // Download the new worker script
+        const scriptRes = await fetch('https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/worker.js');
+        if (!scriptRes.ok) {
+            return Response.json({ success: false, error: 'Failed to download worker script' }, { status: 500 });
+        }
+        const scriptText = await scriptRes.text();
+
+        // Prepare upload metadata with bindings
+        const metadata = {
+            main_module: 'worker.js',
+            bindings: bindings
+        };
+        const formData = new FormData();
+        formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+        formData.append('worker.js', new Blob([scriptText], { type: 'application/javascript+module' }), 'worker.js');
+
+        const uploadRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${scriptName}/content`, {
+            method: 'PUT',
+            headers: { 'Authorization': 'Bearer ' + token },
+            body: formData
+        });
+        const uploadData = await uploadRes.json();
+        if (!uploadRes.ok || !uploadData.success) {
+            const errMsg = uploadData.errors && uploadData.errors[0] && uploadData.errors[0].message || 'Upload failed';
+            return Response.json({ success: false, error: errMsg }, { status: uploadRes.status });
+        }
+
+        // Store update version
+        await env.DB.prepare(`
+            INSERT INTO settings (key, value) VALUES ('last_update_version', ?)
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value
+        `).bind(latestVersion).run();
+
+        return Response.json({ success: true, version: latestVersion });
+    } catch (e) {
+        return Response.json({ success: false, error: e.message }, { status: 500 });
+    }
+}
+
+// ============================================================================
+// TELEGRAM BOT ENGINE (unchanged)
 // ============================================================================
 async function handleTelegramWebhook(request, env) {
     if (!env.DB) return new Response('DB not available', { status: 500 });
@@ -2383,15 +2675,11 @@ async function handleTelegramWebhook(request, env) {
         }
     } catch (err) {
         console.error("Webhook error:", err);
-        // Optionally send error message to admin
     }
 
     return new Response('OK', { status: 200 });
 }
 
-// ============================================================================
-// DEFAULT /start MESSAGE
-// ============================================================================
 async function sendDefaultStart(chatId, env, BOT_TOKEN) {
     let botName = "Nyxx Bot";
     try {
@@ -2434,17 +2722,12 @@ async function sendDefaultStart(chatId, env, BOT_TOKEN) {
     });
 }
 
-// ============================================================================
-// COMMAND EXECUTION
-// ============================================================================
 async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env) {
-    // Update session (using INSERT OR REPLACE to avoid conflicts)
     await env.DB.prepare(`
         INSERT INTO sessions (user_id, command, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
         ON CONFLICT(user_id) DO UPDATE SET command = excluded.command, updated_at = CURRENT_TIMESTAMP
     `).bind(userId, cmdRecord.command).run();
 
-    // Admin check
     if (cmdRecord.is_admin_only) {
         const user = await env.DB.prepare("SELECT role FROM users WHERE id = ?").bind(userId).first();
         if (!user || user.role !== 'admin') {
