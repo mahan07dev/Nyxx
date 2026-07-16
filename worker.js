@@ -589,7 +589,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                     </div>
                     <div>
                         <label class="form-label">Short Description</label>
-                        <input id="bot-short-description" class="form-input" placeholder="Short summary...">
+                        <textarea id="bot-short-description" class="form-input" placeholder="Short summary..." rows="3"></textarea>
                     </div>
                     <div class="flex gap-2 flex-wrap">
                         <button onclick="loadBotInfo()" class="btn btn-gray"><i class="fa-solid fa-download"></i> Load from Telegram</button>
