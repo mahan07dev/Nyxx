@@ -1,6 +1,6 @@
 {
-  "version": "2.1.1",
+  "version": "2.1.2",
   "released": "2026-07-16",
-  "notes": "Added auto-update tab 🌐 (fixed bugs)",
+  "notes": "Self-update system, improved command UI, menu enhancements, and auto-update notifications.",
   "worker_url": "https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/worker.js"
 }

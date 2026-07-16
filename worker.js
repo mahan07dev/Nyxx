@@ -1,7 +1,7 @@
 // ============================================================================
 // GLOBAL VERSION
 // ============================================================================
-const VERSION = '2.1.1'; // bump on each release
+const VERSION = '2.1.2'; // bump on each release
 
 // ============================================================================
 // EMBEDDED DASHBOARD HTML (with update tab)
@@ -15,8 +15,9 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
     <title>Nyxx | Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        /* ... (all styles unchanged) ... */
-        * { box-sizing: border-box; }
+        * {
+            box-sizing: border-box;
+        }
         body {
             margin: 0;
             background: #0f172a;
@@ -26,13 +27,18 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             display: flex;
             flex-direction: column;
         }
-        a { color: #60a5fa; text-decoration: none; }
-        a:hover { text-decoration: underline; }
+        a {
+            color: #60a5fa;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
         .navbar {
             background: #0f172a;
             border-bottom: 1px solid #334155;
             padding: 1rem;
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
             z-index: 40;
         }
         .navbar-inner {
@@ -51,10 +57,12 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             color: #e2e8f0;
             margin: 0;
         }
-        .navbar-title i { color: #60a5fa; }
+        .navbar-title i {
+            color: #60a5fa;
+        }
         .navbar-actions {
             display: flex;
-            align-items: flex-end;
+            align-items: center;
             flex-direction: row;
             gap: 0.75rem;
         }
@@ -81,8 +89,11 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             font-size: 0.875rem;
             color: #94a3b8;
             flex-direction: column;
+            align-items: center;
         }
-        .status-items i { margin-right: 0.25rem; }
+        .status-items i {
+            margin-right: 0.25rem;
+        }
         .logout-btn {
             background: transparent;
             border: 1px solid #dc2626;
@@ -93,8 +104,13 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             cursor: pointer;
             font-size: 0.875rem;
         }
-        .logout-btn i { color: red; }
-        .logout-btn:hover { background: #dc2626; color: white; }
+        .logout-btn i {
+            color: red;
+        }
+        .logout-btn:hover {
+            background: #dc2626;
+            color: white;
+        }
         .main-container {
             flex: 1;
             max-width: 1200px;
@@ -108,13 +124,17 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             border: 1px solid #334155;
             padding: 2rem;
             margin: 2rem 0;
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             max-width: 600px;
             margin-left: auto;
             margin-right: auto;
         }
-        .step { display: block; }
-        .step-hidden { display: none !important; }
+        .step {
+            display: block;
+        }
+        .step-hidden {
+            display: none !important;
+        }
         .step-title {
             font-size: 1.5rem;
             font-weight: 700;
@@ -123,8 +143,15 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             margin-top: 0;
             margin-bottom: 1.5rem;
         }
-        .form-group { margin-bottom: 1.25rem; }
-        .form-label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.25rem; }
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
         .form-input {
             background: #0f172a;
             border: 1px solid #334155;
@@ -135,7 +162,10 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             font-family: system-ui, sans-serif;
             font-size: 0.9rem;
         }
-        .form-input:focus { border-color: #3b82f6; outline: none; }
+        .form-input:focus {
+            border-color: #3b82f6;
+            outline: none;
+        }
         #bot-description {
             background: #0f172a;
             border: 1px solid #334155;
@@ -161,26 +191,79 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             font-size: 1rem;
             min-height: 35px;
         }
-        .btn-primary { background: #3b82f6; color: white; }
-        .btn-primary:hover { background: #2563eb; }
-        .btn-success { background: #22c55e; color: white; }
-        .btn-success:hover { background: #16a34a; }
-        .btn-gray { background: #334155; color: #e2e8f0; }
-        .btn-gray:hover { background: #475569; }
-        .btn-danger { background: #dc2626; color: white; }
-        .btn-danger:hover { background: #b91c1c; }
-        .btn-block { width: 100%; justify-content: center; }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .btn-sm { padding: 0.25rem 0.75rem; font-size: 0.875rem; border-radius: 8px; }
-        .text-center { text-align: center; }
-        .text-sm { font-size: 0.875rem; color: #94a3b8; }
-        .mt-4 { margin-top: 1.5rem; }
-        .mt-2 { margin-top: 0.5rem; }
-        .flex { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
-        .hidden { display: none !important; }
-        .log-error { color: #f87171; }
-        .log-success { color: #4ade80; }
-        .dashboard { max-width: 1200px; margin: 0 auto; }
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+        .btn-success {
+            background: #22c55e;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #16a34a;
+        }
+        .btn-gray {
+            background: #334155;
+            color: #e2e8f0;
+        }
+        .btn-gray:hover {
+            background: #475569;
+        }
+        .btn-danger {
+            background: #dc2626;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #b91c1c;
+        }
+        .btn-block {
+            width: 100%;
+            justify-content: center;
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .btn-sm {
+            padding: 0.25rem 0.75rem;
+            font-size: 0.875rem;
+            border-radius: 8px;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .text-sm {
+            font-size: 0.875rem;
+            color: #94a3b8;
+        }
+        .mt-4 {
+            margin-top: 1.5rem;
+        }
+        .mt-2 {
+            margin-top: 0.5rem;
+        }
+        .flex {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .log-error {
+            color: #f87171;
+        }
+        .log-success {
+            color: #4ade80;
+        }
+        .dashboard {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
         .tabs-header {
             display: flex;
             flex-wrap: wrap;
@@ -201,10 +284,19 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             font-weight: 500;
             font-size: 1rem;
         }
-        .tab-btn:hover { color: #e2e8f0; }
-        .tab-btn.active { border-bottom-color: #60a5fa; color: white; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
+        .tab-btn:hover {
+            color: #e2e8f0;
+        }
+        .tab-btn.active {
+            border-bottom-color: #60a5fa;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
         .hamburger {
             display: none;
             cursor: pointer;
@@ -214,7 +306,9 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             user-select: none;
             transition: transform 0.2s;
         }
-        .hamburgerfa.open { transform: rotate(90deg); }
+        .hamburgerfa.open {
+            transform: rotate(90deg);
+        }
         .mobile-tabs {
             display: block;
             max-height: 0;
@@ -244,11 +338,25 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             width: 100%;
             cursor: pointer;
         }
-        .mobile-tabs button:hover { background: #334155; }
-        .mobile-tabs button.active { background: #334155; color: white; }
+        .mobile-tabs button:hover {
+            background: #334155;
+        }
+        .mobile-tabs button.active {
+            background: #334155;
+            color: white;
+        }
         @media (max-width: 768px) {
-            .tabs-header { display: none; }
-            .hamburger { display: block; }
+            .tabs-header {
+                display: none;
+            }
+            .hamburger {
+                display: block;
+            }
+        }
+        @media (max-width: 490px) {
+            .update-banner-btn {
+                font-size: 0.6rem !important;
+            }
         }
         .tree-row {
             display: flex;
@@ -260,14 +368,20 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             cursor: default;
             overflow-x: auto;
         }
-        .tree-row:hover { background: #1e293b; }
+        .tree-row:hover {
+            background: #1e293b;
+        }
         .tree-command-name {
             font-family: ui-monospace, monospace;
             font-weight: 600;
             color: #60a5fa;
         }
-        .tree-command-name.folder { cursor: pointer; }
-        .tree-command-name.folder:hover { text-decoration: underline; }
+        .tree-command-name.folder {
+            cursor: pointer;
+        }
+        .tree-command-name.folder:hover {
+            text-decoration: underline;
+        }
         .tree-actions {
             margin-left: auto;
             display: flex;
@@ -282,10 +396,19 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             border-radius: 4px;
             font-size: 0.85rem;
         }
-        .tree-actions button:hover { background: #334155; color: white; }
-        .tree-actions .edit-btn:hover { color: #60a5fa; }
-        .tree-actions .delete-btn:hover { color: #f87171; }
-        .tree-actions .add-child-btn:hover { color: #4ade80; }
+        .tree-actions button:hover {
+            background: #334155;
+            color: white;
+        }
+        .tree-actions .edit-btn:hover {
+            color: #60a5fa;
+        }
+        .tree-actions .delete-btn:hover {
+            color: #f87171;
+        }
+        .tree-actions .add-child-btn:hover {
+            color: #4ade80;
+        }
         .badge {
             display: inline-block;
             font-size: 0.6875rem;
@@ -294,11 +417,26 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             border-radius: 12px;
             line-height: 1.25rem;
         }
-        .badge-admin { background: #1e3a5f; color: #93c5fd; }
-        .badge-enabled { background: #14532d; color: #86efac; }
-        .badge-disabled { background: #451a1a; color: #fca5a5; }
-        .badge-reply { background: #3b0764; color: #c4b5fd; }
-        .badge-gray { background: #334155; color: #94a3b8; }
+        .badge-admin {
+            background: #1e3a5f;
+            color: #93c5fd;
+        }
+        .badge-enabled {
+            background: #14532d;
+            color: #86efac;
+        }
+        .badge-disabled {
+            background: #451a1a;
+            color: #fca5a5;
+        }
+        .badge-reply {
+            background: #3b0764;
+            color: #c4b5fd;
+        }
+        .badge-gray {
+            background: #334155;
+            color: #94a3b8;
+        }
         .breadcrumb-container {
             display: flex;
             align-items: center;
@@ -309,18 +447,34 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             border: 1px solid #334155;
             margin-bottom: 1rem;
         }
-        .breadcrumb-sep { color: #475569; }
-        .breadcrumb-link { color: #60a5fa; cursor: pointer; }
-        .breadcrumb-link:hover { text-decoration: underline; }
-        .breadcrumb-current { color: #e2e8f0; }
+        .breadcrumb-sep {
+            color: #475569;
+        }
+        .breadcrumb-link {
+            color: #60a5fa;
+            cursor: pointer;
+        }
+        .breadcrumb-link:hover {
+            text-decoration: underline;
+        }
+        .breadcrumb-current {
+            color: #e2e8f0;
+        }
         .panel {
             background: #1e293b;
             border: 1px solid #334155;
             border-radius: 12px;
             padding: 1.5rem;
         }
-        .panel-dark { background: #0f172a; border-color: #334155; }
-        .panel-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; }
+        .panel-dark {
+            background: #0f172a;
+            border-color: #334155;
+        }
+        .panel-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
         .toggle {
             position: relative;
             width: 40px;
@@ -332,7 +486,9 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             display: inline-block;
             flex-shrink: 0;
         }
-        .toggle.active { background: #3b82f6; }
+        .toggle.active {
+            background: #3b82f6;
+        }
         .toggle .slider {
             position: absolute;
             top: 2px;
@@ -343,18 +499,22 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             border-radius: 50%;
             transition: transform 0.3s;
         }
-        .toggle.active .slider { transform: translateX(18px); }
+        .toggle.active .slider {
+            transform: translateX(18px);
+        }
         .modal-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.6);
+            background: rgba(0, 0, 0, 0.6);
             display: flex;
             align-items: center;
             justify-content: center;
             z-index: 50;
             padding: 1rem;
         }
-        .modal-overlay.hidden { display: none; }
+        .modal-overlay.hidden {
+            display: none;
+        }
         .modal-box {
             background: #1e293b;
             border-radius: 16px;
@@ -363,12 +523,71 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             width: 100%;
             border: 1px solid #334155;
             max-height: 90vh;
-            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
         }
-        .modal-title { font-size: 1.25rem; font-weight: 700; margin-top: 0; margin-bottom: 1rem; }
-        .modal-actions { display: flex; gap: 0.5rem; margin-top: 1.5rem; }
-        .modal-error { color: #f87171; font-size: 0.875rem; margin-top: 0.5rem; display: none; }
-        .modal-error.show { display: block; }
+        .modal-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        .modal-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .modal-scroll::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-top: 0;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .modal-title .enabled-toggle {
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: 0.2s;
+            padding: 0 0.25rem;
+            user-select: none;
+        }
+        .modal-title .enabled-toggle:hover {
+            transform: scale(1.15);
+        }
+        .modal-title .enabled-toggle.on {
+            color: #4ade80;
+        }
+        .modal-title .enabled-toggle.off {
+            color: #f87171;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid #334155;
+            justify-content: center;
+            flex-shrink: 0;
+            background: #1e293b;
+            position: sticky;
+            bottom: 0;
+            z-index: 5;
+            padding-bottom: 0.25rem;
+        }
+        .modal-error {
+            color: #f87171;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+            display: none;
+        }
+        .modal-error.show {
+            display: block;
+        }
         .toast-container {
             position: fixed;
             bottom: 24px;
@@ -385,11 +604,15 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             padding: 0.75rem 1.5rem;
             border-radius: 12px;
             color: #f1f5f9;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
             backdrop-filter: blur(4px);
         }
-        .toast.success { border-left: 4px solid #22c55e; }
-        .toast.error { border-left: 4px solid #ef4444; }
+        .toast.success {
+            border-left: 4px solid #22c55e;
+        }
+        .toast.error {
+            border-left: 4px solid #ef4444;
+        }
         .log-container {
             background: #0f172a;
             color: #4ade80;
@@ -405,7 +628,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             margin-top: 0.5rem;
         }
         .spinner {
-            border: 3px solid rgba(255,255,255,0.15);
+            border: 3px solid rgba(255, 255, 255, 0.15);
             border-radius: 50%;
             border-top: 3px solid #3b82f6;
             width: 24px;
@@ -414,7 +637,14 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             display: inline-block;
             vertical-align: middle;
         }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
         .footer {
             text-align: center;
             padding: 1.25rem 0 0.625rem;
@@ -423,11 +653,145 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             font-size: 0.875rem;
             color: #94a3b8;
         }
-        .footer .brand { font-weight: 600; color: #60a5fa; }
-        ::-webkit-scrollbar { width: 10px; }
-        ::-webkit-scrollbar-track { box-shadow: inset 0 0 5px grey; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb { background: #0085f1; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #b30000; }
+        .footer .brand {
+            font-weight: 600;
+            color: #60a5fa;
+        }
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            box-shadow: inset 0 0 5px grey;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #0085f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #b30000;
+        }
+
+        /* button-chip column layout */
+        .button-chip-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            min-height: 30px;
+            padding: 0.25rem 0;
+        }
+        .button-chip {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            padding: 0.4rem 0.6rem;
+            font-size: 0.85rem;
+            cursor: grab;
+            transition: background 0.15s, border-color 0.15s;
+            width: 100%;
+        }
+        .button-chip:hover {
+            background: #1a2332;
+            border-color: #475569;
+        }
+        .button-chip.dragging {
+            opacity: 0.4;
+            border-color: #60a5fa;
+        }
+        .button-chip.drag-over {
+            border-color: #60a5fa;
+            background: #1e293b;
+            box-shadow: 0 0 0 2px #3b82f6;
+        }
+        .button-chip .chip-text {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .button-chip .chip-badge {
+            font-size: 0.65rem;
+            color: #94a3b8;
+            background: #1e293b;
+            padding: 0.1rem 0.5rem;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+        .button-chip .chip-delete {
+            color: #f87171;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            padding: 0 0.2rem;
+            flex-shrink: 0;
+        }
+        .button-chip .chip-delete:hover {
+            color: #ef4444;
+        }
+        .button-chip .chip-grip {
+            color: #475569;
+            font-size: 0.85rem;
+            cursor: grab;
+            flex-shrink: 0;
+        }
+
+        /* update banner in navbar */
+        .update-banner-btn {
+            background: #22c55e;
+            color: #0f172a;
+            border: none;
+            border-radius: 20px;
+            padding: 0.3rem 0.9rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: 0.2s;
+            white-space: nowrap;
+        }
+        .update-banner-btn:hover {
+            background: #16a34a;
+            transform: scale(1.03);
+        }
+        .update-banner-btn i {
+            font-size: 0.85rem;
+        }
+
+        .inline-toggle-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+        .inline-toggle-row .form-label {
+            margin: 0;
+        }
+        .menu-hint {
+            background: #0f172a;
+            border-radius: 8px;
+            padding: 0.6rem 0.9rem;
+            font-size: 0.8rem;
+            color: #94a3b8;
+            border: 1px solid #334155;
+            margin-bottom: 0.75rem;
+            margin-top: 0.75rem;
+        }
+        .menu-hint code {
+            background: #1e293b;
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            color: #60a5fa;
+            font-size: 0.8rem;
+        }
+        .menu-hint .example {
+            color: #e2e8f0;
+        }
     </style>
 </head>
 <body>
@@ -440,10 +804,13 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 <button id="logout-btn" class="logout-btn hidden" onclick="logout()"><i class="fa-solid fa-sign-out-alt"></i></button>
             </h1>
             <div class="navbar-actions">
-                <div class="status-items">
+                <div class="status-items" id="status-items">
                     <span id="status-d1"><i class="fa-solid fa-database"></i> D1: Unbound</span>
                     <span id="status-tg"><i class="fa-brands fa-telegram"></i> Bot: Unlinked</span>
                 </div>
+                <button id="update-banner-btn" class="update-banner-btn hidden" onclick="switchTab('update')">
+                    <i class="fa-solid fa-arrow-up"></i> Update Available
+                </button>
             </div>
         </div>
     </nav>
@@ -505,7 +872,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 <button class="tab-btn" onclick="switchTab('botinfo')"><i class="fa-solid fa-circle-info"></i> Bot Info</button>
                 <button class="tab-btn" onclick="switchTab('update')"><i class="fa-solid fa-arrow-up"></i> Update</button>
             </div>
-            <div class="hamburger" id="hamburger-btn" onclick="toggleHamburger()"><i class="fa-solid fa-bars hamburgerfa" id="hamburgerfa"></i></div>
+            <div class="hamburger" id="hamburger-btn" onclick="toggleHamburger()"><i class="fa-solid fa-bars hamburgerfa" id="hamburgerfa"></i> Menu</div>
             <div id="mobile-tabs" class="mobile-tabs">
                 <button class="active" onclick="switchTab('commands'); closeHamburger();"><i class="fa-solid fa-list-ul"></i> Commands</button>
                 <button onclick="switchTab('menu'); closeHamburger();"><i class="fa-solid fa-bars"></i> Menu</button>
@@ -516,7 +883,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             </div>
             <div id="tab-commands" class="tab-content active">
                 <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
-                    <h3 class="panel-title" style="margin-bottom:0;">Commands</h3>
+                    <h3 class="panel-title">Commands</h3>
                     <button onclick="showAddCommandModal()" class="btn btn-success btn-sm"><i class="fa-solid fa-plus"></i> Add Command</button>
                 </div>
                 <div class="breadcrumb-container">
@@ -528,17 +895,22 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             </div>
             <div id="tab-menu" class="tab-content">
                 <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
-                    <h3 class="panel-title" style="margin-bottom:0;">Telegram Menu Commands</h3>
+                    <h3 class="panel-title">Telegram Menu Commands</h3>
                     <button onclick="addMenuCommandRow()" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus"></i> Add Entry</button>
                 </div>
-                <p style="color:#94a3b8; font-size:0.875rem; margin-bottom:1rem;">These commands appear in the bot's menu.</p>
+                <div class="menu-hint">
+                    <i class="fa-regular fa-lightbulb" style="margin-right:0.4rem;"></i>
+                    Commands appear in the bot's menu. Use lowercase, no slash. Examples:
+                    <span class="example"><code>start</code>, <code>help</code>, <code>support</code></span>.
+                    <strong>start</strong> is fixed and cannot be removed.
+                </div>
                 <div id="menu-commands-container" class="panel" style="display:flex; flex-direction:column; gap:0.5rem;"></div>
                 <button onclick="publishMenuCommands()" class="btn btn-success" style="margin-top:1rem;"><i class="fa-solid fa-cloud-arrow-up"></i> Publish to Telegram</button>
                 <div id="menu-publish-result" class="hidden" style="margin-top:0.5rem; font-size:0.875rem;"></div>
             </div>
             <div id="tab-users" class="tab-content">
                 <h3 class="panel-title">Users Who Have Interacted</h3>
-                <div class="flex gap-2" style="margin-bottom:1rem;">
+                <div class="flex gap-2" style="margin-bottom:1rem;flex-wrap: nowrap;">
                     <input id="user-search" placeholder="Search by username or name..." class="form-input">
                     <button onclick="loadUsers()" class="btn btn-gray btn-sm"><i class="fa-solid fa-magnifying-glass"></i></button>
                 </div>
@@ -614,7 +986,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                         <button onclick="checkForUpdate()" class="btn btn-gray btn-sm" style="margin-top:0.5rem;"><i class="fa-solid fa-rotate"></i> Check for Updates</button>
                     </div>
                     <hr style="border-color:#334155;">
-                    <div>
+                    <div id="update-cf-section">
                         <label class="form-label">Cloudflare API Token</label>
                         <input type="password" id="update-cf-token" class="form-input" placeholder="Your Cloudflare API token (requires Workers Scripts:Edit)">
                         <div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.5rem;">
@@ -646,70 +1018,79 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
     <!-- MODALS -->
     <div id="command-modal" class="modal-overlay hidden">
         <div class="modal-box">
-            <h3 class="modal-title" id="command-modal-title">Add Command</h3>
-            <div class="form-group">
-                <label class="form-label">Command (e.g., /start)</label>
-                <input id="modal-command" class="form-input" placeholder="/command">
+            <div class="modal-title">
+                <span id="command-modal-title">Add Command</span>
+                <span id="enabled-toggle-icon" class="enabled-toggle on" onclick="toggleEnabledIcon()" title="Toggle command enabled/disabled">
+                    <i class="fa-regular fa-circle-check"></i>
+                </span>
             </div>
-            <div class="form-group">
-                <label class="form-label">Parent (optional)</label>
-                <select id="modal-parent" class="form-input"><option value="">None (Root)</option></select>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Response Type</label>
-                <select id="modal-type" class="form-input" onchange="toggleMediaField()">
-                    <option value="text">Text</option>
-                    <option value="photo">Photo</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Content</label>
-                <textarea id="modal-content" class="form-input" rows="3" placeholder="Response text..."></textarea>
-            </div>
-            <div class="form-group" id="media-field" style="display:none;">
-                <label class="form-label">Photo URL</label>
-                <input id="modal-media" class="form-input" placeholder="https://example.com/image.jpg">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Buttons (inline keyboard)</label>
-                <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:6px;">
-                    <input id="inline-btn-label" class="form-input" style="flex:1; min-width:80px;" placeholder="Label">
-                    <select id="inline-btn-type" class="form-input" style="flex:0 0 auto; width:auto;">
-                        <option value="callback">Callback</option>
-                        <option value="url">URL</option>
-                        <option value="command">Command</option>
+            <div class="modal-scroll">
+                <div class="form-group">
+                    <label class="form-label">Command (e.g., /start)</label>
+                    <input id="modal-command" class="form-input" placeholder="/command">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Parent (optional)</label>
+                    <select id="modal-parent" class="form-input"><option value="">None (Root)</option></select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Response Type</label>
+                    <select id="modal-type" class="form-input" onchange="toggleMediaField()">
+                        <option value="text">Text</option>
+                        <option value="photo">Photo</option>
                     </select>
-                    <input id="inline-btn-value" class="form-input" style="flex:1; min-width:80px;" placeholder="Value/URL">
-                    <select id="inline-btn-command-select" class="form-input hidden" style="flex:1; min-width:80px;"><option value="">Select command...</option></select>
-                    <button onclick="addInlineButton()" class="btn btn-primary btn-sm" style="flex:0 0 auto;">Add</button>
                 </div>
-                <div id="inline-buttons-list" class="panel" style="padding:0.5rem; min-height:30px;"></div>
-            </div>
-            <div class="form-group">
-                <div style="display:flex; align-items:center; gap:0.75rem;">
-                    <span class="form-label" style="margin:0;">Reply Keyboard</span>
-                    <div id="reply-toggle" class="toggle" onclick="toggleReplyKeyboard()"><span class="slider"></span></div>
+                <div class="form-group">
+                    <label class="form-label">Content</label>
+                    <textarea id="modal-content" class="form-input" rows="3" placeholder="Response text..."></textarea>
                 </div>
-                <div id="reply-keyboard-section" class="hidden" style="margin-top:0.5rem;">
+                <div class="form-group" id="media-field" style="display:none;">
+                    <label class="form-label">Photo URL</label>
+                    <input id="modal-media" class="form-input" placeholder="https://example.com/image.jpg">
+                </div>
+
+                <!-- Inline Keyboard Toggle -->
+                <div class="inline-toggle-row">
+                    <span class="form-label" style="margin:0;">Inline Keyboard</span>
+                    <div id="inline-toggle" class="toggle" onclick="toggleInlineKeyboard()"><span class="slider"></span></div>
+                </div>
+                <div id="inline-keyboard-section" class="hidden" style="margin-bottom:1rem;">
                     <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:6px;">
-                        <input id="reply-btn-label" class="form-input" style="flex:1; min-width:80px;" placeholder="Button text">
-                        <select id="reply-btn-command" class="form-input" style="flex:1; min-width:80px;"><option value="">Select command...</option></select>
-                        <button onclick="addReplyButton()" class="btn btn-primary btn-sm" style="flex:0 0 auto;">Add</button>
+                        <input id="inline-btn-label" class="form-input" style="flex:1; min-width:140px;" placeholder="Label">
+                        <select id="inline-btn-type" class="form-input" style="flex:0 0 auto; width:auto;">
+                            <option value="command" selected>Command</option>
+                            <option value="callback">Callback</option>
+                            <option value="url">URL</option>
+                        </select>
+                        <input id="inline-btn-value" class="form-input" style="flex:1; min-width:200px;" placeholder="Value/URL">
+                        <select id="inline-btn-command-select" class="form-input hidden" style="flex:1; min-width:200px;"><option value="">Select command...</option></select>
+                        <button onclick="addInlineButton()" class="btn btn-primary btn-sm" style="flex:1 0 auto;">Add</button>
                     </div>
-                    <div id="reply-buttons-list" class="panel" style="padding:0.5rem; min-height:30px;"></div>
+                    <div id="inline-buttons-list" class="panel" style="padding:0.5rem; min-height:30px;"></div>
                 </div>
+
+                <!-- Reply Keyboard Toggle -->
+                <div class="form-group">
+                    <div style="display:flex; align-items:center; gap:0.75rem;">
+                        <span class="form-label" style="margin:0;">Reply Keyboard</span>
+                        <div id="reply-toggle" class="toggle" onclick="toggleReplyKeyboard()"><span class="slider"></span></div>
+                    </div>
+                    <div id="reply-keyboard-section" class="hidden" style="margin-top:0.5rem;">
+                        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:6px;">
+                            <input id="reply-btn-label" class="form-input" style="flex:1; min-width:150px;" placeholder="Button text">
+                            <select id="reply-btn-command" class="form-input" style="flex:1; min-width:150px;"><option value="">Select command...</option></select>
+                            <button onclick="addReplyButton()" class="btn btn-primary btn-sm" style="flex:0 0 auto;">Add</button>
+                        </div>
+                        <div id="reply-buttons-list" class="panel" style="padding:0.5rem; min-height:30px;"></div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label style="display:flex; align-items:center; gap:0.5rem;">
+                        <input type="checkbox" id="modal-admin-only"> Admin only
+                    </label>
+                </div>
+                <div id="modal-error" class="modal-error"></div>
             </div>
-            <div class="form-group">
-                <label style="display:flex; align-items:center; gap:0.5rem;">
-                    <input type="checkbox" id="modal-admin-only"> Admin only
-                </label>
-            </div>
-            <div class="form-group">
-                <label style="display:flex; align-items:center; gap:0.5rem;">
-                    <input type="checkbox" id="modal-enabled" checked> Enabled
-                </label>
-            </div>
-            <div id="modal-error" class="modal-error"></div>
             <div class="modal-actions">
                 <button onclick="closeCommandModal()" class="btn btn-gray">Cancel</button>
                 <button id="modal-save-btn" onclick="saveCommand()" class="btn btn-success">Save</button>
@@ -759,10 +1140,12 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         let inlineButtonsArray = [];
         let replyButtonsArray = [];
         let showReplyKeyboard = false;
+        let showInlineKeyboard = false;
         let currentParent = null;
         let pathSegments = [];
         let childrenMap = {};
         let menuCommands = [];
+        let commandEnabled = true;
 
         // Update-related globals
         let cfAccountId = null;
@@ -770,6 +1153,9 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         let latestVersion = null;
         let updateAvailable = false;
         let workerUrl = null;
+        let updateChecked = false;
+        let updateCheckTimestamp = 0;
+        const UPDATE_COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes
 
         function showToast(message, type) {
             type = type || 'success';
@@ -793,6 +1179,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         }
 
         function goToSetup() { showStep('step-setup'); }
+
         function showInfoModal() { document.getElementById('info-modal').classList.remove('hidden'); }
 
         // ============================
@@ -928,18 +1315,21 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             loadCommands();
             loadMenuCommands();
             loadSettings();
+            // Auto-check for updates with cooldown
+            autoCheckForUpdate();
         }
 
         // ============================
         // TABS
         // ============================
         let currentTab = 'commands';
+
         function switchTab(tabId) {
             currentTab = tabId;
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             const el = document.getElementById('tab-' + tabId);
             if (el) el.classList.add('active');
-            const map = { commands:0, menu:1, users:2, settings:3, botinfo:4, update:5 };
+            const map = { commands: 0, menu: 1, users: 2, settings: 3, botinfo: 4, update: 5 };
             const btns = document.querySelectorAll('.tabs-header .tab-btn');
             btns.forEach((b, i) => b.classList.toggle('active', i === map[tabId]));
             document.querySelectorAll('#mobile-tabs button').forEach((b, i) => {
@@ -961,6 +1351,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             menu.classList.toggle('open');
             btn.className = menu.classList.contains('open') ? 'fa-solid fa-xmark' : 'fa-solid fa-bars';
         }
+
         function closeHamburger() {
             const menu = document.getElementById('mobile-tabs');
             const btn = document.getElementById('hamburgerfa');
@@ -970,13 +1361,34 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         }
 
         // ============================
-        // COMMANDS (simplified, same as original)
+        // COMMANDS
         // ============================
+        function toggleInlineKeyboard() {
+            showInlineKeyboard = !showInlineKeyboard;
+            document.getElementById('inline-toggle').classList.toggle('active', showInlineKeyboard);
+            document.getElementById('inline-keyboard-section').classList.toggle('hidden', !showInlineKeyboard);
+        }
+
         function toggleReplyKeyboard() {
             showReplyKeyboard = !showReplyKeyboard;
             document.getElementById('reply-toggle').classList.toggle('active', showReplyKeyboard);
             document.getElementById('reply-keyboard-section').classList.toggle('hidden', !showReplyKeyboard);
         }
+
+        function toggleEnabledIcon() {
+            commandEnabled = !commandEnabled;
+            const icon = document.getElementById('enabled-toggle-icon');
+            if (commandEnabled) {
+                icon.className = 'enabled-toggle on';
+                icon.innerHTML = '<i class="fa-regular fa-circle-check"></i>';
+                icon.title = 'Enabled';
+            } else {
+                icon.className = 'enabled-toggle off';
+                icon.innerHTML = '<i class="fa-regular fa-circle-xmark"></i>';
+                icon.title = 'Disabled';
+            }
+        }
+
         function populateDropdowns() {
             var parentSelect = document.getElementById('modal-parent');
             var currentCommand = document.getElementById('modal-command').value.trim();
@@ -1007,25 +1419,56 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 }
             }
         }
+
         function renderInlineChips() {
             var container = document.getElementById('inline-buttons-list');
             if (inlineButtonsArray.length === 0) {
-                container.innerHTML = '<span style="font-size:0.75rem; color:#64748b;">No inline buttons.</span>';
+                container.innerHTML = '<div style="font-size:0.75rem; color:#64748b; padding:0.25rem 0;">No inline buttons.</div>';
                 return;
             }
-            var html = '';
+            var html = '<div class="button-chip-list"><span class="form-label" style="margin:0;">Your current buttons :</span>';
             for (var i = 0; i < inlineButtonsArray.length; i++) {
                 var b = inlineButtonsArray[i];
-                var icon = b.type === 'url' ? 'fa-link' : (b.type === 'command' ? 'fa-command' : 'fa-message');
-                html += '<span class="button-chip" draggable="true" data-index="' + i + '" data-type="inline">' +
-                    '<i class="fa-solid fa-grip-lines" style="cursor:grab;margin-right:6px;"></i>' +
-                    '<i class="fa-solid ' + icon + '"></i>' + b.text + ' <span style="color:#64748b; font-size:0.75rem;">(' + b.type + ')</span> ' +
-                    '<button onclick="removeInlineButton(' + i + ')" style="color:#f87171; background:none; border:none; cursor:pointer; margin-left:4px;"><i class="fa-regular fa-circle-xmark"></i></button>' +
-                    '</span>';
+                var icon = b.type === 'url' ? 'fa-link' : (b.type === 'command' ? 'fa-terminal' : 'fa-message');
+                html += '<div class="button-chip" draggable="true" data-index="' + i + '" data-type="inline">' +
+                    '<span class="chip-grip"><i class="fa-solid fa-grip-lines"></i></span>' +
+                    '<i class="fa-solid ' + icon + '" style="color:#60a5fa;"></i>' +
+                    '<span class="chip-text">' + escapeHtml(b.text) + '</span>' +
+                    '<span class="chip-badge">' + b.type + '</span>' +
+                    '<button class="chip-delete" onclick="removeInlineButton(' + i + ')"><i class="fa-regular fa-circle-xmark"></i></button>' +
+                    '</div>';
             }
+            html += '</div>';
             container.innerHTML = html;
             attachDragEvents(container);
         }
+
+        function renderReplyChips() {
+            var container = document.getElementById('reply-buttons-list');
+            if (replyButtonsArray.length === 0) {
+                container.innerHTML = '<div style="font-size:0.75rem; color:#64748b; padding:0.25rem 0;">No reply buttons.</div>';
+                return;
+            }
+            var html = '<div class="button-chip-list"><span class="form-label" style="margin:0;">Your current buttons :</span>';
+            for (var i = 0; i < replyButtonsArray.length; i++) {
+                var b = replyButtonsArray[i];
+                html += '<div class="button-chip" draggable="true" data-index="' + i + '" data-type="reply">' +
+                    '<span class="chip-grip"><i class="fa-solid fa-grip-lines"></i></span>' +
+                    '<i class="fa-regular fa-keyboard" style="color:#60a5fa;"></i>' +
+                    '<span class="chip-text">' + escapeHtml(b.text) + ' → ' + escapeHtml(b.command) + '</span>' +
+                    '<button class="chip-delete" onclick="removeReplyButton(' + i + ')"><i class="fa-regular fa-circle-xmark"></i></button>' +
+                    '</div>';
+            }
+            html += '</div>';
+            container.innerHTML = html;
+            attachDragEvents(container);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
         function addInlineButton() {
             var text = document.getElementById('inline-btn-label').value.trim();
             var type = document.getElementById('inline-btn-type').value;
@@ -1038,7 +1481,10 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             document.getElementById('inline-btn-value').value = '';
             document.getElementById('inline-btn-command-select').value = '';
         }
-        function removeInlineButton(index) { inlineButtonsArray.splice(index, 1); renderInlineChips(); }
+
+        function removeInlineButton(index) { inlineButtonsArray.splice(index, 1);
+            renderInlineChips(); }
+
         function getInlineButtonsJSON() {
             if (inlineButtonsArray.length === 0) return '';
             var rows = [];
@@ -1053,6 +1499,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             }
             return JSON.stringify({ inline_keyboard: rows });
         }
+
         function loadInlineButtonsFromJSON(json) {
             inlineButtonsArray = [];
             if (!json) return;
@@ -1069,27 +1516,10 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                         }
                     }
                 }
-            } catch(e) {}
+            } catch (e) {}
             renderInlineChips();
         }
-        function renderReplyChips() {
-            var container = document.getElementById('reply-buttons-list');
-            if (replyButtonsArray.length === 0) {
-                container.innerHTML = '<span style="font-size:0.75rem; color:#64748b;">No reply buttons.</span>';
-                return;
-            }
-            var html = '';
-            for (var i = 0; i < replyButtonsArray.length; i++) {
-                var b = replyButtonsArray[i];
-                html += '<span class="button-chip" draggable="true" data-index="' + i + '" data-type="reply">' +
-                    '<i class="fa-solid fa-grip-lines" style="cursor:grab;margin-right:6px;"></i>' +
-                    '<i class="fa-regular fa-keyboard"></i>' + b.text + ' → ' + b.command +
-                    '<button onclick="removeReplyButton(' + i + ')" style="color:#f87171; background:none; border:none; cursor:pointer; margin-left:4px;"><i class="fa-regular fa-circle-xmark"></i></button>' +
-                    '</span>';
-            }
-            container.innerHTML = html;
-            attachDragEvents(container);
-        }
+
         function addReplyButton() {
             var text = document.getElementById('reply-btn-label').value.trim();
             var command = document.getElementById('reply-btn-command').value;
@@ -1099,16 +1529,21 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             document.getElementById('reply-btn-label').value = '';
             document.getElementById('reply-btn-command').value = '';
         }
-        function removeReplyButton(index) { replyButtonsArray.splice(index, 1); renderReplyChips(); }
+
+        function removeReplyButton(index) { replyButtonsArray.splice(index, 1);
+            renderReplyChips(); }
+
         function getReplyButtonsJSON() { return JSON.stringify(replyButtonsArray); }
+
         function loadReplyButtonsFromJSON(json) {
             replyButtonsArray = [];
             if (!json) return;
-            try { var arr = JSON.parse(json); if (Array.isArray(arr)) replyButtonsArray = arr; } catch(e) {}
+            try { var arr = JSON.parse(json); if (Array.isArray(arr)) replyButtonsArray = arr; } catch (e) {}
             renderReplyChips();
         }
+
         function attachDragEvents(container) {
-            var chips = container.querySelectorAll('[draggable="true"]');
+            var chips = container.querySelectorAll('.button-chip[draggable="true"]');
             for (var i = 0; i < chips.length; i++) {
                 chips[i].addEventListener('dragstart', handleDragStart);
                 chips[i].addEventListener('dragover', handleDragOver);
@@ -1116,28 +1551,43 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 chips[i].addEventListener('dragend', handleDragEnd);
             }
         }
+
         function handleDragStart(e) {
-            var target = e.target.closest('[draggable="true"]');
+            var target = e.target.closest('.button-chip');
             if (!target) return;
-            e.dataTransfer.setData('text/plain', JSON.stringify({ type: target.dataset.type, index: parseInt(target.dataset.index) }));
+            e.dataTransfer.setData('text/plain', JSON.stringify({ type: target.dataset.type, index: parseInt(target.dataset
+                    .index) }));
             target.classList.add('dragging');
         }
-        function handleDragOver(e) { e.preventDefault(); var target = e.target.closest('[draggable="true"]'); if (target) target.classList.add('drag-over'); }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            var target = e.target.closest('.button-chip');
+            if (target) target.classList.add('drag-over');
+        }
+
         function handleDrop(e) {
             e.preventDefault();
-            var target = e.target.closest('[draggable="true"]');
+            var target = e.target.closest('.button-chip');
             if (!target) return;
             target.classList.remove('drag-over');
             var from = JSON.parse(e.dataTransfer.getData('text/plain'));
             if (!from || from.type !== target.dataset.type) return;
             var array = from.type === 'inline' ? inlineButtonsArray : replyButtonsArray;
-            var fromIdx = from.index, toIdx = parseInt(target.dataset.index);
+            var fromIdx = from.index,
+                toIdx = parseInt(target.dataset.index);
             if (fromIdx === toIdx) return;
             var item = array.splice(fromIdx, 1)[0];
             array.splice(toIdx, 0, item);
-            if (from.type === 'inline') renderInlineChips(); else renderReplyChips();
+            if (from.type === 'inline') renderInlineChips();
+            else renderReplyChips();
         }
-        function handleDragEnd(e) { var target = e.target.closest('[draggable="true"]'); if (target) target.classList.remove('dragging', 'drag-over'); }
+
+        function handleDragEnd(e) {
+            var target = e.target.closest('.button-chip');
+            if (target) target.classList.remove('dragging', 'drag-over');
+        }
+
         function navigateTo(commandName) {
             var cmd = commandsCache.find(c => c.command === commandName);
             if (!cmd) return;
@@ -1149,17 +1599,20 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             currentParent = commandName;
             renderFileManager();
         }
+
         function navigateToRoot() {
             currentParent = null;
             pathSegments = [];
             renderFileManager();
         }
+
         function navigateUp() {
             if (currentParent === null) return;
             pathSegments.pop();
             currentParent = pathSegments.length > 0 ? pathSegments[pathSegments.length - 1] : null;
             renderFileManager();
         }
+
         function renderFileManager() {
             var container = document.getElementById('commands-list');
             var breadcrumb = document.getElementById('breadcrumb');
@@ -1169,7 +1622,8 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             rootSpan.textContent = 'Root';
             rootSpan.style.color = '#94a3b8';
             rootSpan.style.cursor = 'pointer';
-            rootSpan.addEventListener('click', function(e) { e.stopPropagation(); navigateToRoot(); });
+            rootSpan.addEventListener('click', function(e) { e.stopPropagation();
+                navigateToRoot(); });
             breadcrumb.appendChild(rootSpan);
             for (var i = 0; i < pathSegments.length; i++) {
                 var seg = pathSegments[i];
@@ -1185,7 +1639,8 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                     span.className = 'breadcrumb-link';
                     span.style.cursor = 'pointer';
                     span.style.color = '#60a5fa';
-                    span.addEventListener('click', function(e) { e.stopPropagation(); navigateTo(seg); });
+                    span.addEventListener('click', function(e) { e.stopPropagation();
+                        navigateTo(seg); });
                 } else {
                     span.className = 'breadcrumb-current';
                     span.style.color = '#e2e8f0';
@@ -1195,7 +1650,8 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             upBtn.disabled = (currentParent === null);
             var children = childrenMap[currentParent] || [];
             if (children.length === 0) {
-                container.innerHTML = '<div style="padding:1rem; text-align:center; color:#94a3b8; font-size:0.875rem;">This folder is empty.</div>';
+                container.innerHTML =
+                    '<div style="padding:1rem; text-align:center; color:#94a3b8; font-size:0.875rem;">This folder is empty.</div>';
                 return;
             }
             children.sort(function(a, b) { return (a.order_idx || 0) - (b.order_idx || 0); });
@@ -1203,12 +1659,14 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             for (var j = 0; j < children.length; j++) {
                 var cmd = children[j];
                 var hasChildren = childrenMap[cmd.command] && childrenMap[cmd.command].length > 0;
-                var icon = hasChildren ? '<i class="fa-regular fa-folder" style="color:#60a5fa;"></i>' : '<i class="fa-regular fa-file" style="color:#94a3b8;"></i>';
+                var icon = hasChildren ? '<i class="fa-regular fa-folder" style="color:#60a5fa;"></i>' :
+                    '<i class="fa-regular fa-file" style="color:#94a3b8;"></i>';
                 var enabled = cmd.enabled !== undefined ? cmd.enabled : 1;
                 var adminBadge = cmd.is_admin_only ? '<span class="badge badge-admin">Admin</span>' : '';
                 var replyBadge = cmd.show_reply_keyboard ? '<span class="badge badge-reply">Reply</span>' : '';
                 var typeBadge = '<span class="badge badge-gray">' + cmd.response_type + '</span>';
-                var statusBadge = '<span class="badge ' + (enabled ? 'badge-enabled' : 'badge-disabled') + '">' + (enabled ? 'Enabled' : 'Disabled') + '</span>';
+                var statusBadge = '<span class="badge ' + (enabled ? 'badge-enabled' : 'badge-disabled') + '">' + (enabled ?
+                    'Enabled' : 'Disabled') + '</span>';
                 var folderClass = hasChildren ? 'folder' : '';
                 var dataAttr = hasChildren ? 'data-command="' + encodeURIComponent(cmd.command) + '"' : '';
                 listHtml += '<div class="tree-row" data-command="' + encodeURIComponent(cmd.command) + '">' +
@@ -1216,9 +1674,12 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                     '<span class="tree-command-name ' + folderClass + '" ' + dataAttr + '>' + cmd.command + '</span>' +
                     typeBadge + adminBadge + replyBadge + statusBadge +
                     '<div class="tree-actions">' +
-                    '<button class="add-child-btn btn btn-sm btn-primary" data-command="' + encodeURIComponent(cmd.command) + '"><i class="fa-solid fa-plus"></i></button>' +
-                    '<button class="edit-btn btn btn-sm btn-gray" data-command="' + encodeURIComponent(cmd.command) + '"><i class="fa-regular fa-pen-to-square"></i></button>' +
-                    '<button class="delete-btn btn btn-sm btn-danger" data-command="' + encodeURIComponent(cmd.command) + '"><i class="fa-regular fa-trash-can"></i></button>' +
+                    '<button class="add-child-btn btn btn-sm btn-primary" data-command="' + encodeURIComponent(cmd
+                    .command) + '"><i class="fa-solid fa-plus"></i></button>' +
+                    '<button class="edit-btn btn btn-sm btn-gray" data-command="' + encodeURIComponent(cmd.command) +
+                    '"><i class="fa-regular fa-pen-to-square"></i></button>' +
+                    '<button class="delete-btn btn btn-sm btn-danger" data-command="' + encodeURIComponent(cmd
+                    .command) + '"><i class="fa-regular fa-trash-can"></i></button>' +
                     '</div></div>';
             }
             container.innerHTML = listHtml;
@@ -1252,36 +1713,42 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 });
             });
         }
+
         function loadCommands() {
             var container = document.getElementById('commands-list');
             return fetch('/api/commands')
-            .then(function(res) { return res.json().then(function(data) { return { status: res.status, data: data }; }); })
-            .then(function(result) {
-                if (result.status >= 400) throw new Error(result.data.error || 'Failed');
-                commandsCache = result.data.commands || [];
-                childrenMap = {};
-                for (var i = 0; i < commandsCache.length; i++) {
-                    var cmd = commandsCache[i];
-                    var parent = cmd.parent || null;
-                    if (!childrenMap[parent]) childrenMap[parent] = [];
-                    childrenMap[parent].push(cmd);
-                }
-                if (currentParent !== null && !commandsCache.some(function(c) { return c.command === currentParent; })) {
-                    currentParent = null;
-                    pathSegments = [];
-                }
-                renderFileManager();
-                if (!document.getElementById('command-modal').classList.contains('hidden')) populateDropdowns();
-            })
-            .catch(function(err) {
-                container.innerHTML = '<p style="color:#f87171; font-size:0.875rem;">Error: ' + err.message + '</p>';
-            });
+                .then(function(res) { return res.json().then(function(data) { return { status: res.status, data: data }; }); })
+                .then(function(result) {
+                    if (result.status >= 400) throw new Error(result.data.error || 'Failed');
+                    commandsCache = result.data.commands || [];
+                    childrenMap = {};
+                    for (var i = 0; i < commandsCache.length; i++) {
+                        var cmd = commandsCache[i];
+                        var parent = cmd.parent || null;
+                        if (!childrenMap[parent]) childrenMap[parent] = [];
+                        childrenMap[parent].push(cmd);
+                    }
+                    if (currentParent !== null && !commandsCache.some(function(c) { return c.command === currentParent; })) {
+                        currentParent = null;
+                        pathSegments = [];
+                    }
+                    renderFileManager();
+                    if (!document.getElementById('command-modal').classList.contains('hidden')) populateDropdowns();
+                })
+                .catch(function(err) {
+                    container.innerHTML = '<p style="color:#f87171; font-size:0.875rem;">Error: ' + err.message + '</p>';
+                });
         }
+
         async function showAddCommandModal(command, parent) {
             await loadCommands();
             editingCommand = command || null;
             var modal = document.getElementById('command-modal');
             document.getElementById('modal-error').classList.remove('show');
+
+            // Reset enabled toggle
+            commandEnabled = true;
+
             populateDropdowns();
             var parentSelect = document.getElementById('modal-parent');
             if (editingCommand) {
@@ -1291,9 +1758,15 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 document.getElementById('modal-content').value = editingCommand.content || '';
                 document.getElementById('modal-media').value = editingCommand.media_url || '';
                 document.getElementById('modal-admin-only').checked = editingCommand.is_admin_only ? true : false;
-                document.getElementById('modal-enabled').checked = editingCommand.enabled !== undefined ? (editingCommand.enabled == 1) : true;
+                var enabledVal = editingCommand.enabled !== undefined ? (editingCommand.enabled == 1) : true;
+                commandEnabled = enabledVal;
+                updateEnabledIconUI();
                 if (editingCommand.parent) parentSelect.value = editingCommand.parent;
                 loadInlineButtonsFromJSON(editingCommand.buttons_json);
+                showInlineKeyboard = editingCommand.buttons_json && editingCommand.buttons_json.length > 2 ? true :
+                false;
+                document.getElementById('inline-toggle').classList.toggle('active', showInlineKeyboard);
+                document.getElementById('inline-keyboard-section').classList.toggle('hidden', !showInlineKeyboard);
                 showReplyKeyboard = editingCommand.show_reply_keyboard ? true : false;
                 document.getElementById('reply-toggle').classList.toggle('active', showReplyKeyboard);
                 document.getElementById('reply-keyboard-section').classList.toggle('hidden', !showReplyKeyboard);
@@ -1306,33 +1779,58 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 document.getElementById('modal-content').value = '';
                 document.getElementById('modal-media').value = '';
                 document.getElementById('modal-admin-only').checked = false;
-                document.getElementById('modal-enabled').checked = true;
+                commandEnabled = true;
+                updateEnabledIconUI();
                 if (parent) parentSelect.value = parent;
                 else if (currentParent !== null) parentSelect.value = currentParent;
                 else parentSelect.value = '';
-                inlineButtonsArray = []; renderInlineChips();
+                inlineButtonsArray = [];
+                renderInlineChips();
+                showInlineKeyboard = false;
+                document.getElementById('inline-toggle').classList.remove('active');
+                document.getElementById('inline-keyboard-section').classList.add('hidden');
                 showReplyKeyboard = false;
                 document.getElementById('reply-toggle').classList.remove('active');
                 document.getElementById('reply-keyboard-section').classList.add('hidden');
-                replyButtonsArray = []; renderReplyChips();
+                replyButtonsArray = [];
+                renderReplyChips();
                 document.getElementById('modal-save-btn').innerText = 'Add';
             }
             toggleMediaField();
             modal.classList.remove('hidden');
         }
+
+        function updateEnabledIconUI() {
+            const icon = document.getElementById('enabled-toggle-icon');
+            if (commandEnabled) {
+                icon.className = 'enabled-toggle on';
+                icon.innerHTML = '<i class="fa-regular fa-circle-check"></i>';
+                icon.title = 'Enabled';
+            } else {
+                icon.className = 'enabled-toggle off';
+                icon.innerHTML = '<i class="fa-regular fa-circle-xmark"></i>';
+                icon.title = 'Disabled';
+            }
+        }
+
         function toggleMediaField() {
             var type = document.getElementById('modal-type').value;
             document.getElementById('media-field').style.display = type === 'photo' ? 'block' : 'none';
         }
         document.getElementById('modal-type').addEventListener('change', toggleMediaField);
+
         document.getElementById('inline-btn-type').addEventListener('change', function() {
             var type = this.value;
             var valInput = document.getElementById('inline-btn-value');
             var cmdSelect = document.getElementById('inline-btn-command-select');
-            if (type === 'command') { valInput.classList.add('hidden'); cmdSelect.classList.remove('hidden'); }
-            else { valInput.classList.remove('hidden'); cmdSelect.classList.add('hidden'); }
+            if (type === 'command') { valInput.classList.add('hidden');
+                cmdSelect.classList.remove('hidden'); } else { valInput.classList.remove('hidden');
+                cmdSelect.classList.add('hidden'); }
         });
-        function closeCommandModal() { document.getElementById('command-modal').classList.add('hidden'); editingCommand = null; }
+
+        function closeCommandModal() { document.getElementById('command-modal').classList.add('hidden');
+            editingCommand = null; }
+
         function saveCommand() {
             var command = document.getElementById('modal-command').value.trim();
             var parent = document.getElementById('modal-parent').value.trim() || null;
@@ -1340,38 +1838,44 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             var content = document.getElementById('modal-content').value.trim();
             var media_url = document.getElementById('modal-media').value.trim();
             var is_admin_only = document.getElementById('modal-admin-only').checked ? 1 : 0;
-            var enabled = document.getElementById('modal-enabled').checked ? 1 : 0;
+            var enabled = commandEnabled ? 1 : 0;
             var buttons_json = getInlineButtonsJSON();
             var show_reply_keyboard = showReplyKeyboard ? 1 : 0;
             var reply_keyboard_json = getReplyButtonsJSON();
             var errorEl = document.getElementById('modal-error');
-            if (!command || !content) { errorEl.innerText = 'Command and content are required.'; errorEl.classList.add('show'); return; }
-            if (response_type === 'photo' && !media_url) { errorEl.innerText = 'Photo URL required.'; errorEl.classList.add('show'); return; }
-            if (parent === command) { errorEl.innerText = 'Cannot be its own parent.'; errorEl.classList.add('show'); return; }
-            var payload = { command, parent, response_type, content, media_url, is_admin_only, enabled, buttons_json, show_reply_keyboard, reply_keyboard_json };
+            if (!command || !content) { errorEl.innerText = 'Command and content are required.';
+                errorEl.classList.add('show'); return; }
+            if (response_type === 'photo' && !media_url) { errorEl.innerText = 'Photo URL required.';
+                errorEl.classList.add('show'); return; }
+            if (parent === command) { errorEl.innerText = 'Cannot be its own parent.';
+                errorEl.classList.add('show'); return; }
+            var payload = { command, parent, response_type, content, media_url, is_admin_only, enabled, buttons_json,
+                show_reply_keyboard, reply_keyboard_json };
             var url = editingCommand ? '/api/commands/' + encodeURIComponent(editingCommand.command) : '/api/commands';
             var method = editingCommand ? 'PUT' : 'POST';
             fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-            .then(function(res) { return res.json().then(function(data) { return { status: res.status, data: data }; }); })
-            .then(function(result) {
-                if (result.status >= 400) throw new Error(result.data.error || 'Failed');
-                closeCommandModal();
-                showToast('Command saved!');
-                loadCommands();
-            })
-            .catch(function(err) { errorEl.innerText = err.message; errorEl.classList.add('show'); });
+                .then(function(res) { return res.json().then(function(data) { return { status: res.status, data: data }; }); })
+                .then(function(result) {
+                    if (result.status >= 400) throw new Error(result.data.error || 'Failed');
+                    closeCommandModal();
+                    showToast('Command saved!');
+                    loadCommands();
+                })
+                .catch(function(err) { errorEl.innerText = err.message;
+                    errorEl.classList.add('show'); });
         }
+
         function deleteCommand(cmdName) {
             if (!confirm('Delete "' + cmdName + '" and all children? This cannot be undone.')) return;
             fetch('/api/commands/' + encodeURIComponent(cmdName), { method: 'DELETE' })
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                if (!data.success) throw new Error(data.error || 'Delete failed');
-                showToast('Deleted.');
-                if (currentParent === cmdName) navigateUp();
-                else loadCommands();
-            })
-            .catch(function(err) { showToast(err.message, 'error'); });
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (!data.success) throw new Error(data.error || 'Delete failed');
+                    showToast('Deleted.');
+                    if (currentParent === cmdName) navigateUp();
+                    else loadCommands();
+                })
+                .catch(function(err) { showToast(err.message, 'error'); });
         }
 
         // ============================
@@ -1379,36 +1883,68 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         // ============================
         function loadMenuCommands() {
             fetch('/api/menu_commands')
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                menuCommands = data.menu || [];
-                renderMenuRows();
-            })
-            .catch(function(err) { showToast(err.message, 'error'); });
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    menuCommands = data.menu || [];
+                    // Ensure 'start' is always present (fixed)
+                    var hasStart = menuCommands.some(function(e) { return e.command === 'start'; });
+                    if (!hasStart) {
+                        menuCommands.unshift({ command: 'start', description: 'Start the bot' });
+                    }
+                    renderMenuRows();
+                })
+                .catch(function(err) { showToast(err.message, 'error'); });
         }
+
         function renderMenuRows() {
             var container = document.getElementById('menu-commands-container');
-            if (menuCommands.length === 0) { container.innerHTML = '<p style="color:#94a3b8; font-size:0.875rem;">No menu entries. Add some.</p>'; return; }
+            if (menuCommands.length === 0) {
+                container.innerHTML = '<p style="color:#94a3b8; font-size:0.875rem;">No menu entries. Add some.</p>';
+                return;
+            }
             var html = '';
             for (var i = 0; i < menuCommands.length; i++) {
                 var entry = menuCommands[i];
+                var isStart = entry.command === 'start';
+                var deleteBtn = isStart ?
+                    '<span style="color:#475569; font-size:0.75rem; margin-left:0.5rem;"><i class="fa-solid fa-lock"></i> fixed</span>' :
+                    '<button onclick="removeMenuRow(' + i + ')" style="color:#f87171; background:none; border:none; cursor:pointer;"><i class="fa-regular fa-trash-can"></i></button>';
                 html += '<div class="flex gap-2 items-center">' +
-                    '<input class="form-input" style="flex:1; font-size:0.875rem;" value="' + entry.command + '" placeholder="Command (no slash)" data-index="' + i + '">' +
-                    '<input class="form-input" style="flex:1; font-size:0.875rem;" value="' + entry.description + '" placeholder="Description" data-index="' + i + '">' +
-                    '<button onclick="removeMenuRow(' + i + ')" style="color:#f87171; background:none; border:none; cursor:pointer;"><i class="fa-regular fa-trash-can"></i></button>' +
+                    '<input class="form-input" style="flex:1; font-size:0.875rem;" value="' + entry.command +
+                    '" placeholder="Command (no slash)" data-index="' + i + '" ' + (isStart ? 'readonly' : '') + '>' +
+                    '<input class="form-input" style="flex:1; font-size:0.875rem;" value="' + entry.description +
+                    '" placeholder="Description" data-index="' + i + '">' +
+                    deleteBtn +
                     '</div>';
             }
             container.innerHTML = html;
         }
-        function addMenuCommandRow() { menuCommands.push({ command: '', description: '' }); renderMenuRows(); }
-        function removeMenuRow(index) { menuCommands.splice(index, 1); renderMenuRows(); }
+
+        function addMenuCommandRow() { menuCommands.push({ command: '', description: '' });
+            renderMenuRows(); }
+
+        function removeMenuRow(index) {
+            var entry = menuCommands[index];
+            if (entry && entry.command === 'start') {
+                showToast('Cannot remove the fixed "start" command.', 'error');
+                return;
+            }
+            menuCommands.splice(index, 1);
+            renderMenuRows();
+        }
+
         function publishMenuCommands() {
             var inputs = document.querySelectorAll('#menu-commands-container input[data-index]');
             var updated = [];
             for (var i = 0; i < inputs.length; i += 2) {
-                var cmd = inputs[i].value.trim();
-                var desc = inputs[i+1] ? inputs[i+1].value.trim() : '';
+                var cmd = inputs[i].value.trim().toLowerCase();
+                var desc = inputs[i + 1] ? inputs[i + 1].value.trim() : '';
                 if (cmd && desc) updated.push({ command: cmd, description: desc });
+            }
+            // Ensure start is present
+            var hasStart = updated.some(function(e) { return e.command === 'start'; });
+            if (!hasStart) {
+                updated.unshift({ command: 'start', description: 'Start the bot' });
             }
             if (updated.length === 0) { showToast('Add at least one valid entry.', 'error'); return; }
             var resultDiv = document.getElementById('menu-publish-result');
@@ -1416,22 +1952,22 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             resultDiv.innerText = 'Publishing...';
             resultDiv.style.color = '#94a3b8';
             fetch('/api/menu_commands', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ menu: updated })
-            })
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                if (!data.success) throw new Error(data.error || 'Publish failed');
-                resultDiv.innerText = '✅ Published!';
-                resultDiv.style.color = '#4ade80';
-                menuCommands = updated;
-                renderMenuRows();
-            })
-            .catch(function(err) {
-                resultDiv.innerText = '❌ ' + err.message;
-                resultDiv.style.color = '#f87171';
-            });
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ menu: updated })
+                })
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (!data.success) throw new Error(data.error || 'Publish failed');
+                    resultDiv.innerText = '✅ Published!';
+                    resultDiv.style.color = '#4ade80';
+                    menuCommands = updated;
+                    renderMenuRows();
+                })
+                .catch(function(err) {
+                    resultDiv.innerText = '❌ ' + err.message;
+                    resultDiv.style.color = '#f87171';
+                });
         }
 
         // ============================
@@ -1442,28 +1978,45 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             var search = document.getElementById('user-search').value.trim();
             var url = '/api/users' + (search ? '?search=' + encodeURIComponent(search) : '');
             fetch(url)
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                var users = data.users || [];
-                if (users.length === 0) { container.innerHTML = '<p style="color:#94a3b8; font-size:0.875rem;">No users yet. Interact with the bot to see them here.</p>'; return; }
-                var html = '<div style="overflow-x:auto;"><table style="width:100%; font-size:0.875rem; border-collapse:collapse;"><thead><tr style="border-bottom:1px solid #334155;"><th style="text-align:left; padding:0.5rem;">ID</th><th style="text-align:left; padding:0.5rem;">Username</th><th style="text-align:left; padding:0.5rem;">Name</th><th style="text-align:left; padding:0.5rem;">Role</th><th style="text-align:left; padding:0.5rem;">Last Active</th><th style="text-align:left; padding:0.5rem;">Action</th></tr></thead><tbody>';
-                for (var i = 0; i < users.length; i++) {
-                    var u = users[i];
-                    var roleBtn = u.role === 'admin' ? '<button class="demote-btn" style="background:#dc2626; color:white; border:none; border-radius:4px; padding:0.125rem 0.5rem; font-size:0.75rem; cursor:pointer;" data-id="' + u.id + '">Demote</button>' : '<button class="promote-btn" style="background:#22c55e; color:white; border:none; border-radius:4px; padding:0.125rem 0.5rem; font-size:0.75rem; cursor:pointer;" data-id="' + u.id + '">Promote</button>';
-                    html += '<tr style="border-bottom:1px solid #334155;"><td style="padding:0.5rem; font-family:monospace;">' + u.id + '</td><td style="padding:0.5rem;">' + (u.username || '-') + '</td><td style="padding:0.5rem;">' + (u.first_name || '') + '</td><td style="padding:0.5rem;"><span class="badge ' + (u.role === 'admin' ? 'badge-admin' : 'badge-gray') + '">' + (u.role || 'user') + '</span></td><td style="padding:0.5rem; font-size:0.75rem; color:#94a3b8;">' + (u.last_active || '-') + '</td><td style="padding:0.5rem;">' + roleBtn + '</td></tr>';
-                }
-                html += '</tbody></table></div>';
-                container.innerHTML = html;
-                container.querySelectorAll('.promote-btn').forEach(function(b) { b.addEventListener('click', function() { updateUserRole(parseInt(this.dataset.id), 'admin'); }); });
-                container.querySelectorAll('.demote-btn').forEach(function(b) { b.addEventListener('click', function() { updateUserRole(parseInt(this.dataset.id), 'user'); }); });
-            })
-            .catch(function(err) { container.innerHTML = '<p style="color:#f87171; font-size:0.875rem;">Error: ' + err.message + '</p>'; });
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    var users = data.users || [];
+                    if (users.length === 0) {
+                        container.innerHTML =
+                            '<p style="color:#94a3b8; font-size:0.875rem;">No users yet. Interact with the bot to see them here.</p>';
+                        return;
+                    }
+                    var html =
+                        '<div style="overflow-x:auto;"><table style="width:100%; font-size:0.875rem; border-collapse:collapse;"><thead><tr style="border-bottom:1px solid #334155;"><th style="text-align:left; padding:0.5rem;">ID</th><th style="text-align:left; padding:0.5rem;">Username</th><th style="text-align:left; padding:0.5rem;">Name</th><th style="text-align:left; padding:0.5rem;">Role</th><th style="text-align:left; padding:0.5rem;">Last Active</th><th style="text-align:left; padding:0.5rem;">Action</th></tr></thead><tbody>';
+                    for (var i = 0; i < users.length; i++) {
+                        var u = users[i];
+                        var roleBtn = u.role === 'admin' ?
+                            '<button class="demote-btn" style="background:#dc2626; color:white; border:none; border-radius:4px; padding:0.125rem 0.5rem; font-size:0.75rem; cursor:pointer;" data-id="' + u.id + '">Demote</button>' :
+                            '<button class="promote-btn" style="background:#22c55e; color:white; border:none; border-radius:4px; padding:0.125rem 0.5rem; font-size:0.75rem; cursor:pointer;" data-id="' + u.id + '">Promote</button>';
+                        html += '<tr style="border-bottom:1px solid #334155;"><td style="padding:0.5rem; font-family:monospace;">' +
+                            u.id + '</td><td style="padding:0.5rem;">' + (u.username || '-') + '</td><td style="padding:0.5rem;">' +
+                            (u.first_name || '') + '</td><td style="padding:0.5rem;"><span class="badge ' + (u.role ===
+                                'admin' ? 'badge-admin' : 'badge-gray') + '">' + (u.role || 'user') + '</span></td><td style="padding:0.5rem; font-size:0.75rem; color:#94a3b8;">' +
+                            (u.last_active || '-') + '</td><td style="padding:0.5rem;">' + roleBtn + '</td></tr>';
+                    }
+                    html += '</tbody></table></div>';
+                    container.innerHTML = html;
+                    container.querySelectorAll('.promote-btn').forEach(function(b) { b.addEventListener('click',
+                            function() { updateUserRole(parseInt(this.dataset.id), 'admin'); }); });
+                    container.querySelectorAll('.demote-btn').forEach(function(b) { b.addEventListener('click',
+                            function() { updateUserRole(parseInt(this.dataset.id), 'user'); }); });
+                })
+                .catch(function(err) { container.innerHTML = '<p style="color:#f87171; font-size:0.875rem;">Error: ' + err
+                        .message + '</p>'; });
         }
+
         function updateUserRole(userId, role) {
-            fetch('/api/users/role', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId, role }) })
-            .then(function(res) { return res.json(); })
-            .then(function(data) { if (data.success) { showToast('Role updated.'); loadUsers(); } else throw new Error(data.error); })
-            .catch(function(err) { showToast(err.message, 'error'); });
+            fetch('/api/users/role', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+                    userId, role }) })
+                .then(function(res) { return res.json(); })
+                .then(function(data) { if (data.success) { showToast('Role updated.');
+                        loadUsers(); } else throw new Error(data.error); })
+                .catch(function(err) { showToast(err.message, 'error'); });
         }
 
         // ============================
@@ -1471,29 +2024,32 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         // ============================
         function loadSettings() {
             fetch('/api/settings')
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                document.getElementById('settings-bot-token').value = data.bot_token || '';
-                document.getElementById('settings-webhook-url').value = data.webhook_url || '';
-                // Also load saved CF token if present
-                if (data.cf_token) {
-                    document.getElementById('update-cf-token').value = data.cf_token;
-                }
-            })
-            .catch(function(err) { showToast('Error loading settings: ' + err.message, 'error'); });
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    document.getElementById('settings-bot-token').value = data.bot_token || '';
+                    document.getElementById('settings-webhook-url').value = data.webhook_url || '';
+                    if (data.cf_token) {
+                        document.getElementById('update-cf-token').value = data.cf_token;
+                    }
+                })
+                .catch(function(err) { showToast('Error loading settings: ' + err.message, 'error'); });
         }
         var tokenVisible = false;
+
         function toggleTokenVisibility() {
             tokenVisible = !tokenVisible;
             var input = document.getElementById('settings-bot-token');
             input.type = tokenVisible ? 'text' : 'password';
         }
+
         function showChangeTokenModal() {
             document.getElementById('token-modal').classList.remove('hidden');
             document.getElementById('new-token-input').value = '';
             document.getElementById('token-test-result').classList.add('hidden');
         }
+
         function closeTokenModal() { document.getElementById('token-modal').classList.add('hidden'); }
+
         function updateBotToken() {
             var newToken = document.getElementById('new-token-input').value.trim();
             if (!newToken) { showToast('Enter a token.', 'error'); return; }
@@ -1501,34 +2057,41 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             resultDiv.classList.remove('hidden');
             resultDiv.innerText = 'Testing...';
             resultDiv.style.color = '#94a3b8';
-            fetch('/api/settings/token', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ botToken: newToken }) })
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                if (!data.success) throw new Error(data.error || 'Failed');
-                resultDiv.innerText = '✅ Updated!';
-                resultDiv.style.color = '#4ade80';
-                setTimeout(function() { closeTokenModal(); loadSettings(); }, 1500);
-            })
-            .catch(function(err) { resultDiv.innerText = '❌ ' + err.message; resultDiv.style.color = '#f87171'; });
+            fetch('/api/settings/token', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ botToken: newToken }) })
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (!data.success) throw new Error(data.error || 'Failed');
+                    resultDiv.innerText = '✅ Updated!';
+                    resultDiv.style.color = '#4ade80';
+                    setTimeout(function() { closeTokenModal();
+                        loadSettings(); }, 1500);
+                })
+                .catch(function(err) { resultDiv.innerText = '❌ ' + err.message;
+                    resultDiv.style.color = '#f87171'; });
         }
+
         function testWebhook() {
             var url = document.getElementById('settings-webhook-url').value;
             if (!url) { showToast('No webhook URL.', 'error'); return; }
             showToast('Testing...');
             fetch(url, { method: 'POST', body: JSON.stringify({ ping: 'test' }), headers: { 'Content-Type': 'application/json' } })
-            .then(function(res) { if (res.ok) showToast('Webhook reachable!'); else showToast('Status ' + res.status, 'error'); })
-            .catch(function(err) { showToast('Test failed: ' + err.message, 'error'); });
+                .then(function(res) { if (res.ok) showToast('Webhook reachable!');
+                    else showToast('Status ' + res.status, 'error'); })
+                .catch(function(err) { showToast('Test failed: ' + err.message, 'error'); });
         }
+
         function factoryReset() {
             if (!confirm('Delete ALL data? This cannot be undone.')) return;
             showToast('Resetting...');
             fetch('/api/reset', { method: 'POST' })
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                if (data.success) { showToast('Reset successful. Reloading...'); setTimeout(function() { window.location.reload(); }, 1500); }
-                else throw new Error(data.error);
-            })
-            .catch(function(err) { showToast('Reset error: ' + err.message, 'error'); });
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (data.success) { showToast('Reset successful. Reloading...');
+                        setTimeout(function() { window.location.reload(); }, 1500); } else throw new Error(data
+                        .error);
+                })
+                .catch(function(err) { showToast('Reset error: ' + err.message, 'error'); });
         }
 
         // ============================
@@ -1540,21 +2103,21 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             if (!newPass || newPass.length < 6) { showToast('Password must be at least 6 characters.', 'error'); return; }
             if (newPass !== confirm) { showToast('Passwords do not match.', 'error'); return; }
             fetch('/api/change_password', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ newPassword: newPass })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    showToast('Password updated successfully.');
-                    document.getElementById('change-pass-new').value = '';
-                    document.getElementById('change-pass-confirm').value = '';
-                } else {
-                    throw new Error(data.error || 'Failed');
-                }
-            })
-            .catch(err => showToast(err.message, 'error'));
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ newPassword: newPass })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast('Password updated successfully.');
+                        document.getElementById('change-pass-new').value = '';
+                        document.getElementById('change-pass-confirm').value = '';
+                    } else {
+                        throw new Error(data.error || 'Failed');
+                    }
+                })
+                .catch(err => showToast(err.message, 'error'));
         }
 
         // ============================
@@ -1566,20 +2129,21 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             resultDiv.innerText = 'Loading from Telegram...';
             resultDiv.style.color = '#94a3b8';
             fetch('/api/bot_info')
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                if (!data.success) throw new Error(data.error || 'Failed');
-                document.getElementById('bot-name').value = data.name || '';
-                document.getElementById('bot-description').value = data.description || '';
-                document.getElementById('bot-short-description').value = data.short_description || '';
-                resultDiv.innerText = '✅ Loaded from Telegram.';
-                resultDiv.style.color = '#4ade80';
-            })
-            .catch(function(err) {
-                resultDiv.innerText = '❌ ' + err.message;
-                resultDiv.style.color = '#f87171';
-            });
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (!data.success) throw new Error(data.error || 'Failed');
+                    document.getElementById('bot-name').value = data.name || '';
+                    document.getElementById('bot-description').value = data.description || '';
+                    document.getElementById('bot-short-description').value = data.short_description || '';
+                    resultDiv.innerText = '✅ Loaded from Telegram.';
+                    resultDiv.style.color = '#4ade80';
+                })
+                .catch(function(err) {
+                    resultDiv.innerText = '❌ ' + err.message;
+                    resultDiv.style.color = '#f87171';
+                });
         }
+
         function publishBotInfo() {
             var name = document.getElementById('bot-name').value.trim();
             var description = document.getElementById('bot-description').value.trim();
@@ -1589,35 +2153,62 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             resultDiv.innerText = 'Publishing...';
             resultDiv.style.color = '#94a3b8';
             fetch('/api/bot_info', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, description, short_description })
-            })
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                if (!data.success) throw new Error(data.error || 'Publish failed');
-                resultDiv.innerText = '✅ Published to Telegram!';
-                resultDiv.style.color = '#4ade80';
-            })
-            .catch(function(err) {
-                resultDiv.innerText = '❌ ' + err.message;
-                resultDiv.style.color = '#f87171';
-            });
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, description, short_description })
+                })
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (!data.success) throw new Error(data.error || 'Publish failed');
+                    resultDiv.innerText = '✅ Published to Telegram!';
+                    resultDiv.style.color = '#4ade80';
+                })
+                .catch(function(err) {
+                    resultDiv.innerText = '❌ ' + err.message;
+                    resultDiv.style.color = '#f87171';
+                });
         }
 
         // ============================
         // UPDATE / SELF-UPDATE
         // ============================
         function openTokenGenerator() {
-            const url = 'https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22edit%22%7D%5D&accountId=*&zoneId=all&name=Nyxx%20Updater';
+            const url =
+                'https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22edit%22%7D%5D&accountId=*&zoneId=all&name=Nyxx%20Updater';
             window.open(url, '_blank');
         }
 
         async function loadUpdateTab() {
-            // Load saved CF token from settings
-            await loadSettings(); // this will fill the token input if saved
-            // Then check for updates
+            await loadSettings();
             await checkForUpdate();
+            // Show/hide CF section based on update availability
+            toggleCfSection();
+        }
+
+        function toggleCfSection() {
+            const section = document.getElementById('update-cf-section');
+            if (updateAvailable) {
+                section.style.display = 'block';
+            } else {
+                section.style.display = 'none';
+            }
+            // Also update the update button state
+            updateUpdateButtonState();
+        }
+
+        async function autoCheckForUpdate() {
+            const now = Date.now();
+            const lastCheck = parseInt(localStorage.getItem('updateCheckTimestamp') || '0');
+            if (now - lastCheck < UPDATE_COOLDOWN_MS && updateChecked) {
+                // Use cached result
+                if (updateAvailable) {
+                    showUpdateBanner(true);
+                }
+                return;
+            }
+            await checkForUpdate();
+            localStorage.setItem('updateCheckTimestamp', String(now));
+            updateChecked = true;
         }
 
         async function checkForUpdate() {
@@ -1636,7 +2227,6 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                     if (data.released) details += '📅 Released: ' + data.released;
                     if (data.notes) details += (details ? ' | ' : '') + '📝 Notes: ' + data.notes;
                     detailsDiv.innerText = details || '';
-                    // Compare versions
                     updateAvailable = compareVersions(data.latest, data.current) > 0;
                 } else {
                     latestInput.value = 'Error: ' + (data.error || 'unknown');
@@ -1647,6 +2237,12 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 updateAvailable = false;
             }
             updateUpdateButtonState();
+            toggleCfSection();
+            if (updateAvailable) {
+                showUpdateBanner(true);
+            } else {
+                showUpdateBanner(false);
+            }
         }
 
         function compareVersions(v1, v2) {
@@ -1661,9 +2257,20 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             return 0;
         }
 
+        function showUpdateBanner(show) {
+            const banner = document.getElementById('update-banner-btn');
+            const statusItems = document.getElementById('status-items');
+            if (show) {
+                banner.classList.remove('hidden');
+                statusItems.style.display = 'none';
+            } else {
+                banner.classList.add('hidden');
+                statusItems.style.display = 'flex';
+            }
+        }
+
         function updateUpdateButtonState() {
             const btn = document.getElementById('update-btn');
-            // Enable only if update is available (token validation will happen on click)
             if (updateAvailable) {
                 btn.disabled = false;
                 btn.title = 'Update available';
@@ -1673,7 +2280,6 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             }
         }
 
-        // The "Update to Latest" button click handler – validates token and then updates
         document.getElementById('update-btn').addEventListener('click', performUpdate);
 
         async function performUpdate() {
@@ -1682,14 +2288,12 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             statusDiv.innerText = 'Preparing...';
             statusDiv.style.color = '#94a3b8';
 
-            // 1. Check if update is available
             if (!updateAvailable) {
                 statusDiv.innerText = '❌ No update available.';
                 statusDiv.style.color = '#f87171';
                 return;
             }
 
-            // 2. Get token
             const token = document.getElementById('update-cf-token').value.trim();
             if (!token) {
                 statusDiv.innerText = '❌ Please enter a Cloudflare API token.';
@@ -1697,7 +2301,6 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 return;
             }
 
-            // 3. Validate token and get account/script info
             const resultDiv = document.getElementById('update-validation-result');
             resultDiv.classList.remove('hidden');
             resultDiv.innerText = 'Validating token...';
@@ -1714,7 +2317,8 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 if (!validationData.valid) {
                     throw new Error(validationData.error || 'Invalid token');
                 }
-                resultDiv.innerText = '✅ Token validated. Account: ' + validationData.accountId + ', Script: ' + validationData.scriptName;
+                resultDiv.innerText = '✅ Token validated. Account: ' + validationData.accountId + ', Script: ' +
+                    validationData.scriptName;
                 resultDiv.style.color = '#4ade80';
             } catch (e) {
                 resultDiv.innerText = '❌ Token validation failed: ' + e.message;
@@ -1732,7 +2336,6 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 return;
             }
 
-            // 4. Perform the update
             statusDiv.innerText = 'Updating...';
             statusDiv.style.color = '#94a3b8';
 
@@ -1746,9 +2349,9 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 if (!updateData.success) {
                     throw new Error(updateData.error || 'Update failed');
                 }
-                statusDiv.innerText = '✅ Update successful! New version: ' + (updateData.version || 'unknown') + '. Updating takes time. Please wait 30 seconds and reload the page untill you see the new version appear here.';
+                statusDiv.innerText = '✅ Update successful! New version: ' + (updateData.version || 'unknown') +
+                    '. Updating takes time. Please wait 30 seconds and reload the page until you see the new version appear here.';
                 statusDiv.style.color = '#4ade80';
-                // Refresh version info
                 await checkForUpdate();
                 showToast('Update completed! The worker has been updated.', 'success');
             } catch (e) {
