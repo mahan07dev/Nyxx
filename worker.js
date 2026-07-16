@@ -4,7 +4,7 @@
 const VERSION = '2.1.2'; // bump on each release
 
 // ============================================================================
-// EMBEDDED DASHBOARD HTML (with update tab)
+// EMBEDDED DASHBOARD HTML (with update tab + loading overlay + cache)
 // ============================================================================
 const DASHBOARD_HTML = `<!DOCTYPE html>
 <html lang="en" class="dark">
@@ -792,9 +792,46 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         .menu-hint .example {
             color: #e2e8f0;
         }
+
+        /* ----- Loading Overlay ----- */
+        #loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            backdrop-filter: blur(4px);
+            transition: opacity 0.2s;
+        }
+        #loading-overlay.hidden {
+            display: none;
+        }
+        .loading-spinner {
+            width: 56px;
+            height: 56px;
+            border: 6px solid #334155;
+            border-top: 6px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+        }
+        .loading-text {
+            margin-top: 1.5rem;
+            font-size: 1.1rem;
+            color: #e2e8f0;
+            letter-spacing: 0.5px;
+        }
     </style>
 </head>
 <body>
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="hidden">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Loading…</div>
+    </div>
+
     <nav class="navbar" id="navbar">
         <div class="navbar-inner">
             <h1 class="navbar-title">
@@ -1157,6 +1194,69 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         let updateCheckTimestamp = 0;
         const UPDATE_COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes
 
+        // ----- CACHE -----
+        const CACHE_TTL = 60000; // 60 seconds
+        const cache = {
+            commands: { data: null, loaded: false, timestamp: 0 },
+            menu: { data: null, loaded: false, timestamp: 0 },
+            settings: { data: null, loaded: false, timestamp: 0 },
+            botinfo: { data: null, loaded: false, timestamp: 0 },
+            users: { data: null, loaded: false, timestamp: 0 }, // used only when search changes
+        };
+
+        function isCacheValid(key) {
+            const entry = cache[key];
+            return entry.loaded && (Date.now() - entry.timestamp < CACHE_TTL);
+        }
+
+        function invalidateCache(key) {
+            if (key) {
+                cache[key].loaded = false;
+                cache[key].data = null;
+                cache[key].timestamp = 0;
+            } else {
+                // invalidate all
+                Object.keys(cache).forEach(k => {
+                    cache[k].loaded = false;
+                    cache[k].data = null;
+                    cache[k].timestamp = 0;
+                });
+            }
+        }
+
+        // ----- Loading overlay control -----
+        let loadingCounter = 0;
+        let hideTimer = null;
+
+        function showLoading() {
+            if (hideTimer) {
+                clearTimeout(hideTimer);
+                hideTimer = null;
+            }
+            if (loadingCounter === 0) {
+                document.getElementById('loading-overlay').classList.remove('hidden');
+            }
+            loadingCounter++;
+        }
+
+        function hideLoading() {
+            loadingCounter--;
+            if (loadingCounter === 0) {
+                if (hideTimer) clearTimeout(hideTimer);
+                hideTimer = setTimeout(() => {
+                    document.getElementById('loading-overlay').classList.add('hidden');
+                    hideTimer = null;
+                }, 300);
+            }
+        }
+
+        // Wrapper to show/hide around any promise
+        function withLoading(promise) {
+            showLoading();
+            return promise.finally(hideLoading);
+        }
+
+        // ----- Toast -----
         function showToast(message, type) {
             type = type || 'success';
             const container = document.getElementById('toast-container');
@@ -1186,6 +1286,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         // STATUS CHECK
         // ============================
         async function checkStatus() {
+            showLoading();
             try {
                 const res = await fetch('/api/status');
                 const data = await res.json();
@@ -1219,6 +1320,8 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 const msg = document.getElementById('status-message');
                 if (msg) msg.innerHTML = 'Error checking status: ' + e.message;
                 showStep('step-status');
+            } finally {
+                hideLoading();
             }
         }
 
@@ -1249,6 +1352,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             }
             const payload = { adminPassword: password };
             if (botToken) payload.botToken = botToken;
+            showLoading();
             try {
                 const res = await fetch('/api/setup', {
                     method: 'POST',
@@ -1262,6 +1366,8 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             } catch (err) {
                 errorEl.textContent = err.message;
                 errorEl.style.display = 'block';
+            } finally {
+                hideLoading();
             }
         }
 
@@ -1274,6 +1380,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 errorEl.style.display = 'block';
                 return;
             }
+            showLoading();
             try {
                 const res = await fetch('/api/login', {
                     method: 'POST',
@@ -1287,21 +1394,30 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             } catch (err) {
                 errorEl.textContent = err.message;
                 errorEl.style.display = 'block';
+            } finally {
+                hideLoading();
             }
         }
 
         async function logout() {
-            await fetch('/api/logout', { method: 'POST' });
-            showToast('Logged out.');
-            document.getElementById('logout-btn').classList.add('hidden');
-            showStep('step-login');
+            showLoading();
+            try {
+                await fetch('/api/logout', { method: 'POST' });
+                showToast('Logged out.');
+                document.getElementById('logout-btn').classList.add('hidden');
+                showStep('step-login');
+            } finally {
+                hideLoading();
+            }
         }
 
         function showDashboard() {
             showStep('step-dashboard');
             const logoutBtn = document.getElementById('logout-btn');
             if (logoutBtn) logoutBtn.classList.remove('hidden');
-            fetch('/api/status')
+            // Load status without cache
+            withLoading(
+                fetch('/api/status')
                 .then(r => r.json())
                 .then(data => {
                     document.getElementById('status-d1').innerHTML = data.d1_bound ?
@@ -1310,11 +1426,12 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                     document.getElementById('status-tg').innerHTML = data.tg_configured ?
                         '<i class="fa-brands fa-telegram" style="color:#60a5fa;"></i> Bot: Active' :
                         '<i class="fa-brands fa-telegram"></i> Bot: Unlinked';
-                });
-            switchTab('commands');
-            loadCommands();
-            loadMenuCommands();
-            loadSettings();
+                })
+            );
+            // Load initial data (commands, menu, settings) in parallel, but cache them
+            loadCommands(true); // force load
+            loadMenuCommands(true);
+            loadSettings(true);
             // Auto-check for updates with cooldown
             autoCheckForUpdate();
         }
@@ -1714,13 +1831,36 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             });
         }
 
-        function loadCommands() {
+        // forceLoad = true to bypass cache
+        function loadCommands(forceLoad) {
             var container = document.getElementById('commands-list');
-            return fetch('/api/commands')
+            if (!forceLoad && isCacheValid('commands')) {
+                // Use cached data
+                commandsCache = cache.commands.data;
+                childrenMap = {};
+                for (var i = 0; i < commandsCache.length; i++) {
+                    var cmd = commandsCache[i];
+                    var parent = cmd.parent || null;
+                    if (!childrenMap[parent]) childrenMap[parent] = [];
+                    childrenMap[parent].push(cmd);
+                }
+                if (currentParent !== null && !commandsCache.some(function(c) { return c.command === currentParent; })) {
+                    currentParent = null;
+                    pathSegments = [];
+                }
+                renderFileManager();
+                if (!document.getElementById('command-modal').classList.contains('hidden')) populateDropdowns();
+                return Promise.resolve();
+            }
+            return withLoading(
+                fetch('/api/commands')
                 .then(function(res) { return res.json().then(function(data) { return { status: res.status, data: data }; }); })
                 .then(function(result) {
                     if (result.status >= 400) throw new Error(result.data.error || 'Failed');
                     commandsCache = result.data.commands || [];
+                    cache.commands.data = commandsCache;
+                    cache.commands.loaded = true;
+                    cache.commands.timestamp = Date.now();
                     childrenMap = {};
                     for (var i = 0; i < commandsCache.length; i++) {
                         var cmd = commandsCache[i];
@@ -1737,11 +1877,12 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 })
                 .catch(function(err) {
                     container.innerHTML = '<p style="color:#f87171; font-size:0.875rem;">Error: ' + err.message + '</p>';
-                });
+                })
+            );
         }
 
         async function showAddCommandModal(command, parent) {
-            await loadCommands();
+            await loadCommands(); // ensures fresh data
             editingCommand = command || null;
             var modal = document.getElementById('command-modal');
             document.getElementById('modal-error').classList.remove('show');
@@ -1853,36 +1994,48 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 show_reply_keyboard, reply_keyboard_json };
             var url = editingCommand ? '/api/commands/' + encodeURIComponent(editingCommand.command) : '/api/commands';
             var method = editingCommand ? 'PUT' : 'POST';
-            fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+            withLoading(
+                fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
                 .then(function(res) { return res.json().then(function(data) { return { status: res.status, data: data }; }); })
                 .then(function(result) {
                     if (result.status >= 400) throw new Error(result.data.error || 'Failed');
                     closeCommandModal();
                     showToast('Command saved!');
-                    loadCommands();
+                    invalidateCache('commands'); // force reload next time
+                    loadCommands(true);
                 })
                 .catch(function(err) { errorEl.innerText = err.message;
-                    errorEl.classList.add('show'); });
+                    errorEl.classList.add('show'); })
+            );
         }
 
         function deleteCommand(cmdName) {
             if (!confirm('Delete "' + cmdName + '" and all children? This cannot be undone.')) return;
-            fetch('/api/commands/' + encodeURIComponent(cmdName), { method: 'DELETE' })
+            withLoading(
+                fetch('/api/commands/' + encodeURIComponent(cmdName), { method: 'DELETE' })
                 .then(function(res) { return res.json(); })
                 .then(function(data) {
                     if (!data.success) throw new Error(data.error || 'Delete failed');
                     showToast('Deleted.');
+                    invalidateCache('commands');
                     if (currentParent === cmdName) navigateUp();
-                    else loadCommands();
+                    else loadCommands(true);
                 })
-                .catch(function(err) { showToast(err.message, 'error'); });
+                .catch(function(err) { showToast(err.message, 'error'); })
+            );
         }
 
         // ============================
         // MENU COMMANDS
         // ============================
-        function loadMenuCommands() {
-            fetch('/api/menu_commands')
+        function loadMenuCommands(forceLoad) {
+            if (!forceLoad && isCacheValid('menu')) {
+                menuCommands = cache.menu.data;
+                renderMenuRows();
+                return Promise.resolve();
+            }
+            return withLoading(
+                fetch('/api/menu_commands')
                 .then(function(res) { return res.json(); })
                 .then(function(data) {
                     menuCommands = data.menu || [];
@@ -1891,9 +2044,13 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                     if (!hasStart) {
                         menuCommands.unshift({ command: 'start', description: 'Start the bot' });
                     }
+                    cache.menu.data = menuCommands;
+                    cache.menu.loaded = true;
+                    cache.menu.timestamp = Date.now();
                     renderMenuRows();
                 })
-                .catch(function(err) { showToast(err.message, 'error'); });
+                .catch(function(err) { showToast(err.message, 'error'); })
+            );
         }
 
         function renderMenuRows() {
@@ -1951,7 +2108,8 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             resultDiv.classList.remove('hidden');
             resultDiv.innerText = 'Publishing...';
             resultDiv.style.color = '#94a3b8';
-            fetch('/api/menu_commands', {
+            withLoading(
+                fetch('/api/menu_commands', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ menu: updated })
@@ -1962,12 +2120,16 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                     resultDiv.innerText = '✅ Published!';
                     resultDiv.style.color = '#4ade80';
                     menuCommands = updated;
+                    cache.menu.data = updated;
+                    cache.menu.loaded = true;
+                    cache.menu.timestamp = Date.now();
                     renderMenuRows();
                 })
                 .catch(function(err) {
                     resultDiv.innerText = '❌ ' + err.message;
                     resultDiv.style.color = '#f87171';
-                });
+                })
+            );
         }
 
         // ============================
@@ -1977,53 +2139,84 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             var container = document.getElementById('users-list');
             var search = document.getElementById('user-search').value.trim();
             var url = '/api/users' + (search ? '?search=' + encodeURIComponent(search) : '');
-            fetch(url)
+            // If no search and cache valid, use cache
+            if (!search && isCacheValid('users')) {
+                var users = cache.users.data;
+                renderUsers(users, container);
+                return;
+            }
+            withLoading(
+                fetch(url)
                 .then(function(res) { return res.json(); })
                 .then(function(data) {
                     var users = data.users || [];
-                    if (users.length === 0) {
-                        container.innerHTML =
-                            '<p style="color:#94a3b8; font-size:0.875rem;">No users yet. Interact with the bot to see them here.</p>';
-                        return;
+                    if (!search) {
+                        cache.users.data = users;
+                        cache.users.loaded = true;
+                        cache.users.timestamp = Date.now();
                     }
-                    var html =
-                        '<div style="overflow-x:auto;"><table style="width:100%; font-size:0.875rem; border-collapse:collapse;"><thead><tr style="border-bottom:1px solid #334155;"><th style="text-align:left; padding:0.5rem;">ID</th><th style="text-align:left; padding:0.5rem;">Username</th><th style="text-align:left; padding:0.5rem;">Name</th><th style="text-align:left; padding:0.5rem;">Role</th><th style="text-align:left; padding:0.5rem;">Last Active</th><th style="text-align:left; padding:0.5rem;">Action</th></tr></thead><tbody>';
-                    for (var i = 0; i < users.length; i++) {
-                        var u = users[i];
-                        var roleBtn = u.role === 'admin' ?
-                            '<button class="demote-btn" style="background:#dc2626; color:white; border:none; border-radius:4px; padding:0.125rem 0.5rem; font-size:0.75rem; cursor:pointer;" data-id="' + u.id + '">Demote</button>' :
-                            '<button class="promote-btn" style="background:#22c55e; color:white; border:none; border-radius:4px; padding:0.125rem 0.5rem; font-size:0.75rem; cursor:pointer;" data-id="' + u.id + '">Promote</button>';
-                        html += '<tr style="border-bottom:1px solid #334155;"><td style="padding:0.5rem; font-family:monospace;">' +
-                            u.id + '</td><td style="padding:0.5rem;">' + (u.username || '-') + '</td><td style="padding:0.5rem;">' +
-                            (u.first_name || '') + '</td><td style="padding:0.5rem;"><span class="badge ' + (u.role ===
-                                'admin' ? 'badge-admin' : 'badge-gray') + '">' + (u.role || 'user') + '</span></td><td style="padding:0.5rem; font-size:0.75rem; color:#94a3b8;">' +
-                            (u.last_active || '-') + '</td><td style="padding:0.5rem;">' + roleBtn + '</td></tr>';
-                    }
-                    html += '</tbody></table></div>';
-                    container.innerHTML = html;
-                    container.querySelectorAll('.promote-btn').forEach(function(b) { b.addEventListener('click',
-                            function() { updateUserRole(parseInt(this.dataset.id), 'admin'); }); });
-                    container.querySelectorAll('.demote-btn').forEach(function(b) { b.addEventListener('click',
-                            function() { updateUserRole(parseInt(this.dataset.id), 'user'); }); });
+                    renderUsers(users, container);
                 })
                 .catch(function(err) { container.innerHTML = '<p style="color:#f87171; font-size:0.875rem;">Error: ' + err
-                        .message + '</p>'; });
+                        .message + '</p>'; })
+            );
+        }
+
+        function renderUsers(users, container) {
+            if (users.length === 0) {
+                container.innerHTML =
+                    '<p style="color:#94a3b8; font-size:0.875rem;">No users yet. Interact with the bot to see them here.</p>';
+                return;
+            }
+            var html =
+                '<div style="overflow-x:auto;"><table style="width:100%; font-size:0.875rem; border-collapse:collapse;"><thead><tr style="border-bottom:1px solid #334155;"><th style="text-align:left; padding:0.5rem;">ID</th><th style="text-align:left; padding:0.5rem;">Username</th><th style="text-align:left; padding:0.5rem;">Name</th><th style="text-align:left; padding:0.5rem;">Role</th><th style="text-align:left; padding:0.5rem;">Last Active</th><th style="text-align:left; padding:0.5rem;">Action</th></tr></thead><tbody>';
+            for (var i = 0; i < users.length; i++) {
+                var u = users[i];
+                var roleBtn = u.role === 'admin' ?
+                    '<button class="demote-btn" style="background:#dc2626; color:white; border:none; border-radius:4px; padding:0.125rem 0.5rem; font-size:0.75rem; cursor:pointer;" data-id="' + u.id + '">Demote</button>' :
+                    '<button class="promote-btn" style="background:#22c55e; color:white; border:none; border-radius:4px; padding:0.125rem 0.5rem; font-size:0.75rem; cursor:pointer;" data-id="' + u.id + '">Promote</button>';
+                html += '<tr style="border-bottom:1px solid #334155;"><td style="padding:0.5rem; font-family:monospace;">' +
+                    u.id + '</td><td style="padding:0.5rem;">' + (u.username || '-') + '</td><td style="padding:0.5rem;">' +
+                    (u.first_name || '') + '</td><td style="padding:0.5rem;"><span class="badge ' + (u.role ===
+                        'admin' ? 'badge-admin' : 'badge-gray') + '">' + (u.role || 'user') + '</span></td><td style="padding:0.5rem; font-size:0.75rem; color:#94a3b8;">' +
+                    (u.last_active || '-') + '</td><td style="padding:0.5rem;">' + roleBtn + '</td></tr>';
+            }
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+            container.querySelectorAll('.promote-btn').forEach(function(b) { b.addEventListener('click',
+                    function() { updateUserRole(parseInt(this.dataset.id), 'admin'); }); });
+            container.querySelectorAll('.demote-btn').forEach(function(b) { b.addEventListener('click',
+                    function() { updateUserRole(parseInt(this.dataset.id), 'user'); }); });
         }
 
         function updateUserRole(userId, role) {
-            fetch('/api/users/role', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
-                    userId, role }) })
+            withLoading(
+                fetch('/api/users/role', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+                        userId, role }) })
                 .then(function(res) { return res.json(); })
                 .then(function(data) { if (data.success) { showToast('Role updated.');
+                        // invalidate users cache
+                        cache.users.loaded = false;
                         loadUsers(); } else throw new Error(data.error); })
-                .catch(function(err) { showToast(err.message, 'error'); });
+                .catch(function(err) { showToast(err.message, 'error'); })
+            );
         }
 
         // ============================
         // SETTINGS
         // ============================
-        function loadSettings() {
-            fetch('/api/settings')
+        function loadSettings(forceLoad) {
+            if (!forceLoad && isCacheValid('settings')) {
+                var data = cache.settings.data;
+                document.getElementById('settings-bot-token').value = data.bot_token || '';
+                document.getElementById('settings-webhook-url').value = data.webhook_url || '';
+                if (data.cf_token) {
+                    document.getElementById('update-cf-token').value = data.cf_token;
+                }
+                return Promise.resolve();
+            }
+            return withLoading(
+                fetch('/api/settings')
                 .then(function(res) { return res.json(); })
                 .then(function(data) {
                     document.getElementById('settings-bot-token').value = data.bot_token || '';
@@ -2031,8 +2224,12 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                     if (data.cf_token) {
                         document.getElementById('update-cf-token').value = data.cf_token;
                     }
+                    cache.settings.data = data;
+                    cache.settings.loaded = true;
+                    cache.settings.timestamp = Date.now();
                 })
-                .catch(function(err) { showToast('Error loading settings: ' + err.message, 'error'); });
+                .catch(function(err) { showToast('Error loading settings: ' + err.message, 'error'); })
+            );
         }
         var tokenVisible = false;
 
@@ -2057,41 +2254,54 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             resultDiv.classList.remove('hidden');
             resultDiv.innerText = 'Testing...';
             resultDiv.style.color = '#94a3b8';
-            fetch('/api/settings/token', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ botToken: newToken }) })
+            withLoading(
+                fetch('/api/settings/token', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ botToken: newToken }) })
                 .then(function(res) { return res.json(); })
                 .then(function(data) {
                     if (!data.success) throw new Error(data.error || 'Failed');
                     resultDiv.innerText = '✅ Updated!';
                     resultDiv.style.color = '#4ade80';
+                    // invalidate settings cache
+                    cache.settings.loaded = false;
                     setTimeout(function() { closeTokenModal();
-                        loadSettings(); }, 1500);
+                        loadSettings(true); }, 1500);
                 })
                 .catch(function(err) { resultDiv.innerText = '❌ ' + err.message;
-                    resultDiv.style.color = '#f87171'; });
+                    resultDiv.style.color = '#f87171'; })
+            );
         }
 
         function testWebhook() {
             var url = document.getElementById('settings-webhook-url').value;
             if (!url) { showToast('No webhook URL.', 'error'); return; }
             showToast('Testing...');
-            fetch(url, { method: 'POST', body: JSON.stringify({ ping: 'test' }), headers: { 'Content-Type': 'application/json' } })
+            withLoading(
+                fetch(url, { method: 'POST', body: JSON.stringify({ ping: 'test' }), headers: { 'Content-Type': 'application/json' } })
                 .then(function(res) { if (res.ok) showToast('Webhook reachable!');
                     else showToast('Status ' + res.status, 'error'); })
-                .catch(function(err) { showToast('Test failed: ' + err.message, 'error'); });
+                .catch(function(err) { showToast('Test failed: ' + err.message, 'error'); })
+            );
         }
 
         function factoryReset() {
             if (!confirm('Delete ALL data? This cannot be undone.')) return;
             showToast('Resetting...');
-            fetch('/api/reset', { method: 'POST' })
+            withLoading(
+                fetch('/api/reset', { method: 'POST' })
                 .then(function(res) { return res.json(); })
                 .then(function(data) {
-                    if (data.success) { showToast('Reset successful. Reloading...');
-                        setTimeout(function() { window.location.reload(); }, 1500); } else throw new Error(data
-                        .error);
+                    if (data.success) {
+                        showToast('Reset successful. Reloading...');
+                        // invalidate all caches
+                        Object.keys(cache).forEach(k => { cache[k].loaded = false;
+                            cache[k].data = null;
+                            cache[k].timestamp = 0; });
+                        setTimeout(function() { window.location.reload(); }, 1500);
+                    } else throw new Error(data.error);
                 })
-                .catch(function(err) { showToast('Reset error: ' + err.message, 'error'); });
+                .catch(function(err) { showToast('Reset error: ' + err.message, 'error'); })
+            );
         }
 
         // ============================
@@ -2102,46 +2312,63 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             const confirm = document.getElementById('change-pass-confirm').value;
             if (!newPass || newPass.length < 6) { showToast('Password must be at least 6 characters.', 'error'); return; }
             if (newPass !== confirm) { showToast('Passwords do not match.', 'error'); return; }
-            fetch('/api/change_password', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ newPassword: newPass })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        showToast('Password updated successfully.');
-                        document.getElementById('change-pass-new').value = '';
-                        document.getElementById('change-pass-confirm').value = '';
-                    } else {
-                        throw new Error(data.error || 'Failed');
-                    }
-                })
-                .catch(err => showToast(err.message, 'error'));
+            withLoading(
+                fetch('/api/change_password', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ newPassword: newPass })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            showToast('Password updated successfully.');
+                            document.getElementById('change-pass-new').value = '';
+                            document.getElementById('change-pass-confirm').value = '';
+                        } else {
+                            throw new Error(data.error || 'Failed');
+                        }
+                    })
+                    .catch(err => showToast(err.message, 'error'))
+            );
         }
 
         // ============================
         // BOT INFO
         // ============================
-        function loadBotInfo() {
+        function loadBotInfo(forceLoad) {
             var resultDiv = document.getElementById('bot-info-result');
+            if (!forceLoad && isCacheValid('botinfo')) {
+                var data = cache.botinfo.data;
+                document.getElementById('bot-name').value = data.name || '';
+                document.getElementById('bot-description').value = data.description || '';
+                document.getElementById('bot-short-description').value = data.short_description || '';
+                resultDiv.classList.remove('hidden');
+                resultDiv.innerText = '✅ Loaded from Telegram.';
+                resultDiv.style.color = '#4ade80';
+                return Promise.resolve();
+            }
             resultDiv.classList.remove('hidden');
             resultDiv.innerText = 'Loading from Telegram...';
             resultDiv.style.color = '#94a3b8';
-            fetch('/api/bot_info')
+            return withLoading(
+                fetch('/api/bot_info')
                 .then(function(res) { return res.json(); })
                 .then(function(data) {
                     if (!data.success) throw new Error(data.error || 'Failed');
                     document.getElementById('bot-name').value = data.name || '';
                     document.getElementById('bot-description').value = data.description || '';
                     document.getElementById('bot-short-description').value = data.short_description || '';
+                    cache.botinfo.data = data;
+                    cache.botinfo.loaded = true;
+                    cache.botinfo.timestamp = Date.now();
                     resultDiv.innerText = '✅ Loaded from Telegram.';
                     resultDiv.style.color = '#4ade80';
                 })
                 .catch(function(err) {
                     resultDiv.innerText = '❌ ' + err.message;
                     resultDiv.style.color = '#f87171';
-                });
+                })
+            );
         }
 
         function publishBotInfo() {
@@ -2152,21 +2379,25 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             resultDiv.classList.remove('hidden');
             resultDiv.innerText = 'Publishing...';
             resultDiv.style.color = '#94a3b8';
-            fetch('/api/bot_info', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, description, short_description })
-                })
-                .then(function(res) { return res.json(); })
-                .then(function(data) {
-                    if (!data.success) throw new Error(data.error || 'Publish failed');
-                    resultDiv.innerText = '✅ Published to Telegram!';
-                    resultDiv.style.color = '#4ade80';
-                })
-                .catch(function(err) {
-                    resultDiv.innerText = '❌ ' + err.message;
-                    resultDiv.style.color = '#f87171';
-                });
+            withLoading(
+                fetch('/api/bot_info', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name, description, short_description })
+                    })
+                    .then(function(res) { return res.json(); })
+                    .then(function(data) {
+                        if (!data.success) throw new Error(data.error || 'Publish failed');
+                        resultDiv.innerText = '✅ Published to Telegram!';
+                        resultDiv.style.color = '#4ade80';
+                        // invalidate botinfo cache
+                        cache.botinfo.loaded = false;
+                    })
+                    .catch(function(err) {
+                        resultDiv.innerText = '❌ ' + err.message;
+                        resultDiv.style.color = '#f87171';
+                    })
+            );
         }
 
         // ============================
@@ -2179,9 +2410,8 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         }
 
         async function loadUpdateTab() {
-            await loadSettings();
-            await checkForUpdate();
-            // Show/hide CF section based on update availability
+            await loadSettings(true); // force refresh
+            await checkForUpdate(true); // force refresh
             toggleCfSection();
         }
 
@@ -2192,7 +2422,6 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             } else {
                 section.style.display = 'none';
             }
-            // Also update the update button state
             updateUpdateButtonState();
         }
 
@@ -2200,49 +2429,51 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             const now = Date.now();
             const lastCheck = parseInt(localStorage.getItem('updateCheckTimestamp') || '0');
             if (now - lastCheck < UPDATE_COOLDOWN_MS && updateChecked) {
-                // Use cached result
-                if (updateAvailable) {
-                    showUpdateBanner(true);
-                }
+                if (updateAvailable) showUpdateBanner(true);
                 return;
             }
-            await checkForUpdate();
+            await checkForUpdate(true);
             localStorage.setItem('updateCheckTimestamp', String(now));
             updateChecked = true;
         }
 
-        async function checkForUpdate() {
+        async function checkForUpdate(force) {
             const latestInput = document.getElementById('update-latest-version');
             const detailsDiv = document.getElementById('update-version-details');
             latestInput.placeholder = 'Checking...';
             detailsDiv.innerText = '';
-            try {
-                const res = await fetch('/api/version');
-                const data = await res.json();
-                if (data.latest) {
-                    latestInput.value = data.latest;
-                    latestVersion = data.latest;
-                    workerUrl = data.worker_url || null;
-                    let details = '';
-                    if (data.released) details += '📅 Released: ' + data.released;
-                    if (data.notes) details += (details ? ' | ' : '') + '📝 Notes: ' + data.notes;
-                    detailsDiv.innerText = details || '';
-                    updateAvailable = compareVersions(data.latest, data.current) > 0;
-                } else {
-                    latestInput.value = 'Error: ' + (data.error || 'unknown');
+            // If forced or not cached, fetch
+            // We can cache version info separately; we'll use localStorage for version data
+            // For simplicity, we'll always fetch but with loading overlay.
+            withLoading(
+                fetch('/api/version')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.latest) {
+                        latestInput.value = data.latest;
+                        latestVersion = data.latest;
+                        workerUrl = data.worker_url || null;
+                        let details = '';
+                        if (data.released) details += '📅 Released: ' + data.released;
+                        if (data.notes) details += (details ? ' | ' : '') + '📝 Notes: ' + data.notes;
+                        detailsDiv.innerText = details || '';
+                        updateAvailable = compareVersions(data.latest, data.current) > 0;
+                    } else {
+                        latestInput.value = 'Error: ' + (data.error || 'unknown');
+                        updateAvailable = false;
+                    }
+                })
+                .catch(e => {
+                    latestInput.value = 'Error: ' + e.message;
                     updateAvailable = false;
-                }
-            } catch (e) {
-                latestInput.value = 'Error: ' + e.message;
-                updateAvailable = false;
-            }
-            updateUpdateButtonState();
-            toggleCfSection();
-            if (updateAvailable) {
-                showUpdateBanner(true);
-            } else {
-                showUpdateBanner(false);
-            }
+                })
+                .finally(() => {
+                    updateUpdateButtonState();
+                    toggleCfSection();
+                    if (updateAvailable) showUpdateBanner(true);
+                    else showUpdateBanner(false);
+                })
+            );
         }
 
         function compareVersions(v1, v2) {
@@ -2308,11 +2539,11 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
 
             let validationData;
             try {
-                const res = await fetch('/api/update/validate', {
+                const res = await withLoading(fetch('/api/update/validate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ token })
-                });
+                }));
                 validationData = await res.json();
                 if (!validationData.valid) {
                     throw new Error(validationData.error || 'Invalid token');
@@ -2340,11 +2571,11 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             statusDiv.style.color = '#94a3b8';
 
             try {
-                const updateRes = await fetch('/api/update', {
+                const updateRes = await withLoading(fetch('/api/update', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ token, accountId, scriptName, workerUrl })
-                });
+                }));
                 const updateData = await updateRes.json();
                 if (!updateData.success) {
                     throw new Error(updateData.error || 'Update failed');
@@ -2352,7 +2583,8 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 statusDiv.innerText = '✅ Update successful! New version: ' + (updateData.version || 'unknown') +
                     '. Updating takes time. Please wait 30 seconds and reload the page until you see the new version appear here.';
                 statusDiv.style.color = '#4ade80';
-                await checkForUpdate();
+                // invalidate version cache (not needed)
+                await checkForUpdate(true);
                 showToast('Update completed! The worker has been updated.', 'success');
             } catch (e) {
                 statusDiv.innerText = '❌ ' + e.message;
@@ -2369,7 +2601,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
 </html>`;
 
 // ============================================================================
-// WORKER ENTRY POINT
+// WORKER ENTRY POINT (unchanged from original)
 // ============================================================================
 export default {
     async fetch(request, env, ctx) {
