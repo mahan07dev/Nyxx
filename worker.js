@@ -1,7 +1,7 @@
 // ============================================================================
 // GLOBAL VERSION
 // ============================================================================
-const VERSION = '2.1.0'; // bump on each release
+const VERSION = '2.1.1'; // bump on each release
 
 // ============================================================================
 // EMBEDDED DASHBOARD HTML (with update tab)
@@ -1746,7 +1746,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 if (!updateData.success) {
                     throw new Error(updateData.error || 'Update failed');
                 }
-                statusDiv.innerText = '✅ Update successful! New version: ' + (updateData.version || 'unknown');
+                statusDiv.innerText = '✅ Update successful! New version: ' + (updateData.version || 'unknown') + '. Updating takes time. Please wait 30 seconds and reload the page untill you see the new version appear here.';
                 statusDiv.style.color = '#4ade80';
                 // Refresh version info
                 await checkForUpdate();
