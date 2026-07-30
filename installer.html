@@ -1,576 +1,1728 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nyxx – Installer</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    /* ----- Unified Palette (also used in the panel) ----- */
-    :root {
-      --bg: #05060a;
-      --bg-alt: #090b12;
-      --card: rgba(255,255,255,.04);
-      --card2: rgba(255,255,255,.06);
-      --line: rgba(255,255,255,.09);
-      --line2: rgba(255,255,255,.16);
-      --tx: #eef1f7;
-      --mu: #9aa4b8;
-      --cyan: #22d3ee;
-      --violet: #a855f7;
-      --grad: linear-gradient(120deg, #22d3ee 0%, #818cf8 50%, #a855f7 100%);
-      --ok: #34d399;
-      --bad: #f87171;
-      --warn: #f59e0b;
-      --r: 16px;
-      --code: #0b0e16;
-      --nav: rgba(5,6,10,.7);
-      --font: 'Inter', system-ui, -apple-system, sans-serif;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      background: var(--bg);
-      color: var(--tx);
-      font-family: var(--font);
-      line-height: 1.6;
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-    }
-    .wrap {
-      max-width: 560px;
-      width: 100%;
-    }
-    .card {
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: var(--r);
-      padding: 24px 20px;
-      margin: 16px 0;
-      backdrop-filter: blur(4px);
-    }
-    .hidden { display: none !important; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Nyxx – Installer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="shortcut icon" href="https://raw.githubusercontent.com/Mahan07dev/Nyxx/refs/heads/main/logo.webp" type="image/x-icon">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #05060a; --bg-alt: #090b12; --card: rgba(255,255,255,.04); --card2: rgba(255,255,255,.06);
+  --line: rgba(255,255,255,.09); --line2: rgba(255,255,255,.16); --tx: #eef1f7; --mu: #9aa4b8;
+  --cyan: #22d3ee; --violet: #a855f7;
+  --grad: linear-gradient(120deg, #22d3ee 0%, #818cf8 50%, #a855f7 100%);
+  --ok: #34d399; --bad: #f87171; --warn: #f59e0b;
+  --r: 16px; --code: #0b0e16; --font: 'Inter', system-ui, -apple-system, sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg); color: var(--tx); font-family: var(--font); line-height: 1.6;
+  min-height: 100vh; display: flex; justify-content: center; align-items: flex-start;
+  padding: 16px;
+}
+.wrap { max-width: 600px; width: 100%; padding-top: 16px; padding-bottom: 40px; }
+@media (min-width: 768px) { .wrap { padding-top: 40px; padding-bottom: 60px; } }
 
-    /* Splash */
-    #splash {
-      text-align: center;
-      padding: 20px 15px;
-    }
-    #splash .logo img { width: 70px; height: 70px; border-radius: 14px; }
-    #splash h1 {
-      font-size: 2.4rem;
-      font-weight: 800;
-      margin: 12px 0 6px;
-    }
-    #splash .grad {
-      background: var(--grad);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-    }
-    #splash .sub {
-      color: var(--mu);
-      font-size: 1.05rem;
-      margin: 8px 0 20px;
-    }
-    #splash .creator {
-      margin: 20px 0;
-      font-size: 1.1rem;
-    }
-    #splash .creator a {
-      color: var(--cyan);
-      text-decoration: none;
-      font-weight: 600;
-      margin: 0 6px;
-    }
-    #splash .creator a:hover { text-decoration: underline; }
-    #splash .btns {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-      flex-wrap: wrap;
-      margin: 16px 0 8px;
-    }
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      background: var(--grad);
-      color: #05060a;
-      font-weight: 700;
-      font-size: 1rem;
-      padding: 12px 28px;
-      border-radius: 12px;
-      border: none;
-      cursor: pointer;
-      font-family: inherit;
-      transition: transform .15s;
-      text-decoration: none;
-      width: 100%;
-    }
-    .btn:active { transform: scale(.96); }
-    .btn-ghost {
-      background: var(--card2);
-      border: 1px solid var(--line2);
-      color: var(--tx);
-      box-shadow: none;
-    }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.card {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--r);
+  padding: 24px 20px; margin: 12px 0; backdrop-filter: blur(4px);
+  animation: fadeIn 0.35s ease-out;
+}
+@media (min-width: 768px) { .card { padding: 28px 24px; margin: 16px 0; } }
 
-    /* Installer steps */
-    .gstep {
-      padding: 0 0 18px;
-      margin-bottom: 18px;
-      border-bottom: 1px solid var(--line);
-    }
-    .gstep:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-    .gstep-head {
-      display: flex;
-      align-items: center;
-      gap: 11px;
-      margin-bottom: 6px;
-    }
-    .gnum {
-      flex: 0 0 28px;
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 800;
-      font-size: .9rem;
-      color: #05060a;
-      background: var(--grad);
-    }
-    .gtitle { font-weight: 700; font-size: 1.05rem; }
-    .gtext {
-      color: var(--mu);
-      font-size: .93rem;
-      margin: 0 0 10px;
-      padding-left: 39px;
-    }
-    .gtext b { color: var(--tx); }
-    input[type="text"] {
-      width: 100%;
-      background: var(--code);
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      color: var(--tx);
-      font-size: 15px;
-      padding: 13px 14px;
-      font-family: inherit;
-    }
-    input:focus { outline: none; border-color: var(--cyan); }
-    .callout {
-      display: flex;
-      gap: 11px;
-      border-radius: 12px;
-      padding: 13px 14px;
-      margin: 12px 0;
-      font-size: 13.5px;
-      border: 1px solid rgba(168,85,247,.3);
-      background: rgba(168,85,247,.08);
-    }
-    .callout .ic { flex: 0 0 18px; font-size: 17px; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.hidden { display: none !important; }
 
-    /* Progress */
-    .progress { margin: 14px 0 0; }
-    .prow {
-      display: flex;
-      align-items: center;
-      gap: 11px;
-      padding: 9px 0;
-      font-size: 14.5px;
-      color: var(--mu);
-    }
-    .prow .dot {
-      flex: 0 0 20px;
-      height: 20px;
-      border-radius: 50%;
-      border: 2px solid var(--line);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-    }
-    .prow.done { color: var(--tx); }
-    .prow.done .dot { border-color: transparent; background: var(--grad); color: #05060a; }
-    .prow.run .dot { border-color: var(--cyan); border-top-color: transparent; animation: spin .8s linear infinite; }
-    .prow.err { color: var(--bad); }
-    .prow.err .dot { border-color: var(--bad); color: var(--bad); }
-    @keyframes spin { to { transform: rotate(360deg); } }
+/* Stepper */
+.stepper { display: flex; align-items: center; justify-content: center; gap: 4px; margin-bottom: 16px; }
+.step-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line); transition: all 0.3s; }
+.step-dot.active { background: var(--cyan); box-shadow: 0 0 8px rgba(34,211,238,0.35); transform: scale(1.3); }
+.step-dot.completed { background: var(--ok); }
+.step-line { flex: 1; height: 2px; background: var(--line); max-width: 24px; transition: all 0.3s; }
+.step-line.completed { background: var(--ok); }
 
-    /* Result */
-    .result-box {
-      background: linear-gradient(180deg, rgba(34,211,238,.1), var(--card));
-      border: 1px solid rgba(34,211,238,.4);
-      border-radius: var(--r);
-      padding: 20px;
-      margin: 16px 0;
-    }
-    .result-box h3 {
-      margin: 0 0 10px;
-      font-size: 20px;
-      color: var(--cyan);
-    }
-    .kv {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      padding: 9px 0;
-      border-top: 1px solid var(--line);
-      font-size: 14px;
-      flex-wrap: wrap;
-    }
-    .kv .k { color: var(--mu); }
-    .kv .v { font-weight: 700; word-break: break-all; }
-    .err-box {
-      background: rgba(248,113,113,.08);
-      border: 1px solid rgba(248,113,113,.35);
-      border-radius: 12px;
-      padding: 13px 14px;
-      margin: 12px 0;
-      font-size: 14px;
-      color: #fecaca;
-    }
-    .foot {
-      text-align: center;
-      color: var(--mu);
-      font-size: 12px;
-      margin-top: 16px;
-    }
-    .foot a { color: var(--cyan); }
-  </style>
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  background: var(--grad); color: #05060a; font-weight: 700; font-size: 0.95rem;
+  padding: 12px 24px; border-radius: 12px; border: none; cursor: pointer;
+  font-family: inherit; transition: transform .15s, opacity .15s, box-shadow .2s;
+  text-decoration: none; width: 100%; min-height: 46px;
+}
+@media (min-width: 768px) { .btn { font-size: 1rem; padding: 14px 32px; } }
+.btn:hover { box-shadow: 0 4px 20px rgba(34,211,238,0.2); }
+.btn:active { transform: scale(.96); }
+.btn-ghost { background: var(--card2); border: 1px solid var(--line2); color: var(--tx); box-shadow: none; }
+.btn-ghost:hover { box-shadow: none; background: rgba(255,255,255,0.08); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-sm { padding: 8px 16px; font-size: 0.85rem; width: auto; min-height: 36px; }
+.btn-danger { background: linear-gradient(120deg, #f87171, #ef4444); color: #fff; }
+.btn-danger:hover { box-shadow: 0 4px 20px rgba(248,113,113,0.2); }
+.btn-warn { background: linear-gradient(120deg, #f59e0b, #d97706); color: #05060a; }
+
+/* Splash */
+#splash { text-align: center; padding: 20px 10px; }
+#splash .logo img { width: 64px; height: 64px; border-radius: 14px; }
+@media (min-width: 768px) { #splash .logo img { width: 80px; height: 80px; border-radius: 16px; } }
+#splash h1 { font-size: 2rem; font-weight: 800; margin: 12px 0 6px; }
+@media (min-width: 768px) { #splash h1 { font-size: 2.6rem; margin: 16px 0 8px; } }
+#splash .grad { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+#splash .sub { color: var(--mu); font-size: 1rem; margin: 8px 0 20px; }
+@media (min-width: 768px) { #splash .sub { font-size: 1.1rem; margin: 10px 0 24px; } }
+#splash .creator { margin: 16px 0; font-size: 0.9rem; color: var(--mu); }
+@media (min-width: 768px) { #splash .creator { margin: 24px 0; font-size: 1rem; } }
+#splash .creator a { color: var(--cyan); text-decoration: none; font-weight: 600; }
+#splash .creator a:hover { text-decoration: underline; }
+
+/* Step cards */
+.step-card h2 { font-size: 1.3rem; font-weight: 800; margin: 0 0 6px; }
+@media (min-width: 768px) { .step-card h2 { font-size: 1.5rem; } }
+.step-card .desc { color: var(--mu); margin: 0 0 18px; font-size: 0.9rem; }
+@media (min-width: 768px) { .step-card .desc { margin: 0 0 20px; font-size: 0.95rem; } }
+
+/* Proxy options */
+.proxy-option {
+  border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin: 10px 0;
+  cursor: pointer; transition: all 0.2s; position: relative;
+}
+@media (min-width: 768px) { .proxy-option { padding: 18px; margin: 12px 0; } }
+.proxy-option:hover { border-color: var(--line2); background: rgba(255,255,255,0.02); }
+.proxy-option.selected { border-color: var(--cyan); background: rgba(34,211,238,0.04); }
+.proxy-option .radio {
+  position: absolute; top: 16px; right: 16px; width: 18px; height: 18px;
+  border: 2px solid var(--line2); border-radius: 50%; display: flex;
+  align-items: center; justify-content: center;
+}
+@media (min-width: 768px) { .proxy-option .radio { top: 18px; right: 18px; width: 20px; height: 20px; } }
+.proxy-option.selected .radio { border-color: var(--cyan); background: var(--cyan); }
+.proxy-option.selected .radio::after { content: ''; width: 7px; height: 7px; background: #05060a; border-radius: 50%; }
+.proxy-option h4 { font-size: 0.95rem; margin: 0 0 5px; padding-right: 28px; }
+@media (min-width: 768px) { .proxy-option h4 { font-size: 1rem; padding-right: 30px; } }
+.proxy-option p { color: var(--mu); font-size: 0.8rem; margin: 0; padding-right: 28px; }
+@media (min-width: 768px) { .proxy-option p { font-size: 0.85rem; padding-right: 30px; } }
+.proxy-option .tag {
+  display: inline-block; background: rgba(245,158,11,0.15); color: var(--warn);
+  font-size: 10px; padding: 2px 7px; border-radius: 4px; margin-top: 6px; font-weight: 600;
+}
+.proxy-option .tag.safe { background: rgba(52,211,153,0.15); color: var(--ok); }
+
+.proxy-custom-section {
+  margin-top: 14px; padding: 14px; background: var(--code); border-radius: 10px; border: 1px solid var(--line);
+}
+@media (min-width: 768px) { .proxy-custom-section { margin-top: 16px; padding: 16px; } }
+.proxy-custom-section h4 { font-size: 0.9rem; margin: 0 0 10px; }
+.proxy-custom-section .step-list { list-style: none; padding: 0; margin: 0 0 14px; }
+.proxy-custom-section .step-list li {
+  display: flex; align-items: flex-start; gap: 8px; padding: 7px 0;
+  font-size: 0.8rem; color: var(--mu); border-bottom: 1px solid var(--line);
+}
+@media (min-width: 768px) { .proxy-custom-section .step-list li { gap: 10px; padding: 8px 0; font-size: 0.85rem; } }
+.proxy-custom-section .step-list li:last-child { border-bottom: none; }
+.proxy-custom-section .step-list .num {
+  flex: 0 0 20px; width: 20px; height: 20px; border-radius: 50%; background: var(--grad);
+  color: #05060a; font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+}
+@media (min-width: 768px) { .proxy-custom-section .step-list .num { flex: 0 0 22px; width: 22px; height: 22px; font-size: 11px; } }
+.proxy-custom-section .step-list a { color: var(--cyan); }
+
+/* Installer choice */
+.installer-choice { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 16px 0; }
+@media (max-width: 480px) { .installer-choice { grid-template-columns: 1fr; gap: 8px; } }
+.choice-card {
+  border: 1px solid var(--line); border-radius: 12px; padding: 20px 14px;
+  text-align: center; cursor: pointer; transition: all 0.25s; background: transparent;
+}
+@media (min-width: 768px) { .choice-card { padding: 24px 18px; border-radius: 14px; } }
+.choice-card:hover { border-color: var(--cyan); background: rgba(34,211,238,0.03); transform: translateY(-2px); }
+.choice-card:focus { outline: 2px solid var(--cyan); outline-offset: 2px; }
+.choice-card .icon { font-size: 2rem; margin-bottom: 8px; }
+@media (min-width: 768px) { .choice-card .icon { font-size: 2.5rem; margin-bottom: 12px; } }
+.choice-card h3 { font-size: 1rem; margin: 0 0 4px; }
+@media (min-width: 768px) { .choice-card h3 { font-size: 1.1rem; margin: 0 0 6px; } }
+.choice-card p { color: var(--mu); font-size: 0.8rem; margin: 0; }
+@media (min-width: 768px) { .choice-card p { font-size: 0.85rem; } }
+
+/* Scan results */
+.scan-results { margin: 14px 0; }
+.scan-results h4 { font-size: 0.9rem; margin: 0 0 10px; color: var(--cyan); }
+@media (min-width: 768px) { .scan-results h4 { font-size: 0.95rem; margin: 0 0 12px; } }
+
+/* RESPONSIVE TABLE */
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 10px; border: 1px solid var(--line); }
+.resource-table { width: 100%; min-width: 420px; border-collapse: collapse; font-size: 0.82rem; }
+@media (min-width: 768px) { .resource-table { font-size: 0.85rem; } }
+.resource-table th { text-align: left; padding: 8px 6px; color: var(--mu); font-weight: 600; border-bottom: 1px solid var(--line); white-space: nowrap; }
+@media (min-width: 768px) { .resource-table th { padding: 10px 8px; } }
+.resource-table td { padding: 8px 6px; border-bottom: 1px solid var(--line); color: var(--tx); }
+@media (min-width: 768px) { .resource-table td { padding: 10px 8px; } }
+.resource-table tr:last-child td { border-bottom: none; }
+.type-badge { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 600; white-space: nowrap; }
+.type-badge.worker { background: rgba(168,85,247,0.15); color: #c084fc; }
+.type-badge.database { background: rgba(34,211,238,0.15); color: var(--cyan); }
+.resource-table .actions { display: flex; gap: 5px; flex-wrap: wrap; }
+.resource-table .actions button {
+  background: var(--card2); border: 1px solid var(--line); color: var(--tx);
+  padding: 3px 8px; border-radius: 5px; font-size: 10px; cursor: pointer; font-family: inherit; white-space: nowrap;
+}
+@media (min-width: 768px) { .resource-table .actions button { padding: 4px 10px; font-size: 11px; border-radius: 6px; } }
+.resource-table .actions button:hover { border-color: var(--cyan); color: var(--cyan); }
+.resource-table .actions button.delete:hover { border-color: var(--bad); color: var(--bad); }
+.resource-table .actions button.update:hover { border-color: var(--warn); color: var(--warn); }
+.scan-empty { text-align: center; padding: 24px 16px; color: var(--mu); }
+@media (min-width: 768px) { .scan-empty { padding: 30px 20px; } }
+.scan-empty .icon { font-size: 2.5rem; margin-bottom: 8px; }
+@media (min-width: 768px) { .scan-empty .icon { font-size: 3rem; margin-bottom: 12px; } }
+
+/* Progress */
+.progress { margin: 12px 0 0; }
+.prow { display: flex; align-items: center; gap: 10px; padding: 8px 0; font-size: 13.5px; color: var(--mu); }
+@media (min-width: 768px) { .prow { gap: 11px; padding: 10px 0; font-size: 14.5px; } }
+.prow .dot {
+  flex: 0 0 20px; height: 20px; border-radius: 50%; border: 2px solid var(--line);
+  display: flex; align-items: center; justify-content: center; font-size: 11px; transition: all 0.3s;
+}
+@media (min-width: 768px) { .prow .dot { flex: 0 0 22px; height: 22px; font-size: 12px; } }
+.prow.done { color: var(--tx); }
+.prow.done .dot { border-color: transparent; background: var(--grad); color: #05060a; }
+.prow.run .dot { border-color: var(--cyan); border-top-color: transparent; animation: spin .8s linear infinite; }
+.prow.err { color: var(--bad); }
+.prow.err .dot { border-color: var(--bad); color: var(--bad); }
+.prow .retry-btn {
+  margin-left: auto; background: var(--card2); border: 1px solid var(--line2); color: var(--cyan);
+  padding: 3px 10px; border-radius: 5px; font-size: 11px; cursor: pointer; font-family: inherit; transition: all 0.2s;
+}
+@media (min-width: 768px) { .prow .retry-btn { padding: 4px 12px; border-radius: 6px; font-size: 12px; } }
+.prow .retry-btn:hover { background: rgba(34, 211, 238, 0.1); }
+.prow .step-num { font-size: 10px; color: var(--mu); margin-left: 4px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Progress bar */
+.progress-bar-wrap { width: 100%; height: 3px; background: var(--line); border-radius: 2px; margin: 12px 0 6px; overflow: hidden; }
+@media (min-width: 768px) { .progress-bar-wrap { height: 4px; margin: 16px 0 8px; } }
+.progress-bar-fill { height: 100%; background: var(--grad); border-radius: 2px; transition: width 0.4s ease; width: 0%; }
+
+/* Result */
+.result-box {
+  background: linear-gradient(180deg, rgba(34,211,238,.08), var(--card));
+  border: 1px solid rgba(34,211,238,.3); border-radius: var(--r); padding: 20px; margin: 12px 0; text-align: center;
+}
+@media (min-width: 768px) { .result-box { padding: 24px; margin: 16px 0; } }
+.result-box .success-icon { font-size: 3rem; margin-bottom: 8px; }
+@media (min-width: 768px) { .result-box .success-icon { font-size: 3.5rem; margin-bottom: 12px; } }
+.result-box h3 { margin: 0 0 6px; font-size: 1.2rem; color: var(--cyan); }
+@media (min-width: 768px) { .result-box h3 { font-size: 1.4rem; margin: 0 0 8px; } }
+.result-box .url-box {
+  background: var(--code); border: 1px solid var(--line); border-radius: 10px;
+  padding: 12px; margin: 14px 0; font-family: monospace; font-size: 0.85rem;
+  word-break: break-all; color: var(--cyan);
+}
+@media (min-width: 768px) { .result-box .url-box { padding: 14px; margin: 16px 0; font-size: 0.9rem; } }
+.result-box .url-box button {
+  background: transparent; border: 1px solid var(--line2); color: var(--mu);
+  padding: 3px 8px; border-radius: 5px; font-size: 10px; cursor: pointer; margin-top: 6px; font-family: inherit;
+}
+@media (min-width: 768px) { .result-box .url-box button { padding: 4px 10px; border-radius: 6px; font-size: 11px; margin-top: 8px; } }
+.result-box .url-box button:hover { border-color: var(--cyan); color: var(--cyan); }
+
+.err-box {
+  background: rgba(248,113,113,.06); border: 1px solid rgba(248,113,113,.25);
+  border-radius: 12px; padding: 14px; margin: 12px 0; font-size: 13px; color: #fecaca;
+}
+@media (min-width: 768px) { .err-box { padding: 16px; font-size: 14px; } }
+.err-box .err-title { font-weight: 700; margin-bottom: 5px; display: flex; align-items: center; gap: 8px; }
+.err-box .err-actions { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
+
+input[type="text"] {
+  width: 100%; background: var(--code); border: 1px solid var(--line); border-radius: 10px;
+  color: var(--tx); font-size: 14px; padding: 11px 12px; font-family: inherit;
+  word-break: break-all; transition: border-color 0.2s;
+}
+@media (min-width: 768px) { input[type="text"] { font-size: 15px; padding: 13px 14px; } }
+input[type="text"]:focus { outline: none; border-color: var(--cyan); }
+
+.callout {
+  display: flex; gap: 10px; border-radius: 12px; padding: 12px; margin: 10px 0;
+  font-size: 13px; border: 1px solid rgba(168,85,247,.3); background: rgba(168,85,247,.06);
+}
+@media (min-width: 768px) { .callout { gap: 11px; padding: 14px; margin: 12px 0; font-size: 13.5px; } }
+.callout .ic { flex: 0 0 20px; font-size: 17px; }
+.callout.ok { border-color: rgba(52,211,153,.3); background: rgba(52,211,153,.06); }
+.callout.warn { border-color: rgba(245,158,11,.3); background: rgba(245,158,11,.06); }
+
+.foot { text-align: center; color: var(--mu); font-size: 11px; margin-top: 16px; }
+@media (min-width: 768px) { .foot { font-size: 12px; margin-top: 20px; } }
+.foot a { color: var(--cyan); }
+
+.back-link { display: inline-flex; align-items: center; gap: 6px; color: var(--mu); font-size: 13px; text-decoration: none; margin-bottom: 10px; cursor: pointer; }
+@media (min-width: 768px) { .back-link { font-size: 14px; margin-bottom: 12px; } }
+.back-link:hover { color: var(--cyan); }
+
+.loading-dots::after { content: ''; animation: dots 1.5s steps(4, end) infinite; }
+@keyframes dots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
+
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+.toast {
+  position: fixed; bottom: 20px; right: 16px; background: var(--bg-alt); border: 1px solid var(--line);
+  border-radius: 10px; padding: 10px 16px; font-size: 13px; color: var(--tx); z-index: 2000;
+  animation: slideUp 0.3s ease; box-shadow: 0 8px 32px rgba(0,0,0,0.4); max-width: 280px;
+}
+@media (min-width: 768px) { .toast { bottom: 24px; right: 24px; padding: 12px 18px; font-size: 14px; max-width: 320px; } }
+.toast.ok { border-color: rgba(52,211,153,.4); }
+.toast.err { border-color: rgba(248,113,113,.4); }
+.toast.warn { border-color: rgba(245,158,11,.4); }
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.kbd { display: inline-block; background: var(--code); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; font-size: 10px; font-family: monospace; }
+@media (min-width: 768px) { .kbd { padding: 1px 6px; font-size: 11px; } }
+
+/* Keyboard focus styles */
+*:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; border-radius: 4px; }
+
+/* Update banner */
+.update-banner {
+  background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25);
+  border-radius: 10px; padding: 12px; margin: 10px 0; font-size: 13px;
+}
+.update-banner h4 { margin: 0 0 6px; font-size: 14px; color: var(--warn); }
+</style>
+<base target="_blank">
 </head>
 <body>
 <div class="wrap">
 
-  <!-- SPLASH SCREEN -->
-  <div id="splash" class="card">
-    <div class="logo"><img src="https://raw.githubusercontent.com/Mahan07dev/Nyxx/refs/heads/main/logo.webp" alt="Nyxx"></div>
-    <h1><span class="grad">Nyxx</span> Installer</h1>
-    <p class="sub">Deploy your Telegram Bot Panel in seconds</p>
-    <div class="creator">
-      Made with ❤️ by <a href="https://github.com/Mahan07dev" target="_blank">@Mahan07dev</a>
-      <br>
-      <a href="https://t.me/nyxx_official_channel" target="_blank"><i>Telegram</i></a> &bull;
-      <a href="https://github.com/Mahan07dev/Nyxx" target="_blank">Source Code</a>
+<div id="aria-live" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+<div id="toast-container"></div>
+
+<!-- STEP 1: WELCOME -->
+<div id="step-welcome" class="card">
+  <div id="splash" style="text-align:center;padding:16px 8px;">
+    <div class="logo"><img src="https://raw.githubusercontent.com/Mahan07dev/Nyxx/refs/heads/main/logo.webp" alt="Nyxx Logo" width="64" height="64" style="border-radius:14px;"></div>
+    <h1 style="font-size:2rem;font-weight:800;margin:12px 0 6px;"><span class="grad">Nyxx</span> Installer</h1>
+    <p style="color:var(--mu);font-size:1rem;margin:8px 0 20px;">Deploy your Telegram Bot Panel in seconds</p>
+    <div style="margin:16px 0;font-size:0.9rem;color:var(--mu);">
+      Made with ❤️ by <a href="https://github.com/Mahan07dev" target="_blank" rel="noopener" style="color:var(--cyan);text-decoration:none;font-weight:600;">@Mahan07dev</a>
+      <br><br>
+      <a href="https://t.me/nyxx_official_channel" target="_blank" rel="noopener" style="color:var(--cyan);text-decoration:none;"><i>Telegram</i></a> &bull;
+      <a href="https://github.com/Mahan07dev/Nyxx" target="_blank" rel="noopener" style="color:var(--cyan);text-decoration:none;">Source Code</a>
     </div>
-    <button class="btn" onclick="showInstaller()">Next →</button>
-  </div>
-
-  <!-- INSTALLER (hidden initially) -->
-  <div id="installer" class="hidden">
-    <div class="card maininstallcard">
-      <h2 style="font-size:1.6rem;font-weight:800;margin:0 0 4px">Install <span class="grad" style="background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent">Nyxx</span></h2>
-      <p style="color:var(--mu);margin:0 0 16px">Paste your Cloudflare token and we'll build your panel – worker and D1 database.</p>
-
-      <!-- Step 1 -->
-      <div class="gstep">
-        <div class="gstep-head"><span class="gnum">1</span><span class="gtitle">Cloudflare account</span></div>
-        <p class="gtext">If you don't have one, create a free account (takes 1 min).</p>
-        <a class="btn btn-ghost" href="https://dash.cloudflare.com/sign-up" target="_blank">Create free account</a>
-      </div>
-
-      <!-- Step 2 -->
-      <div class="gstep">
-        <div class="gstep-head"><span class="gnum">2</span><span class="gtitle">Get your token</span></div>
-        <p class="gtext">Tap the button — a Cloudflare page opens with permissions pre‑selected.</p>
-        <button class="btn" onclick="openTokenPage()">🔑 Get my token</button>
-        <div class="callout"><span class="ic">⚠️</span><div><b>Copy the whole token</b> before leaving – it's shown only once.</div></div>
-      </div>
-
-      <!-- Step 3 -->
-      <div class="gstep">
-        <div class="gstep-head"><span class="gnum">3</span><span class="gtitle">Paste it here</span></div>
-        <p class="gtext">Paste your copied token into the box below. It will be verified instantly.</p>
-        <input id="token" type="text" placeholder="Your Cloudflare token..." />
-        <button class="btn-ghost" style="margin-top:8px;width:100%;padding:8px 20px" onclick="pasteToken()">Paste</button>
-        <div id="token-status" style="margin-top:6px;font-size:13px;color:var(--mu);"></div>
-      </div>
-
-      <!-- Step 4 -->
-      <div class="gstep" style="border-bottom:none;margin-bottom:0;padding-bottom:0">
-        <div class="gstep-head"><span class="gnum">4</span><span class="gtitle">Build your Nyxx</span></div>
-        <p class="gtext">Tap the button and wait – it sets up everything (about 30 seconds).</p>
-        <button class="btn" id="go" onclick="install()" disabled>🚀 Create my Nyxx panel</button>
-      </div>
-    </div>
-
-    <!-- Progress -->
-    <div id="progress-card" class="hidden card">
-      <div class="progress" id="progress"></div>
-      <div class="err-box hidden" id="errbox"></div>
-    </div>
-
-    <!-- Result -->
-    <div id="result" class="result-box hidden"></div>
-
-    <div class="foot">Your token stays in your browser. Nothing is stored on our side.</div>
+    <button class="btn" onclick="goToStep('account')" id="btn-welcome-next">Get Started →</button>
   </div>
 </div>
 
+<!-- STEP 2: ACCOUNT & TOKEN -->
+<div id="step-account" class="card hidden step-card">
+  <div class="stepper">
+    <div class="step-dot completed"></div>
+    <div class="step-line completed"></div>
+    <div class="step-dot active"></div>
+    <div class="step-line"></div>
+    <div class="step-dot"></div>
+    <div class="step-line"></div>
+    <div class="step-dot"></div>
+  </div>
+  <a class="back-link" onclick="goToStep('welcome')">← Back</a>
+  <h2>🔑 <span class="grad" style="background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent">Account</span> & Token</h2>
+  <p class="desc">Connect your Cloudflare account to get started.</p>
+
+  <div style="margin-bottom:18px;border-bottom:1px solid var(--line);padding-bottom:18px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+      <span style="flex:0 0 26px;width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:.85rem;color:#05060a;background:var(--grad);">1</span>
+      <span style="font-weight:700;font-size:1rem;">Cloudflare account</span>
+    </div>
+    <p style="color:var(--mu);font-size:.9rem;margin:0 0 10px;padding-left:36px;">If you do not have one, create a free account (takes 1 min).</p>
+    <a class="btn btn-ghost btn-sm" href="https://dash.cloudflare.com/sign-up" target="_blank" rel="noopener" style="margin-left:36px;width:auto;min-height:40px;">Create free account</a>
+  </div>
+
+  <div style="margin-bottom:18px;border-bottom:1px solid var(--line);padding-bottom:18px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+      <span style="flex:0 0 26px;width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:.85rem;color:#05060a;background:var(--grad);">2</span>
+      <span style="font-weight:700;font-size:1rem;">Get your API token</span>
+    </div>
+    <p style="color:var(--mu);font-size:.9rem;margin:0 0 10px;padding-left:36px;">Tap the button — a Cloudflare page opens with permissions pre-selected.</p>
+    <button class="btn btn-ghost btn-sm" style="margin-left:36px;width:auto;min-height:40px;" onclick="openTokenPage()">🔑 Get my token</button>
+    <div class="callout" style="margin-left:36px;margin-top:10px;"><span class="ic">⚠️</span><div style="font-size:13px;"><b>Copy the whole token</b> before leaving — it is shown only once.</div></div>
+  </div>
+
+  <div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+      <span style="flex:0 0 26px;width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:.85rem;color:#05060a;background:var(--grad);">3</span>
+      <span style="font-weight:700;font-size:1rem;">Paste your token</span>
+    </div>
+    <p style="color:var(--mu);font-size:.9rem;margin:0 0 10px;padding-left:36px;">Paste your copied token below. We will verify it instantly.</p>
+    <input id="token" type="text" placeholder="Your Cloudflare token..." aria-label="Cloudflare API Token" autocomplete="off" style="margin-left:36px;width:calc(100% - 36px);" />
+    <button class="btn-ghost" style="margin-top:8px;margin-left:36px;width:calc(100% - 36px);padding:10px 20px;min-height:44px;cursor:pointer;border-radius:10px;font-family:inherit;font-size:14px;border:1px solid var(--line2);color:var(--tx);background:var(--card2);" onclick="pasteToken()" id="btn-paste">📋 Paste from Clipboard</button>
+    <div id="token-status" style="margin-top:6px;margin-left:36px;font-size:13px;color:var(--mu);min-height:20px;" role="status" aria-live="polite"></div>
+  </div>
+
+  <button class="btn" style="margin-top:20px;" onclick="goToStep('security')" id="btn-account-next" disabled>Continue →</button>
+</div>
+
+<!-- STEP 3: SECURITY / PROXY -->
+<div id="step-security" class="card hidden step-card">
+  <div class="stepper">
+    <div class="step-dot completed"></div>
+    <div class="step-line completed"></div>
+    <div class="step-dot completed"></div>
+    <div class="step-line completed"></div>
+    <div class="step-dot active"></div>
+    <div class="step-line"></div>
+    <div class="step-dot"></div>
+  </div>
+  <a class="back-link" onclick="goToStep('account')">← Back</a>
+  <h2>🔒 <span class="grad" style="background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent">Security</span> & Proxy</h2>
+  <p class="desc">Choose how your browser communicates with Cloudflare's API.</p>
+
+  <div class="proxy-option selected" id="opt-default" onclick="selectProxy('default')" tabindex="0" role="radio" aria-checked="true" aria-label="Use default proxy">
+    <div class="radio"></div>
+    <h4>✅ Use Default Proxy (Recommended)</h4>
+    <p>We will route API calls through our hosted CORS proxy. Fast and zero setup. Your token is only forwarded to Cloudflare.</p>
+    <span class="tag">Zero Setup</span>
+  </div>
+
+  <div class="proxy-option" id="opt-custom" onclick="selectProxy('custom')" tabindex="0" role="radio" aria-checked="false" aria-label="Self-host proxy">
+    <div class="radio"></div>
+    <h4>🔐 Self-Host Your Own Proxy</h4>
+    <p>Deploy your own proxy worker for maximum privacy. Your token never touches third-party servers.</p>
+    <span class="tag safe">Maximum Privacy</span>
+  </div>
+
+  <div id="custom-proxy-section" class="proxy-custom-section hidden">
+    <h4>Deploy Your Own Proxy</h4>
+    <ol class="step-list">
+      <li><span class="num">1</span><div>Download <code style="background:var(--bg);padding:2px 6px;border-radius:4px;">proxy.js</code> from <a href="https://github.com/Mahan07dev/Nyxx/blob/main/proxy.js" target="_blank" rel="noopener">GitHub</a></div></li>
+      <li><span class="num">2</span><div>Go to <a href="https://dash.cloudflare.com" target="_blank" rel="noopener">Cloudflare Dashboard</a> → Workers & Pages → Create</div></li>
+      <li><span class="num">3</span><div>Paste the proxy code, deploy, and copy your worker URL</div></li>
+      <li><span class="num">4</span><div>Paste it below — we will verify it works instantly</div></li>
+    </ol>
+    <input type="text" id="custom-proxy-url" placeholder="https://your-proxy.your-subdomain.workers.dev/" oninput="verifyCustomProxy()" />
+    <div id="custom-proxy-status" style="margin-top:8px;font-size:13px;color:var(--mu);min-height:20px;"></div>
+  </div>
+
+  <button class="btn" style="margin-top:20px;" onclick="confirmProxyAndProceed()" id="btn-security-next">Continue →</button>
+</div>
+
+<!-- STEP 4: INSTALLER CHOICE -->
+<div id="step-installer" class="card hidden step-card">
+  <div class="stepper">
+    <div class="step-dot completed"></div>
+    <div class="step-line completed"></div>
+    <div class="step-dot completed"></div>
+    <div class="step-line completed"></div>
+    <div class="step-dot completed"></div>
+    <div class="step-line completed"></div>
+    <div class="step-dot active"></div>
+  </div>
+  <a class="back-link" onclick="goToStep('security')">← Back</a>
+  <h2>🚀 <span class="grad" style="background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent">Install</span> Nyxx</h2>
+  <p class="desc">What would you like to do?</p>
+
+  <div class="installer-choice" id="installer-choices">
+    <div class="choice-card" onclick="startScan()" tabindex="0" role="button" aria-label="Scan account for existing Nyxx resources">
+      <div class="icon">🔍</div>
+      <h3>Scan Account</h3>
+      <p>Check for existing Nyxx resources on your Cloudflare account</p>
+    </div>
+    <div class="choice-card" onclick="goToCreate()" tabindex="0" role="button" aria-label="Create new Nyxx panel">
+      <div class="icon">🆕</div>
+      <h3>Create New</h3>
+      <p>Deploy a brand new Nyxx panel from scratch</p>
+    </div>
+  </div>
+
+  <div id="scan-results" class="scan-results hidden">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+      <h4 style="margin:0;">🔍 Scan Results</h4>
+      <span id="scan-badge" style="background:var(--card2);padding:2px 10px;border-radius:20px;font-size:12px;color:var(--mu);"></span>
+    </div>
+    <div id="scan-content"></div>
+    <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-ghost btn-sm" onclick="startScan()">🔄 Rescan</button>
+      <button class="btn btn-sm" onclick="goToCreate()">➕ Create New Panel</button>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 5: CREATE / UPDATE -->
+<div id="step-create" class="card hidden step-card">
+  <div class="stepper">
+    <div class="step-dot completed"></div>
+    <div class="step-line completed"></div>
+    <div class="step-dot completed"></div>
+    <div class="step-line completed"></div>
+    <div class="step-dot completed"></div>
+    <div class="step-line completed"></div>
+    <div class="step-dot completed"></div>
+  </div>
+  <a class="back-link" onclick="goToStep('installer')">← Back</a>
+  <h2 id="create-title">🆕 <span class="grad" style="background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent">Create</span> New Panel</h2>
+  <p class="desc" id="create-desc">Deploy a fresh Nyxx panel to your Cloudflare account.</p>
+
+  <div id="update-banner" class="update-banner hidden">
+    <h4>🔄 Update Mode</h4>
+    <p style="color:var(--mu);font-size:13px;margin:0;">This will replace the worker code for <b id="update-target-name"></b> while keeping the database intact.</p>
+  </div>
+
+  <div style="text-align:center;margin:20px 0;">
+    <button class="btn" id="go" onclick="install()" disabled style="max-width:320px;">🚀 Create my Nyxx panel</button>
+  </div>
+
+  <div id="progress-card" class="hidden" style="margin-top:20px;">
+    <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progress-bar"></div></div>
+    <div style="text-align:center;font-size:12px;color:var(--mu);margin-bottom:6px;" id="progress-text">Step 0 of 8</div>
+    <div class="progress" id="progress"></div>
+    <div class="err-box hidden" id="errbox">
+      <div class="err-title" id="err-title"></div>
+      <div id="err-text"></div>
+      <div class="err-actions">
+        <button class="btn btn-sm btn-ghost" onclick="resetInstallation()">Start Over</button>
+        <button class="btn btn-sm" onclick="retryCurrentStep()" id="btn-retry-step">Retry This Step</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 6: RESULT -->
+<div id="step-result" class="hidden">
+  <div class="result-box">
+    <div class="success-icon">🎉</div>
+    <h3 id="result-title">Your Nyxx panel is ready!</h3>
+    <p style="color:var(--mu);font-size:0.9rem;">Your panel has been successfully deployed.</p>
+    <div class="url-box" id="result-url-box">
+      <span id="result-url"></span><br>
+      <button onclick="copyUrl()">📋 Copy URL</button>
+    </div>
+    <p id="result-database" style="color:var(--mu);font-size:0.9rem;margin:0 0 14px;"></p>
+    <a class="btn" href="#" target="_blank" id="result-link" rel="noopener" style="max-width:280px;margin:0 auto;">Open your panel →</a>
+    <button class="btn btn-ghost" onclick="startAnotherPanel()" style="max-width:280px;margin:10px auto 0;">Create another panel</button>
+    <div class="callout ok" style="margin-top:14px;text-align:left;"><span class="ic">💡</span><div style="font-size:13px;">Set your admin password on first visit. If workers.dev is blocked in your region, add a custom domain in Cloudflare Dashboard.</div></div>
+    <div class="callout warn" id="propagation-notice" style="text-align:left;"><span class="ic">⏳</span><div style="font-size:13px;"><b>Not loading yet?</b> Cloudflare Workers can take 1–3 minutes to propagate globally. Wait a moment and refresh the page.</div></div>
+  </div>
+</div>
+
+<div class="foot" id="main-foot" style="text-align:center;color:var(--mu);font-size:11px;margin-top:16px;">
+  <span id="foot-shortcuts">Press <span class="kbd">Enter</span> to select · <span class="kbd">←</span> <span class="kbd">→</span> to navigate</span>
+  <br><br>
+  Using proxy: <span id="foot-proxy" style="color:var(--cyan);">default</span> · 
+  <a href="#" onclick="clearAllData();return false;" style="color:var(--cyan);">Clear all data</a>
+</div>
+</div>
+
 <script>
-  // ============================
-  // CONFIG – Point to your proxy worker
-  // ============================
-  const CORS_PROXY = "https://nyxx-proxy.nova-06272b19.workers.dev/";
-  const WORKER_JS_URL = "https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/worker.js";
-  const TOKEN_DEEPLINK = "https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22d1%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22account_settings%22%2C%22type%22%3A%22read%22%7D%5D&accountId=*&zoneId=all&name=Nyxx%20Installer";
+// ============================
+// CONFIG
+// ============================
+const DEFAULT_PROXY = "https://nyxx-proxy.nova-06272b19.workers.dev/";
+const PROXY_JS_URL = "https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/proxy.js";
+const WORKER_JS_URL = "https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/worker.js";
+const WORKER_JS_SHA256 = null;
+const TOKEN_DEEPLINK = "https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22d1%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22account_settings%22%2C%22type%22%3A%22read%22%7D%5D&accountId=*&zoneId=all&name=Nyxx%20Installer";
 
-  // ============================
-  // SPLASH → INSTALLER
-  // ============================
-  function showInstaller() {
-    document.getElementById('splash').classList.add('hidden');
-    document.getElementById('installer').classList.remove('hidden');
+const STORAGE_KEY = 'nyxx_install_state_v4';
+const CONFIG_KEY = 'nyxx_config_v4';
+const CACHE_KEY = 'nyxx_worker_cache';
+
+const STEPS = ['verify', 'account', 'sub', 'db', 'fetch', 'deploy', 'enable', 'online'];
+const STEP_LABELS = {
+  verify: 'Verifying token', account: 'Finding account', sub: 'Setting subdomain',
+  db: 'Creating D1 database', fetch: 'Downloading worker code', deploy: 'Deploying worker',
+  enable: 'Enabling subdomain', online: 'Waiting for panel to come online'
+};
+
+const STEP_ORDER = ['welcome', 'account', 'security', 'installer', 'create', 'result'];
+
+// ============================
+// STATE
+// ============================
+let config = { proxyMode: 'default', proxyUrl: DEFAULT_PROXY, token: '', tokenVerified: false };
+let installState = {
+  accountId: null, subName: '', dbId: null, dbName: '', workerName: '', panelUrl: '',
+  workerCode: null, completedSteps: [], failedStep: null, errorMessage: null,
+  scanResults: { workers: [], databases: [] }, updateMode: false, updateTarget: null
+};
+let currentStepIndex = -1;
+let customProxyVerified = false;
+let isInstalling = false;
+let focusedChoiceIndex = 0;
+
+// ============================
+// DOM REFERENCES
+// ============================
+const tokenInput = document.getElementById('token');
+const tokenStatus = document.getElementById('token-status');
+const goBtn = document.getElementById('go');
+const ariaLive = document.getElementById('aria-live');
+const footProxy = document.getElementById('foot-proxy');
+const footShortcuts = document.getElementById('foot-shortcuts');
+const btnAccountNext = document.getElementById('btn-account-next');
+
+// ============================
+// INIT
+// ============================
+function init() {
+  loadConfig();
+  loadState();
+  selectProxy(config.proxyMode === 'custom' ? 'custom' : 'default', false);
+  updateProxyFoot();
+  updateStepper('welcome');
+  updateFooterShortcuts('welcome');
+
+  // Autofill saved token
+  if (config.token && tokenInput) {
+    tokenInput.value = config.token;
+    if (config.token.length >= 20) {
+      verifyToken();
+    }
   }
 
-  // ============================
-  // TOKEN VERIFICATION (on input)
-  // ============================
-  let tokenVerified = false;
-  const tokenInput = document.getElementById('token');
-  const tokenStatus = document.getElementById('token-status');
-  const goBtn = document.getElementById('go');
+  document.addEventListener('keydown', handleKeydown);
 
-  tokenInput.addEventListener('input', debounce(verifyToken, 600));
-
-  async function verifyToken() {
-    const token = tokenInput.value.trim();
-    if (token.length < 20) {
-      tokenStatus.textContent = '';
-      tokenVerified = false;
-      goBtn.disabled = true;
-      return;
-    }
-    tokenStatus.textContent = '⏳ Verifying...';
-    tokenStatus.style.color = 'var(--mu)';
-    try {
-      const res = await api('GET', 'https://api.cloudflare.com/client/v4/user/tokens/verify', token);
-      if (res.json && res.json.success === true) {
-        tokenStatus.textContent = '✅ Token valid';
-        tokenStatus.style.color = 'var(--ok)';
-        tokenVerified = true;
-        goBtn.disabled = false;
-      } else {
-        const err = res.json?.errors?.[0]?.message || 'Invalid token';
-        tokenStatus.textContent = '❌ ' + err;
-        tokenStatus.style.color = 'var(--bad)';
-        tokenVerified = false;
-        goBtn.disabled = true;
+  // Proxy option keyboard
+  document.querySelectorAll('.proxy-option').forEach((el, i) => {
+    el.addEventListener('keydown', (e) => {
+      if (e.key === ' ') {
+        e.preventDefault();
+        selectProxy(el.id === 'opt-default' ? 'default' : 'custom');
       }
-    } catch (e) {
-      tokenStatus.textContent = '❌ Error verifying token';
-      tokenStatus.style.color = 'var(--bad)';
-      tokenVerified = false;
-      goBtn.disabled = true;
-    }
-  }
-
-  function debounce(fn, delay) {
-    let timer;
-    return function(...args) {
-      clearTimeout(timer);
-      timer = setTimeout(() => fn.apply(this, args), delay);
-    };
-  }
-
-  // ============================
-  // API HELPER (via proxy)
-  // ============================
-  function api(method, target, token, body, ctype) {
-    const url = CORS_PROXY + "?url=" + encodeURIComponent(target);
-    const headers = { Authorization: 'Bearer ' + token };
-    if (ctype) headers['Content-Type'] = ctype;
-    return fetch(url, { method, headers, body }).then(r => r.text().then(txt => {
-      let json = null;
-      try { json = JSON.parse(txt); } catch (e) {}
-      return { status: r.status, json, text: txt };
-    }));
-  }
-
-  function cfOk(res) { return res.json && res.json.success === true; }
-  function cfErr(res) { try { return res.json.errors[0].message; } catch(e) { return 'HTTP ' + res.status; } }
-
-  // ============================
-  // PASTE
-  // ============================
-  async function pasteToken() {
-    try {
-      const txt = await navigator.clipboard.readText();
-      if (txt) { tokenInput.value = txt.trim(); tokenInput.focus(); verifyToken(); return; }
-    } catch (e) {}
-    tokenInput.focus();
-    tokenInput.select();
-    document.execCommand('paste');
-    verifyToken();
-  }
-
-  // ============================
-  // OPEN TOKEN PAGE
-  // ============================
-  function openTokenPage() { window.open(TOKEN_DEEPLINK, '_blank', 'noopener'); }
-
-  // ============================
-  // INSTALLATION
-  // ============================
-  const STEPS = ['verify', 'account', 'sub', 'db', 'fetch', 'deploy', 'enable', 'online'];
-
-  function renderProgress() {
-    const el = document.getElementById('progress');
-    el.innerHTML = '';
-    const labels = {
-      verify: 'Verifying token',
-      account: 'Finding account',
-      sub: 'Setting subdomain',
-      db: 'Creating D1 database',
-      fetch: 'Downloading worker code',
-      deploy: 'Deploying worker',
-      enable: 'Enabling subdomain',
-      online: 'Waiting for online'
-    };
-    STEPS.forEach(s => {
-      const d = document.createElement('div');
-      d.className = 'prow';
-      d.id = 'p-' + s;
-      d.innerHTML = '<span class="dot"></span><span>' + (labels[s] || s) + '</span>';
-      el.appendChild(d);
     });
+  });
+}
+
+// ============================
+// NAVIGATION
+// ============================
+function goToStep(stepId) {
+  document.querySelectorAll('.wrap > .card, #step-result').forEach(el => {
+    if (el.id && (el.id.startsWith('step-') || el.id === 'step-result')) el.classList.add('hidden');
+  });
+  const target = document.getElementById('step-' + stepId);
+  if (target) {
+    target.classList.remove('hidden');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  updateStepper(stepId);
+  updateFooterShortcuts(stepId);
+
+  const titles = { welcome: 'Welcome', account: 'Account and Token', security: 'Security and Proxy', installer: 'Install Nyxx', create: 'Create Panel', result: 'Installation Complete' };
+  announce(titles[stepId] || '');
+
+  // Focus management
+  if (stepId === 'account' && tokenInput && !tokenInput.value) {
+    setTimeout(() => tokenInput.focus(), 100);
+  }
+  if (stepId === 'installer') {
+    focusedChoiceIndex = 0;
+    updateChoiceFocus(false);
+  }
+}
+
+function updateStepper(currentStep) {
+  const idx = STEP_ORDER.indexOf(currentStep);
+  if (idx === -1) return;
+  ['account', 'security', 'installer', 'create'].forEach(step => {
+    const stepper = document.querySelector('#step-' + step + ' .stepper');
+    if (!stepper) return;
+    const dots = stepper.querySelectorAll('.step-dot');
+    const lines = stepper.querySelectorAll('.step-line');
+    const stepIdx = STEP_ORDER.indexOf(step);
+    dots.forEach((dot, i) => {
+      dot.classList.remove('completed', 'active');
+      if (i < stepIdx) dot.classList.add('completed');
+      else if (i === stepIdx) dot.classList.add('active');
+    });
+    lines.forEach((line, i) => line.classList.toggle('completed', i < stepIdx));
+  });
+}
+
+function updateFooterShortcuts(step) {
+  if (!footShortcuts) return;
+  const shortcuts = {
+    welcome: 'Press <span class="kbd">Enter</span> to start',
+    account: '<span class="kbd">Enter</span> to continue · <span class="kbd">Tab</span> to navigate fields',
+    security: '<span class="kbd">↑</span> <span class="kbd">↓</span> to choose · <span class="kbd">Enter</span> to select',
+    installer: '<span class="kbd">←</span> <span class="kbd">→</span> to navigate · <span class="kbd">Enter</span> to select',
+    create: '<span class="kbd">Enter</span> to deploy · <span class="kbd">Tab</span> to navigate',
+    result: '<span class="kbd">Enter</span> to open panel'
+  };
+  footShortcuts.innerHTML = shortcuts[step] || shortcuts.welcome;
+}
+
+// ============================
+// KEYBOARD NAVIGATION
+// ============================
+function handleKeydown(e) {
+  if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
+  const currentStep = getCurrentStep();
+  const active = document.activeElement;
+
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    goBack();
+    return;
   }
 
-  function setStep(s, state) {
-    const d = document.getElementById('p-' + s);
-    if (!d) return;
-    d.className = 'prow ' + state;
-    const dot = d.querySelector('.dot');
-    if (state === 'done') dot.textContent = '✓';
-    else if (state === 'err') dot.textContent = '!';
-    else dot.textContent = '';
+  if (currentStep === 'installer') {
+    const choices = Array.from(document.querySelectorAll('#installer-choices .choice-card'));
+    const isChoiceFocused = choices.includes(active);
+    if (['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp'].includes(e.key) && (isChoiceFocused || active === document.body)) {
+      e.preventDefault();
+      const direction = ['ArrowRight', 'ArrowDown'].includes(e.key) ? 1 : -1;
+      focusedChoiceIndex = (focusedChoiceIndex + direction + choices.length) % choices.length;
+      updateChoiceFocus(true);
+      return;
+    }
+    if (e.key === 'Enter' && isChoiceFocused) {
+      e.preventDefault();
+      active.click();
+    }
+    return;
   }
 
-  function showErr(msg) {
-    const b = document.getElementById('errbox');
-    b.classList.remove('hidden');
-    b.textContent = msg;
+  if (currentStep === 'security') {
+    const options = Array.from(document.querySelectorAll('.proxy-option'));
+    if (['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight'].includes(e.key) && (options.includes(active) || active === document.body)) {
+      e.preventDefault();
+      const mode = config.proxyMode === 'default' ? 'custom' : 'default';
+      selectProxy(mode);
+      document.getElementById('opt-' + mode).focus();
+      return;
+    }
+    if (e.key === 'Enter' && options.includes(active)) {
+      e.preventDefault();
+      confirmProxyAndProceed();
+    }
+    return;
   }
 
-  function rname() {
-    const a = ["sunny", "swift", "atlas", "orbit", "pixel", "falcon", "crystal", "mango", "coral", "luna", "pearl", "turbo", "river", "comet"];
-    const b = ["panel", "bridge", "node", "core", "wave", "gate", "stack", "vault", "portal", "cloud", "garden", "spark"];
-    return a[Math.floor(Math.random() * a.length)] + '-' + b[Math.floor(Math.random() * b.length)] + '-' + Math.random().toString(16).slice(2, 6);
+  // Let native controls and their dedicated handlers process Enter themselves.
+  if (e.key !== 'Enter' || (active && ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON', 'A'].includes(active.tagName))) return;
+
+  const primaryActions = {
+    welcome: () => goToStep('account'),
+    account: () => { if (config.tokenVerified) goToStep('security'); },
+    create: () => { if (!goBtn.disabled) install(); },
+    result: () => document.getElementById('result-link')?.click()
+  };
+  if (primaryActions[currentStep]) {
+    e.preventDefault();
+    primaryActions[currentStep]();
+  }
+}
+
+function goBack() {
+  const previous = { account: 'welcome', security: 'account', installer: 'security', create: 'installer', result: 'installer' };
+  const step = getCurrentStep();
+  if (previous[step]) goToStep(previous[step]);
+}
+
+function getCurrentStep() {
+  for (const s of STEP_ORDER) {
+    const el = document.getElementById('step-' + s);
+    if (el && !el.classList.contains('hidden')) return s;
+  }
+  return 'welcome';
+}
+
+function updateChoiceFocus(moveFocus) {
+  const choices = document.querySelectorAll('#installer-choices .choice-card');
+  choices.forEach((c, i) => {
+    c.tabIndex = i === focusedChoiceIndex ? 0 : -1;
+    if (moveFocus && i === focusedChoiceIndex) c.focus();
+  });
+}
+
+// ============================
+// LOCAL STORAGE
+// ============================
+function saveConfig() { try { localStorage.setItem(CONFIG_KEY, JSON.stringify(config)); } catch (e) {} }
+function loadConfig() {
+  try { const raw = localStorage.getItem(CONFIG_KEY); if (raw) config = JSON.parse(raw); }
+  catch (e) { config = { proxyMode: 'default', proxyUrl: DEFAULT_PROXY, token: '', tokenVerified: false }; }
+}
+function saveState() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(installState)); } catch (e) {} }
+function loadState() {
+  try { const raw = localStorage.getItem(STORAGE_KEY); if (raw) installState = JSON.parse(raw); }
+  catch (e) { installState = { accountId: null, subName: '', dbId: null, dbName: '', workerName: '', panelUrl: '', workerCode: null, completedSteps: [], failedStep: null, errorMessage: null, scanResults: { workers: [], databases: [] }, updateMode: false, updateTarget: null }; }
+}
+function clearState() {
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(CONFIG_KEY);
+  localStorage.removeItem(CACHE_KEY);
+  installState = { accountId: null, subName: '', dbId: null, dbName: '', workerName: '', panelUrl: '', workerCode: null, completedSteps: [], failedStep: null, errorMessage: null, scanResults: { workers: [], databases: [] }, updateMode: false, updateTarget: null };
+  config = { proxyMode: 'default', proxyUrl: DEFAULT_PROXY, token: '', tokenVerified: false };
+}
+
+// ============================
+// PROXY
+// ============================
+function selectProxy(mode, shouldFocus = true) {
+  config.proxyMode = mode;
+  document.querySelectorAll('.proxy-option').forEach(el => {
+    el.classList.remove('selected');
+    el.setAttribute('aria-checked', 'false');
+  });
+  const opt = document.getElementById('opt-' + mode);
+  opt.classList.add('selected');
+  opt.setAttribute('aria-checked', 'true');
+  document.querySelectorAll('.proxy-option').forEach(el => { el.tabIndex = el === opt ? 0 : -1; });
+
+  if (mode === 'custom') {
+    document.getElementById('custom-proxy-section').classList.remove('hidden');
+    const customUrlInput = document.getElementById('custom-proxy-url');
+    customUrlInput.value = config.proxyUrl === DEFAULT_PROXY ? '' : config.proxyUrl;
+    if (shouldFocus) customUrlInput.focus();
+    customProxyVerified = false;
+  } else {
+    document.getElementById('custom-proxy-section').classList.add('hidden');
+    config.proxyUrl = DEFAULT_PROXY;
+    customProxyVerified = true;
+  }
+  saveConfig();
+  updateProxyFoot();
+}
+
+async function verifyCustomProxy() {
+  const url = document.getElementById('custom-proxy-url').value.trim();
+  const statusEl = document.getElementById('custom-proxy-status');
+
+  if (!url) { statusEl.textContent = ''; customProxyVerified = false; return; }
+  if (!url.startsWith('https://')) { statusEl.textContent = '❌ URL must start with https://'; statusEl.style.color = 'var(--bad)'; customProxyVerified = false; return; }
+
+  let normalized = url;
+  if (!normalized.endsWith('/')) normalized += '/';
+
+  statusEl.textContent = '⏳ Testing proxy...';
+  statusEl.style.color = 'var(--mu)';
+
+  try {
+    await delay(300);
+    const testUrl = normalized + '?url=' + encodeURIComponent('https://api.cloudflare.com/client/v4/ips');
+    const res = await fetch(testUrl, { method: 'GET', cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && (data.result || data.success !== undefined)) {
+        statusEl.textContent = '✅ Proxy is working!';
+        statusEl.style.color = 'var(--ok)';
+        config.proxyUrl = normalized;
+        customProxyVerified = true;
+        saveConfig();
+        updateProxyFoot();
+        return;
+      }
+    }
+    statusEl.textContent = '❌ Proxy returned HTTP ' + res.status;
+    statusEl.style.color = 'var(--bad)';
+    customProxyVerified = false;
+  } catch (e) {
+    statusEl.textContent = '❌ Cannot reach proxy';
+    statusEl.style.color = 'var(--bad)';
+    customProxyVerified = false;
+  }
+}
+
+function confirmProxyAndProceed() {
+  if (config.proxyMode === 'custom' && !customProxyVerified) {
+    const statusEl = document.getElementById('custom-proxy-status');
+    statusEl.textContent = '❌ Please verify your proxy URL first, or switch to the default proxy.';
+    statusEl.style.color = 'var(--bad)';
+    return;
+  }
+  saveConfig();
+  goToStep('installer');
+}
+
+function updateProxyFoot() {
+  if (!footProxy) return;
+  if (config.proxyMode === 'default') footProxy.textContent = 'default';
+  else {
+    try { const url = new URL(config.proxyUrl); footProxy.textContent = 'custom'; }
+    catch (e) { footProxy.textContent = 'custom'; }
+  }
+}
+
+// ============================
+// TOKEN
+// ============================
+if (tokenInput) {
+  tokenInput.addEventListener('input', debounce(verifyToken, 600));
+  tokenInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && config.tokenVerified) {
+      e.preventDefault();
+      goToStep('security');
+    }
+  });
+}
+
+async function verifyToken() {
+  const token = tokenInput.value.trim();
+  config.token = token;
+  saveConfig();
+
+  if (token.length < 20) {
+    tokenStatus.textContent = '';
+    config.tokenVerified = false;
+    if (btnAccountNext) btnAccountNext.disabled = true;
+    return;
   }
 
-  async function install() {
-    const token = tokenInput.value.trim();
-    if (!tokenVerified || !token) {
-      tokenStatus.textContent = '❌ Please paste a valid token first.';
+  tokenStatus.textContent = '⏳ Verifying...';
+  tokenStatus.style.color = 'var(--mu)';
+
+  try {
+    await delay(200);
+    const res = await api('GET', 'https://api.cloudflare.com/client/v4/user/tokens/verify', token);
+    if (res.json && res.json.success === true) {
+      tokenStatus.textContent = '✅ Token valid';
+      tokenStatus.style.color = 'var(--ok)';
+      config.tokenVerified = true;
+      if (btnAccountNext) btnAccountNext.disabled = false;
+      announce('Token verified successfully.');
+    } else {
+      const err = res.json?.errors?.[0]?.message || 'Invalid token';
+      tokenStatus.textContent = '❌ ' + err;
       tokenStatus.style.color = 'var(--bad)';
+      config.tokenVerified = false;
+      if (btnAccountNext) btnAccountNext.disabled = true;
+    }
+  } catch (e) {
+    tokenStatus.textContent = '❌ Error verifying token';
+    tokenStatus.style.color = 'var(--bad)';
+    config.tokenVerified = false;
+    if (btnAccountNext) btnAccountNext.disabled = true;
+  }
+}
+
+async function pasteToken() {
+  try {
+    const txt = await navigator.clipboard.readText();
+    if (txt) { tokenInput.value = txt.trim(); tokenInput.focus(); verifyToken(); return; }
+  } catch (e) {}
+  tokenInput.focus();
+  showToast('Please paste your token using Ctrl+V or Cmd+V', 'warn');
+}
+
+function openTokenPage() { window.open(TOKEN_DEEPLINK, '_blank', 'noopener'); }
+function debounce(fn, delay) { let timer; return function(...args) { clearTimeout(timer); timer = setTimeout(() => fn.apply(this, args), delay); }; }
+
+// ============================
+// API HELPER
+// ============================
+function api(method, target, token, body, ctype) {
+  const proxy = config.proxyUrl || DEFAULT_PROXY;
+  const url = proxy + (proxy.endsWith('/') ? '' : '/') + "?url=" + encodeURIComponent(target);
+  const headers = { Authorization: 'Bearer ' + (token || config.token) };
+  if (ctype) headers['Content-Type'] = ctype;
+
+  async function sendRequest(effectiveMethod, extraHeaders, useProxy) {
+    const requestUrl = useProxy ? url : target;
+    const requestInit = {
+      method: effectiveMethod,
+      headers: { ...headers, ...extraHeaders },
+      body,
+      mode: useProxy ? 'cors' : 'cors'
+    };
+    const response = await fetch(requestUrl, requestInit);
+    const txt = await response.text();
+    let json = null; try { json = JSON.parse(txt); } catch (e) {}
+    return { status: response.status, json, text: txt };
+  }
+
+  return sendRequest(method, {}, true).then(async res => {
+    const upperMethod = (method || 'GET').toUpperCase();
+    if ((res.status === 415 || res.status === 405) && upperMethod !== 'GET' && upperMethod !== 'HEAD') {
+      try {
+        return await sendRequest(upperMethod, {}, false);
+      } catch (e) {
+        return res;
+      }
+    }
+    return res;
+  });
+}
+function cfOk(res) { return res.json && res.json.success === true; }
+function cfErr(res) {
+  try { if (res.json && res.json.errors && res.json.errors.length > 0) return res.json.errors[0].message; return 'HTTP ' + res.status; }
+  catch(e) { return 'HTTP ' + res.status; }
+}
+
+// ============================
+// WORKER CODE CACHING
+// ============================
+async function fetchWorkerCode(useCache) {
+  const proxy = config.proxyUrl || DEFAULT_PROXY;
+  if (useCache) {
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        const { code, timestamp } = JSON.parse(cached);
+        if (Date.now() - timestamp < 10 * 60 * 1000 && code && code.length > 1000) return code;
+      }
+    } catch (e) {}
+  }
+  const wjResp = await fetch(proxy + (proxy.endsWith('/') ? '' : '/') + '?url=' + encodeURIComponent(WORKER_JS_URL));
+  if (!wjResp.ok) throw new InstallError('Failed to download worker.js (HTTP ' + wjResp.status + ')', 'NETWORK');
+  const workerCode = await wjResp.text();
+  if (!workerCode || workerCode.length < 1000) throw new InstallError('worker.js download invalid (too short)', 'VALIDATION');
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ code: workerCode, timestamp: Date.now() })); } catch (e) {}
+  return workerCode;
+}
+
+// ============================
+// SCAN ACCOUNT
+// ============================
+async function startScan() {
+  const token = config.token;
+  if (!token || token.length < 20 || !config.tokenVerified) {
+    showToast('Please verify your token on the Account step first.', 'warn');
+    goToStep('account');
+    return;
+  }
+
+  const resultsDiv = document.getElementById('scan-results');
+  const contentDiv = document.getElementById('scan-content');
+  resultsDiv.classList.remove('hidden');
+  contentDiv.innerHTML = '<div class="scan-empty"><div class="icon">🔍</div><p class="loading-dots">Scanning your Cloudflare account</p></div>';
+  document.getElementById('scan-badge').textContent = 'scanning...';
+
+  try {
+    await delay(200);
+    const acc = await api('GET', 'https://api.cloudflare.com/client/v4/accounts', token);
+    if (!cfOk(acc) || !acc.json.result.length) {
+      contentDiv.innerHTML = '<div class="scan-empty"><div class="icon">❌</div><p>Could not access your account. Please check your token permissions.</p></div>';
+      document.getElementById('scan-badge').textContent = 'error';
       return;
     }
 
-    // Hide the main installer card
-    document.querySelector(".maininstallcard").style.display = "none";
-    document.querySelector('.card').classList.add('hidden');
-    document.getElementById('progress-card').classList.remove('hidden');
-    renderProgress();
+    const accountId = acc.json.result[0].id;
+    installState.accountId = accountId;
 
-    const go = document.getElementById('go');
-    go.disabled = true;
+    await delay(300);
+    const workersRes = await api('GET', `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts`, token);
+    const workers = (cfOk(workersRes) && workersRes.json.result) ? workersRes.json.result : [];
+    const nyxxWorkers = workers.filter(w => w.id && w.id.toLowerCase().includes('nyxx'));
 
-    try {
-      setStep('verify', 'run');
-      // Already verified, just set done
-      setStep('verify', 'done');
+    await delay(300);
+    const dbRes = await api('GET', `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database`, token);
+    const databases = (cfOk(dbRes) && dbRes.json?.result) ? dbRes.json.result : [];
+    const nyxxDbs = databases.filter(d => d.name && d.name.toLowerCase().includes('nyxx'));
 
-      setStep('account', 'run');
-      const acc = await api('GET', 'https://api.cloudflare.com/client/v4/accounts', token);
-      if (!cfOk(acc) || !acc.json.result.length) { setStep('account', 'err'); showErr('Could not find your account: ' + cfErr(acc)); return; }
-      const accountId = acc.json.result[0].id;
-      setStep('account', 'done');
+    await delay(200);
+    const sg = await api('GET', `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/subdomain`, token);
+    if (cfOk(sg) && sg.json.result && sg.json.result.subdomain) installState.subName = sg.json.result.subdomain;
 
-      setStep('sub', 'run');
-      let subName = '';
-      const sg = await api('GET', `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/subdomain`, token);
-      if (cfOk(sg) && sg.json.result && sg.json.result.subdomain) {
-        subName = sg.json.result.subdomain;
-      } else {
-        const want = 'nyxx-' + Math.random().toString(16).slice(2, 8);
-        const sp = await api('PUT', `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/subdomain`, token, JSON.stringify({ subdomain: want }), 'application/json');
-        if (cfOk(sp) && sp.json.result) subName = sp.json.result.subdomain || want;
-        else subName = want;
+    installState.scanResults = { workers: nyxxWorkers, databases: nyxxDbs };
+    saveState();
+
+    const total = nyxxWorkers.length + nyxxDbs.length;
+    document.getElementById('scan-badge').textContent = total + ' found';
+
+    if (total === 0) {
+      contentDiv.innerHTML = '<div class="scan-empty"><div class="icon">🌱</div><p>No existing Nyxx resources found.</p><p style="font-size:0.85rem;margin-top:8px;">You are ready to create a new panel!</p></div>';
+    } else {
+      let html = '<div class="table-wrap"><table class="resource-table"><thead><tr><th>Name</th><th>Type</th><th>Created</th><th>Actions</th></tr></thead><tbody>';
+
+      nyxxWorkers.forEach(w => {
+        const date = w.created_on ? new Date(w.created_on).toLocaleDateString() : 'Unknown';
+        const url = installState.subName ? `https://${w.id}.${installState.subName}.workers.dev` : `https://${w.id}.workers.dev`;
+        html += '<tr><td><b>' + escapeHtml(w.id) + '</b></td>' +
+          '<td><span class="type-badge worker">Worker</span></td>' +
+          '<td>' + date + '</td>' +
+          '<td class="actions">' +
+          '<button onclick="window.open(\'' + url + '\', \'_blank\')">Open</button>' +
+          '<button class="update" onclick="startUpdate(\'' + escapeHtml(w.id) + '\')">Update</button>' +
+
+          '<button class="delete" onclick="deleteResource(\'worker\', \'' + escapeHtml(w.id) + '\')">Delete</button>' +
+          '</td></tr>';
+      });
+
+      nyxxDbs.forEach(d => {
+        const date = d.created_at ? new Date(d.created_at).toLocaleDateString() : 'Unknown';
+        html += '<tr><td><b>' + escapeHtml(d.name) + '</b></td>' +
+          '<td><span class="type-badge database">D1 DB</span></td>' +
+          '<td>' + date + '</td>' +
+          '<td class="actions">' +
+          '<button class="delete" onclick="deleteResource(\'database\', \'' + d.uuid + '\')">Delete</button>' +
+          '</td></tr>';
+      });
+
+      html += '</tbody></table></div>';
+      contentDiv.innerHTML = html;
+    }
+  } catch (e) {
+    contentDiv.innerHTML = '<div class="scan-empty"><div class="icon">⚠️</div><p>Error scanning: ' + escapeHtml(e.message) + '</p></div>';
+    document.getElementById('scan-badge').textContent = 'error';
+  }
+}
+
+async function deleteResource(type, id) {
+  if (!confirm('Are you sure you want to delete this ' + type + '? This cannot be undone.')) return;
+  try {
+    const token = config.token;
+    const accountId = await resolveAccountId(token);
+    if (type === 'worker') {
+      const settingsUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${encodeURIComponent(id)}/settings`;
+      const settings = await api('GET', settingsUrl, token);
+      if (!cfOk(settings)) throw new InstallError('Could not read Worker bindings: ' + cfErr(settings), 'API');
+      const databaseIds = [...new Set((settings.json?.result?.bindings || [])
+        .filter(binding => binding.type === 'd1')
+        .map(binding => binding.database_id || binding.id)
+        .filter(Boolean))];
+
+      const deletedWorker = await api('DELETE', `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${encodeURIComponent(id)}`, token);
+      if (!cfOk(deletedWorker)) throw new InstallError('Could not delete Worker: ' + cfErr(deletedWorker), 'API');
+
+      for (const databaseId of databaseIds) {
+        const deletedDatabase = await api('DELETE', `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${databaseId}`, token);
+        if (!cfOk(deletedDatabase)) throw new InstallError('Worker deleted, but D1 database ' + databaseId + ' could not be deleted: ' + cfErr(deletedDatabase), 'API');
       }
-      setStep('sub', 'done');
+    } else {
+      const deletedDatabase = await api('DELETE', `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${id}`, token);
+      if (!cfOk(deletedDatabase)) throw new InstallError('Could not delete D1 database: ' + cfErr(deletedDatabase), 'API');
+    }
+    showToast(type + ' deleted successfully', 'ok');
+    startScan();
+  } catch (e) {
+    showToast('Error deleting: ' + e.message, 'err');
+  }
+}
 
-      setStep('db', 'run');
-      const dbName = 'nyxx-' + Math.random().toString(16).slice(2, 8) + '-db';
-      const dbRes = await api('POST', `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database`, token, JSON.stringify({ name: dbName }), 'application/json');
-      const dbId = dbRes.json?.result?.uuid;
-      if (!dbId) { setStep('db', 'err'); showErr('D1 creation failed: ' + cfErr(dbRes)); return; }
-      setStep('db', 'done');
+function startUpdate(workerName) {
+  installState.updateMode = true;
+  installState.updateTarget = workerName;
+  // An update always discovers its own binding configuration; never reuse create-flow state.
+  installState.workerName = workerName;
+  installState.dbId = null;
+  installState.dbName = '';
+  installState.workerCode = null;
+  installState.completedSteps = [];
+  installState.failedStep = null;
+  installState.errorMessage = null;
+  saveState();
 
-      setStep('fetch', 'run');
-      const wjResp = await fetch(CORS_PROXY + '?url=' + encodeURIComponent(WORKER_JS_URL));
-      if (!wjResp.ok) { setStep('fetch', 'err'); showErr('Failed to download worker.js (HTTP ' + wjResp.status + ')'); return; }
-      const workerCode = await wjResp.text();
-      if (!workerCode || workerCode.length < 1000) { setStep('fetch', 'err'); showErr('worker.js download invalid (too short)'); return; }
-      setStep('fetch', 'done');
+  document.getElementById('create-title').innerHTML = '🔄 <span class="grad" style="background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent">Update</span> Panel';
+  document.getElementById('create-desc').textContent = 'Replace the worker code for ' + workerName + ' with the latest version.';
+  document.getElementById('update-banner').classList.remove('hidden');
+  document.getElementById('update-target-name').textContent = workerName;
+  document.getElementById('go').textContent = '🔄 Update ' + workerName;
+  document.getElementById('go').disabled = false;
 
-      setStep('deploy', 'run');
-      const workerName = 'nyxx-' + rname();
+  goToStep('create');
+}
+
+function goToCreate() {
+  installState.updateMode = false;
+  installState.updateTarget = null;
+  saveState();
+
+  document.getElementById('create-title').innerHTML = '🆕 <span class="grad" style="background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent">Create</span> New Panel';
+  document.getElementById('create-desc').textContent = 'Deploy a fresh Nyxx panel to your Cloudflare account.';
+  document.getElementById('update-banner').classList.add('hidden');
+  document.getElementById('go').textContent = '🚀 Create my Nyxx panel';
+  document.getElementById('go').disabled = !config.tokenVerified;
+
+  goToStep('create');
+}
+
+async function resolveAccountId(token) {
+  if (installState.accountId) return installState.accountId;
+  const acc = await api('GET', 'https://api.cloudflare.com/client/v4/accounts', token);
+  if (!cfOk(acc) || !acc.json.result?.length) throw new InstallError('Could not find your account: ' + cfErr(acc), 'AUTH');
+  installState.accountId = acc.json.result[0].id;
+  saveState();
+  return installState.accountId;
+}
+
+async function resolveUpdateDatabase(token) {
+  const accountId = await resolveAccountId(token);
+  const workerName = installState.updateTarget;
+  if (!workerName) throw new InstallError('No Worker was selected for update.', 'VALIDATION');
+
+  const settings = await api('GET', `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${encodeURIComponent(workerName)}/settings`, token);
+  const bindings = cfOk(settings) && Array.isArray(settings.json?.result?.bindings) ? settings.json.result.bindings : [];
+  const database = bindings.find(binding => binding.type === 'd1' && binding.name === 'DB') || bindings.find(binding => binding.type === 'd1');
+  const databaseId = database?.database_id || database?.id;
+  if (!databaseId) throw new InstallError('This Worker has no D1 database binding to preserve. Select a Nyxx Worker with a DB binding.', 'VALIDATION');
+
+  installState.dbId = databaseId;
+  installState.dbName = database.name || 'DB';
+  installState.workerName = workerName;
+  saveState();
+  return databaseId;
+}
+
+// ============================
+// INSTALLATION
+// ============================
+async function install() {
+  if (isInstalling) return;
+  const token = config.token;
+  if (!config.tokenVerified || !token) {
+    showToast('Please verify your token first.', 'warn');
+    return;
+  }
+
+  isInstalling = true;
+  const isUpdate = installState.updateMode && installState.updateTarget;
+
+  if (!isUpdate) {
+    installState.completedSteps = [];
+    installState.failedStep = null;
+    installState.errorMessage = null;
+    installState.dbId = null;
+    installState.dbName = '';
+    installState.workerName = 'nyxx-' + rname();
+  }
+  saveState();
+
+  const progressCard = document.getElementById('progress-card');
+  progressCard.classList.remove('hidden');
+  renderProgress();
+  hideErr();
+  updateProgressBar(0);
+
+  goBtn.disabled = true;
+  currentStepIndex = 0;
+
+  try {
+    if (!isUpdate) {
+      await runStep('verify', async () => true);
+
+      await runStep('account', async () => {
+        await delay(200);
+        const acc = await api('GET', 'https://api.cloudflare.com/client/v4/accounts', token);
+        if (!cfOk(acc) || !acc.json.result.length) throw new InstallError('Could not find your account: ' + cfErr(acc), 'AUTH');
+        installState.accountId = acc.json.result[0].id;
+        saveState();
+        return true;
+      });
+
+      await runStep('sub', async () => {
+        await delay(200);
+        const accountId = installState.accountId;
+        const sg = await api('GET', `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/subdomain`, token);
+        if (cfOk(sg) && sg.json.result && sg.json.result.subdomain) {
+          installState.subName = sg.json.result.subdomain;
+        } else {
+          let attempts = 0, subName = '';
+          while (attempts < 5) {
+            const candidate = 'nyxx-' + randomHex(6);
+            const sp = await api('PUT', `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/subdomain`, token, JSON.stringify({ subdomain: candidate }), 'application/json');
+            if (cfOk(sp) && sp.json.result) { subName = sp.json.result.subdomain || candidate; break; }
+            attempts++;
+            await delay(300);
+          }
+          if (!subName) subName = 'nyxx-' + randomHex(6);
+          installState.subName = subName;
+        }
+        saveState();
+        return true;
+      });
+
+      await runStep('db', async () => {
+        await delay(200);
+        const accountId = installState.accountId;
+        const dbName = 'nyxx-' + randomHex(8) + '-db';
+        const dbRes = await api('POST', `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database`, token, JSON.stringify({ name: dbName }), 'application/json');
+        const dbId = dbRes.json?.result?.uuid;
+        if (!dbId) throw new InstallError('D1 creation failed: ' + cfErr(dbRes), 'API');
+        installState.dbId = dbId;
+        installState.dbName = dbName;
+        saveState();
+        return true;
+      });
+    } else {
+      // Update mode preserves the selected Worker's existing D1 database; it never creates one.
+      await runStep('verify', async () => true);
+      await runStep('account', async () => Boolean(await resolveAccountId(token)));
+      await runStep('sub', async () => {
+        const sg = await api('GET', `https://api.cloudflare.com/client/v4/accounts/${installState.accountId}/workers/subdomain`, token);
+        if (!cfOk(sg) || !sg.json?.result?.subdomain) throw new InstallError('Could not determine your workers.dev subdomain: ' + cfErr(sg), 'API');
+        installState.subName = sg.json.result.subdomain;
+        saveState();
+        return true;
+      });
+      await runStep('db', async () => Boolean(await resolveUpdateDatabase(token)));
+    }
+
+    await runStep('fetch', async () => {
+      const isRetry = installState.failedStep === 'fetch';
+      const workerCode = await fetchWorkerCode(isRetry);
+      if (WORKER_JS_SHA256) {
+        const hash = await sha256(workerCode);
+        if (hash !== WORKER_JS_SHA256) throw new InstallError('worker.js integrity check failed', 'SECURITY');
+      }
+      installState.workerCode = workerCode;
+      saveState();
+      return true;
+    });
+
+    await runStep('deploy', async () => {
+      await delay(200);
+      const accountId = installState.accountId;
+      const dbId = installState.dbId;
+      const workerName = installState.workerName;
+
       const metadata = {
         main_module: 'worker.js',
         compatibility_date: '2024-12-18',
-        bindings: [{ type: 'd1', name: 'DB', id: dbId }]
+        bindings: [{ type: 'd1', name: 'DB', database_id: dbId }]
       };
-      const boundary = '----nyxx' + Math.random().toString(16).slice(2);
-      const pre = '--' + boundary + '\r\nContent-Disposition: form-data; name="metadata"\r\nContent-Type: application/json\r\n\r\n' + JSON.stringify(metadata) + '\r\n'
-                + '--' + boundary + '\r\nContent-Disposition: form-data; name="worker.js"; filename="worker.js"\r\nContent-Type: application/javascript+module\r\n\r\n';
-      const post = '\r\n--' + boundary + '--\r\n';
-      const bodyBlob = new Blob([pre, workerCode, post]);
-      const dep = await api('PUT', `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${encodeURIComponent(workerName)}`, token, bodyBlob, 'multipart/form-data; boundary=' + boundary);
-      if (!cfOk(dep)) { setStep('deploy', 'err'); showErr('Upload failed: ' + cfErr(dep)); return; }
-      setStep('deploy', 'done');
 
-      setStep('enable', 'run');
-      await api('POST', `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${encodeURIComponent(workerName)}/subdomain`, token, JSON.stringify({ enabled: true }), 'application/json');
-      setStep('enable', 'done');
+      const boundary = '----NyxxBoundary' + randomHex(8);
+      const crlf = String.fromCharCode(13, 10);
+      const metaJson = JSON.stringify(metadata);
+      const workerCode = installState.workerCode;
 
-      const panelUrl = `https://${workerName}.${subName}.workers.dev`;
-      setStep('online', 'run');
-      let online = false;
-      for (let i = 0; i < 30; i++) {
-        try {
-          const r = await fetch(CORS_PROXY + '?url=' + encodeURIComponent(panelUrl), { cache: 'no-store' });
-          if (r.status < 500) { online = true; break; }
-        } catch (e) {}
-        await new Promise(r => setTimeout(r, 5000));
+      const bodyParts = [
+        '--' + boundary + crlf,
+        'Content-Disposition: form-data; name="metadata"' + crlf,
+        'Content-Type: application/json' + crlf,
+        crlf,
+        metaJson + crlf,
+        '--' + boundary + crlf,
+        'Content-Disposition: form-data; name="worker.js"; filename="worker.js"' + crlf,
+        'Content-Type: application/javascript+module' + crlf,
+        crlf,
+        workerCode + crlf,
+        '--' + boundary + '--' + crlf
+      ];
+
+      const bodyBlob = new Blob(bodyParts);
+
+      const dep = await api(
+        'PUT',
+        `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${encodeURIComponent(workerName)}`,
+        token,
+        bodyBlob,
+        'multipart/form-data; boundary=' + boundary
+      );
+
+      if (!cfOk(dep)) throw new InstallError('Upload failed: ' + cfErr(dep), 'API');
+      if (!isUpdate) {
       }
-      setStep('online', online ? 'done' : 'done');
+      saveState();
+      return true;
+    });
 
-      // Show result
-      const result = document.getElementById('result');
-      result.classList.remove('hidden');
-      result.innerHTML = `
-        <h3>🎉 Your Nyxx panel is ready!</h3>
-        <div class="kv"><span class="k">Address</span><span class="v">${panelUrl}</span></div>
-        <p style="margin:14px 0 6px;font-size:14px">First, set your admin password at:</p>
-        <a class="btn" href="${panelUrl}" target="_blank">Open your panel</a>
-        <div class="callout" style="margin-top:14px"><span class="ic">🌍</span><div>If workers.dev is blocked, add a custom domain in Cloudflare (Workers → your worker → Settings → Domains & Routes).</div></div>
-      `;
-      go.disabled = false;
+    await runStep('enable', async () => {
+      await delay(200);
+      const accountId = installState.accountId;
+      const workerName = installState.workerName;
+      await api('POST', `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${encodeURIComponent(workerName)}/subdomain`, token, JSON.stringify({ enabled: true }), 'application/json');
+      return true;
+    });
 
-    } catch (e) {
-      showErr(e.message || 'Unknown error');
-      go.disabled = false;
-    }
+    const panelUrl = `https://${installState.workerName}.${installState.subName}.workers.dev`;
+    installState.panelUrl = panelUrl;
+    saveState();
+
+    await runStep('online', async () => {
+      let online = false;
+      let propagationNotice = false;
+
+      for (let i = 0; i < 40; i++) {
+        online = await probePanelUrl(panelUrl);
+        if (online) break;
+
+        const stepEl = document.getElementById('p-online');
+        if (stepEl) {
+          const label = stepEl.querySelector('span:last-child');
+          if (label) {
+            let txt = STEP_LABELS.online;
+            if (i > 12 && !propagationNotice) {
+              txt += ' — propagating globally...';
+              propagationNotice = true;
+            }
+            label.textContent = txt;
+          }
+        }
+
+        await delay(5000);
+      }
+
+      if (!online) {
+        showToast('Panel deployed but may need a few more minutes to propagate globally.', 'warn');
+      }
+      return true;
+    });
+
+    showResult(panelUrl, isUpdate);
+    goBtn.disabled = false;
+    isInstalling = false;
+
+  } catch (e) {
+    let errorMsg = e.message || 'Unknown error';
+    let category = e instanceof InstallError ? e.category : 'UNKNOWN';
+    installState.failedStep = STEPS[currentStepIndex];
+    installState.errorMessage = errorMsg;
+    saveState();
+    showErr(formatError(errorMsg, category), true);
+    goBtn.disabled = false;
+    isInstalling = false;
   }
+}
+
+async function runStep(stepName, fn) {
+  currentStepIndex = STEPS.indexOf(stepName);
+  setStep(stepName, 'run');
+  updateProgressBar(currentStepIndex + 1);
+  announce('Step ' + (currentStepIndex + 1) + ' of ' + STEPS.length + ': ' + STEP_LABELS[stepName]);
+  try {
+    const result = await fn();
+    if (result) {
+      setStep(stepName, 'done');
+      installState.completedSteps.push(stepName);
+      saveState();
+    }
+  } catch (e) {
+    setStep(stepName, 'err');
+    throw e;
+  }
+}
+
+// ============================
+// RETRY
+// ============================
+async function retryCurrentStep() {
+  if (isInstalling) return;
+  hideErr();
+  const failedStep = installState.failedStep;
+  if (!failedStep) return;
+  for (let i = STEPS.indexOf(failedStep); i < STEPS.length; i++) setStep(STEPS[i], '');
+  await continueFromStep(failedStep);
+}
+
+async function retryStep(stepName) {
+  if (isInstalling) return;
+  hideErr();
+  for (let i = STEPS.indexOf(stepName); i < STEPS.length; i++) setStep(STEPS[i], '');
+  await continueFromStep(stepName);
+}
+
+async function continueFromStep(startStep) {
+  if (isInstalling) return;
+  isInstalling = true;
+  const token = config.token;
+  goBtn.disabled = true;
+  const isUpdate = installState.updateMode && installState.updateTarget;
+
+  try {
+    const stepsFrom = STEPS.slice(STEPS.indexOf(startStep));
+    for (const step of stepsFrom) {
+      switch (step) {
+        case 'verify': await runStep('verify', async () => true); break;
+        case 'account':
+          if (!installState.accountId) {
+            await runStep('account', async () => {
+              await delay(200);
+              const acc = await api('GET', 'https://api.cloudflare.com/client/v4/accounts', token);
+              if (!cfOk(acc) || !acc.json.result.length) throw new InstallError('Could not find your account: ' + cfErr(acc), 'AUTH');
+              installState.accountId = acc.json.result[0].id; saveState(); return true;
+            });
+          } else { setStep('account', 'done'); }
+          break;
+        case 'sub':
+          if (!installState.subName) {
+            await runStep('sub', async () => {
+              await delay(200);
+              const sg = await api('GET', `https://api.cloudflare.com/client/v4/accounts/${installState.accountId}/workers/subdomain`, token);
+              if (cfOk(sg) && sg.json.result && sg.json.result.subdomain) installState.subName = sg.json.result.subdomain;
+              else {
+                const want = 'nyxx-' + randomHex(6);
+                const sp = await api('PUT', `https://api.cloudflare.com/client/v4/accounts/${installState.accountId}/workers/subdomain`, token, JSON.stringify({ subdomain: want }), 'application/json');
+                installState.subName = (cfOk(sp) && sp.json.result) ? (sp.json.result.subdomain || want) : want;
+              }
+              saveState(); return true;
+            });
+          } else { setStep('sub', 'done'); }
+          break;
+        case 'db':
+          if (isUpdate) {
+            await runStep('db', async () => Boolean(await resolveUpdateDatabase(token)));
+            break;
+          }
+          if (!installState.dbId) {
+            await runStep('db', async () => {
+              await delay(200);
+              const dbName = 'nyxx-' + randomHex(8) + '-db';
+              const dbRes = await api('POST', `https://api.cloudflare.com/client/v4/accounts/${installState.accountId}/d1/database`, token, JSON.stringify({ name: dbName }), 'application/json');
+              const dbId = dbRes.json?.result?.uuid;
+              if (!dbId) throw new InstallError('D1 creation failed: ' + cfErr(dbRes), 'API');
+              installState.dbId = dbId; installState.dbName = dbName;
+              saveState(); return true;
+            });
+          } else { setStep('db', 'done'); }
+          break;
+        case 'fetch':
+          await runStep('fetch', async () => {
+            const isRetry = installState.failedStep === 'fetch';
+            const workerCode = await fetchWorkerCode(isRetry);
+            installState.workerCode = workerCode; saveState(); return true;
+          });
+          break;
+        case 'deploy':
+          await runStep('deploy', async () => {
+            await delay(200);
+            const workerName = installState.updateMode ? installState.updateTarget : 'nyxx-' + rname();
+            if (!installState.updateMode) installState.workerName = workerName;
+            const metadata = { main_module: 'worker.js', compatibility_date: '2024-12-18', bindings: [{ type: 'd1', name: 'DB', database_id: installState.dbId }] };
+            const boundary = '----NyxxBoundary' + randomHex(8);
+            const crlf = String.fromCharCode(13, 10);
+            const metaJson = JSON.stringify(metadata);
+            const workerCode = installState.workerCode;
+            const bodyParts = [
+              '--' + boundary + crlf, 'Content-Disposition: form-data; name="metadata"' + crlf, 'Content-Type: application/json' + crlf, crlf, metaJson + crlf,
+              '--' + boundary + crlf, 'Content-Disposition: form-data; name="worker.js"; filename="worker.js"' + crlf, 'Content-Type: application/javascript+module' + crlf, crlf, workerCode + crlf,
+              '--' + boundary + '--' + crlf
+            ];
+            const bodyBlob = new Blob(bodyParts);
+            const dep = await api('PUT', `https://api.cloudflare.com/client/v4/accounts/${installState.accountId}/workers/scripts/${encodeURIComponent(workerName)}`, token, bodyBlob, 'multipart/form-data; boundary=' + boundary);
+            if (!cfOk(dep)) throw new InstallError('Upload failed: ' + cfErr(dep), 'API');
+            saveState(); return true;
+          });
+          break;
+        case 'enable':
+          await runStep('enable', async () => {
+            await delay(200);
+            await api('POST', `https://api.cloudflare.com/client/v4/accounts/${installState.accountId}/workers/scripts/${encodeURIComponent(installState.workerName)}/subdomain`, token, JSON.stringify({ enabled: true }), 'application/json');
+            return true;
+          });
+          break;
+        case 'online':
+          const panelUrl = `https://${installState.workerName}.${installState.subName}.workers.dev`;
+          installState.panelUrl = panelUrl; saveState();
+          await runStep('online', async () => {
+            let online = false;
+            for (let i = 0; i < 40; i++) {
+              online = await probePanelUrl(panelUrl);
+              if (online) break;
+              await delay(5000);
+            }
+            return true;
+          });
+          showResult(panelUrl, installState.updateMode);
+      }
+    }
+    goBtn.disabled = false;
+    isInstalling = false;
+  } catch (e) {
+    let errorMsg = e.message || 'Unknown error';
+    let category = e instanceof InstallError ? e.category : 'UNKNOWN';
+    installState.failedStep = STEPS[currentStepIndex];
+    installState.errorMessage = errorMsg;
+    saveState();
+    showErr(formatError(errorMsg, category), true);
+    goBtn.disabled = false;
+    isInstalling = false;
+  }
+}
+
+// ============================
+// PROGRESS UI
+// ============================
+function renderProgress() {
+  const el = document.getElementById('progress');
+  el.innerHTML = '';
+  STEPS.forEach((s, idx) => {
+    const d = document.createElement('div');
+    d.className = 'prow';
+    d.id = 'p-' + s;
+    d.innerHTML = '<span class="dot"></span><span>' + (STEP_LABELS[s] || s) + '<span class="step-num">(' + (idx + 1) + '/' + STEPS.length + ')</span></span>';
+    el.appendChild(d);
+  });
+  updateProgressBar(0);
+}
+
+function setStep(s, state) {
+  const d = document.getElementById('p-' + s);
+  if (!d) return;
+  d.className = 'prow ' + state;
+  const dot = d.querySelector('.dot');
+  if (state === 'done') dot.textContent = '✓';
+  else if (state === 'err') dot.textContent = '!';
+  else dot.textContent = '';
+  const existingRetry = d.querySelector('.retry-btn');
+  if (existingRetry) existingRetry.remove();
+  if (state === 'err') {
+    const retryBtn = document.createElement('button');
+    retryBtn.className = 'retry-btn';
+    retryBtn.textContent = 'Retry';
+    retryBtn.onclick = () => retryStep(s);
+    d.appendChild(retryBtn);
+  }
+}
+
+function updateProgressBar(completed) {
+  const bar = document.getElementById('progress-bar');
+  const text = document.getElementById('progress-text');
+  if (bar) bar.style.width = (completed / STEPS.length * 100) + '%';
+  if (text) text.textContent = 'Step ' + completed + ' of ' + STEPS.length;
+}
+
+function showErr(msg, showRetry) {
+  const b = document.getElementById('errbox');
+  b.classList.remove('hidden');
+  document.getElementById('err-title').innerHTML = '❌ Installation Failed';
+  document.getElementById('err-text').textContent = msg;
+  document.getElementById('btn-retry-step').style.display = showRetry ? 'inline-flex' : 'none';
+  announce('Error: ' + msg);
+}
+
+function hideErr() {
+  document.getElementById('errbox').classList.add('hidden');
+}
+
+// ============================
+// RESULT
+// ============================
+function showResult(panelUrl, isUpdate) {
+  goToStep('result');
+  document.getElementById('result-url').textContent = panelUrl;
+  document.getElementById('result-link').href = panelUrl;
+  document.getElementById('result-title').textContent = isUpdate ? 'Your Nyxx panel has been updated!' : 'Your Nyxx panel is ready!';
+
+  const notice = document.getElementById('propagation-notice');
+  if (notice) notice.style.display = 'block';
+
+  const database = document.getElementById('result-database');
+  database.textContent = installState.dbName ? 'Database: ' + installState.dbName : '';
+
+  announce('Installation complete! Your panel is ready at ' + panelUrl);
+  showToast(isUpdate ? 'Panel updated successfully!' : 'Panel deployed successfully!', 'ok');
+}
+
+function copyUrl() {
+  const url = document.getElementById('result-url').textContent;
+  navigator.clipboard.writeText(url).then(() => {
+    showToast('URL copied to clipboard', 'ok');
+  }).catch(() => {
+    showToast('Could not copy URL', 'err');
+  });
+}
+
+// ============================
+// RESET / CLEANUP
+// ============================
+function resetInstallation() {
+  hideErr();
+  document.getElementById('progress-card').classList.add('hidden');
+  STEPS.forEach(s => setStep(s, ''));
+  installState.completedSteps = [];
+  installState.failedStep = null;
+  installState.errorMessage = null;
+  installState.accountId = null;
+  installState.subName = '';
+  installState.dbId = null;
+  installState.dbName = '';
+  installState.workerName = '';
+  installState.panelUrl = '';
+  installState.workerCode = null;
+  saveState();
+  announce('Installation reset.');
+  showToast('Installation reset. You can try again.', 'warn');
+}
+
+function clearAllData() {
+  if (!confirm('This will clear ALL saved data including tokens, installation state, and cached worker code. Continue?')) return;
+  clearState();
+  isInstalling = false;
+  currentStepIndex = -1;
+  if (tokenInput) tokenInput.value = '';
+  if (tokenStatus) tokenStatus.textContent = '';
+  config.tokenVerified = false;
+  if (goBtn) goBtn.disabled = true;
+  if (btnAccountNext) btnAccountNext.disabled = true;
+  document.getElementById('progress-card').classList.add('hidden');
+  document.getElementById('scan-results').classList.add('hidden');
+  document.getElementById('scan-content').innerHTML = '';
+  goToStep('welcome');
+  announce('All data cleared.');
+  showToast('All data cleared', 'ok');
+}
+
+function startAnotherPanel() {
+  localStorage.removeItem(STORAGE_KEY);
+  installState = { accountId: null, subName: '', dbId: null, dbName: '', workerName: '', panelUrl: '', workerCode: null, completedSteps: [], failedStep: null, errorMessage: null, scanResults: { workers: [], databases: [] }, updateMode: false, updateTarget: null };
+  document.getElementById('progress-card').classList.add('hidden');
+  document.getElementById('scan-results').classList.add('hidden');
+  goToStep('installer');
+  announce('Ready to create another panel.');
+}
+
+// ============================
+// TOAST
+// ============================
+function showToast(message, type) {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = 'toast ' + (type || '');
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(20px)';
+    toast.style.transition = 'all 0.3s';
+    setTimeout(() => toast.remove(), 300);
+  }, 4000);
+}
+
+// ============================
+// UTILITIES
+// ============================
+class InstallError extends Error {
+  constructor(message, category) { super(message); this.category = category || 'UNKNOWN'; this.name = 'InstallError'; }
+}
+function formatError(msg, category) {
+  const prefixes = { AUTH: '🔐 ', NETWORK: '🌐 ', API: '⚙️ ', VALIDATION: '✅ ', SECURITY: '🔒 ', UNKNOWN: '❌ ' };
+  return (prefixes[category] || '❌ ') + msg;
+}
+function rname() {
+  const a = ["sunny","swift","atlas","orbit","pixel","falcon","crystal","mango","coral","luna","pearl","turbo","river","comet"];
+  const b = ["panel","bridge","node","core","wave","gate","stack","vault","portal","cloud","garden","spark"];
+  const arr = new Uint32Array(3);
+  crypto.getRandomValues(arr);
+  return a[arr[0] % a.length] + '-' + b[arr[1] % b.length] + '-' + arr[2].toString(16).slice(0, 4);
+}
+function randomHex(len) {
+  const arr = new Uint8Array(Math.ceil(len / 2));
+  crypto.getRandomValues(arr);
+  return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('').slice(0, len);
+}
+async function sha256(text) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(text);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+async function probePanelUrl(url) {
+  try {
+    const proxy = config.proxyUrl || DEFAULT_PROXY;
+    const probeUrl = proxy + (proxy.endsWith('/') ? '' : '/') + '?url=' + encodeURIComponent(url);
+    const response = await fetch(probeUrl, { cache: 'no-store', method: 'HEAD' });
+    // A protected panel can legitimately return an auth or redirect response while still being online.
+    return [200, 204, 301, 302, 303, 307, 308, 401, 403].includes(response.status);
+  } catch (e) {
+    return false;
+  }
+}
+function announce(message) { if (ariaLive) ariaLive.textContent = message; }
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// ============================
+// START
+// ============================
+init();
 </script>
 </body>
 </html>
