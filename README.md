@@ -43,7 +43,7 @@ Deploy everything to your own Cloudflare account in minutes with the built-in in
 
 # 🚀 Get Started
 
-The fastest way to install Nyxx is using the automated installer.
+The fastest way to install/update/manage Nyxx is using the automated installer.
 
 ## 👉 https://mahan07dev.github.io/Nyxx/installer
 
@@ -55,6 +55,9 @@ The installer automatically:
 - ✅ Uploads the latest Worker
 - ✅ Deploys everything
 - ✅ Gives you your dashboard URL
+- ✅ Updates the panel
+- ✅ Deletes the panel
+- ✅ Deletes and manages D1 database binding
 
 No manual configuration required.
 
