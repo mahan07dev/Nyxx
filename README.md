@@ -170,6 +170,22 @@ Built entirely on Cloudflare's infrastructure.
 
 ---
 
+## 🤖 AI Assistant
+
+Nyxx now includes a built-in AI assistant with:
+
+- Multiple AI provider support (primary & fallback)
+- Custom system prompts
+- Local knowledge bases
+- Conversation memory
+- AI Playground for testing
+- Suggested questions
+- Rate limiting and safety controls
+- Optional trigger conditions
+- Provider connection testing
+
+---
+
 # 🖥️ Screenshots
 
 <p align="center">
