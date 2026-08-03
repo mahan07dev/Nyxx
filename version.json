@@ -1,6 +1,6 @@
 {
-  "version": "2.1.2",
-  "released": "2026-07-16",
-  "notes": "Self-update system, improved command UI, menu enhancements, and auto-update notifications.",
+  "version": "2.2.0",
+  "released": "2026-08-03",
+  "notes": "🤖AI Chatbot🤖",
   "worker_url": "https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/worker.js"
 }

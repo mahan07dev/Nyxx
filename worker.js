@@ -1,10 +1,10 @@
 // ============================================================================
 // GLOBAL VERSION
 // ============================================================================
-const VERSION = '2.1.2'; // bump on each release
+const VERSION = '2.2.0';
 
 // ============================================================================
-// EMBEDDED DASHBOARD HTML (with update tab + loading overlay + cache)
+// EMBEDDED DASHBOARD HTML (with updated AI tab)
 // ============================================================================
 const DASHBOARD_HTML = `<!DOCTYPE html>
 <html lang="en" class="dark">
@@ -15,9 +15,8 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
     <title>Nyxx | Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        * {
-            box-sizing: border-box;
-        }
+        /* (styles unchanged) */
+        * { box-sizing: border-box; }
         body {
             margin: 0;
             background: #0f172a;
@@ -27,18 +26,13 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             display: flex;
             flex-direction: column;
         }
-        a {
-            color: #60a5fa;
-            text-decoration: none;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
+        a { color: #60a5fa; text-decoration: none; }
+        a:hover { text-decoration: underline; }
         .navbar {
             background: #0f172a;
             border-bottom: 1px solid #334155;
             padding: 1rem;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
             z-index: 40;
         }
         .navbar-inner {
@@ -57,9 +51,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             color: #e2e8f0;
             margin: 0;
         }
-        .navbar-title i {
-            color: #60a5fa;
-        }
+        .navbar-title i { color: #60a5fa; }
         .navbar-actions {
             display: flex;
             align-items: center;
@@ -91,9 +83,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             flex-direction: column;
             align-items: center;
         }
-        .status-items i {
-            margin-right: 0.25rem;
-        }
+        .status-items i { margin-right: 0.25rem; }
         .logout-btn {
             background: transparent;
             border: 1px solid #dc2626;
@@ -104,9 +94,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             cursor: pointer;
             font-size: 0.875rem;
         }
-        .logout-btn i {
-            color: red;
-        }
+        .logout-btn i { color: red; }
         .logout-btn:hover {
             background: #dc2626;
             color: white;
@@ -124,17 +112,13 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             border: 1px solid #334155;
             padding: 2rem;
             margin: 2rem 0;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
             max-width: 600px;
             margin-left: auto;
             margin-right: auto;
         }
-        .step {
-            display: block;
-        }
-        .step-hidden {
-            display: none !important;
-        }
+        .step { display: block; }
+        .step-hidden { display: none !important; }
         .step-title {
             font-size: 1.5rem;
             font-weight: 700;
@@ -143,16 +127,20 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             margin-top: 0;
             margin-bottom: 1.5rem;
         }
-        .form-group {
-            margin-bottom: 1.25rem;
-        }
+        .form-group { margin-bottom: 1.25rem; }
         .form-label {
             display: block;
             font-size: 0.875rem;
             font-weight: 500;
             margin-bottom: 0.25rem;
         }
-        .form-input {
+        .form-label .hint {
+            font-weight: 400;
+            color: #94a3b8;
+            font-size: 0.75rem;
+            display: block;
+        }
+        .form-input, .form-textarea {
             background: #0f172a;
             border: 1px solid #334155;
             border-radius: 8px;
@@ -162,20 +150,13 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             font-family: system-ui, sans-serif;
             font-size: 0.9rem;
         }
-        .form-input:focus {
+        .form-input:focus, .form-textarea:focus {
             border-color: #3b82f6;
             outline: none;
         }
-        #bot-description {
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 8px;
-            padding: 0.6rem 0.75rem;
-            color: #f1f5f9;
-            width: 100%;
-            min-height: 100px;
-            font-family: system-ui, sans-serif;
-            font-size: 0.9rem;
+        .form-textarea {
+            min-height: 80px;
+            resize: vertical;
         }
         .btn {
             display: inline-flex;
@@ -191,79 +172,26 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             font-size: 1rem;
             min-height: 35px;
         }
-        .btn-primary {
-            background: #3b82f6;
-            color: white;
-        }
-        .btn-primary:hover {
-            background: #2563eb;
-        }
-        .btn-success {
-            background: #22c55e;
-            color: white;
-        }
-        .btn-success:hover {
-            background: #16a34a;
-        }
-        .btn-gray {
-            background: #334155;
-            color: #e2e8f0;
-        }
-        .btn-gray:hover {
-            background: #475569;
-        }
-        .btn-danger {
-            background: #dc2626;
-            color: white;
-        }
-        .btn-danger:hover {
-            background: #b91c1c;
-        }
-        .btn-block {
-            width: 100%;
-            justify-content: center;
-        }
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        .btn-sm {
-            padding: 0.25rem 0.75rem;
-            font-size: 0.875rem;
-            border-radius: 8px;
-        }
-        .text-center {
-            text-align: center;
-        }
-        .text-sm {
-            font-size: 0.875rem;
-            color: #94a3b8;
-        }
-        .mt-4 {
-            margin-top: 1.5rem;
-        }
-        .mt-2 {
-            margin-top: 0.5rem;
-        }
-        .flex {
-            display: flex;
-            gap: 0.75rem;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .hidden {
-            display: none !important;
-        }
-        .log-error {
-            color: #f87171;
-        }
-        .log-success {
-            color: #4ade80;
-        }
-        .dashboard {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
+        .btn-primary { background: #3b82f6; color: white; }
+        .btn-primary:hover { background: #2563eb; }
+        .btn-success { background: #22c55e; color: white; }
+        .btn-success:hover { background: #16a34a; }
+        .btn-gray { background: #334155; color: #e2e8f0; }
+        .btn-gray:hover { background: #475569; }
+        .btn-danger { background: #dc2626; color: white; }
+        .btn-danger:hover { background: #b91c1c; }
+        .btn-block { width: 100%; justify-content: center; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-sm { padding: 0.25rem 0.75rem; font-size: 0.875rem; border-radius: 8px; }
+        .text-center { text-align: center; }
+        .text-sm { font-size: 0.875rem; color: #94a3b8; }
+        .mt-4 { margin-top: 1.5rem; }
+        .mt-2 { margin-top: 0.5rem; }
+        .flex { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
+        .hidden { display: none !important; }
+        .log-error { color: #f87171; }
+        .log-success { color: #4ade80; }
+        .dashboard { max-width: 1200px; margin: 0 auto; }
         .tabs-header {
             display: flex;
             flex-wrap: wrap;
@@ -284,19 +212,13 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             font-weight: 500;
             font-size: 1rem;
         }
-        .tab-btn:hover {
-            color: #e2e8f0;
-        }
+        .tab-btn:hover { color: #e2e8f0; }
         .tab-btn.active {
             border-bottom-color: #60a5fa;
             color: white;
         }
-        .tab-content {
-            display: none;
-        }
-        .tab-content.active {
-            display: block;
-        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
         .hamburger {
             display: none;
             cursor: pointer;
@@ -306,9 +228,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             user-select: none;
             transition: transform 0.2s;
         }
-        .hamburgerfa.open {
-            transform: rotate(90deg);
-        }
+        .hamburgerfa.open { transform: rotate(90deg); }
         .mobile-tabs {
             display: block;
             max-height: 0;
@@ -338,24 +258,28 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             width: 100%;
             cursor: pointer;
         }
-        .mobile-tabs button:hover {
-            background: #334155;
-        }
+        .mobile-tabs button:hover { background: #334155; }
         .mobile-tabs button.active {
             background: #334155;
             color: white;
         }
-        @media (max-width: 768px) {
-            .tabs-header {
-                display: none;
-            }
-            .hamburger {
-                display: block;
-            }
+        @media (max-width: 800px) {
+            .tabs-header { display: none; }
+            .hamburger { display: block; }
         }
         @media (max-width: 490px) {
-            .update-banner-btn {
-                font-size: 0.6rem !important;
+            .update-banner-btn { font-size: 0.6rem !important; }
+            .panel {
+                padding: 1rem !important;
+            }
+            .navbar {
+                padding: 0.5rem;
+            }
+            .status-items {
+                gap: 0.5rem;
+            }
+            #logo-header {
+                height: 40px;
             }
         }
         .tree-row {
@@ -368,20 +292,14 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             cursor: default;
             overflow-x: auto;
         }
-        .tree-row:hover {
-            background: #1e293b;
-        }
+        .tree-row:hover { background: #1e293b; }
         .tree-command-name {
             font-family: ui-monospace, monospace;
             font-weight: 600;
             color: #60a5fa;
         }
-        .tree-command-name.folder {
-            cursor: pointer;
-        }
-        .tree-command-name.folder:hover {
-            text-decoration: underline;
-        }
+        .tree-command-name.folder { cursor: pointer; }
+        .tree-command-name.folder:hover { text-decoration: underline; }
         .tree-actions {
             margin-left: auto;
             display: flex;
@@ -400,15 +318,9 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             background: #334155;
             color: white;
         }
-        .tree-actions .edit-btn:hover {
-            color: #60a5fa;
-        }
-        .tree-actions .delete-btn:hover {
-            color: #f87171;
-        }
-        .tree-actions .add-child-btn:hover {
-            color: #4ade80;
-        }
+        .tree-actions .edit-btn:hover { color: #60a5fa; }
+        .tree-actions .delete-btn:hover { color: #f87171; }
+        .tree-actions .add-child-btn:hover { color: #4ade80; }
         .badge {
             display: inline-block;
             font-size: 0.6875rem;
@@ -417,26 +329,11 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             border-radius: 12px;
             line-height: 1.25rem;
         }
-        .badge-admin {
-            background: #1e3a5f;
-            color: #93c5fd;
-        }
-        .badge-enabled {
-            background: #14532d;
-            color: #86efac;
-        }
-        .badge-disabled {
-            background: #451a1a;
-            color: #fca5a5;
-        }
-        .badge-reply {
-            background: #3b0764;
-            color: #c4b5fd;
-        }
-        .badge-gray {
-            background: #334155;
-            color: #94a3b8;
-        }
+        .badge-admin { background: #1e3a5f; color: #93c5fd; }
+        .badge-enabled { background: #14532d; color: #86efac; }
+        .badge-disabled { background: #451a1a; color: #fca5a5; }
+        .badge-reply { background: #3b0764; color: #c4b5fd; }
+        .badge-gray { background: #334155; color: #94a3b8; }
         .breadcrumb-container {
             display: flex;
             align-items: center;
@@ -447,19 +344,13 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             border: 1px solid #334155;
             margin-bottom: 1rem;
         }
-        .breadcrumb-sep {
-            color: #475569;
-        }
+        .breadcrumb-sep { color: #475569; }
         .breadcrumb-link {
             color: #60a5fa;
             cursor: pointer;
         }
-        .breadcrumb-link:hover {
-            text-decoration: underline;
-        }
-        .breadcrumb-current {
-            color: #e2e8f0;
-        }
+        .breadcrumb-link:hover { text-decoration: underline; }
+        .breadcrumb-current { color: #e2e8f0; }
         .panel {
             background: #1e293b;
             border: 1px solid #334155;
@@ -486,9 +377,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             display: inline-block;
             flex-shrink: 0;
         }
-        .toggle.active {
-            background: #3b82f6;
-        }
+        .toggle.active { background: #3b82f6; }
         .toggle .slider {
             position: absolute;
             top: 2px;
@@ -499,22 +388,18 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             border-radius: 50%;
             transition: transform 0.3s;
         }
-        .toggle.active .slider {
-            transform: translateX(18px);
-        }
+        .toggle.active .slider { transform: translateX(18px); }
         .modal-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.6);
+            background: rgba(0,0,0,0.6);
             display: flex;
             align-items: center;
             justify-content: center;
             z-index: 50;
             padding: 1rem;
         }
-        .modal-overlay.hidden {
-            display: none;
-        }
+        .modal-overlay.hidden { display: none; }
         .modal-box {
             background: #1e293b;
             border-radius: 16px;
@@ -533,9 +418,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             overflow-y: auto;
             padding-right: 4px;
         }
-        .modal-scroll::-webkit-scrollbar {
-            width: 6px;
-        }
+        .modal-scroll::-webkit-scrollbar { width: 6px; }
         .modal-scroll::-webkit-scrollbar-thumb {
             background: #475569;
             border-radius: 4px;
@@ -556,15 +439,9 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             padding: 0 0.25rem;
             user-select: none;
         }
-        .modal-title .enabled-toggle:hover {
-            transform: scale(1.15);
-        }
-        .modal-title .enabled-toggle.on {
-            color: #4ade80;
-        }
-        .modal-title .enabled-toggle.off {
-            color: #f87171;
-        }
+        .modal-title .enabled-toggle:hover { transform: scale(1.15); }
+        .modal-title .enabled-toggle.on { color: #4ade80; }
+        .modal-title .enabled-toggle.off { color: #f87171; }
         .modal-actions {
             display: flex;
             gap: 0.5rem;
@@ -585,9 +462,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             margin-top: 0.5rem;
             display: none;
         }
-        .modal-error.show {
-            display: block;
-        }
+        .modal-error.show { display: block; }
         .toast-container {
             position: fixed;
             bottom: 24px;
@@ -604,15 +479,11 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             padding: 0.75rem 1.5rem;
             border-radius: 12px;
             color: #f1f5f9;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
             backdrop-filter: blur(4px);
         }
-        .toast.success {
-            border-left: 4px solid #22c55e;
-        }
-        .toast.error {
-            border-left: 4px solid #ef4444;
-        }
+        .toast.success { border-left: 4px solid #22c55e; }
+        .toast.error { border-left: 4px solid #ef4444; }
         .log-container {
             background: #0f172a;
             color: #4ade80;
@@ -628,7 +499,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             margin-top: 0.5rem;
         }
         .spinner {
-            border: 3px solid rgba(255, 255, 255, 0.15);
+            border: 3px solid rgba(255,255,255,0.15);
             border-radius: 50%;
             border-top: 3px solid #3b82f6;
             width: 24px;
@@ -638,12 +509,8 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             vertical-align: middle;
         }
         @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-            100% {
-                transform: rotate(360deg);
-            }
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
         .footer {
             text-align: center;
@@ -657,9 +524,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             font-weight: 600;
             color: #60a5fa;
         }
-        ::-webkit-scrollbar {
-            width: 10px;
-        }
+        ::-webkit-scrollbar { width: 10px; }
         ::-webkit-scrollbar-track {
             box-shadow: inset 0 0 5px grey;
             border-radius: 10px;
@@ -668,11 +533,8 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             background: #0085f1;
             border-radius: 10px;
         }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #b30000;
-        }
+        ::-webkit-scrollbar-thumb:hover { background: #b30000; }
 
-        /* button-chip column layout */
         .button-chip-list {
             display: flex;
             flex-direction: column;
@@ -729,17 +591,24 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             padding: 0 0.2rem;
             flex-shrink: 0;
         }
-        .button-chip .chip-delete:hover {
-            color: #ef4444;
-        }
+        .button-chip .chip-delete:hover { color: #ef4444; }
         .button-chip .chip-grip {
             color: #475569;
             font-size: 0.85rem;
             cursor: grab;
             flex-shrink: 0;
         }
+        .button-chip .chip-edit {
+            color: #60a5fa;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            padding: 0 0.2rem;
+            flex-shrink: 0;
+        }
+        .button-chip .chip-edit:hover { color: #93c5fd; }
 
-        /* update banner in navbar */
         .update-banner-btn {
             background: #22c55e;
             color: #0f172a;
@@ -759,9 +628,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             background: #16a34a;
             transform: scale(1.03);
         }
-        .update-banner-btn i {
-            font-size: 0.85rem;
-        }
+        .update-banner-btn i { font-size: 0.85rem; }
 
         .inline-toggle-row {
             display: flex;
@@ -769,9 +636,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             gap: 0.75rem;
             margin-bottom: 0.5rem;
         }
-        .inline-toggle-row .form-label {
-            margin: 0;
-        }
+        .inline-toggle-row .form-label { margin: 0; }
         .menu-hint {
             background: #0f172a;
             border-radius: 8px;
@@ -789,15 +654,12 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             color: #60a5fa;
             font-size: 0.8rem;
         }
-        .menu-hint .example {
-            color: #e2e8f0;
-        }
+        .menu-hint .example { color: #e2e8f0; }
 
-        /* ----- Loading Overlay ----- */
         #loading-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(15, 23, 42, 0.85);
+            background: rgba(15,23,42,0.85);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -806,9 +668,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             backdrop-filter: blur(4px);
             transition: opacity 0.2s;
         }
-        #loading-overlay.hidden {
-            display: none;
-        }
+        #loading-overlay.hidden { display: none; }
         .loading-spinner {
             width: 56px;
             height: 56px;
@@ -823,6 +683,125 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             color: #e2e8f0;
             letter-spacing: 0.5px;
         }
+
+        /* AI Tab specific styles */
+        .ai-section {
+            background: #0f172a;
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            border: 1px solid #334155;
+            margin-bottom: 1.5rem;
+        }
+        .ai-actions-fixed {
+        position:fixed;
+        left:0;
+        right:0;
+        bottom:0;
+        z-index:999;
+
+        display:flex;
+        justify-content:center;
+
+        padding:12px;
+
+        background:#0f172a;
+        border-top:1px solid #334155;
+        margin: 0;
+        }
+        .ai-section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #60a5fa;
+            margin: 0 0 0.75rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .ai-field-hint {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-top: 0.15rem;
+        }
+        .ai-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+        }
+        .knowledge-base-item {
+            background: #1e293b;
+            border-radius: 8px;
+            padding: 0.75rem;
+            border: 1px solid #334155;
+            margin-bottom: 0.5rem;
+        }
+        .knowledge-base-item .form-group { margin-bottom: 0.5rem; }
+        .knowledge-base-item .form-group:last-child { margin-bottom: 0; }
+        .kb-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .kb-header .toggle { width: 32px; height: 18px; }
+        .kb-header .toggle .slider { width: 14px; height: 14px; }
+        .kb-header .toggle.active .slider { transform: translateX(14px); }
+
+        .dropdown-menu {
+            position: relative;
+            display: inline-block;
+        }
+        .dropdown-content {
+    display: none;
+    position: absolute;
+    left: 0;
+    bottom: 100%;
+    background-color: #1e293b;
+    min-width: 160px;
+    box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.6);
+    border: 1px solid #334155;
+    border-radius: 8px;
+    z-index: 1;
+    padding: 0.25rem 0;
+        }
+        .dropdown-content.show { display: block; }
+        .dropdown-content button {
+            background: none;
+            border: none;
+            color: #e2e8f0;
+            padding: 0.5rem 1rem;
+            text-align: left;
+            width: 100%;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+        .dropdown-content button:hover { background: #334155; }
+
+        .provider-hint {
+            font-size: 0.7rem;
+            color: #94a3b8;
+            margin-top: 0.2rem;
+        }
+        .provider-hint a { color: #60a5fa; text-decoration: underline; }
+        .test-result { font-size: 0.875rem; margin-left: 0.5rem; }
+        .test-result.success { color: #4ade80; }
+        .test-result.error { color: #f87171; }
+        .test-result.partial { color: #fbbf24; }
+
+        /* New memory indicator */
+        .memory-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: #0f172a;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            margin-top: 0.5rem;
+        }
+        .memory-indicator .count {
+            font-weight: 600;
+            color: #60a5fa;
+        }
     </style>
 </head>
 <body>
@@ -835,7 +814,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
     <nav class="navbar" id="navbar">
         <div class="navbar-inner">
             <h1 class="navbar-title">
-                <img src="https://raw.githubusercontent.com/Mahan07dev/Nyxx/refs/heads/main/logo.webp" alt="Logo" height="50px">
+                <img src="https://raw.githubusercontent.com/Mahan07dev/Nyxx/refs/heads/main/logo.webp" alt="Logo" height="50px" id="logo-header">
                 Nyxx
                 <button class="info-btn" onclick="showInfoModal()" title="About Nyxx"><i class="fa-solid fa-question"></i></button>
                 <button id="logout-btn" class="logout-btn hidden" onclick="logout()"><i class="fa-solid fa-sign-out-alt"></i></button>
@@ -905,6 +884,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 <button class="tab-btn active" onclick="switchTab('commands')"><i class="fa-solid fa-list-ul"></i> Commands</button>
                 <button class="tab-btn" onclick="switchTab('menu')"><i class="fa-solid fa-bars"></i> Menu</button>
                 <button class="tab-btn" onclick="switchTab('users')"><i class="fa-solid fa-users"></i> Users</button>
+                <button class="tab-btn" onclick="switchTab('ai')"><i class="fa-solid fa-robot"></i> AI</button>
                 <button class="tab-btn" onclick="switchTab('settings')"><i class="fa-solid fa-gear"></i> Settings</button>
                 <button class="tab-btn" onclick="switchTab('botinfo')"><i class="fa-solid fa-circle-info"></i> Bot Info</button>
                 <button class="tab-btn" onclick="switchTab('update')"><i class="fa-solid fa-arrow-up"></i> Update</button>
@@ -914,6 +894,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 <button class="active" onclick="switchTab('commands'); closeHamburger();"><i class="fa-solid fa-list-ul"></i> Commands</button>
                 <button onclick="switchTab('menu'); closeHamburger();"><i class="fa-solid fa-bars"></i> Menu</button>
                 <button onclick="switchTab('users'); closeHamburger();"><i class="fa-solid fa-users"></i> Users</button>
+                <button onclick="switchTab('ai'); closeHamburger();"><i class="fa-solid fa-robot"></i> AI</button>
                 <button onclick="switchTab('settings'); closeHamburger();"><i class="fa-solid fa-gear"></i> Settings</button>
                 <button onclick="switchTab('botinfo'); closeHamburger();"><i class="fa-solid fa-circle-info"></i> Bot Info</button>
                 <button onclick="switchTab('update'); closeHamburger();"><i class="fa-solid fa-arrow-up"></i> Update</button>
@@ -953,6 +934,377 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 </div>
                 <div id="users-list" class="panel"></div>
             </div>
+            <!-- ============================================================== -->
+            <!-- AI TAB - UPDATED                                               -->
+            <!-- ============================================================== -->
+            <div id="tab-ai" class="tab-content">
+                <h3 class="panel-title"><i class="fa-solid fa-robot"></i> AI Configuration</h3>
+                <div class="panel" style="display:flex; flex-direction:column; gap:1.5rem;">
+
+                    <!-- BASIC ENABLE -->
+                    <div class="ai-section">
+                        <div class="ai-section-title"><i class="fa-solid fa-power-off"></i> Enable AI</div>
+                        <div class="inline-toggle-row" style="justify-content: space-between; background: #0f172a; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid #334155;">
+                            <div>
+                                <strong style="font-size:1rem; color:#e2e8f0;">Enable AI Replies</strong>
+                                <p class="text-sm" style="margin:0.25rem 0 0 0;">Turn AI auto-responses on or off for your bot.</p>
+                            </div>
+                            <div id="ai-toggle" class="toggle" onclick="toggleAiEnabled()"><span class="slider"></span></div>
+                        </div>
+                    </div>
+
+                    <!-- PROVIDER & API SETTINGS (Main + Alt) -->
+                    <div class="ai-section">
+                        <div class="ai-section-title"><i class="fa-solid fa-key"></i> Provider & API Keys</div>
+                        <div class="ai-grid">
+                            <div class="form-group">
+                                <label class="form-label">Main Provider</label>
+                                <select id="ai-provider" class="form-input" onchange="onAiProviderChange('main')">
+                                    <option value="openai">OpenAI</option>
+                                    <option value="gemini">Gemini</option>
+                                    <option value="deepseek">DeepSeek</option>
+                                    <option value="groq">Groq</option>
+                                    <option value="openrouter">OpenRouter</option>
+                                    <option value="ollama">Ollama</option>
+                                    <option value="custom">Custom (OpenAI-Compatible)</option>
+                                </select>
+                                <div class="provider-hint" id="main-provider-hint"></div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Main API Key</label>
+                                <input type="password" id="ai-api-key" class="form-input" placeholder="Enter Main API Key">
+                                <div class="provider-hint">Get your API key from the provider's website.</div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Main Model</label>
+                                <input type="text" id="ai-model" class="form-input" placeholder="e.g. gpt-4o-mini">
+                                <div class="provider-hint" id="main-model-hint">Autofilled with recommended free model.</div>
+                            </div>
+                            <div class="form-group" id="main-base-url-group" style="display:none;">
+                                <label class="form-label">Base URL (Custom)</label>
+                                <input type="text" id="ai-base-url" class="form-input" placeholder="https://api.your-provider.com/v1">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Main Custom Headers (JSON)</label>
+                                <input type="text" id="ai-custom-headers" class="form-input" placeholder='{"X-Custom-Header": "value"}'>
+                            </div>
+                        </div>
+
+                        <hr style="border-color:#334155; margin:1rem 0;">
+
+                        <div class="ai-grid">
+                            <div class="form-group">
+                                <label class="form-label">Alternate Provider (Backup)</label>
+                                <select id="ai-alt-provider" class="form-input" onchange="onAiProviderChange('alt')">
+                                    <option value="none">None (Disabled)</option>
+                                    <option value="openai">OpenAI</option>
+                                    <option value="gemini">Gemini</option>
+                                    <option value="deepseek">DeepSeek</option>
+                                    <option value="groq">Groq</option>
+                                    <option value="openrouter">OpenRouter</option>
+                                    <option value="ollama">Ollama</option>
+                                    <option value="custom">Custom (OpenAI-Compatible)</option>
+                                </select>
+                                <div class="provider-hint" id="alt-provider-hint"></div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Alternate API Key</label>
+                                <input type="password" id="ai-alt-api-key" class="form-input" placeholder="Enter Backup API Key">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Alternate Model</label>
+                                <input type="text" id="ai-alt-model" class="form-input" placeholder="e.g. gpt-3.5-turbo">
+                                <div class="provider-hint" id="alt-model-hint">Autofilled with recommended free model.</div>
+                            </div>
+                            <div class="form-group" id="alt-base-url-group" style="display:none;">
+                                <label class="form-label">Base URL (Custom)</label>
+                                <input type="text" id="ai-alt-base-url" class="form-input" placeholder="https://api.your-provider.com/v1">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Alternate Custom Headers (JSON)</label>
+                                <input type="text" id="ai-alt-custom-headers" class="form-input" placeholder='{"X-Custom-Header": "value"}'>
+                            </div>
+                        </div>
+
+                        <div style="margin-top:0.75rem; display:flex; flex-wrap:wrap; gap:0.5rem; align-items:center;">
+                            <button type="button" onclick="testAiConnection()" class="btn btn-gray btn-sm"><i class="fa-solid fa-plug"></i> Test Connections</button>
+                            <span id="ai-test-result" class="test-result"></span>
+                        </div>
+                    </div>
+
+                    <!-- RESPONSE SETTINGS (removed format dropdown) -->
+                    <div class="ai-section">
+                        <div class="ai-section-title"><i class="fa-solid fa-comment-dots"></i> Response Settings</div>
+                        <div class="ai-grid">
+                            <div class="form-group">
+                                <label class="form-label">Display Name <span class="text-sm">(e.g., Assistant)</span></label>
+                                <input type="text" id="ai-display-name" class="form-input" placeholder="e.g., Assistant / Support AI">
+                                <span class="ai-field-hint">Used in system prompt as {{bot_name}}.</span>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Language</label>
+                                <select id="ai-language" class="form-input">
+                                    <option value="auto">Auto Detect User Language</option>
+                                    <option value="english">English</option>
+                                    <option value="spanish">Spanish</option>
+                                    <option value="french">French</option>
+                                    <option value="german">German</option>
+                                    <option value="persian">Persian (Farsi)</option>
+                                    <option value="arabic">Arabic</option>
+                                    <option value="russian">Russian</option>
+                                </select>
+                                <span class="ai-field-hint">Prefer language for responses.</span>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Reply Style</label>
+                                <select id="ai-style" class="form-input">
+                                    <option value="friendly">Friendly</option>
+                                    <option value="professional">Professional</option>
+                                    <option value="casual">Casual</option>
+                                    <option value="formal">Formal</option>
+                                    <option value="funny">Funny</option>
+                                </select>
+                                <span class="ai-field-hint">Tone of the AI.</span>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Reply Length</label>
+                                <select id="ai-length" class="form-input">
+                                    <option value="very_short">Very Short (~1-2 lines)</option>
+                                    <option value="short">Short (~3-5 lines)</option>
+                                    <option value="medium" selected>Medium (~6-10 lines)</option>
+                                    <option value="detailed">Detailed (~10-20 lines)</option>
+                                </select>
+                                <span class="ai-field-hint">Length of responses (recommended: Medium).</span>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Temperature <span class="text-sm">(0.0–2.0)</span></label>
+                                <input type="number" id="ai-temperature" class="form-input" placeholder="0.7" step="0.1" min="0" max="2" value="0.7">
+                                <span class="ai-field-hint">Higher = more creative, lower = more deterministic. Recommended: 0.7</span>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Max Tokens</label>
+                                <input type="number" id="ai-max-tokens" class="form-input" placeholder="1024" step="1" min="1" value="1024">
+                                <span class="ai-field-hint">Maximum length of response. Recommended: 1024</span>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Top‑P</label>
+                                <input type="number" id="ai-top-p" class="form-input" placeholder="1.0" step="0.1" min="0" max="1" value="1.0">
+                                <span class="ai-field-hint">Nucleus sampling. 1.0 = no filtering. Recommended: 1.0</span>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Fallback Message</label>
+                                <textarea id="ai-fallback" class="form-textarea" rows="3" placeholder="Custom message on API error" style="resize:vertical;">Sorry, I am currently unavailable. Please try again later.</textarea>
+                                <span class="ai-field-hint">Shown when AI API fails.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- INSTRUCTIONS & KNOWLEDGE -->
+                    <div class="ai-section">
+                        <div class="ai-section-title"><i class="fa-solid fa-brain"></i> Instructions & Knowledge</div>
+                        <div class="form-group">
+                            <label class="form-label">System Prompt (Instructions)</label>
+                            <textarea id="ai-system-prompt" class="form-textarea" rows="4" placeholder="You are a helpful assistant for {{company_name}}..."></textarea>
+                            <span class="ai-field-hint">Use placeholders like <code>{{bot_name}}</code>, <code>{{user_first_name}}</code>, <code>{{owner_name}}</code>, <code>{{company_name}}</code>, <code>{{website}}</code>, <code>{{phone}}</code>, <code>{{current_time}}</code>. Also <code>{{available_commands}}</code> will be replaced with a list of your bot's command names. You can use <b>HTML</b> tags for formatting (e.g., <b>bold</b>, <i>italic</i>).</span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Preset Templates</label>
+                            <select id="ai-template-preset" class="form-input" onchange="applyPromptTemplate()">
+                                <option value="custom">Custom</option>
+                                <option value="assistant">Personal Assistant</option>
+                                <option value="support">Customer Support</option>
+                                <option value="restaurant">Restaurant & Food</option>
+                                <option value="programming">Programming Helper</option>
+                                <option value="school">Tutor & Education</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Knowledge Bases</label>
+                            <div id="knowledge-bases-container"></div>
+                            <button onclick="addKnowledgeBase()" class="btn btn-gray btn-sm" style="margin-top:0.5rem;"><i class="fa-solid fa-plus"></i> Add Knowledge Base</button>
+                            <span class="ai-field-hint">Each knowledge base can be toggled on/off. Only enabled ones are used.</span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Custom Variables (key=value per line)</label>
+                            <textarea id="ai-custom-vars-text" class="form-textarea" rows="2" placeholder="owner_name=Mahan&#10;company_name=My Corp&#10;website=example.com"></textarea>
+                            <span class="ai-field-hint">Add one per line, e.g., <code>key=value</code>. These will replace <code>{{key}}</code> in prompts.</span>
+                        </div>
+                    </div>
+
+                    <!-- TRIGGERS & FILTERS - RESTRUCTURED -->
+                    <div class="ai-section">
+                        <div class="ai-section-title"><i class="fa-solid fa-filter"></i> Triggers & Filters</div>
+
+                        <!-- General -->
+                        <div style="margin-bottom:1rem;">
+                            <div class="ai-section-title" style="font-size:0.9rem; margin-bottom:0.5rem;"><i class="fa-solid fa-globe"></i> General</div>
+                            <div class="ai-grid">
+                                <div class="form-group">
+                                    <label class="form-label">AI Trigger</label>
+                                    <select id="ai-trigger" class="form-input">
+                                        <option value="no_command">Only when no command matches (recommended)</option>
+                                        <option value="all_messages">Reply to every text message</option>
+                                        <option value="contains_text">Trigger only when message contains specific text</option>
+                                    </select>
+                                    <span class="ai-field-hint" id="trigger-hint">Determines when the AI should reply.</span>
+                                </div>
+                                <div class="form-group" id="trigger-contains-group" style="display:none;">
+                                    <label class="form-label">Trigger Text</label>
+                                    <input type="text" id="ai-trigger-text" class="form-input" placeholder="e.g., 'help' or 'support'">
+                                    <span class="ai-field-hint">The AI will reply only if the message contains this text (case-insensitive).</span>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Ignore Prefixes</label>
+                                    <input type="text" id="ai-ignore-prefixes" class="form-input" placeholder="/, !, #" value="/, !, #">
+                                    <span class="ai-field-hint">Messages starting with these won't trigger AI (comma-separated).</span>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Ignore Messages From Bots</label>
+                                    <select id="ai-ignore-bots" class="form-input">
+                                        <option value="1">Yes</option>
+                                        <option value="0">No</option>
+                                    </select>
+                                    <span class="ai-field-hint">Do not reply to messages sent by other bots.</span>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Ignore Forwarded Messages</label>
+                                    <select id="ai-ignore-forwarded" class="form-input">
+                                        <option value="1">Yes</option>
+                                        <option value="0">No</option>
+                                    </select>
+                                    <span class="ai-field-hint">Do not reply to forwarded messages.</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Private Chat Settings -->
+                        <div style="margin-bottom:1rem;">
+                            <div class="ai-section-title" style="font-size:0.9rem; margin-bottom:0.5rem;"><i class="fa-regular fa-comment"></i> Private Chat Settings</div>
+                            <div class="ai-grid">
+                                <div class="form-group">
+                                    <label class="form-label">Reply in Private Chats</label>
+                                    <select id="ai-private-reply" class="form-input">
+                                        <option value="1">Yes (reply to all private messages)</option>
+                                        <option value="0">No (never reply in private)</option>
+                                    </select>
+                                    <span class="ai-field-hint">If disabled, the AI will ignore private messages.</span>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Conversation Memory (private)</label>
+                                    <select id="ai-memory" class="form-input">
+                                        <option value="0">Disabled</option>
+                                        <option value="5">Last 5 messages</option>
+                                        <option value="10">Last 10 messages</option>
+                                        <option value="20">Last 20 messages</option>
+                                    </select>
+                                    <span class="ai-field-hint">How many previous messages to remember per chat. Recommended: 5–10.</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Group Settings -->
+                        <div style="margin-bottom:1rem;">
+                            <div class="ai-section-title" style="font-size:0.9rem; margin-bottom:0.5rem;"><i class="fa-solid fa-users"></i> Group Settings</div>
+                            <div class="ai-grid">
+                                <div class="form-group">
+                                    <label class="form-label">Reply in Groups / Supergroups</label>
+                                    <select id="ai-group-reply" class="form-input">
+                                        <option value="1">Yes</option>
+                                        <option value="0">No</option>
+                                    </select>
+                                    <span class="ai-field-hint">If disabled, the AI will never reply in groups.</span>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Mention Required in Groups</label>
+                                    <select id="ai-group-mention" class="form-input">
+                                        <option value="1">Yes (only when tagged/replied to)</option>
+                                        <option value="0">No (reply to all group text)</option>
+                                    </select>
+                                    <span class="ai-field-hint">If yes, the bot must be mentioned (e.g., @bot) or reply to a message.</span>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Conversation Memory (groups)</label>
+                                    <select id="ai-group-memory" class="form-input">
+                                        <option value="0">Disabled</option>
+                                        <option value="5">Last 5 messages</option>
+                                        <option value="10">Last 10 messages</option>
+                                        <option value="20">Last 20 messages</option>
+                                    </select>
+                                    <span class="ai-field-hint">Separate memory for group chats.</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Performance -->
+                        <div>
+                            <div class="ai-section-title" style="font-size:0.9rem; margin-bottom:0.5rem;"><i class="fa-solid fa-gauge-high"></i> Performance</div>
+                            <div class="ai-grid">
+                                <div class="form-group">
+                                    <label class="form-label">Rate Limit (per user / minute)</label>
+                                    <input type="number" id="ai-rate-limit" class="form-input" placeholder="10" value="10">
+                                    <span class="ai-field-hint">Max requests per user per minute. Recommended: 10</span>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Response Delay (ms)</label>
+                                    <input type="number" id="ai-response-delay" class="form-input" placeholder="0" value="0" min="0" max="5000">
+                                    <span class="ai-field-hint">Artificial delay before sending reply. Recommended: 0 (no delay).</span>
+                                </div>
+                                <div class="form-group" style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+                                    <label class="text-sm"><input type="checkbox" id="ai-typing-indicator" checked> Show Typing Indicator</label>
+                                    <label class="text-sm"><input type="checkbox" id="ai-retry-on-failure"> Retry Failed Request Once</label>
+                                    <span class="ai-field-hint" style="width:100%;">Typing indicator shows the bot is "typing". Retry may help with temporary API errors.</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Memory Indicator -->
+                        <div style="margin-top:1rem; border-top:1px solid #334155; padding-top:1rem;">
+                            <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+                                <span><strong>AI Memory Usage</strong></span>
+                                <span id="memory-count-display" class="text-sm">Loading...</span>
+                                <button onclick="refreshMemoryCount()" class="btn btn-gray btn-sm"><i class="fa-solid fa-rotate"></i> Refresh</button>
+                            </div>
+                            <span class="ai-field-hint">Total stored messages across all chats. Older messages may be automatically trimmed based on memory settings.</span>
+                        </div>
+                    </div>
+
+                    <!-- SUGGESTED QUICK REPLIES (as button list) -->
+                    <div class="ai-section">
+                        <div class="ai-section-title"><i class="fa-solid fa-list"></i> Suggested Quick Replies</div>
+                        <div class="inline-toggle-row">
+                            <span class="form-label" style="margin:0;">Show as buttons after AI reply</span>
+                            <div id="ai-suggested-toggle" class="toggle" onclick="toggleSuggestedQuestions()"><span class="slider"></span></div>
+                        </div>
+                        <div id="suggested-questions-editor" style="margin-top:0.5rem;">
+                            <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:0.5rem;">
+                                <input id="suggested-q-label" class="form-input" style="flex:2; min-width:150px;" placeholder="Button label">
+                                <input id="suggested-q-value" class="form-input" style="flex:2; min-width:150px;" placeholder="Value (text to send)">
+                                <button onclick="addSuggestedQuestion()" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus"></i> Add</button>
+                            </div>
+                            <div id="suggested-questions-list" class="panel" style="padding:0.5rem; min-height:30px;"></div>
+                        </div>
+                        <span class="ai-field-hint">These buttons will appear as inline keyboard below the AI's response.</span>
+                    </div>
+
+                    <!-- PLAYGROUND -->
+                    <div class="ai-section">
+                        <div class="ai-section-title"><i class="fa-solid fa-vial"></i> Playground <span class="text-sm" style="font-weight:400;color:#94a3b8;">Test your AI configuration in real‑time</span></div>
+                        <div id="playground-messages" style="min-height:150px; max-height:300px; overflow-y:auto; display:flex; flex-direction:column; gap:0.5rem; padding:0.5rem; background:#0f172a; border-radius:8px; border:1px solid #334155; margin-bottom:0.75rem;">
+                            <div style="font-size:0.8rem; color:#64748b; text-align:center;">Playground started. Send a message below to test.</div>
+                        </div>
+                        <div style="display:flex; gap:0.5rem;">
+                            <input id="playground-input" class="form-input" placeholder="Type a message to test..." onkeydown="if(event.key==='Enter') sendPlaygroundMessage()">
+                            <button onclick="sendPlaygroundMessage()" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i></button>
+                            <button onclick="clearPlaygroundChat()" class="btn btn-gray" title="Clear chat"><i class="fa-solid fa-trash-can"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- MANAGEMENT ACTIONS -->
+                    
+                </div>
+            </div>
+            <!-- END AI TAB -->
+
             <div id="tab-settings" class="tab-content">
                 <h3 class="panel-title">Bot Settings</h3>
                 <div class="panel" style="display:flex; flex-direction:column; gap:1.5rem;">
@@ -1052,7 +1404,23 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         </div>
     </footer>
 
-    <!-- MODALS -->
+                <div class="ai-section ai-actions-fixed hidden" id="ai-actions-fixed" style="border-top: 1px solid #334155; padding-top:1rem;">
+                <div style="display:flex; flex-wrap:wrap; gap:0.5rem; align-items:center;">
+                    <button onclick="saveAiSettings()" class="btn btn-success"><i class="fa-solid fa-floppy-disk"></i> Save Settings</button>
+                    <div class="dropdown-menu">
+                        <button onclick="toggleMoreOptions()" class="btn btn-gray btn-sm"><i class="fa-solid fa-ellipsis-vertical"></i> More Options</button>
+                        <div id="more-options-dropdown" class="dropdown-content">
+                            <button onclick="exportAiSettings()"><i class="fa-solid fa-download"></i> Export JSON</button>
+                            <button onclick="triggerImportAiSettings()"><i class="fa-solid fa-upload"></i> Import JSON</button>
+                            <button onclick="clearAiMemory()"><i class="fa-solid fa-eraser"></i> Clear Memory</button>
+                            <button onclick="resetAiSettings()"><i class="fa-solid fa-rotate-left"></i> Reset Defaults</button>
+                        </div>
+                    </div>
+                </div>
+                <input type="file" id="ai-import-file" style="display:none;" onchange="importAiSettings(event)">
+            </div>
+
+    <!-- MODALS (unchanged) -->
     <div id="command-modal" class="modal-overlay hidden">
         <div class="modal-box">
             <div class="modal-title">
@@ -1169,9 +1537,9 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
     <div id="toast-container" class="toast-container"></div>
 
     <script>
-        // ============================
+        // ======================================================================
         // GLOBAL STATE
-        // ============================
+        // ======================================================================
         let editingCommand = null;
         let commandsCache = [];
         let inlineButtonsArray = [];
@@ -1183,8 +1551,9 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         let childrenMap = {};
         let menuCommands = [];
         let commandEnabled = true;
-
-        // Update-related globals
+        let aiEnabled = false;
+        let showSuggestedQuestions = false;
+        let playgroundHistory = [];
         let cfAccountId = null;
         let cfScriptName = null;
         let latestVersion = null;
@@ -1192,16 +1561,21 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         let workerUrl = null;
         let updateChecked = false;
         let updateCheckTimestamp = 0;
-        const UPDATE_COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes
+        const UPDATE_COOLDOWN_MS = 30 * 60 * 1000;
+
+        // AI specific state
+        let knowledgeBases = [];
+        let suggestedQuestions = [];
 
         // ----- CACHE -----
-        const CACHE_TTL = 60000; // 60 seconds
+        const CACHE_TTL = 60000;
         const cache = {
             commands: { data: null, loaded: false, timestamp: 0 },
             menu: { data: null, loaded: false, timestamp: 0 },
+            users: { data: null, loaded: false, timestamp: 0 },
+            ai: { data: null, loaded: false, timestamp: 0 },
             settings: { data: null, loaded: false, timestamp: 0 },
             botinfo: { data: null, loaded: false, timestamp: 0 },
-            users: { data: null, loaded: false, timestamp: 0 }, // used only when search changes
         };
 
         function isCacheValid(key) {
@@ -1215,7 +1589,6 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 cache[key].data = null;
                 cache[key].timestamp = 0;
             } else {
-                // invalidate all
                 Object.keys(cache).forEach(k => {
                     cache[k].loaded = false;
                     cache[k].data = null;
@@ -1224,15 +1597,12 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             }
         }
 
-        // ----- Loading overlay control -----
+        // ----- Loading overlay -----
         let loadingCounter = 0;
         let hideTimer = null;
 
         function showLoading() {
-            if (hideTimer) {
-                clearTimeout(hideTimer);
-                hideTimer = null;
-            }
+            if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
             if (loadingCounter === 0) {
                 document.getElementById('loading-overlay').classList.remove('hidden');
             }
@@ -1250,7 +1620,6 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             }
         }
 
-        // Wrapper to show/hide around any promise
         function withLoading(promise) {
             showLoading();
             return promise.finally(hideLoading);
@@ -1279,12 +1648,11 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         }
 
         function goToSetup() { showStep('step-setup'); }
-
         function showInfoModal() { document.getElementById('info-modal').classList.remove('hidden'); }
 
-        // ============================
+        // ======================================================================
         // STATUS CHECK
-        // ============================
+        // ======================================================================
         async function checkStatus() {
             showLoading();
             try {
@@ -1325,9 +1693,9 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             }
         }
 
-        // ============================
+        // ======================================================================
         // SETUP / LOGIN
-        // ============================
+        // ======================================================================
         async function submitSetup() {
             const botToken = document.getElementById('setup-bot-token').value.trim();
             const skipBot = document.getElementById('setup-skip-bot').checked;
@@ -1415,7 +1783,6 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             showStep('step-dashboard');
             const logoutBtn = document.getElementById('logout-btn');
             if (logoutBtn) logoutBtn.classList.remove('hidden');
-            // Load status without cache
             withLoading(
                 fetch('/api/status')
                 .then(r => r.json())
@@ -1428,17 +1795,15 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                         '<i class="fa-brands fa-telegram"></i> Bot: Unlinked';
                 })
             );
-            // Load initial data (commands, menu, settings) in parallel, but cache them
-            loadCommands(true); // force load
+            loadCommands(true);
             loadMenuCommands(true);
             loadSettings(true);
-            // Auto-check for updates with cooldown
             autoCheckForUpdate();
         }
 
-        // ============================
+        // ======================================================================
         // TABS
-        // ============================
+        // ======================================================================
         let currentTab = 'commands';
 
         function switchTab(tabId) {
@@ -1446,15 +1811,23 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             const el = document.getElementById('tab-' + tabId);
             if (el) el.classList.add('active');
-            const map = { commands: 0, menu: 1, users: 2, settings: 3, botinfo: 4, update: 5 };
+            const map = { commands: 0, menu: 1, users: 2, ai: 3, settings: 4, botinfo: 5, update: 6 };
             const btns = document.querySelectorAll('.tabs-header .tab-btn');
             btns.forEach((b, i) => b.classList.toggle('active', i === map[tabId]));
             document.querySelectorAll('#mobile-tabs button').forEach((b, i) => {
                 b.classList.toggle('active', i === map[tabId]);
             });
+            const saveBar = document.getElementById("ai-actions-fixed");
+
+            if (tabId === "ai") {
+                saveBar.classList.remove("hidden");
+            } else {
+                saveBar.classList.add("hidden");
+            }
             if (tabId === 'commands') loadCommands();
             else if (tabId === 'menu') loadMenuCommands();
             else if (tabId === 'users') loadUsers();
+            else if (tabId === 'ai') { loadAiSettings(); refreshMemoryCount(); }
             else if (tabId === 'settings') loadSettings();
             else if (tabId === 'botinfo') loadBotInfo();
             else if (tabId === 'update') loadUpdateTab();
@@ -1477,9 +1850,9 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             btn.className = 'fa-solid fa-bars';
         }
 
-        // ============================
-        // COMMANDS
-        // ============================
+        // ======================================================================
+        // COMMANDS (unchanged)
+        // ======================================================================
         function toggleInlineKeyboard() {
             showInlineKeyboard = !showInlineKeyboard;
             document.getElementById('inline-toggle').classList.toggle('active', showInlineKeyboard);
@@ -1831,11 +2204,9 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             });
         }
 
-        // forceLoad = true to bypass cache
         function loadCommands(forceLoad) {
             var container = document.getElementById('commands-list');
             if (!forceLoad && isCacheValid('commands')) {
-                // Use cached data
                 commandsCache = cache.commands.data;
                 childrenMap = {};
                 for (var i = 0; i < commandsCache.length; i++) {
@@ -1882,14 +2253,11 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         }
 
         async function showAddCommandModal(command, parent) {
-            await loadCommands(); // ensures fresh data
+            await loadCommands();
             editingCommand = command || null;
             var modal = document.getElementById('command-modal');
             document.getElementById('modal-error').classList.remove('show');
-
-            // Reset enabled toggle
             commandEnabled = true;
-
             populateDropdowns();
             var parentSelect = document.getElementById('modal-parent');
             if (editingCommand) {
@@ -2001,7 +2369,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                     if (result.status >= 400) throw new Error(result.data.error || 'Failed');
                     closeCommandModal();
                     showToast('Command saved!');
-                    invalidateCache('commands'); // force reload next time
+                    invalidateCache('commands');
                     loadCommands(true);
                 })
                 .catch(function(err) { errorEl.innerText = err.message;
@@ -2025,9 +2393,9 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             );
         }
 
-        // ============================
+        // ======================================================================
         // MENU COMMANDS
-        // ============================
+        // ======================================================================
         function loadMenuCommands(forceLoad) {
             if (!forceLoad && isCacheValid('menu')) {
                 menuCommands = cache.menu.data;
@@ -2039,7 +2407,6 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 .then(function(res) { return res.json(); })
                 .then(function(data) {
                     menuCommands = data.menu || [];
-                    // Ensure 'start' is always present (fixed)
                     var hasStart = menuCommands.some(function(e) { return e.command === 'start'; });
                     if (!hasStart) {
                         menuCommands.unshift({ command: 'start', description: 'Start the bot' });
@@ -2098,7 +2465,6 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 var desc = inputs[i + 1] ? inputs[i + 1].value.trim() : '';
                 if (cmd && desc) updated.push({ command: cmd, description: desc });
             }
-            // Ensure start is present
             var hasStart = updated.some(function(e) { return e.command === 'start'; });
             if (!hasStart) {
                 updated.unshift({ command: 'start', description: 'Start the bot' });
@@ -2132,14 +2498,582 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             );
         }
 
-        // ============================
+        // ======================================================================
+        // AI SETTINGS (revamped)
+        // ======================================================================
+        function toggleAiEnabled() {
+            aiEnabled = !aiEnabled;
+            const toggle = document.getElementById('ai-toggle');
+            if (toggle) toggle.classList.toggle('active', aiEnabled);
+        }
+
+        function toggleSuggestedQuestions() {
+            showSuggestedQuestions = !showSuggestedQuestions;
+            const toggle = document.getElementById('ai-suggested-toggle');
+            if (toggle) toggle.classList.toggle('active', showSuggestedQuestions);
+            document.getElementById('suggested-questions-editor').style.display = showSuggestedQuestions ? 'block' : 'none';
+        }
+
+        function onAiProviderChange(type) {
+            const providerSelect = document.getElementById(type === 'main' ? 'ai-provider' : 'ai-alt-provider');
+            const provider = providerSelect.value;
+            const baseUrlGroup = document.getElementById(type === 'main' ? 'main-base-url-group' : 'alt-base-url-group');
+            const modelInput = document.getElementById(type === 'main' ? 'ai-model' : 'ai-alt-model');
+            const hintEl = document.getElementById(type === 'main' ? 'main-model-hint' : 'alt-model-hint');
+
+            const defaults = {
+                openai: { model: 'gpt-4o-mini', baseUrl: 'https://api.openai.com/v1' },
+                gemini: { model: 'gemini-1.5-flash', baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai/' },
+                deepseek: { model: 'deepseek-chat', baseUrl: 'https://api.deepseek.com' },
+                groq: { model: 'llama-3.3-70b-versatile', baseUrl: 'https://api.groq.com/openai/v1' },
+                openrouter: { model: 'openai/gpt-4o-mini', baseUrl: 'https://openrouter.ai/api/v1' },
+                ollama: { model: 'llama3', baseUrl: 'http://localhost:11434/v1' },
+                custom: { model: '', baseUrl: '' }
+            };
+
+            if (provider === 'custom') {
+                baseUrlGroup.style.display = 'block';
+            } else {
+                baseUrlGroup.style.display = 'none';
+            }
+
+            if (defaults[provider] && (!modelInput.value || Object.values(defaults).some(d => d.model === modelInput.value))) {
+                modelInput.value = defaults[provider].model;
+            }
+
+            // Update hint
+            const providerHints = {
+                openai: { url: 'https://platform.openai.com/api-keys', label: 'OpenAI' },
+                gemini: { url: 'https://ai.google.dev/gemini-api', label: 'Gemini' },
+                deepseek: { url: 'https://platform.deepseek.com/api_keys', label: 'DeepSeek' },
+                groq: { url: 'https://console.groq.com/keys', label: 'Groq' },
+                openrouter: { url: 'https://openrouter.ai/keys', label: 'OpenRouter' },
+                ollama: { url: 'https://ollama.com/', label: 'Ollama (local)' },
+                custom: { url: '', label: 'Custom' }
+            };
+            const hint = providerHints[provider] || providerHints.custom;
+            const hintContainer = document.getElementById(type === 'main' ? 'main-provider-hint' : 'alt-provider-hint');
+            if (hint.url) {
+                hintContainer.innerHTML = \`🔑 Get your API key from <a href="\${hint.url}" target="_blank">\${hint.label}</a>\`;
+            } else {
+                hintContainer.innerHTML = '';
+            }
+
+            if (defaults[provider] && defaults[provider].model) {
+                hintEl.innerText = \`Recommended free model: \${defaults[provider].model}\`;
+            } else {
+                hintEl.innerText = '';
+            }
+        }
+
+        // Knowledge Bases
+        function renderKnowledgeBases() {
+            const container = document.getElementById('knowledge-bases-container');
+            if (knowledgeBases.length === 0) {
+                container.innerHTML = '<div style="color:#64748b; font-size:0.875rem;">No knowledge bases added.</div>';
+                return;
+            }
+            let html = '';
+            knowledgeBases.forEach((kb, idx) => {
+                const enabled = kb.enabled !== undefined ? kb.enabled : true;
+                html += \`<div class="knowledge-base-item" data-index="\${idx}">
+                            <div class="kb-header">
+                                <div class="toggle \${enabled ? 'active' : ''}" onclick="toggleKnowledgeBase(\${idx})"><span class="slider"></span></div>
+                                <span style="font-weight:500;">Knowledge Base \${idx+1}</span>
+                                <button onclick="removeKnowledgeBase(\${idx})" style="margin-left:auto; background:none; border:none; color:#f87171; cursor:pointer;"><i class="fa-regular fa-trash-can"></i></button>
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <textarea class="form-textarea" rows="2" placeholder="Enter knowledge content..." onchange="updateKnowledgeBase(\${idx}, 'content', this.value)">\${escapeHtml(kb.content || '')}</textarea>
+                            </div>
+                        </div>\`;
+            });
+            container.innerHTML = html;
+        }
+
+        function addKnowledgeBase() {
+            knowledgeBases.push({ enabled: true, content: '' });
+            renderKnowledgeBases();
+        }
+
+        function removeKnowledgeBase(idx) {
+            knowledgeBases.splice(idx, 1);
+            renderKnowledgeBases();
+        }
+
+        function toggleKnowledgeBase(idx) {
+            knowledgeBases[idx].enabled = !knowledgeBases[idx].enabled;
+            renderKnowledgeBases();
+        }
+
+        function updateKnowledgeBase(idx, field, value) {
+            knowledgeBases[idx][field] = value;
+        }
+
+        // Suggested Questions (as chips)
+        function renderSuggestedQuestions() {
+            const container = document.getElementById('suggested-questions-list');
+            if (suggestedQuestions.length === 0) {
+                container.innerHTML = '<div style="font-size:0.75rem; color:#64748b; padding:0.25rem 0;">No suggested questions added.</div>';
+                return;
+            }
+            let html = '<div class="button-chip-list">';
+            suggestedQuestions.forEach((q, idx) => {
+                html += \`<div class="button-chip" draggable="true" data-index="\${idx}" data-type="suggested">
+                            <span class="chip-grip"><i class="fa-solid fa-grip-lines"></i></span>
+                            <i class="fa-regular fa-message" style="color:#60a5fa;"></i>
+                            <span class="chip-text">\${escapeHtml(q.label)} → \${escapeHtml(q.value)}</span>
+                            <button class="chip-edit" onclick="editSuggestedQuestion(\${idx})"><i class="fa-regular fa-pen-to-square"></i></button>
+                            <button class="chip-delete" onclick="removeSuggestedQuestion(\${idx})"><i class="fa-regular fa-circle-xmark"></i></button>
+                        </div>\`;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+            attachDragEvents(container);
+        }
+
+        function addSuggestedQuestion() {
+            const label = document.getElementById('suggested-q-label').value.trim();
+            const value = document.getElementById('suggested-q-value').value.trim();
+            if (!label || !value) { showToast('Both label and value are required.', 'error'); return; }
+            suggestedQuestions.push({ label, value });
+            renderSuggestedQuestions();
+            document.getElementById('suggested-q-label').value = '';
+            document.getElementById('suggested-q-value').value = '';
+        }
+
+        function removeSuggestedQuestion(idx) {
+            suggestedQuestions.splice(idx, 1);
+            renderSuggestedQuestions();
+        }
+
+        function editSuggestedQuestion(idx) {
+            const q = suggestedQuestions[idx];
+            const newLabel = prompt('Edit label:', q.label);
+            if (newLabel === null) return;
+            const newValue = prompt('Edit value:', q.value);
+            if (newValue === null) return;
+            q.label = newLabel.trim();
+            q.value = newValue.trim();
+            renderSuggestedQuestions();
+        }
+
+        // Gather AI Settings from UI
+        function gatherAiSettingsFromUI() {
+            return {
+                ai_enabled: aiEnabled ? '1' : '0',
+                ai_display_name: document.getElementById('ai-display-name').value.trim(),
+                ai_language: document.getElementById('ai-language').value,
+                ai_style: document.getElementById('ai-style').value,
+                ai_length: document.getElementById('ai-length').value,
+                ai_provider: document.getElementById('ai-provider').value,
+                ai_alt_provider: document.getElementById('ai-alt-provider').value,
+                ai_api_key: document.getElementById('ai-api-key').value.trim(),
+                ai_alt_api_key: document.getElementById('ai-alt-api-key').value.trim(),
+                ai_base_url: document.getElementById('ai-base-url').value.trim(),
+                ai_alt_base_url: document.getElementById('ai-alt-base-url').value.trim(),
+                ai_model: document.getElementById('ai-model').value.trim(),
+                ai_alt_model: document.getElementById('ai-alt-model').value.trim(),
+                ai_custom_headers: document.getElementById('ai-custom-headers').value.trim(),
+                ai_alt_custom_headers: document.getElementById('ai-alt-custom-headers').value.trim(),
+                ai_system_prompt: document.getElementById('ai-system-prompt').value.trim(),
+                ai_knowledge_bases: JSON.stringify(knowledgeBases),
+                ai_custom_vars_text: document.getElementById('ai-custom-vars-text').value.trim(),
+                ai_trigger: document.getElementById('ai-trigger').value,
+                ai_trigger_text: document.getElementById('ai-trigger-text').value.trim(),
+                ai_memory: document.getElementById('ai-memory').value,
+                ai_group_memory: document.getElementById('ai-group-memory').value || '0',
+                ai_rate_limit: document.getElementById('ai-rate-limit').value || '10',
+                ai_response_delay: document.getElementById('ai-response-delay').value || '0',
+                ai_group_mention: document.getElementById('ai-group-mention').value,
+                ai_private_reply: document.getElementById('ai-private-reply').value,
+                ai_group_reply: document.getElementById('ai-group-reply').value,
+                ai_ignore_bots: document.getElementById('ai-ignore-bots').value,
+                ai_ignore_forwarded: document.getElementById('ai-ignore-forwarded').value,
+                ai_typing_indicator: document.getElementById('ai-typing-indicator').checked ? '1' : '0',
+                ai_retry_on_failure: document.getElementById('ai-retry-on-failure').checked ? '1' : '0',
+                ai_fallback: document.getElementById('ai-fallback').value.trim(),
+                ai_temperature: document.getElementById('ai-temperature').value || '0.7',
+                ai_max_tokens: document.getElementById('ai-max-tokens').value || '1024',
+                ai_top_p: document.getElementById('ai-top-p').value || '1.0',
+                ai_suggested_questions_enabled: showSuggestedQuestions ? '1' : '0',
+                ai_suggested_questions: JSON.stringify(suggestedQuestions),
+                ai_ignore_prefixes: document.getElementById('ai-ignore-prefixes').value.trim(),
+            };
+        }
+
+        function renderAiSettings(s) {
+            if (!s) return;
+            aiEnabled = (s.ai_enabled === '1' || s.ai_enabled === true);
+            const toggle = document.getElementById('ai-toggle');
+            if (toggle) toggle.classList.toggle('active', aiEnabled);
+
+            showSuggestedQuestions = (s.ai_suggested_questions_enabled === '1' || s.ai_suggested_questions_enabled === true);
+            const sqToggle = document.getElementById('ai-suggested-toggle');
+            if (sqToggle) sqToggle.classList.toggle('active', showSuggestedQuestions);
+            document.getElementById('suggested-questions-editor').style.display = showSuggestedQuestions ? 'block' : 'none';
+
+            document.getElementById('ai-display-name').value = s.ai_display_name || '';
+            document.getElementById('ai-language').value = s.ai_language || 'auto';
+            document.getElementById('ai-style').value = s.ai_style || 'friendly';
+            document.getElementById('ai-length').value = s.ai_length || 'medium';
+            document.getElementById('ai-provider').value = s.ai_provider || 'openai';
+            document.getElementById('ai-alt-provider').value = s.ai_alt_provider || 'none';
+            document.getElementById('ai-api-key').value = s.ai_api_key || '';
+            document.getElementById('ai-alt-api-key').value = s.ai_alt_api_key || '';
+            document.getElementById('ai-base-url').value = s.ai_base_url || '';
+            document.getElementById('ai-alt-base-url').value = s.ai_alt_base_url || '';
+            document.getElementById('ai-model').value = s.ai_model || 'gpt-4o-mini';
+            document.getElementById('ai-alt-model').value = s.ai_alt_model || '';
+            document.getElementById('ai-custom-headers').value = s.ai_custom_headers || '';
+            document.getElementById('ai-alt-custom-headers').value = s.ai_alt_custom_headers || '';
+            document.getElementById('ai-system-prompt').value = s.ai_system_prompt || '';
+            try { knowledgeBases = JSON.parse(s.ai_knowledge_bases || '[]'); } catch(e) { knowledgeBases = []; }
+            renderKnowledgeBases();
+            document.getElementById('ai-custom-vars-text').value = s.ai_custom_vars_text || '';
+            document.getElementById('ai-trigger').value = s.ai_trigger || 'no_command';
+            document.getElementById('ai-trigger-text').value = s.ai_trigger_text || '';
+            document.getElementById('ai-memory').value = s.ai_memory || '0';
+            document.getElementById('ai-group-memory').value = s.ai_group_memory || '0';
+            document.getElementById('ai-rate-limit').value = s.ai_rate_limit || '10';
+            document.getElementById('ai-response-delay').value = s.ai_response_delay || '0';
+            document.getElementById('ai-group-mention').value = s.ai_group_mention || '1';
+            document.getElementById('ai-private-reply').value = s.ai_private_reply || '1';
+            document.getElementById('ai-group-reply').value = s.ai_group_reply || '1';
+            document.getElementById('ai-ignore-bots').value = s.ai_ignore_bots || '1';
+            document.getElementById('ai-ignore-forwarded').value = s.ai_ignore_forwarded || '1';
+            document.getElementById('ai-typing-indicator').checked = (s.ai_typing_indicator === '1');
+            document.getElementById('ai-retry-on-failure').checked = (s.ai_retry_on_failure === '1');
+            document.getElementById('ai-fallback').value = s.ai_fallback || 'Sorry, I am currently unavailable. Please try again later.';
+            document.getElementById('ai-temperature').value = s.ai_temperature || '0.7';
+            document.getElementById('ai-max-tokens').value = s.ai_max_tokens || '1024';
+            document.getElementById('ai-top-p').value = s.ai_top_p || '1.0';
+            try { suggestedQuestions = JSON.parse(s.ai_suggested_questions || '[]'); } catch(e) { suggestedQuestions = []; }
+            renderSuggestedQuestions();
+            document.getElementById('ai-ignore-prefixes').value = s.ai_ignore_prefixes || '/, !, #';
+
+            onAiProviderChange('main');
+            onAiProviderChange('alt');
+
+            // Trigger hint
+            updateTriggerHint(s.ai_trigger);
+        }
+
+        function updateTriggerHint(trigger) {
+            const hintEl = document.getElementById('trigger-hint');
+            const texts = {
+                'no_command': 'The AI replies only when no command matches. This is the recommended setting.',
+                'all_messages': 'The AI replies to every text message (after command checks).',
+                'contains_text': 'The AI replies only if the message contains the specific text you set.'
+            };
+            hintEl.innerText = texts[trigger] || '';
+        }
+
+        function loadAiSettings(forceLoad) {
+            if (!forceLoad && isCacheValid('ai')) {
+                renderAiSettings(cache.ai.data);
+                return Promise.resolve();
+            }
+            return withLoading(
+                fetch('/api/ai_settings')
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.success) throw new Error(data.error || 'Failed to load AI settings');
+                    cache.ai.data = data.settings;
+                    cache.ai.loaded = true;
+                    cache.ai.timestamp = Date.now();
+                    renderAiSettings(data.settings);
+                })
+                .catch(err => showToast('Error loading AI settings: ' + err.message, 'error'))
+            );
+        }
+
+        function applyPromptTemplate() {
+            const preset = document.getElementById('ai-template-preset').value;
+            const promptEl = document.getElementById('ai-system-prompt');
+            const templates = {
+                assistant: "You are a helpful AI assistant named {{bot_name}}. Answer only using the information provided in your instructions and knowledge base. Never search the web, invent information, or answer questions unrelated to your assigned purpose. If the answer cannot be found in your knowledge base or instructions, politely state that you don't have that information.",
+
+                support: "You are a professional customer support representative for {{company_name}}. Answer customer questions only using the provided instructions and knowledge base. Never search the web, make assumptions, or answer unrelated questions. If the requested information is unavailable, politely inform the customer and suggest contacting support.",
+
+                restaurant: "You are the virtual assistant for {{company_name}} restaurant. Answer only questions related to the restaurant using the provided instructions and knowledge base, such as the menu, opening hours, reservations, and policies. Never search the web or answer unrelated questions. If the information isn't available, politely say so.",
+
+                programming: "You are a programming assistant. Answer programming-related questions only using the provided instructions and knowledge base. Do not search the web or answer questions outside your assigned scope. If the answer isn't available in the provided information, state that you don't have enough information.",
+
+                school: "You are an educational tutor. Explain topics only according to the provided instructions and knowledge base. Never search the web, invent facts, or answer unrelated questions. If the necessary information isn't available, politely say that you don't have enough information to answer."
+            };
+            if (preset !== 'custom' && templates[preset]) {
+                promptEl.value = templates[preset];
+            }
+        }
+
+        // Detect manual edit of system prompt -> set template to custom
+        document.getElementById('ai-system-prompt').addEventListener('input', function() {
+            const select = document.getElementById('ai-template-preset');
+            const current = select.value;
+            if (current !== 'custom') {
+                select.value = 'custom';
+            }
+        });
+
+        // More options dropdown
+        function toggleMoreOptions() {
+            const dropdown = document.getElementById('more-options-dropdown');
+            dropdown.classList.toggle('show');
+        }
+        document.addEventListener('click', function(e) {
+            const dropdown = document.getElementById('more-options-dropdown');
+            if (dropdown && !e.target.closest('.dropdown-menu')) {
+                dropdown.classList.remove('show');
+            }
+        });
+
+        function exportAiSettings() {
+            const settings = gatherAiSettingsFromUI();
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(settings, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", "ai_settings.json");
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function triggerImportAiSettings() {
+            document.getElementById('ai-import-file').click();
+        }
+
+        function importAiSettings(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    renderAiSettings(parsed);
+                    showToast('AI Settings imported into preview! Click Save to apply.');
+                } catch(err) {
+                    showToast('Invalid JSON file.', 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function clearAiMemory() {
+            if (!confirm('Clear all stored AI conversation history?')) return;
+            withLoading(
+                fetch('/api/ai/clear_memory', { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) { showToast('AI Memory cleared!'); refreshMemoryCount(); }
+                    else throw new Error(data.error);
+                })
+                .catch(err => showToast(err.message, 'error'))
+            );
+        }
+
+        function resetAiSettings() {
+            if (!confirm('Reset all AI settings to default values?')) return;
+            withLoading(
+                fetch('/api/ai/reset', { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast('AI Settings reset!');
+                        loadAiSettings(true);
+                        refreshMemoryCount();
+                    } else throw new Error(data.error);
+                })
+                .catch(err => showToast(err.message, 'error'))
+            );
+        }
+
+        function saveAiSettings() {
+            const settings = gatherAiSettingsFromUI();
+            withLoading(
+                fetch('/api/ai_settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(settings)
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.success) throw new Error(data.error || 'Failed to save settings');
+                    showToast('AI settings saved successfully!');
+                    cache.ai.data = settings;
+                    cache.ai.loaded = true;
+                    cache.ai.timestamp = Date.now();
+                    refreshMemoryCount();
+                })
+                .catch(err => showToast(err.message, 'error'))
+            );
+        }
+
+        function testAiConnection() {
+            const settings = gatherAiSettingsFromUI();
+            const resultEl = document.getElementById('ai-test-result');
+            resultEl.innerText = 'Testing main...';
+            resultEl.className = 'test-result';
+            resultEl.style.color = '#94a3b8';
+
+            withLoading(
+                fetch('/api/ai/test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ settings: settings, provider: 'main' })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    let mainOk = data.success;
+                    let mainMsg = data.message || data.error;
+                    if (settings.ai_alt_provider && settings.ai_alt_provider !== 'none') {
+                        resultEl.innerText = 'Testing alternate...';
+                        return fetch('/api/ai/test', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ settings: settings, provider: 'alt' })
+                        })
+                        .then(res => res.json())
+                        .then(altData => {
+                            let altOk = altData.success;
+                            let altMsg = altData.message || altData.error;
+                            let finalMsg = '';
+                            if (mainOk && altOk) {
+                                finalMsg = '✅ Both main and alternate connected successfully!';
+                                resultEl.className = 'test-result success';
+                            } else if (mainOk && !altOk) {
+                                finalMsg = '⚠️ Main works, alternate failed: ' + altMsg;
+                                resultEl.className = 'test-result partial';
+                            } else if (!mainOk && altOk) {
+                                finalMsg = '⚠️ Main failed: ' + mainMsg + ' but alternate works!';
+                                resultEl.className = 'test-result partial';
+                            } else {
+                                finalMsg = '❌ Both failed. Main: ' + mainMsg + ' | Alt: ' + altMsg;
+                                resultEl.className = 'test-result error';
+                            }
+                            resultEl.innerText = finalMsg;
+                        });
+                    } else {
+                        if (mainOk) {
+                            resultEl.innerText = '✅ Main connection successful!';
+                            resultEl.className = 'test-result success';
+                        } else {
+                            resultEl.innerText = '❌ Main connection failed: ' + mainMsg;
+                            resultEl.className = 'test-result error';
+                        }
+                    }
+                })
+                .catch(err => {
+                    resultEl.innerText = '❌ Error: ' + err.message;
+                    resultEl.className = 'test-result error';
+                })
+            );
+        }
+
+        // Trigger "contains_text" toggle
+        document.getElementById('ai-trigger').addEventListener('change', function() {
+            const container = document.getElementById('trigger-contains-group');
+            const shouldShow = this.value === 'contains_text';
+            container.style.display = shouldShow ? 'block' : 'none';
+            updateTriggerHint(this.value);
+        });
+
+        // Playground
+            function renderMarkdown(text) {
+    let html = escapeHtml(text);
+    html = html.replace(/\`\`\`([\s\S]+?)\`\`\`/g, '<pre><code>$1</code></pre>');
+    html = html.replace(/\`([^\`]+)\`/g, '<code>$1</code>');
+    html = html.replace(/\\n/g, '<br>');
+    return html;
+}
+
+        function sendPlaygroundMessage() {
+            const input = document.getElementById('playground-input');
+            const msg = input.value.trim();
+            if (!msg) return;
+
+            const container = document.getElementById('playground-messages');
+            const placeholder = container.querySelector('div[style*="text-align:center"]');
+            if (placeholder && container.children.length === 1) container.innerHTML = '';
+
+            const userDiv = document.createElement('div');
+            userDiv.className = 'playground-message user';
+            userDiv.textContent = msg;
+            container.appendChild(userDiv);
+
+            input.value = '';
+            container.scrollTop = container.scrollHeight;
+
+            const botDiv = document.createElement('div');
+            botDiv.className = 'playground-message bot';
+            botDiv.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Thinking...';
+            container.appendChild(botDiv);
+            container.scrollTop = container.scrollHeight;
+
+            const settings = gatherAiSettingsFromUI();
+            const memoryLimit = parseInt(settings.ai_memory || '0');
+            const historyToSend = memoryLimit > 0 ? playgroundHistory.slice(-memoryLimit) : [];
+
+            fetch('/api/ai/playground', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    settings: settings,
+                    history: historyToSend,
+                    message: msg,
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    let rendered = data.response;
+                    // Convert markdown-like to HTML? We'll send plain text.
+                    botDiv.textContent = rendered;
+                    if (memoryLimit > 0) {
+                        playgroundHistory.push({ role: 'user', content: msg });
+                        playgroundHistory.push({ role: 'assistant', content: data.response });
+                    }
+                } else {
+                    botDiv.style.color = '#f87171';
+                    botDiv.textContent = 'Error: ' + (data.error || 'Failed to generate response');
+                }
+                container.scrollTop = container.scrollHeight;
+            })
+            .catch(err => {
+                botDiv.style.color = '#f87171';
+                botDiv.textContent = 'Error: ' + err.message;
+                container.scrollTop = container.scrollHeight;
+            });
+        }
+
+        function clearPlaygroundChat() {
+            playgroundHistory = [];
+            const container = document.getElementById('playground-messages');
+            container.innerHTML = '<div style="font-size:0.8rem; color:#64748b; text-align:center;">Playground cleared. Send a message below to test.</div>';
+        }
+
+        // Memory count
+        async function refreshMemoryCount() {
+            const display = document.getElementById('memory-count-display');
+            try {
+                const res = await fetch('/api/ai/memory_count');
+                const data = await res.json();
+                if (data.success) {
+                    display.innerText = \`\${data.count} messages stored across all chats\`;
+                } else {
+                    display.innerText = 'Error loading count';
+                }
+            } catch(e) {
+                display.innerText = 'Error';
+            }
+        }
+
+        // ======================================================================
         // USERS
-        // ============================
+        // ======================================================================
         function loadUsers() {
             var container = document.getElementById('users-list');
             var search = document.getElementById('user-search').value.trim();
             var url = '/api/users' + (search ? '?search=' + encodeURIComponent(search) : '');
-            // If no search and cache valid, use cache
             if (!search && isCacheValid('users')) {
                 var users = cache.users.data;
                 renderUsers(users, container);
@@ -2195,16 +3129,15 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                         userId, role }) })
                 .then(function(res) { return res.json(); })
                 .then(function(data) { if (data.success) { showToast('Role updated.');
-                        // invalidate users cache
                         cache.users.loaded = false;
                         loadUsers(); } else throw new Error(data.error); })
                 .catch(function(err) { showToast(err.message, 'error'); })
             );
         }
 
-        // ============================
+        // ======================================================================
         // SETTINGS
-        // ============================
+        // ======================================================================
         function loadSettings(forceLoad) {
             if (!forceLoad && isCacheValid('settings')) {
                 var data = cache.settings.data;
@@ -2262,7 +3195,6 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                     if (!data.success) throw new Error(data.error || 'Failed');
                     resultDiv.innerText = '✅ Updated!';
                     resultDiv.style.color = '#4ade80';
-                    // invalidate settings cache
                     cache.settings.loaded = false;
                     setTimeout(function() { closeTokenModal();
                         loadSettings(true); }, 1500);
@@ -2293,7 +3225,6 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 .then(function(data) {
                     if (data.success) {
                         showToast('Reset successful. Reloading...');
-                        // invalidate all caches
                         Object.keys(cache).forEach(k => { cache[k].loaded = false;
                             cache[k].data = null;
                             cache[k].timestamp = 0; });
@@ -2304,9 +3235,9 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             );
         }
 
-        // ============================
+        // ======================================================================
         // CHANGE PASSWORD
-        // ============================
+        // ======================================================================
         function changeAdminPassword() {
             const newPass = document.getElementById('change-pass-new').value;
             const confirm = document.getElementById('change-pass-confirm').value;
@@ -2332,9 +3263,9 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             );
         }
 
-        // ============================
+        // ======================================================================
         // BOT INFO
-        // ============================
+        // ======================================================================
         function loadBotInfo(forceLoad) {
             var resultDiv = document.getElementById('bot-info-result');
             if (!forceLoad && isCacheValid('botinfo')) {
@@ -2390,7 +3321,6 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                         if (!data.success) throw new Error(data.error || 'Publish failed');
                         resultDiv.innerText = '✅ Published to Telegram!';
                         resultDiv.style.color = '#4ade80';
-                        // invalidate botinfo cache
                         cache.botinfo.loaded = false;
                     })
                     .catch(function(err) {
@@ -2400,9 +3330,9 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             );
         }
 
-        // ============================
+        // ======================================================================
         // UPDATE / SELF-UPDATE
-        // ============================
+        // ======================================================================
         function openTokenGenerator() {
             const url =
                 'https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22edit%22%7D%5D&accountId=*&zoneId=all&name=Nyxx%20Updater';
@@ -2410,8 +3340,8 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         }
 
         async function loadUpdateTab() {
-            await loadSettings(true); // force refresh
-            await checkForUpdate(true); // force refresh
+            await loadSettings(true);
+            await checkForUpdate(true);
             toggleCfSection();
         }
 
@@ -2442,9 +3372,6 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             const detailsDiv = document.getElementById('update-version-details');
             latestInput.placeholder = 'Checking...';
             detailsDiv.innerText = '';
-            // If forced or not cached, fetch
-            // We can cache version info separately; we'll use localStorage for version data
-            // For simplicity, we'll always fetch but with loading overlay.
             withLoading(
                 fetch('/api/version')
                 .then(res => res.json())
@@ -2583,7 +3510,6 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 statusDiv.innerText = '✅ Update successful! New version: ' + (updateData.version || 'unknown') +
                     '. Updating takes time. Please wait 30 seconds and reload the page until you see the new version appear here.';
                 statusDiv.style.color = '#4ade80';
-                // invalidate version cache (not needed)
                 await checkForUpdate(true);
                 showToast('Update completed! The worker has been updated.', 'success');
             } catch (e) {
@@ -2592,59 +3518,51 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             }
         }
 
-        // ============================
+        // ======================================================================
         // INIT
-        // ============================
+        // ======================================================================
         window.onload = function() { checkStatus(); };
     </script>
 </body>
 </html>`;
 
 // ============================================================================
-// WORKER ENTRY POINT (unchanged from original)
+// WORKER ENTRY POINT
 // ============================================================================
 export default {
     async fetch(request, env, ctx) {
         const url = new URL(request.url);
 
         try {
-            // Serve dashboard HTML (public)
             if (request.method === 'GET' && url.pathname === '/') {
                 return new Response(DASHBOARD_HTML, {
                     headers: { 'Content-Type': 'text/html; charset=utf-8' }
                 });
             }
 
-            // ==================== PUBLIC API ====================
+            // Public endpoints
             if (request.method === 'GET' && url.pathname === '/api/status') {
                 return await getStatus(env);
             }
-
             if (request.method === 'POST' && url.pathname === '/api/setup') {
                 return await handleSetup(request, env);
             }
-
             if (request.method === 'POST' && url.pathname === '/api/login') {
                 return await handleLogin(request, env);
             }
-
-            // Public version endpoint (no auth needed)
             if (request.method === 'GET' && url.pathname === '/api/version') {
                 return await getVersionInfo(env);
             }
-
-            // ==================== WEBHOOK (PUBLIC) ====================
             if (request.method === 'POST' && url.pathname === '/webhook') {
                 return await handleTelegramWebhook(request, env);
             }
 
-            // ==================== PROTECTED API (require session) ====================
+            // Protected endpoints
             const session = await getSession(request, env);
             if (!session) {
                 return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
             }
 
-            // Logout
             if (request.method === 'POST' && url.pathname === '/api/logout') {
                 return await handleLogout(request, env);
             }
@@ -2657,11 +3575,9 @@ export default {
             if (url.pathname === '/api/commands/reorder' && request.method === 'POST') {
                 return await reorderCommands(request, env);
             }
-            if (url.pathname.startsWith('/api/commands/') && request.method === 'PUT') {
-                return await updateCommand(request, env);
-            }
-            if (url.pathname.startsWith('/api/commands/') && request.method === 'DELETE') {
-                return await deleteCommand(request, env);
+            if (url.pathname.startsWith('/api/commands/')) {
+                if (request.method === 'PUT') return await updateCommand(request, env);
+                if (request.method === 'DELETE') return await deleteCommand(request, env);
             }
 
             // Menu
@@ -2678,6 +3594,29 @@ export default {
             }
             if (request.method === 'PUT' && url.pathname === '/api/users/role') {
                 return await updateUserRole(request, env);
+            }
+
+            // AI
+            if (request.method === 'GET' && url.pathname === '/api/ai_settings') {
+                return await getAiSettings(env);
+            }
+            if (request.method === 'POST' && url.pathname === '/api/ai_settings') {
+                return await saveAiSettings(request, env);
+            }
+            if (request.method === 'POST' && url.pathname === '/api/ai/test') {
+                return await handleAiTest(request, env);
+            }
+            if (request.method === 'POST' && url.pathname === '/api/ai/playground') {
+                return await handleAiPlayground(request, env);
+            }
+            if (request.method === 'POST' && url.pathname === '/api/ai/reset') {
+                return await resetAiSettings(env);
+            }
+            if (request.method === 'POST' && url.pathname === '/api/ai/clear_memory') {
+                return await clearAiMemory(env);
+            }
+            if (request.method === 'GET' && url.pathname === '/api/ai/memory_count') {
+                return await getAiMemoryCount(env);
             }
 
             // Settings
@@ -2699,12 +3638,12 @@ export default {
                 return await setBotInfo(request, env);
             }
 
-            // Factory Reset
+            // Reset
             if (request.method === 'POST' && url.pathname === '/api/reset') {
                 return await factoryReset(env);
             }
 
-            // Update endpoints
+            // Update
             if (request.method === 'POST' && url.pathname === '/api/update/validate') {
                 return await validateCloudflareToken(request, env);
             }
@@ -2712,7 +3651,7 @@ export default {
                 return await performUpdate(request, env);
             }
 
-            // Check session (for frontend)
+            // Session check
             if (request.method === 'GET' && url.pathname === '/api/check_session') {
                 return Response.json({ logged_in: true });
             }
@@ -2726,7 +3665,7 @@ export default {
 };
 
 // ============================================================================
-// DATABASE INITIALIZATION
+// DATABASE INIT
 // ============================================================================
 async function initializeDatabase(db) {
     const schema = `
@@ -2735,6 +3674,7 @@ async function initializeDatabase(db) {
         CREATE TABLE IF NOT EXISTS commands (command TEXT PRIMARY KEY, parent TEXT, response_type TEXT DEFAULT 'text', content TEXT, media_url TEXT, buttons_json TEXT, is_admin_only BOOLEAN DEFAULT 0, enabled BOOLEAN DEFAULT 1, show_reply_keyboard BOOLEAN DEFAULT 0, reply_keyboard_json TEXT, order_idx INTEGER DEFAULT 0);
         CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, user_id INTEGER UNIQUE, command TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP);
         CREATE TABLE IF NOT EXISTS logs (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, action TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP);
+        CREATE TABLE IF NOT EXISTS ai_messages (id INTEGER PRIMARY KEY AUTOINCREMENT, chat_id INTEGER, role TEXT, content TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP);
     `;
     const statements = schema.split(';').filter(s => s.trim().length > 0);
     const batch = statements.map(s => db.prepare(s));
@@ -2800,10 +3740,6 @@ async function handleSetup(request, env) {
     await initializeDatabase(env.DB);
 
     const envPass = env.ADMIN_PASS || null;
-    if (envPass) {
-        // env var takes precedence, but we still store in D1 as fallback
-    }
-
     const existing = await env.DB.prepare("SELECT value FROM settings WHERE key = 'admin_password'").first();
     if (existing && !envPass) {
         return Response.json({ error: 'Admin password already set. Please login.' }, { status: 400 });
@@ -2853,7 +3789,6 @@ async function handleLogin(request, env) {
         return Response.json({ error: 'Password required' }, { status: 400 });
     }
 
-    // Check env var first
     const envPass = env.ADMIN_PASS || null;
     if (envPass && envPass === password) {
         const token = crypto.randomUUID();
@@ -2867,7 +3802,6 @@ async function handleLogin(request, env) {
         });
     }
 
-    // Fallback to D1
     const stored = await env.DB.prepare("SELECT value FROM settings WHERE key = 'admin_password'").first();
     if (!stored || stored.value !== password) {
         return Response.json({ error: 'Invalid password' }, { status: 401 });
@@ -2896,13 +3830,12 @@ async function handleLogout(request, env) {
     });
 }
 
-// NEW: version info with release date, notes, and worker_url
 async function getVersionInfo(env) {
     const current = VERSION;
-    let latest = null;
-    let released = null;
-    let notes = null;
-    let workerUrl = null;
+    let latest = null,
+        released = null,
+        notes = null,
+        workerUrl = null;
     try {
         const res = await fetch('https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/version.json');
         if (res.ok) {
@@ -2912,7 +3845,6 @@ async function getVersionInfo(env) {
             notes = data.notes || null;
             workerUrl = data.worker_url || null;
         } else {
-            // Fallback: parse worker.js for VERSION constant
             const workerRes = await fetch('https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/worker.js');
             if (workerRes.ok) {
                 const text = await workerRes.text();
@@ -2920,14 +3852,12 @@ async function getVersionInfo(env) {
                 if (match) latest = match[1];
             }
         }
-    } catch (e) {
-        // ignore
-    }
+    } catch (e) {}
     return Response.json({ current, latest, released, notes, worker_url: workerUrl });
 }
 
 // ============================================================================
-// COMMANDS API (unchanged)
+// COMMANDS API
 // ============================================================================
 async function getCommands(env) {
     if (!env.DB) return Response.json({ error: "DB not available" }, { status: 500 });
@@ -3030,7 +3960,7 @@ async function reorderCommands(request, env) {
 }
 
 // ============================================================================
-// MENU COMMANDS (unchanged)
+// MENU COMMANDS
 // ============================================================================
 async function getMenuCommands(env) {
     if (!env.DB) return Response.json({ error: "DB not available" }, { status: 500 });
@@ -3084,7 +4014,7 @@ async function setMenuCommands(request, env) {
 }
 
 // ============================================================================
-// USERS API (unchanged)
+// USERS API
 // ============================================================================
 async function getUsers(env, url) {
     if (!env.DB) return Response.json({ error: "DB not available" }, { status: 500 });
@@ -3121,7 +4051,370 @@ async function updateUserRole(request, env) {
 }
 
 // ============================================================================
-// SETTINGS API (extended with CF token)
+// AI API HANDLERS & ENGINE
+// ============================================================================
+async function getAiSettings(env) {
+    if (!env.DB) return Response.json({ error: "DB not available" }, { status: 500 });
+    try {
+        await initializeDatabase(env.DB);
+        const settings = await getAiSettingsFromDb(env);
+        return Response.json({ success: true, settings });
+    } catch (err) {
+        return Response.json({ error: err.message }, { status: 500 });
+    }
+}
+
+async function getAiSettingsFromDb(env) {
+    const keys = [
+        'ai_enabled', 'ai_provider', 'ai_api_key', 'ai_base_url', 'ai_model',
+        'ai_system_prompt', 'ai_trigger', 'ai_memory', 'ai_fallback',
+        'ai_temperature', 'ai_max_tokens', 'ai_top_p',
+        'ai_suggested_questions_enabled', 'ai_suggested_questions',
+        'ai_alt_provider', 'ai_alt_api_key', 'ai_alt_model', 'ai_alt_base_url',
+        'ai_custom_headers', 'ai_alt_custom_headers',
+        'ai_display_name', 'ai_language', 'ai_style', 'ai_length',
+        'ai_rate_limit', 'ai_response_delay', 'ai_ignore_prefixes',
+        'ai_group_mention', 'ai_private_reply', 'ai_group_reply',
+        'ai_ignore_bots', 'ai_ignore_forwarded', 'ai_typing_indicator',
+        'ai_retry_on_failure', 'ai_custom_vars_text', 'ai_knowledge_bases',
+        'ai_trigger_text', 'ai_group_memory'
+    ];
+    const settings = {};
+    for (const k of keys) {
+        const row = await env.DB.prepare("SELECT value FROM settings WHERE key = ?").bind(k).first();
+        settings[k] = row ? row.value : '';
+    }
+    // Defaults
+    if (!settings.ai_enabled) settings.ai_enabled = '0';
+    if (!settings.ai_provider) settings.ai_provider = 'openai';
+    if (!settings.ai_model) settings.ai_model = 'gpt-4o-mini';
+    if (!settings.ai_trigger) settings.ai_trigger = 'no_command';
+    if (!settings.ai_memory) settings.ai_memory = '0';
+    if (!settings.ai_group_memory) settings.ai_group_memory = '0';
+    if (!settings.ai_fallback) settings.ai_fallback = 'Sorry, I am currently unavailable. Please try again later.';
+    if (!settings.ai_temperature) settings.ai_temperature = '0.7';
+    if (!settings.ai_max_tokens) settings.ai_max_tokens = '1024';
+    if (!settings.ai_top_p) settings.ai_top_p = '1.0';
+    if (!settings.ai_suggested_questions_enabled) settings.ai_suggested_questions_enabled = '0';
+    if (!settings.ai_rate_limit) settings.ai_rate_limit = '10';
+    if (!settings.ai_ignore_prefixes) settings.ai_ignore_prefixes = '/, !, #';
+    if (!settings.ai_group_mention) settings.ai_group_mention = '1';
+    if (!settings.ai_private_reply) settings.ai_private_reply = '1';
+    if (!settings.ai_group_reply) settings.ai_group_reply = '1';
+    if (!settings.ai_ignore_bots) settings.ai_ignore_bots = '1';
+    if (!settings.ai_ignore_forwarded) settings.ai_ignore_forwarded = '1';
+    if (!settings.ai_typing_indicator) settings.ai_typing_indicator = '1';
+    if (!settings.ai_retry_on_failure) settings.ai_retry_on_failure = '0';
+    if (!settings.ai_knowledge_bases) settings.ai_knowledge_bases = '[]';
+    if (!settings.ai_suggested_questions) settings.ai_suggested_questions = '[]';
+    return settings;
+}
+
+async function saveAiSettings(request, env) {
+    if (!env.DB) return Response.json({ error: "DB not available" }, { status: 500 });
+    try {
+        const body = await request.json();
+        const settings = body.settings || body;
+        await initializeDatabase(env.DB);
+        const keys = [
+            'ai_enabled', 'ai_provider', 'ai_api_key', 'ai_base_url', 'ai_model',
+            'ai_system_prompt', 'ai_trigger', 'ai_memory', 'ai_fallback',
+            'ai_temperature', 'ai_max_tokens', 'ai_top_p',
+            'ai_suggested_questions_enabled', 'ai_suggested_questions',
+            'ai_alt_provider', 'ai_alt_api_key', 'ai_alt_model', 'ai_alt_base_url',
+            'ai_custom_headers', 'ai_alt_custom_headers',
+            'ai_display_name', 'ai_language', 'ai_style', 'ai_length',
+            'ai_rate_limit', 'ai_response_delay', 'ai_ignore_prefixes',
+            'ai_group_mention', 'ai_private_reply', 'ai_group_reply',
+            'ai_ignore_bots', 'ai_ignore_forwarded', 'ai_typing_indicator',
+            'ai_retry_on_failure', 'ai_custom_vars_text', 'ai_knowledge_bases',
+            'ai_trigger_text', 'ai_group_memory'
+        ];
+        for (const k of keys) {
+            if (settings[k] !== undefined) {
+                await env.DB.prepare(`
+                    INSERT INTO settings (key, value) VALUES (?, ?)
+                    ON CONFLICT(key) DO UPDATE SET value = excluded.value
+                `).bind(k, String(settings[k])).run();
+            }
+        }
+        return Response.json({ success: true });
+    } catch (err) {
+        return Response.json({ error: err.message }, { status: 500 });
+    }
+}
+
+async function getAiMemoryCount(env) {
+    if (!env.DB) return Response.json({ error: "DB not available" }, { status: 500 });
+    try {
+        const result = await env.DB.prepare("SELECT COUNT(*) as count FROM ai_messages").first();
+        return Response.json({ success: true, count: result ? result.count : 0 });
+    } catch (err) {
+        return Response.json({ error: err.message }, { status: 500 });
+    }
+}
+
+function getProviderDefaults(provider, customBaseUrl) {
+    switch (provider) {
+        case 'openai':
+            return { baseUrl: 'https://api.openai.com/v1', defaultModel: 'gpt-4o-mini' };
+        case 'gemini':
+            return { baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai/', defaultModel: 'gemini-1.5-flash' };
+        case 'deepseek':
+            return { baseUrl: 'https://api.deepseek.com', defaultModel: 'deepseek-chat' };
+        case 'groq':
+            return { baseUrl: 'https://api.groq.com/openai/v1', defaultModel: 'llama-3.3-70b-versatile' };
+        case 'openrouter':
+            return { baseUrl: 'https://openrouter.ai/api/v1', defaultModel: 'openai/gpt-4o-mini' };
+        case 'ollama':
+            return { baseUrl: customBaseUrl || 'http://localhost:11434/v1', defaultModel: 'llama3' };
+        case 'custom':
+        default:
+            return { baseUrl: customBaseUrl || '', defaultModel: '' };
+    }
+}
+
+function replacePlaceholders(text, ctx) {
+    if (!text) return text;
+    const placeholders = {
+        'bot_name': ctx.bot_name || 'Nyxx Bot',
+        'owner_name': ctx.owner_name || '',
+        'company_name': ctx.company_name || '',
+        'website': ctx.website || '',
+        'phone': ctx.phone || '',
+        'user_first_name': ctx.user_first_name || 'User',
+        'user_username': ctx.user_username || '',
+        'chat_id': ctx.chat_id || '',
+        'current_time': new Date().toLocaleString(),
+        'available_commands': ctx.available_commands || ''
+    };
+    if (ctx.custom_vars && typeof ctx.custom_vars === 'object') {
+        for (const [k, v] of Object.entries(ctx.custom_vars)) {
+            placeholders[k] = v;
+        }
+    }
+    let result = text;
+    for (const [key, value] of Object.entries(placeholders)) {
+        const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
+        result = result.replace(regex, value);
+    }
+    return result;
+}
+
+// Escape HTML special characters, but allow safe tags (b, i, u, s, a, code, pre)
+function escapeTelegramHTML(text) {
+    if (!text) return "";
+
+    // Escape only plain text, preserve Telegram-supported tags.
+    return text.replace(
+        /<(?!\/?(?:b|strong|i|em|u|ins|s|strike|del|a|code|pre|blockquote|tg-spoiler)\b)([^>]*)>/gi,
+        (m) => m.replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    );
+}
+
+async function callAiCompletion(settings, chatHistory, userPrompt, context, providerType) {
+    providerType = providerType || 'main';
+    const isMain = providerType === 'main';
+    const provider = isMain ? settings.ai_provider : settings.ai_alt_provider;
+    if (!provider || provider === 'none') throw new Error('Provider not selected');
+
+    const apiKey = isMain ? settings.ai_api_key : settings.ai_alt_api_key;
+    const model = isMain ? settings.ai_model : settings.ai_alt_model;
+    const customHeaders = isMain ? settings.ai_custom_headers : settings.ai_alt_custom_headers;
+    const baseUrl = isMain ? settings.ai_base_url : settings.ai_alt_base_url;
+
+    const defaults = getProviderDefaults(provider, baseUrl);
+    const finalBaseUrl = (provider === 'custom' ? baseUrl : defaults.baseUrl) || defaults.baseUrl;
+    const finalModel = model || defaults.defaultModel;
+
+    if (!apiKey) throw new Error('API key is required for ' + provider);
+    if (!finalBaseUrl) throw new Error('Base URL is required for custom provider');
+
+    const temperature = parseFloat(settings.ai_temperature) || 0.7;
+    const maxTokens = parseInt(settings.ai_max_tokens) || 1024;
+    const topP = parseFloat(settings.ai_top_p) || 1.0;
+
+    let systemContent = settings.ai_system_prompt || '';
+
+    // Add knowledge bases
+    try {
+        const knowledgeBases = JSON.parse(settings.ai_knowledge_bases || '[]');
+        const enabledKbs = knowledgeBases.filter(kb => kb.enabled !== false && kb.content && kb.content.trim());
+        if (enabledKbs.length > 0) {
+            const kbText = enabledKbs.map((kb, idx) => `Knowledge Base ${idx+1}:\n${kb.content.trim()}`).join('\n\n');
+            systemContent += (systemContent ? '\n\n' : '') + kbText;
+        }
+    } catch(e) {}
+
+    // Add available commands if placeholder used
+    if (context && context.available_commands) {
+        systemContent = replacePlaceholders(systemContent, context);
+    }
+
+    const messages = [];
+    if (systemContent.trim()) {
+        messages.push({ role: 'system', content: systemContent.trim() });
+    }
+
+    if (Array.isArray(chatHistory)) {
+        for (const msg of chatHistory) {
+            messages.push({ role: msg.role, content: msg.content });
+        }
+    }
+
+    messages.push({ role: 'user', content: userPrompt });
+
+    const endpoint = finalBaseUrl.replace(/\/+$/, '') + '/chat/completions';
+    const headers = { 'Content-Type': 'application/json' };
+    if (apiKey) {
+        headers['Authorization'] = `Bearer ${apiKey}`;
+    }
+    if (customHeaders) {
+        try {
+            const custom = JSON.parse(customHeaders);
+            Object.assign(headers, custom);
+        } catch (e) {}
+    }
+
+    const payload = {
+        model: finalModel,
+        messages: messages,
+        temperature: temperature,
+        max_tokens: maxTokens,
+        top_p: topP
+    };
+
+    const res = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`AI API error (${res.status}): ${errText}`);
+    }
+
+    const data = await res.json();
+    if (data.choices && data.choices[0] && data.choices[0].message) {
+        return data.choices[0].message.content;
+    } else if (data.error) {
+        throw new Error(data.error.message || JSON.stringify(data.error));
+    } else {
+        throw new Error('Invalid response structure from AI provider');
+    }
+}
+
+async function handleAiTest(request, env) {
+    try {
+        const body = await request.json();
+        const settings = body.settings || {};
+        const providerType = body.provider || 'main';
+
+        const isMain = providerType === 'main';
+        const provider = isMain ? settings.ai_provider : settings.ai_alt_provider;
+        if (!provider || provider === 'none') {
+            return Response.json({ success: false, error: 'Provider not configured' });
+        }
+
+        const ctx = {
+            bot_name: settings.ai_display_name || 'Nyxx AI',
+            user_first_name: 'Test User',
+            user_username: 'testuser',
+            chat_id: 'test',
+            custom_vars: {}
+        };
+        // Add available commands if any
+        // We'll fetch commands from DB? Not available here, we can skip.
+
+        const response = await callAiCompletion(settings, [], "Hello! Please confirm connection.", ctx, providerType);
+        return Response.json({ success: true, message: response });
+    } catch (err) {
+        return Response.json({ success: false, error: err.message }, { status: 400 });
+    }
+}
+
+async function handleAiPlayground(request, env) {
+    try {
+        const body = await request.json();
+        const settings = body.settings || {};
+        const history = body.history || [];
+        const message = body.message || '';
+        if (!message) return Response.json({ error: "Message required" }, { status: 400 });
+
+        // Build context with available commands if needed
+        let availableCommands = '';
+        if (env.DB) {
+            await initializeDatabase(env.DB);
+            const commands = await env.DB.prepare("SELECT command FROM commands WHERE enabled = 1").all();
+            availableCommands = commands.results.map(r => r.command).join(', ');
+        }
+
+        const ctx = {
+            bot_name: settings.ai_display_name || 'Nyxx AI',
+            user_first_name: 'User',
+            user_username: 'testuser',
+            chat_id: 'playground',
+            available_commands: availableCommands,
+            custom_vars: {}
+        };
+        // Parse custom vars from text
+        if (settings.ai_custom_vars_text) {
+            const lines = settings.ai_custom_vars_text.split('\n');
+            for (const line of lines) {
+                const [key, ...val] = line.split('=');
+                if (key && val.length) {
+                    ctx.custom_vars[key.trim()] = val.join('=').trim();
+                }
+            }
+        }
+
+        const reply = await callAiCompletion(settings, history, message, ctx, 'main');
+        return Response.json({ success: true, response: reply });
+    } catch (err) {
+        return Response.json({ success: false, error: err.message }, { status: 500 });
+    }
+}
+
+async function resetAiSettings(env) {
+    if (!env.DB) return Response.json({ error: "DB not available" }, { status: 500 });
+    try {
+        await initializeDatabase(env.DB);
+        const keys = [
+            'ai_enabled', 'ai_provider', 'ai_api_key', 'ai_base_url', 'ai_model',
+            'ai_system_prompt', 'ai_trigger', 'ai_memory', 'ai_fallback',
+            'ai_temperature', 'ai_max_tokens', 'ai_top_p',
+            'ai_suggested_questions_enabled', 'ai_suggested_questions',
+            'ai_alt_provider', 'ai_alt_api_key', 'ai_alt_model', 'ai_alt_base_url',
+            'ai_custom_headers', 'ai_alt_custom_headers',
+            'ai_display_name', 'ai_language', 'ai_style', 'ai_length',
+            'ai_rate_limit', 'ai_response_delay', 'ai_ignore_prefixes',
+            'ai_group_mention', 'ai_private_reply', 'ai_group_reply',
+            'ai_ignore_bots', 'ai_ignore_forwarded', 'ai_typing_indicator',
+            'ai_retry_on_failure', 'ai_custom_vars_text', 'ai_knowledge_bases',
+            'ai_trigger_text', 'ai_group_memory'
+        ];
+        for (const k of keys) {
+            await env.DB.prepare("DELETE FROM settings WHERE key = ?").bind(k).run();
+        }
+        return Response.json({ success: true });
+    } catch (err) {
+        return Response.json({ error: err.message }, { status: 500 });
+    }
+}
+
+async function clearAiMemory(env) {
+    if (!env.DB) return Response.json({ error: "DB not available" }, { status: 500 });
+    try {
+        await env.DB.prepare("DELETE FROM ai_messages").run();
+        return Response.json({ success: true });
+    } catch (err) {
+        return Response.json({ error: err.message }, { status: 500 });
+    }
+}
+
+// ============================================================================
+// SETTINGS API
 // ============================================================================
 async function getSettings(env, originUrl) {
     if (!env.DB) return Response.json({ error: "DB not available" }, { status: 500 });
@@ -3192,7 +4485,7 @@ async function changeAdminPassword(request, env) {
 }
 
 // ============================================================================
-// BOT INFO API (unchanged)
+// BOT INFO API
 // ============================================================================
 async function getBotInfo(env) {
     if (!env.DB) return Response.json({ error: "DB not available" }, { status: 500 });
@@ -3256,7 +4549,7 @@ async function setBotInfo(request, env) {
 }
 
 // ============================================================================
-// FACTORY RESET (unchanged)
+// FACTORY RESET
 // ============================================================================
 async function factoryReset(env) {
     if (!env.DB) return Response.json({ error: "DB not available" }, { status: 500 });
@@ -3282,7 +4575,6 @@ async function validateCloudflareToken(request, env) {
         if (!token) {
             return Response.json({ valid: false, error: 'Token required' }, { status: 400 });
         }
-        // Verify token
         const verifyRes = await fetch('https://api.cloudflare.com/client/v4/user/tokens/verify', {
             headers: { 'Authorization': 'Bearer ' + token }
         });
@@ -3291,28 +4583,23 @@ async function validateCloudflareToken(request, env) {
             return Response.json({ valid: false, error: 'Invalid or expired token' }, { status: 401 });
         }
 
-        // List accounts
         const accountsRes = await fetch('https://api.cloudflare.com/client/v4/accounts', {
             headers: { 'Authorization': 'Bearer ' + token }
         });
         const accountsData = await accountsRes.json();
         if (!accountsData.success || !Array.isArray(accountsData.result) || accountsData.result.length === 0) {
-            return Response.json({ valid: false, error: 'No accounts found for this token' }, { status: 403 });
+            return Response.json({ valid: false, error: 'No accounts found' }, { status: 403 });
         }
 
-        // Auto‑detect account: use the first account
         const account = accountsData.result[0];
         const accountId = account.id;
-
-        // Auto‑detect script name from host (if workers.dev)
-        const host = new URL(request.url).hostname;
         let scriptName = null;
+        const host = new URL(request.url).hostname;
         if (host.endsWith('.workers.dev')) {
             const parts = host.split('.');
             if (parts.length >= 3) scriptName = parts[0];
         }
 
-        // If not found, try to list workers and find the one that has a route matching the host
         if (!scriptName) {
             const workersRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts`, {
                 headers: { 'Authorization': 'Bearer ' + token }
@@ -3337,7 +4624,6 @@ async function validateCloudflareToken(request, env) {
             }
         }
 
-        // If still not found, fallback to first script in list
         if (!scriptName) {
             const scriptsRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts`, {
                 headers: { 'Authorization': 'Bearer ' + token }
@@ -3348,7 +4634,6 @@ async function validateCloudflareToken(request, env) {
             }
         }
 
-        // Store token, account, script in D1 for future use
         await env.DB.prepare(`
             INSERT INTO settings (key, value) VALUES ('cf_api_token', ?)
             ON CONFLICT(key) DO UPDATE SET value = excluded.value
@@ -3382,7 +4667,6 @@ async function performUpdate(request, env) {
             return Response.json({ success: false, error: 'Token, Account ID, and Script Name required' }, { status: 400 });
         }
 
-        // Re‑verify token
         const verifyRes = await fetch('https://api.cloudflare.com/client/v4/user/tokens/verify', {
             headers: { 'Authorization': 'Bearer ' + token }
         });
@@ -3391,7 +4675,6 @@ async function performUpdate(request, env) {
             return Response.json({ success: false, error: 'Invalid token' }, { status: 401 });
         }
 
-        // Get current script settings to preserve bindings
         const settingsRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${scriptName}/settings`, {
             headers: { 'Authorization': 'Bearer ' + token }
         });
@@ -3401,20 +4684,17 @@ async function performUpdate(request, env) {
             bindings = settingsData.result.bindings;
         }
 
-        // Download the new worker script from the provided workerUrl (or fallback)
         let scriptUrl = workerUrl || 'https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/worker.js';
         const scriptRes = await fetch(scriptUrl);
         if (!scriptRes.ok) {
-            return Response.json({ success: false, error: 'Failed to download worker script from ' + scriptUrl }, { status: 500 });
+            return Response.json({ success: false, error: 'Failed to download script from ' + scriptUrl }, { status: 500 });
         }
         const scriptText = await scriptRes.text();
 
-        // Extract version from downloaded script (optional, for info)
         let newVersion = null;
         const match = scriptText.match(/const\s+VERSION\s*=\s*['"]([^'"]+)['"]/);
         if (match) newVersion = match[1];
 
-        // Prepare upload metadata with bindings
         const metadata = {
             main_module: 'worker.js',
             bindings: bindings
@@ -3434,7 +4714,6 @@ async function performUpdate(request, env) {
             return Response.json({ success: false, error: errMsg }, { status: uploadRes.status });
         }
 
-        // Store update version
         if (newVersion) {
             await env.DB.prepare(`
                 INSERT INTO settings (key, value) VALUES ('last_update_version', ?)
@@ -3449,7 +4728,7 @@ async function performUpdate(request, env) {
 }
 
 // ============================================================================
-// TELEGRAM BOT ENGINE (unchanged)
+// TELEGRAM BOT ENGINE
 // ============================================================================
 async function handleTelegramWebhook(request, env) {
     if (!env.DB) return new Response('DB not available', { status: 500 });
@@ -3463,14 +4742,12 @@ async function handleTelegramWebhook(request, env) {
     const BOT_TOKEN = tokenRecord.value;
 
     try {
-        // Handle message
         if (update.message && update.message.text) {
             const msg = update.message;
             const chatId = msg.chat.id;
             const text = msg.text.trim();
             const userId = msg.from.id;
 
-            // Register user
             await env.DB.prepare(`
                 INSERT INTO users (id, username, first_name) VALUES (?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET last_active = CURRENT_TIMESTAMP
@@ -3478,7 +4755,6 @@ async function handleTelegramWebhook(request, env) {
 
             let targetCommand = null;
 
-            // Check for "Back" (navigate to parent)
             if (text === "Back") {
                 const session = await env.DB.prepare("SELECT command FROM sessions WHERE user_id = ?").bind(userId).first();
                 if (session && session.command) {
@@ -3488,7 +4764,6 @@ async function handleTelegramWebhook(request, env) {
                     }
                 }
             } else {
-                // Check reply keyboard buttons
                 const allCmds = await env.DB.prepare("SELECT command, reply_keyboard_json FROM commands WHERE enabled = 1 AND show_reply_keyboard = 1").all();
                 for (const row of allCmds.results) {
                     if (row.reply_keyboard_json) {
@@ -3507,34 +4782,89 @@ async function handleTelegramWebhook(request, env) {
                     if (targetCommand) break;
                 }
 
-                // If not found and starts with '/', look for command
                 if (!targetCommand && text.startsWith('/')) {
                     const cmdRecord = await env.DB.prepare("SELECT command FROM commands WHERE command = ? AND enabled = 1").bind(text).first();
                     if (cmdRecord) targetCommand = cmdRecord.command;
                 }
             }
 
-            // Execute found command
+            const aiSettings = await getAiSettingsFromDb(env);
+
             if (targetCommand) {
                 const cmdRecord = await env.DB.prepare("SELECT * FROM commands WHERE command = ? AND enabled = 1").bind(targetCommand).first();
                 if (cmdRecord) {
                     await executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env);
+                    if (aiSettings.ai_enabled === '1' && aiSettings.ai_trigger === 'all_messages') {
+                        await processAiReply(chatId, userId, text, aiSettings, env, BOT_TOKEN);
+                    }
                     return new Response('OK', { status: 200 });
                 }
             }
 
-            // Fallback: if command is /start and not found, show default
             if (text === '/start') {
                 await sendDefaultStart(chatId, env, BOT_TOKEN);
+                if (aiSettings.ai_enabled === '1' && aiSettings.ai_trigger === 'all_messages') {
+                    await processAiReply(chatId, userId, text, aiSettings, env, BOT_TOKEN);
+                }
                 return new Response('OK', { status: 200 });
             }
 
-            // No command matched
-            await sendMessage(chatId, "Command not found. Use /start to see available options.", BOT_TOKEN);
+            if (aiSettings.ai_enabled === '1') {
+                let shouldReply = true;
+                const trigger = aiSettings.ai_trigger || 'no_command';
+
+                if (trigger === 'no_command') {
+                    // no command matched, so we can reply if it's not a command
+                    // but we already checked commands, so it's safe.
+                } else if (trigger === 'all_messages') {
+                    // always reply
+                } else if (trigger === 'contains_text') {
+                    const triggerText = aiSettings.ai_trigger_text || '';
+                    if (triggerText && !text.toLowerCase().includes(triggerText.toLowerCase())) {
+                        shouldReply = false;
+                    }
+                } else {
+                    shouldReply = false;
+                }
+
+                // Chat type filters
+                if (shouldReply) {
+                    const isPrivate = msg.chat.type === 'private';
+                    const isGroup = msg.chat.type === 'group' || msg.chat.type === 'supergroup';
+                    if (isPrivate && aiSettings.ai_private_reply === '0') shouldReply = false;
+                    if (isGroup && aiSettings.ai_group_reply === '0') shouldReply = false;
+                }
+
+                // Group mention
+                if (shouldReply && (msg.chat.type === 'group' || msg.chat.type === 'supergroup')) {
+                    if (aiSettings.ai_group_mention === '1') {
+                        const botInfo = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getMe`).then(r => r.json());
+                        const botUsername = botInfo.ok ? botInfo.result.username : '';
+                        if (!text.includes('@' + botUsername)) shouldReply = false;
+                    }
+                }
+
+                // Ignore bots
+                if (shouldReply && aiSettings.ai_ignore_bots === '1' && msg.from.is_bot) shouldReply = false;
+                // Ignore forwarded
+                if (shouldReply && aiSettings.ai_ignore_forwarded === '1' && msg.forward_date) shouldReply = false;
+                // Ignore prefixes
+                if (shouldReply && aiSettings.ai_ignore_prefixes) {
+                    const prefixes = aiSettings.ai_ignore_prefixes.split(',').map(s => s.trim());
+                    for (const p of prefixes) {
+                        if (text.startsWith(p)) { shouldReply = false; break; }
+                    }
+                }
+
+                if (shouldReply) {
+                    await processAiReply(chatId, userId, text, aiSettings, env, BOT_TOKEN);
+                }
+            } else {
+                await sendMessage(chatId, "Command not found. Use /start to see available options.", BOT_TOKEN, 'HTML');
+            }
             return new Response('OK', { status: 200 });
         }
 
-        // Handle callback query
         if (update.callback_query) {
             const cb = update.callback_query;
             const data = cb.data;
@@ -3555,10 +4885,16 @@ async function handleTelegramWebhook(request, env) {
                     });
                 }
             } else {
+                if (data) {
+                    const chatId = cb.message.chat.id;
+                    const userId = cb.from.id;
+                    const aiSettings = await getAiSettingsFromDb(env);
+                    await processAiReply(chatId, userId, data, aiSettings, env, BOT_TOKEN);
+                }
                 await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ callback_query_id: cb.id, text: "Done." })
+                    body: JSON.stringify({ callback_query_id: cb.id })
                 });
             }
         }
@@ -3620,7 +4956,7 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env) {
     if (cmdRecord.is_admin_only) {
         const user = await env.DB.prepare("SELECT role FROM users WHERE id = ?").bind(userId).first();
         if (!user || user.role !== 'admin') {
-            await sendMessage(chatId, "⚠️ Unauthorized.", BOT_TOKEN);
+            await sendMessage(chatId, "⚠️ Unauthorized.", BOT_TOKEN, 'HTML');
             return;
         }
     }
@@ -3677,14 +5013,116 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env) {
     }
 }
 
-async function sendMessage(chatId, text, BOT_TOKEN) {
+async function sendMessage(chatId, text, BOT_TOKEN, parseMode) {
+    // Ensure text is safe for HTML if parseMode is set
+    let finalText = text;
+    if (parseMode === 'HTML') {
+        finalText = escapeTelegramHTML(text);
+    }
+    const payload = {
+        chat_id: chatId,
+        text: finalText
+    };
+    if (parseMode) payload.parse_mode = parseMode;
     await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            chat_id: chatId,
-            text: text,
-            parse_mode: 'HTML'
-        })
+        body: JSON.stringify(payload)
     });
+}
+
+async function getAiHistory(db, chatId, limit) {
+    if (!limit || limit <= 0) return [];
+    const result = await db.prepare("SELECT role, content FROM ai_messages WHERE chat_id = ? ORDER BY id DESC LIMIT ?").bind(chatId, limit).all();
+    const rows = result.results || [];
+    return rows.reverse();
+}
+
+async function saveAiMessage(db, chatId, role, content) {
+    await db.prepare("INSERT INTO ai_messages (chat_id, role, content) VALUES (?, ?, ?)").bind(chatId, role, content).run();
+}
+
+async function processAiReply(chatId, userId, text, aiSettings, env, BOT_TOKEN) {
+    try {
+        const userRow = await env.DB.prepare("SELECT first_name, username FROM users WHERE id = ?").bind(userId).first();
+        const commands = await env.DB.prepare("SELECT command FROM commands WHERE enabled = 1").all();
+        const availableCommands = commands.results.map(r => r.command).join(', ');
+
+        const ctx = {
+            bot_name: aiSettings.ai_display_name || 'Nyxx Bot',
+            user_first_name: userRow ? userRow.first_name : 'User',
+            user_username: userRow ? userRow.username : '',
+            chat_id: String(chatId),
+            available_commands: availableCommands,
+            custom_vars: {}
+        };
+        if (aiSettings.ai_custom_vars_text) {
+            const lines = aiSettings.ai_custom_vars_text.split('\n');
+            for (const line of lines) {
+                const [key, ...val] = line.split('=');
+                if (key && val.length) {
+                    ctx.custom_vars[key.trim()] = val.join('=').trim();
+                }
+            }
+        }
+
+        // Determine memory limit based on chat type (we don't know here, use private memory for simplicity)
+        // Actually we have separate memory settings; we can use the private one for now.
+        const memoryLimit = parseInt(aiSettings.ai_memory || '0');
+        let history = [];
+        if (memoryLimit > 0) {
+            history = await getAiHistory(env.DB, chatId, memoryLimit);
+        }
+
+        let reply = null;
+        let mainError = null;
+        try {
+            reply = await callAiCompletion(aiSettings, history, text, ctx, 'main');
+        } catch (err) {
+            mainError = err.message;
+            if (aiSettings.ai_alt_provider && aiSettings.ai_alt_provider !== 'none') {
+                try {
+                    reply = await callAiCompletion(aiSettings, history, text, ctx, 'alt');
+                } catch (altErr) {
+                    throw new Error(`Main: ${mainError}, Alt: ${altErr.message}`);
+                }
+            } else {
+                throw err;
+            }
+        }
+
+        if (memoryLimit > 0) {
+            await saveAiMessage(env.DB, chatId, 'user', text);
+            await saveAiMessage(env.DB, chatId, 'assistant', reply);
+        }
+
+        // Send with HTML formatting
+        await sendMessage(chatId, reply, BOT_TOKEN, 'HTML');
+
+        // Suggested questions
+        if (aiSettings.ai_suggested_questions_enabled === '1') {
+            try {
+                const questions = JSON.parse(aiSettings.ai_suggested_questions || '[]');
+                if (Array.isArray(questions) && questions.length > 0) {
+                    const keyboard = {
+                        inline_keyboard: questions.map(q => [{ text: q.label, callback_data: q.value }])
+                    };
+                    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            chat_id: chatId,
+                            text: "💡 You can ask:",
+                            reply_markup: keyboard,
+                            parse_mode: 'HTML'
+                        })
+                    });
+                }
+            } catch(e) {}
+        }
+    } catch (err) {
+        console.error("AI reply error:", err);
+        const fallback = aiSettings.ai_fallback || "Sorry, I am currently unavailable. Please try again later.";
+        await sendMessage(chatId, fallback, BOT_TOKEN, 'HTML');
+    }
 }
