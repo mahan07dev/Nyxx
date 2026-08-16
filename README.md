@@ -41,6 +41,17 @@ Deploy everything to your own Cloudflare account in minutes with the built-in in
 
 ---
 
+<div align="center">
+
+## 🚀 Ready to build your own Telegram Bot?
+
+### Start here:
+
+### 👉 https://mahan07dev.github.io/Nyxx/installer
+</div>
+
+---
+
 ## Table of Contents
 
 - [What is Nyxx?](#what-is-nyxx)
