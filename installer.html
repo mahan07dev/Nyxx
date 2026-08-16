@@ -297,13 +297,15 @@ input[type="text"]:focus { outline: none; border-color: var(--cyan); }
 
 <div id="aria-live" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 <div id="toast-container"></div>
+<div id="proxy-health" class="callout warn hidden" style="max-width:600px;margin:0 auto;"></div>
 
 <!-- STEP 1: WELCOME -->
 <div id="step-welcome" class="card">
   <div id="splash" style="text-align:center;padding:16px 8px;">
     <div class="logo"><img src="https://raw.githubusercontent.com/Mahan07dev/Nyxx/refs/heads/main/logo.webp" alt="Nyxx Logo" width="64" height="64" style="border-radius:14px;"></div>
     <h1 style="font-size:2rem;font-weight:800;margin:12px 0 6px;"><span class="grad">Nyxx</span> Installer</h1>
-    <p style="color:var(--mu);font-size:1rem;margin:8px 0 20px;">Deploy your Telegram Bot Panel in seconds</p>
+    <p style="color:var(--mu);font-size:1rem;margin:8px 0 12px;">Deploy your Telegram Bot Panel in seconds</p>
+    <div id="version-chip" style="font-size:12.5px;color:var(--cyan);background:rgba(34,211,238,0.06);border:1px solid rgba(34,211,238,0.2);border-radius:20px;padding:5px 14px;display:inline-block;margin-bottom:12px;">📦 Checking latest version…</div>
     <div style="margin:16px 0;font-size:0.9rem;color:var(--mu);">
       Made with ❤️ by <a href="https://github.com/Mahan07dev" target="_blank" rel="noopener" style="color:var(--cyan);text-decoration:none;font-weight:600;">@Mahan07dev</a>
       <br><br>
@@ -467,6 +469,17 @@ input[type="text"]:focus { outline: none; border-color: var(--cyan); }
     <p style="color:var(--mu);font-size:13px;margin:0;">This will replace the worker code for <b id="update-target-name"></b> while keeping the database intact.</p>
   </div>
 
+  <div id="worker-name-section" style="margin:16px 0 4px;">
+    <label for="worker-name" style="font-size:0.85rem;color:var(--mu);display:block;margin-bottom:8px;">Worker name <span style="color:var(--mu);">(optional)</span></label>
+    <div style="display:flex;gap:8px;">
+      <input type="text" id="worker-name" placeholder="nyxx-sunny-panel-4f2a" autocomplete="off" spellcheck="false" aria-label="Worker name (optional)" />
+      <button type="button" id="btn-shuffle-name" class="btn btn-ghost btn-sm" onclick="shuffleName()" title="Generate a random name" aria-label="Generate random name" style="min-width:44px;font-size:1rem;">🎲</button>
+    </div>
+    <div id="worker-name-status" style="margin-top:6px;font-size:12.5px;color:var(--mu);min-height:18px;" role="status" aria-live="polite">Leave empty for a random name. Names start with "nyxx-".</div>
+  </div>
+
+  <div id="version-create" class="callout hidden" style="margin:10px 0;"></div>
+
   <div style="text-align:center;margin:20px 0;">
     <button class="btn" id="go" onclick="install()" disabled style="max-width:320px;">🚀 Create my Nyxx panel</button>
   </div>
@@ -507,7 +520,8 @@ input[type="text"]:focus { outline: none; border-color: var(--cyan); }
 <div class="foot" id="main-foot" style="text-align:center;color:var(--mu);font-size:11px;margin-top:16px;">
   <span id="foot-shortcuts">Press <span class="kbd">Enter</span> to select · <span class="kbd">←</span> <span class="kbd">→</span> to navigate</span>
   <br><br>
-  Using proxy: <span id="foot-proxy" style="color:var(--cyan);">default</span> · 
+  Using proxy: <span id="foot-proxy" style="color:var(--cyan);">default</span> ·
+  <span id="foot-version" style="color:var(--mu);"></span>
   <a href="#" onclick="clearAllData();return false;" style="color:var(--cyan);">Clear all data</a>
 </div>
 </div>
@@ -519,7 +533,10 @@ input[type="text"]:focus { outline: none; border-color: var(--cyan); }
 const DEFAULT_PROXY = "https://nyxx-proxy.nova-06272b19.workers.dev/";
 const PROXY_JS_URL = "https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/proxy.js";
 const WORKER_JS_URL = "https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/worker.js";
+const VERSION_JSON_URL = "https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/version.json";
 const WORKER_JS_SHA256 = null;
+const API_TIMEOUT_MS = 20000;
+const WORKER_NAME_PATTERN = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
 const TOKEN_DEEPLINK = "https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22d1%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22account_settings%22%2C%22type%22%3A%22read%22%7D%5D&accountId=*&zoneId=all&name=Nyxx%20Installer";
 
 const STORAGE_KEY = 'nyxx_install_state_v4';
@@ -542,12 +559,15 @@ let config = { proxyMode: 'default', proxyUrl: DEFAULT_PROXY, token: '', tokenVe
 let installState = {
   accountId: null, subName: '', dbId: null, dbName: '', workerName: '', panelUrl: '',
   workerCode: null, completedSteps: [], failedStep: null, errorMessage: null,
-  scanResults: { workers: [], databases: [] }, updateMode: false, updateTarget: null
+  scanResults: { workers: [], databases: [] }, updateMode: false, updateTarget: null, workerVersion: null
 };
 let currentStepIndex = -1;
 let customProxyVerified = false;
 let isInstalling = false;
 let focusedChoiceIndex = 0;
+let latestVersion = null;
+let workerNameValid = false;
+const proxyHealth = { checking: false, ok: null, lastCheck: 0 };
 
 // ============================
 // DOM REFERENCES
@@ -571,6 +591,10 @@ function init() {
   updateStepper('welcome');
   updateFooterShortcuts('welcome');
 
+  // Async, non-blocking: latest release info + proxy connectivity.
+  fetchLatestVersion();
+  checkProxyHealth(false);
+
   // Autofill saved token
   if (config.token && tokenInput) {
     tokenInput.value = config.token;
@@ -590,6 +614,12 @@ function init() {
       }
     });
   });
+
+  // Worker name validation
+  const workerNameInput = document.getElementById('worker-name');
+  if (workerNameInput) {
+    workerNameInput.addEventListener('input', debounce(onWorkerNameInput, 250));
+  }
 }
 
 // ============================
@@ -617,6 +647,9 @@ function goToStep(stepId) {
   if (stepId === 'installer') {
     focusedChoiceIndex = 0;
     updateChoiceFocus(false);
+  }
+  if (stepId === 'security') {
+    checkProxyHealth(true);
   }
 }
 
@@ -746,13 +779,13 @@ function loadConfig() {
 function saveState() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(installState)); } catch (e) {} }
 function loadState() {
   try { const raw = localStorage.getItem(STORAGE_KEY); if (raw) installState = JSON.parse(raw); }
-  catch (e) { installState = { accountId: null, subName: '', dbId: null, dbName: '', workerName: '', panelUrl: '', workerCode: null, completedSteps: [], failedStep: null, errorMessage: null, scanResults: { workers: [], databases: [] }, updateMode: false, updateTarget: null }; }
+  catch (e) { installState = { accountId: null, subName: '', dbId: null, dbName: '', workerName: '', panelUrl: '', workerCode: null, completedSteps: [], failedStep: null, errorMessage: null, scanResults: { workers: [], databases: [] }, updateMode: false, updateTarget: null, workerVersion: null }; }
 }
 function clearState() {
   localStorage.removeItem(STORAGE_KEY);
   localStorage.removeItem(CONFIG_KEY);
   localStorage.removeItem(CACHE_KEY);
-  installState = { accountId: null, subName: '', dbId: null, dbName: '', workerName: '', panelUrl: '', workerCode: null, completedSteps: [], failedStep: null, errorMessage: null, scanResults: { workers: [], databases: [] }, updateMode: false, updateTarget: null };
+  installState = { accountId: null, subName: '', dbId: null, dbName: '', workerName: '', panelUrl: '', workerCode: null, completedSteps: [], failedStep: null, errorMessage: null, scanResults: { workers: [], databases: [] }, updateMode: false, updateTarget: null, workerVersion: null };
   config = { proxyMode: 'default', proxyUrl: DEFAULT_PROXY, token: '', tokenVerified: false };
 }
 
@@ -801,7 +834,7 @@ async function verifyCustomProxy() {
   try {
     await delay(300);
     const testUrl = normalized + '?url=' + encodeURIComponent('https://api.cloudflare.com/client/v4/ips');
-    const res = await fetch(testUrl, { method: 'GET', cache: 'no-store' });
+    const res = await fetchWithTimeout(testUrl, { method: 'GET', cache: 'no-store' }, 15000);
     if (res.ok) {
       const data = await res.json();
       if (data && (data.result || data.success !== undefined)) {
@@ -837,10 +870,138 @@ function confirmProxyAndProceed() {
 
 function updateProxyFoot() {
   if (!footProxy) return;
-  if (config.proxyMode === 'default') footProxy.textContent = 'default';
-  else {
-    try { const url = new URL(config.proxyUrl); footProxy.textContent = 'custom'; }
-    catch (e) { footProxy.textContent = 'custom'; }
+  footProxy.textContent = config.proxyMode === 'default' ? 'default' : 'custom';
+}
+
+// ============================
+// VERSION INFO
+// ============================
+async function fetchLatestVersion() {
+  try {
+    const resp = await fetchWithTimeout(VERSION_JSON_URL, { cache: 'no-store' }, 15000);
+    if (!resp.ok) return;
+    const data = await resp.json();
+    if (data && data.version) {
+      latestVersion = { version: data.version, notes: data.notes || '', released: data.released || '' };
+    }
+  } catch (e) {}
+  renderVersionInfo();
+}
+
+function renderVersionInfo() {
+  const chip = document.getElementById('version-chip');
+  const createCallout = document.getElementById('version-create');
+  const footVersion = document.getElementById('foot-version');
+  if (chip) {
+    chip.innerHTML = latestVersion
+      ? '📦 Latest: <b>v' + escapeHtml(latestVersion.version) + '</b>' +
+        (latestVersion.notes ? ' <span style="color:var(--mu);font-weight:400;">— ' + escapeHtml(latestVersion.notes) + '</span>' : '')
+      : '📦 Checking latest version…';
+  }
+  if (createCallout) {
+    if (latestVersion) {
+      createCallout.classList.remove('hidden');
+      createCallout.innerHTML = '<span class="ic">🚀</span><div style="font-size:13px;">This will deploy <b>Nyxx v' + escapeHtml(latestVersion.version) + '</b> — the latest release' +
+        (latestVersion.released ? ' (' + escapeHtml(latestVersion.released) + ')' : '') + '.</div>';
+    } else {
+      createCallout.classList.add('hidden');
+    }
+  }
+  if (footVersion) footVersion.textContent = latestVersion ? 'Installer · Nyxx v' + latestVersion.version : '';
+}
+
+// ============================
+// PROXY HEALTH
+// ============================
+async function checkProxyHealth(force) {
+  if (proxyHealth.checking) return;
+  const now = Date.now();
+  if (!force && proxyHealth.ok !== null && now - proxyHealth.lastCheck < 30000) return;
+  proxyHealth.checking = true;
+  renderProxyHealth('⏳ Checking proxy connectivity…', null);
+  try {
+    const proxy = config.proxyUrl || DEFAULT_PROXY;
+    const probe = proxy + (proxy.endsWith('/') ? '' : '/') + '?url=' + encodeURIComponent('https://api.cloudflare.com/client/v4/ips');
+    const res = await fetchWithTimeout(probe, { cache: 'no-store' }, 12000);
+    proxyHealth.ok = res.ok;
+  } catch (e) {
+    proxyHealth.ok = false;
+  }
+  proxyHealth.lastCheck = Date.now();
+  proxyHealth.checking = false;
+  renderProxyHealth('');
+}
+
+function renderProxyHealth(overrideText) {
+  const banner = document.getElementById('proxy-health');
+  if (!banner) return;
+  if (typeof overrideText === 'string' && overrideText.length > 0) {
+    banner.classList.remove('hidden');
+    banner.className = 'callout warn';
+    banner.innerHTML = '<span class="ic">📡</span><div style="font-size:13px;">' + overrideText + '</div>';
+    return;
+  }
+  if (proxyHealth.ok === true) {
+    banner.classList.add('hidden');
+  } else if (proxyHealth.ok === false) {
+    banner.classList.remove('hidden');
+    banner.className = 'callout warn';
+    banner.innerHTML = '<span class="ic">📡</span><div style="font-size:13px;"><b>Proxy unreachable.</b> The selected proxy is not responding. Check your connection, or self-host the proxy on the Security step. <button class="btn btn-sm btn-ghost" onclick="checkProxyHealth(true)" style="margin-top:8px;">↻ Retry</button></div>';
+  }
+}
+
+// ============================
+// WORKER NAME
+// ============================
+function normalizeWorkerName(raw) {
+  const trimmed = (raw || '').trim().toLowerCase();
+  if (!trimmed) return '';
+  return trimmed.startsWith('nyxx-') ? trimmed : 'nyxx-' + trimmed;
+}
+
+function validateWorkerName(raw) {
+  const name = normalizeWorkerName(raw);
+  if (!name) return { valid: false, reason: '' };
+  if (name.length < 5 || name.length > 40) return { valid: false, reason: 'length' };
+  if (!WORKER_NAME_PATTERN.test(name)) return { valid: false, reason: 'chars' };
+  return { valid: true, name };
+}
+
+function onWorkerNameInput() {
+  const input = document.getElementById('worker-name');
+  const status = document.getElementById('worker-name-status');
+  const raw = input.value;
+  const check = validateWorkerName(raw);
+  workerNameValid = check.valid;
+  if (!status) return;
+  if (!raw.trim()) {
+    status.textContent = 'Leave empty for a random name. Names start with "nyxx-".';
+    status.style.color = 'var(--mu)';
+  } else if (!check.valid) {
+    status.textContent = '❌ Use lowercase letters, numbers and hyphens only (max 40 chars). It will be prefixed with nyxx-.';
+    status.style.color = 'var(--bad)';
+  } else {
+    status.textContent = '✅ Will deploy as: ' + check.name;
+    status.style.color = 'var(--ok)';
+  }
+}
+
+function shuffleName() {
+  const input = document.getElementById('worker-name');
+  input.value = 'nyxx-' + rname();
+  onWorkerNameInput();
+  const status = document.getElementById('worker-name-status');
+  if (status) status.textContent = '✅ Name available — using: ' + input.value;
+}
+
+async function workerNameTaken(name, token) {
+  try {
+    const accountId = await resolveAccountId(token);
+    const res = await api('GET', `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts`, token);
+    if (!cfOk(res) || !Array.isArray(res.json.result)) return false;
+    return res.json.result.some(w => w.id === name);
+  } catch (e) {
+    return false; // never block the install because the check itself failed
   }
 }
 
@@ -911,6 +1072,17 @@ function debounce(fn, delay) { let timer; return function(...args) { clearTimeou
 // ============================
 // API HELPER
 // ============================
+// Fetch with an abort timeout so a dead proxy can never hang the wizard forever.
+async function fetchWithTimeout(url, init, timeoutMs) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs || API_TIMEOUT_MS);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function api(method, target, token, body, ctype) {
   const proxy = config.proxyUrl || DEFAULT_PROXY;
   const url = proxy + (proxy.endsWith('/') ? '' : '/') + "?url=" + encodeURIComponent(target);
@@ -923,15 +1095,35 @@ function api(method, target, token, body, ctype) {
       method: effectiveMethod,
       headers: { ...headers, ...extraHeaders },
       body,
-      mode: useProxy ? 'cors' : 'cors'
+      mode: 'cors'
     };
-    const response = await fetch(requestUrl, requestInit);
+    const response = await fetchWithTimeout(requestUrl, requestInit, API_TIMEOUT_MS);
     const txt = await response.text();
     let json = null; try { json = JSON.parse(txt); } catch (e) {}
     return { status: response.status, json, text: txt };
   }
 
-  return sendRequest(method, {}, true).then(async res => {
+  async function withRetry() {
+    const upperMethod = (method || 'GET').toUpperCase();
+    const friendly = () => new InstallError('Could not reach the proxy or Cloudflare API. Check your network and the proxy, then retry.', 'NETWORK');
+    try {
+      return await sendRequest(upperMethod, {}, true);
+    } catch (e) {
+      // Network failure or timeout. Retrying non-idempotent methods (POST) risks
+      // creating duplicate resources, so only auto-retry safe methods.
+      if (['GET', 'HEAD', 'PUT', 'DELETE'].includes(upperMethod)) {
+        await delay(800);
+        try {
+          return await sendRequest(upperMethod, {}, true);
+        } catch (e2) {
+          throw friendly();
+        }
+      }
+      throw friendly();
+    }
+  }
+
+  return withRetry().then(async res => {
     const upperMethod = (method || 'GET').toUpperCase();
     if ((res.status === 415 || res.status === 405) && upperMethod !== 'GET' && upperMethod !== 'HEAD') {
       try {
@@ -963,7 +1155,12 @@ async function fetchWorkerCode(useCache) {
       }
     } catch (e) {}
   }
-  const wjResp = await fetch(proxy + (proxy.endsWith('/') ? '' : '/') + '?url=' + encodeURIComponent(WORKER_JS_URL));
+  let wjResp;
+  try {
+    wjResp = await fetchWithTimeout(proxy + (proxy.endsWith('/') ? '' : '/') + '?url=' + encodeURIComponent(WORKER_JS_URL), { cache: 'no-store' }, API_TIMEOUT_MS);
+  } catch (e) {
+    throw new InstallError('Could not download worker.js — the proxy is unreachable.', 'NETWORK');
+  }
   if (!wjResp.ok) throw new InstallError('Failed to download worker.js (HTTP ' + wjResp.status + ')', 'NETWORK');
   const workerCode = await wjResp.text();
   if (!workerCode || workerCode.length < 1000) throw new InstallError('worker.js download invalid (too short)', 'VALIDATION');
@@ -1109,6 +1306,7 @@ function startUpdate(workerName) {
   document.getElementById('update-target-name').textContent = workerName;
   document.getElementById('go').textContent = '🔄 Update ' + workerName;
   document.getElementById('go').disabled = false;
+  document.getElementById('worker-name-section').classList.add('hidden');
 
   goToStep('create');
 }
@@ -1123,6 +1321,12 @@ function goToCreate() {
   document.getElementById('update-banner').classList.add('hidden');
   document.getElementById('go').textContent = '🚀 Create my Nyxx panel';
   document.getElementById('go').disabled = !config.tokenVerified;
+  const nameInput = document.getElementById('worker-name');
+  if (nameInput) { nameInput.value = ''; }
+  workerNameValid = false;
+  document.getElementById('worker-name-section').classList.remove('hidden');
+  onWorkerNameInput();
+  renderVersionInfo();
 
   goToStep('create');
 }
@@ -1165,8 +1369,30 @@ async function install() {
     return;
   }
 
-  isInstalling = true;
   const isUpdate = installState.updateMode && installState.updateTarget;
+
+  if (!isUpdate) {
+    // Resolve the worker name: a validated custom name, or a random one.
+    const nameInput = document.getElementById('worker-name');
+    const rawName = nameInput ? nameInput.value : '';
+    if (rawName && rawName.trim()) {
+      const check = validateWorkerName(rawName);
+      if (!check.valid) {
+        showToast('Worker name is invalid: lowercase letters, numbers and hyphens only (max 40 chars).', 'warn');
+        return;
+      }
+      const taken = await workerNameTaken(check.name, token);
+      if (taken) {
+        showToast('That worker name is already taken. Pick another or tap the 🎲 button.', 'warn');
+        return;
+      }
+      installState.workerName = check.name;
+    } else {
+      installState.workerName = 'nyxx-' + rname();
+    }
+  }
+
+  isInstalling = true;
 
   if (!isUpdate) {
     installState.completedSteps = [];
@@ -1174,7 +1400,7 @@ async function install() {
     installState.errorMessage = null;
     installState.dbId = null;
     installState.dbName = '';
-    installState.workerName = 'nyxx-' + rname();
+    installState.workerVersion = null;
   }
   saveState();
 
@@ -1256,6 +1482,8 @@ async function install() {
         if (hash !== WORKER_JS_SHA256) throw new InstallError('worker.js integrity check failed', 'SECURITY');
       }
       installState.workerCode = workerCode;
+      const versionMatch = workerCode.match(/const\s+VERSION\s*=\s*['"]([^'"]+)['"]/);
+      installState.workerVersion = versionMatch ? versionMatch[1] : null;
       saveState();
       return true;
     });
@@ -1461,13 +1689,16 @@ async function continueFromStep(startStep) {
           await runStep('fetch', async () => {
             const isRetry = installState.failedStep === 'fetch';
             const workerCode = await fetchWorkerCode(isRetry);
-            installState.workerCode = workerCode; saveState(); return true;
+            installState.workerCode = workerCode;
+            const versionMatch = workerCode.match(/const\s+VERSION\s*=\s*['"]([^'"]+)['"]/);
+            installState.workerVersion = versionMatch ? versionMatch[1] : null;
+            saveState(); return true;
           });
           break;
         case 'deploy':
           await runStep('deploy', async () => {
             await delay(200);
-            const workerName = installState.updateMode ? installState.updateTarget : 'nyxx-' + rname();
+            const workerName = installState.updateMode ? installState.updateTarget : (installState.workerName || 'nyxx-' + rname());
             if (!installState.updateMode) installState.workerName = workerName;
             const metadata = { main_module: 'worker.js', compatibility_date: '2024-12-18', bindings: [{ type: 'd1', name: 'DB', database_id: installState.dbId }] };
             const boundary = '----NyxxBoundary' + randomHex(8);
@@ -1589,7 +1820,8 @@ function showResult(panelUrl, isUpdate) {
   if (notice) notice.style.display = 'block';
 
   const database = document.getElementById('result-database');
-  database.textContent = installState.dbName ? 'Database: ' + installState.dbName : '';
+  const versionLine = installState.workerVersion ? 'Nyxx v' + installState.workerVersion : '';
+  database.textContent = [installState.dbName ? 'Database: ' + installState.dbName : '', versionLine].filter(Boolean).join(' · ');
 
   announce('Installation complete! Your panel is ready at ' + panelUrl);
   showToast(isUpdate ? 'Panel updated successfully!' : 'Panel deployed successfully!', 'ok');
@@ -1621,7 +1853,14 @@ function resetInstallation() {
   installState.workerName = '';
   installState.panelUrl = '';
   installState.workerCode = null;
+  installState.workerVersion = null;
   saveState();
+  if (!installState.updateMode) {
+    const section = document.getElementById('worker-name-section');
+    if (section) section.classList.remove('hidden');
+    workerNameValid = false;
+    onWorkerNameInput();
+  }
   announce('Installation reset.');
   showToast('Installation reset. You can try again.', 'warn');
 }
@@ -1631,6 +1870,7 @@ function clearAllData() {
   clearState();
   isInstalling = false;
   currentStepIndex = -1;
+  workerNameValid = false;
   if (tokenInput) tokenInput.value = '';
   if (tokenStatus) tokenStatus.textContent = '';
   config.tokenVerified = false;
@@ -1639,6 +1879,10 @@ function clearAllData() {
   document.getElementById('progress-card').classList.add('hidden');
   document.getElementById('scan-results').classList.add('hidden');
   document.getElementById('scan-content').innerHTML = '';
+  document.getElementById('worker-name-section').classList.remove('hidden');
+  const nameInput = document.getElementById('worker-name');
+  if (nameInput) nameInput.value = '';
+  onWorkerNameInput();
   goToStep('welcome');
   announce('All data cleared.');
   showToast('All data cleared', 'ok');
@@ -1646,7 +1890,7 @@ function clearAllData() {
 
 function startAnotherPanel() {
   localStorage.removeItem(STORAGE_KEY);
-  installState = { accountId: null, subName: '', dbId: null, dbName: '', workerName: '', panelUrl: '', workerCode: null, completedSteps: [], failedStep: null, errorMessage: null, scanResults: { workers: [], databases: [] }, updateMode: false, updateTarget: null };
+  installState = { accountId: null, subName: '', dbId: null, dbName: '', workerName: '', panelUrl: '', workerCode: null, completedSteps: [], failedStep: null, errorMessage: null, scanResults: { workers: [], databases: [] }, updateMode: false, updateTarget: null, workerVersion: null };
   document.getElementById('progress-card').classList.add('hidden');
   document.getElementById('scan-results').classList.add('hidden');
   goToStep('installer');

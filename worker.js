@@ -1,7 +1,7 @@
 // ============================================================================
 // GLOBAL VERSION
 // ============================================================================
-const VERSION = '2.2.0';
+const VERSION = '2.3.0';
 
 // ============================================================================
 // EMBEDDED DASHBOARD HTML (with updated AI tab)
@@ -3527,6 +3527,35 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
 </html>`;
 
 // ============================================================================
+// SECURITY HELPERS
+// ============================================================================
+const SECURITY_HEADERS = {
+    'X-Content-Type-Options': 'nosniff',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'X-Frame-Options': 'SAMEORIGIN',
+};
+
+const PASSWORD_PREFIX = 'sha256$';
+
+async function hashPassword(password) {
+    const data = new TextEncoder().encode(password);
+    const digest = await crypto.subtle.digest('SHA-256', data);
+    const hex = [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join('');
+    return PASSWORD_PREFIX + hex;
+}
+
+async function verifyPassword(stored, candidate) {
+    if (!stored) return false;
+    if (stored.startsWith(PASSWORD_PREFIX)) {
+        const hash = await hashPassword(candidate);
+        return hash === stored;
+    }
+    // Legacy installs stored the admin password in plain text; keep them working
+    // until the password is next changed (which re-hashes it).
+    return stored === candidate;
+}
+
+// ============================================================================
 // WORKER ENTRY POINT
 // ============================================================================
 export default {
@@ -3536,7 +3565,7 @@ export default {
         try {
             if (request.method === 'GET' && url.pathname === '/') {
                 return new Response(DASHBOARD_HTML, {
-                    headers: { 'Content-Type': 'text/html; charset=utf-8' }
+                    headers: { 'Content-Type': 'text/html; charset=utf-8', ...SECURITY_HEADERS }
                 });
             }
 
@@ -3560,7 +3589,7 @@ export default {
             // Protected endpoints
             const session = await getSession(request, env);
             if (!session) {
-                return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+                return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json', ...SECURITY_HEADERS } });
             }
 
             if (request.method === 'POST' && url.pathname === '/api/logout') {
@@ -3656,10 +3685,11 @@ export default {
                 return Response.json({ logged_in: true });
             }
 
-            return new Response('Not Found', { status: 404 });
+            return new Response('Not Found', { status: 404, headers: SECURITY_HEADERS });
         } catch (error) {
             console.error(error);
-            return Response.json({ error: error.message, stack: error.stack }, { status: 500 });
+            // Never leak internal error details to clients.
+            return Response.json({ error: 'Internal server error' }, { status: 500, headers: SECURITY_HEADERS });
         }
     }
 };
@@ -3751,10 +3781,11 @@ async function handleSetup(request, env) {
         return Response.json({ error: 'Password must be at least 6 characters.' }, { status: 400 });
     }
 
+    const hashedPassword = await hashPassword(adminPassword);
     await env.DB.prepare(`
         INSERT INTO settings (key, value) VALUES ('admin_password', ?)
         ON CONFLICT(key) DO UPDATE SET value = excluded.value
-    `).bind(adminPassword).run();
+    `).bind(hashedPassword).run();
 
     if (botToken) {
         const tgRes = await fetch(`https://api.telegram.org/bot${botToken}/getMe`);
@@ -3773,7 +3804,14 @@ async function handleSetup(request, env) {
             ON CONFLICT(key) DO UPDATE SET value = excluded.value
         `).bind(webhookUrl).run();
 
-        await fetch(`https://api.telegram.org/bot${botToken}/setWebhook?url=${encodeURIComponent(webhookUrl)}`);
+        // Protect the webhook with a secret token so only Telegram can deliver updates.
+        const secret = crypto.randomUUID();
+        await env.DB.prepare(`
+            INSERT INTO settings (key, value) VALUES ('webhook_secret', ?)
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value
+        `).bind(secret).run();
+
+        await fetch(`https://api.telegram.org/bot${botToken}/setWebhook?url=${encodeURIComponent(webhookUrl)}&secret_token=${encodeURIComponent(secret)}`);
     }
 
     return Response.json({ success: true });
@@ -3803,7 +3841,8 @@ async function handleLogin(request, env) {
     }
 
     const stored = await env.DB.prepare("SELECT value FROM settings WHERE key = 'admin_password'").first();
-    if (!stored || stored.value !== password) {
+    const passwordOk = stored && await verifyPassword(stored.value, password);
+    if (!passwordOk) {
         return Response.json({ error: 'Invalid password' }, { status: 401 });
     }
 
@@ -4456,7 +4495,14 @@ async function updateBotToken(request, env, originUrl) {
             INSERT INTO settings (key, value) VALUES ('webhook_url', ?)
             ON CONFLICT(key) DO UPDATE SET value = excluded.value
         `).bind(webhookUrl).run();
-        const hookRes = await fetch(`https://api.telegram.org/bot${botToken}/setWebhook?url=${encodeURIComponent(webhookUrl)}`);
+
+        const secret = crypto.randomUUID();
+        await env.DB.prepare(`
+            INSERT INTO settings (key, value) VALUES ('webhook_secret', ?)
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value
+        `).bind(secret).run();
+
+        const hookRes = await fetch(`https://api.telegram.org/bot${botToken}/setWebhook?url=${encodeURIComponent(webhookUrl)}&secret_token=${encodeURIComponent(secret)}`);
         const hookData = await hookRes.json();
         if (!hookData.ok) return Response.json({ error: "Webhook update failed" }, { status: 500 });
         return Response.json({ success: true });
@@ -4468,17 +4514,18 @@ async function updateBotToken(request, env, originUrl) {
 async function changeAdminPassword(request, env) {
     if (!env.DB) return Response.json({ error: "DB not available" }, { status: 500 });
     try {
-        const body = await request.json();
-        const { newPassword } = body;
-        if (!newPassword || newPassword.length < 6) {
-            return Response.json({ error: "Password must be at least 6 characters" }, { status: 400 });
-        }
-        await initializeDatabase(env.DB);
-        await env.DB.prepare(`
-            INSERT INTO settings (key, value) VALUES ('admin_password', ?)
-            ON CONFLICT(key) DO UPDATE SET value = excluded.value
-        `).bind(newPassword).run();
-        return Response.json({ success: true });
+    const body = await request.json();
+    const { newPassword } = body;
+    if (!newPassword || newPassword.length < 6) {
+        return Response.json({ error: "Password must be at least 6 characters" }, { status: 400 });
+    }
+    await initializeDatabase(env.DB);
+    const hashedPassword = await hashPassword(newPassword);
+    await env.DB.prepare(`
+        INSERT INTO settings (key, value) VALUES ('admin_password', ?)
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value
+    `).bind(hashedPassword).run();
+    return Response.json({ success: true });
     } catch (err) {
         return Response.json({ error: err.message }, { status: 500 });
     }
@@ -4721,6 +4768,23 @@ async function performUpdate(request, env) {
             `).bind(newVersion).run();
         }
 
+        // After an in-place update, rotate the webhook secret so installs upgraded
+        // from older versions also get the new webhook protection.
+        try {
+            const tokenRecord = await env.DB.prepare("SELECT value FROM settings WHERE key = 'bot_token'").first();
+            const webhookRecord = await env.DB.prepare("SELECT value FROM settings WHERE key = 'webhook_url'").first();
+            if (tokenRecord && tokenRecord.value && webhookRecord && webhookRecord.value) {
+                const secret = crypto.randomUUID();
+                await env.DB.prepare(`
+                    INSERT INTO settings (key, value) VALUES ('webhook_secret', ?)
+                    ON CONFLICT(key) DO UPDATE SET value = excluded.value
+                `).bind(secret).run();
+                await fetch(`https://api.telegram.org/bot${tokenRecord.value}/setWebhook?url=${encodeURIComponent(webhookRecord.value)}&secret_token=${encodeURIComponent(secret)}`);
+            }
+        } catch (e) {
+            console.error('Webhook secret rotation failed:', e);
+        }
+
         return Response.json({ success: true, version: newVersion || 'unknown' });
     } catch (e) {
         return Response.json({ success: false, error: e.message }, { status: 500 });
@@ -4733,7 +4797,28 @@ async function performUpdate(request, env) {
 async function handleTelegramWebhook(request, env) {
     if (!env.DB) return new Response('DB not available', { status: 500 });
 
-    const update = await request.json();
+    // If a webhook secret is configured, only Telegram (which echoes it back in
+    // the X-Telegram-Bot-Api-Secret-Token header) may deliver updates.
+    try {
+        const secretRecord = await env.DB.prepare("SELECT value FROM settings WHERE key = 'webhook_secret'").first();
+        if (secretRecord && secretRecord.value) {
+            const header = request.headers.get('X-Telegram-Bot-Api-Secret-Token');
+            if (!header || header !== secretRecord.value) {
+                return new Response('Forbidden', { status: 401 });
+            }
+        }
+    } catch (e) {
+        return new Response('Internal error', { status: 500 });
+    }
+
+    let update;
+    try {
+        update = await request.json();
+    } catch (e) {
+        // Malformed body (not a Telegram update): acknowledge without retrying.
+        return new Response('OK', { status: 200 });
+    }
+
     const tokenRecord = await env.DB.prepare("SELECT value FROM settings WHERE key = 'bot_token'").first();
     if (!tokenRecord || !tokenRecord.value) {
         console.error('Bot token not set');
