@@ -1,7 +1,7 @@
 // ============================================================================
 // GLOBAL VERSION
 // ============================================================================
-const VERSION = '2.3.0';
+const VERSION = '2.3.1';
 
 // ============================================================================
 // EMBEDDED DASHBOARD HTML (with updated AI tab)
@@ -3205,13 +3205,26 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         }
 
         function testWebhook() {
-            var url = document.getElementById('settings-webhook-url').value;
-            if (!url) { showToast('No webhook URL.', 'error'); return; }
             showToast('Testing...');
             withLoading(
-                fetch(url, { method: 'POST', body: JSON.stringify({ ping: 'test' }), headers: { 'Content-Type': 'application/json' } })
-                .then(function(res) { if (res.ok) showToast('Webhook reachable!');
-                    else showToast('Status ' + res.status, 'error'); })
+                fetch('/api/settings/webhook-test', { method: 'POST' })
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (!data.success) throw new Error(data.error || 'Test failed');
+                    if (data.last_error) {
+                        showToast('❌ Telegram delivery failing: ' + data.last_error, 'error');
+                        return;
+                    }
+                    if (data.url && data.url_matches) {
+                        var msg = '✅ Webhook OK: ' + data.url;
+                        if (data.pending_updates > 0) msg += ' (' + data.pending_updates + ' pending)';
+                        showToast(msg);
+                    } else if (data.url) {
+                        showToast('⚠️ Webhook points elsewhere: ' + data.url, 'error');
+                    } else {
+                        showToast('⚠️ No webhook registered. Change the bot token to register it.', 'error');
+                    }
+                })
                 .catch(function(err) { showToast('Test failed: ' + err.message, 'error'); })
             );
         }
@@ -3655,6 +3668,9 @@ export default {
             if (request.method === 'POST' && url.pathname === '/api/settings/token') {
                 return await updateBotToken(request, env, url.origin);
             }
+            if (request.method === 'POST' && url.pathname === '/api/settings/webhook-test') {
+                return await handleWebhookTest(env);
+            }
             if (request.method === 'POST' && url.pathname === '/api/change_password') {
                 return await changeAdminPassword(request, env);
             }
@@ -3788,30 +3804,33 @@ async function handleSetup(request, env) {
     `).bind(hashedPassword).run();
 
     if (botToken) {
-        const tgRes = await fetch(`https://api.telegram.org/bot${botToken}/getMe`);
-        const tgData = await tgRes.json();
-        if (!tgData.ok) {
-            return Response.json({ error: 'Invalid bot token' }, { status: 400 });
+        const check = await validateBotToken(botToken);
+        if (!check.ok) {
+            return Response.json({ error: `Invalid bot token${check.error ? ` (${check.error})` : ''}` }, { status: 400 });
         }
+        const webhookUrl = `${new URL(request.url).origin}/webhook`;
+
+        // Register the webhook with Telegram FIRST, then persist the secret —
+        // if registration fails we never store a secret that would 401 real
+        // Telegram deliveries.
+        const secret = crypto.randomUUID();
+        await registerWebhook(botToken, webhookUrl, secret);
+
         await env.DB.prepare(`
             INSERT INTO settings (key, value) VALUES ('bot_token', ?)
             ON CONFLICT(key) DO UPDATE SET value = excluded.value
         `).bind(botToken).run();
 
-        const webhookUrl = `${new URL(request.url).origin}/webhook`;
         await env.DB.prepare(`
             INSERT INTO settings (key, value) VALUES ('webhook_url', ?)
             ON CONFLICT(key) DO UPDATE SET value = excluded.value
         `).bind(webhookUrl).run();
 
         // Protect the webhook with a secret token so only Telegram can deliver updates.
-        const secret = crypto.randomUUID();
         await env.DB.prepare(`
             INSERT INTO settings (key, value) VALUES ('webhook_secret', ?)
             ON CONFLICT(key) DO UPDATE SET value = excluded.value
         `).bind(secret).run();
-
-        await fetch(`https://api.telegram.org/bot${botToken}/setWebhook?url=${encodeURIComponent(webhookUrl)}&secret_token=${encodeURIComponent(secret)}`);
     }
 
     return Response.json({ success: true });
@@ -4476,16 +4495,70 @@ async function getSettings(env, originUrl) {
     }
 }
 
+// Fetch a Telegram API endpoint as JSON with a 10s timeout so a stalled
+// request can never hang the panel.
+async function tgFetchJson(url, options) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 10000);
+    try {
+        const res = await fetch(url, Object.assign({ signal: ctrl.signal }, options));
+        return await res.json();
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
+// Ask Telegram whether a bot token is valid, retrying briefly to ride out
+// transient failures (e.g. 429 rate limits) instead of failing on the first
+// hiccup. Returns { ok, error } with Telegram's own description when it fails.
+async function validateBotToken(botToken) {
+    let lastError = 'unknown error';
+    for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+            const data = await tgFetchJson(`https://api.telegram.org/bot${botToken}/getMe`);
+            if (data.ok) return { ok: true };
+            lastError = data.description || (data.error_code ? `error_code ${data.error_code}` : 'unexpected Telegram response');
+        } catch (err) {
+            lastError = err.message || 'request failed';
+        }
+        if (attempt < 2) await new Promise(r => setTimeout(r, 150 * (attempt + 1)));
+    }
+    return { ok: false, error: lastError };
+}
+
+// Register a Telegram webhook with its secret token, surfacing Telegram's own
+// error message (rate limits, bad URL, ...) instead of a bare failure.
+async function registerWebhook(botToken, webhookUrl, secret, opts) {
+    const params = new URLSearchParams({ url: webhookUrl });
+    if (secret) params.set('secret_token', secret);
+    if (opts && opts.dropPending) params.set('drop_pending_updates', 'true');
+    const data = await tgFetchJson(`https://api.telegram.org/bot${botToken}/setWebhook?${params.toString()}`);
+    if (!data.ok) {
+        throw new Error(data.description || (data.error_code ? `error_code ${data.error_code}` : 'unknown error'));
+    }
+    return data;
+}
+
 async function updateBotToken(request, env, originUrl) {
     if (!env.DB) return Response.json({ error: "DB not available" }, { status: 500 });
     try {
         const body = await request.json();
         const { botToken } = body;
         if (!botToken) return Response.json({ error: "Bot token required" }, { status: 400 });
-        const tgRes = await fetch(`https://api.telegram.org/bot${botToken}/getMe`);
-        const tgData = await tgRes.json();
-        if (!tgData.ok) return Response.json({ error: "Invalid bot token" }, { status: 400 });
+
         await initializeDatabase(env.DB);
+
+        // Re-entering the same token must always succeed: it is already known
+        // to be valid, so skip the (rate-limitable) getMe round-trip entirely.
+        const stored = await env.DB.prepare("SELECT value FROM settings WHERE key = 'bot_token'").first();
+        const unchanged = !!(stored && stored.value && stored.value === botToken);
+        if (!unchanged) {
+            const check = await validateBotToken(botToken);
+            if (!check.ok) {
+                return Response.json({ error: `Invalid bot token${check.error ? ` (${check.error})` : ''}` }, { status: 400 });
+            }
+        }
+
         await env.DB.prepare(`
             INSERT INTO settings (key, value) VALUES ('bot_token', ?)
             ON CONFLICT(key) DO UPDATE SET value = excluded.value
@@ -4502,10 +4575,49 @@ async function updateBotToken(request, env, originUrl) {
             ON CONFLICT(key) DO UPDATE SET value = excluded.value
         `).bind(secret).run();
 
-        const hookRes = await fetch(`https://api.telegram.org/bot${botToken}/setWebhook?url=${encodeURIComponent(webhookUrl)}&secret_token=${encodeURIComponent(secret)}`);
-        const hookData = await hookRes.json();
-        if (!hookData.ok) return Response.json({ error: "Webhook update failed" }, { status: 500 });
+        // Drop stale queued updates only when switching to a different bot;
+        // re-registering the same bot keeps its queue intact.
+        try {
+            await registerWebhook(botToken, webhookUrl, secret, { dropPending: !unchanged });
+        } catch (hookErr) {
+            return Response.json({ error: `Webhook update failed (${hookErr.message})` }, { status: 500 });
+        }
         return Response.json({ success: true });
+    } catch (err) {
+        return Response.json({ error: err.message }, { status: 500 });
+    }
+}
+
+// Diagnostic test for the Settings > Test Webhook button. Reports what
+// Telegram actually sees via getWebhookInfo, so the test no longer needs to
+// hit the protected /webhook endpoint (which rightly rejects non-Telegram
+// callers with 401).
+async function handleWebhookTest(env) {
+    if (!env.DB) return Response.json({ error: "DB not available" }, { status: 500 });
+    try {
+        await initializeDatabase(env.DB);
+        const tokenRecord = await env.DB.prepare("SELECT value FROM settings WHERE key = 'bot_token'").first();
+        const webhookRecord = await env.DB.prepare("SELECT value FROM settings WHERE key = 'webhook_url'").first();
+        if (!tokenRecord || !tokenRecord.value) {
+            return Response.json({ error: "Bot token not set — configure a token first" }, { status: 400 });
+        }
+        const data = await tgFetchJson(`https://api.telegram.org/bot${tokenRecord.value}/getWebhookInfo`);
+        if (!data.ok) {
+            const msg = data.description || (data.error_code ? `error_code ${data.error_code}` : 'unknown error');
+            return Response.json({ error: `Telegram API error: ${msg}` }, { status: 502 });
+        }
+        const info = data.result || {};
+        const expectedUrl = (webhookRecord && webhookRecord.value) || '';
+        return Response.json({
+            success: true,
+            url: info.url || '',
+            expected_url: expectedUrl,
+            url_matches: !!(expectedUrl && info.url === expectedUrl),
+            pending_updates: info.pending_update_count || 0,
+            last_error: info.last_error_message || '',
+            last_error_date: info.last_error_date || 0,
+            ip_address: info.ip_address || ''
+        });
     } catch (err) {
         return Response.json({ error: err.message }, { status: 500 });
     }
@@ -4774,12 +4886,14 @@ async function performUpdate(request, env) {
             const tokenRecord = await env.DB.prepare("SELECT value FROM settings WHERE key = 'bot_token'").first();
             const webhookRecord = await env.DB.prepare("SELECT value FROM settings WHERE key = 'webhook_url'").first();
             if (tokenRecord && tokenRecord.value && webhookRecord && webhookRecord.value) {
+                // Register the new secret with Telegram FIRST so a failed
+                // setWebhook never leaves the panel rejecting real updates.
                 const secret = crypto.randomUUID();
+                await registerWebhook(tokenRecord.value, webhookRecord.value, secret);
                 await env.DB.prepare(`
                     INSERT INTO settings (key, value) VALUES ('webhook_secret', ?)
                     ON CONFLICT(key) DO UPDATE SET value = excluded.value
                 `).bind(secret).run();
-                await fetch(`https://api.telegram.org/bot${tokenRecord.value}/setWebhook?url=${encodeURIComponent(webhookRecord.value)}&secret_token=${encodeURIComponent(secret)}`);
             }
         } catch (e) {
             console.error('Webhook secret rotation failed:', e);

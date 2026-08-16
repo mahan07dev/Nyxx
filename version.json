@@ -1,6 +1,6 @@
 {
-  "version": "2.3.0",
+  "version": "2.3.1",
   "released": "2026-08-16",
-  "notes": "🔐 Security hardening: hashed admin passwords, webhook secret token, hardened CORS proxy",
+  "notes": "🐛 Fixes: working Test Webhook diagnostic (getWebhookInfo), same-token updates no longer fail, Telegram API retries with clear errors",
   "worker_url": "https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/worker.js"
 }
