@@ -113,14 +113,22 @@ Unlike many Telegram bot panels that require a VPS or complicated setup, Nyxx is
 
 | Feature | Description |
 |---|---|
-| Unlimited commands | Text & photo responses |
-| Nested commands | Organize commands into folders, navigate with breadcrumbs |
-| Enable / Disable | Turn commands on and off without deleting them |
-| Admin-only commands | Restrict commands to your admin users |
-| Inline keyboards | URL, callback, and command buttons — built visually |
-| Reply keyboards | Drag-and-drop button builder, no JSON required |
-| Menu commands | Publish `/help`, `/start`, `/settings`… to Telegram with one click |
-| Automatic webhooks | Registered, secured, and re-registered for you |
+| **Unlimited commands** | Text & photo responses |
+| **Nested commands** | Organize commands into folders, navigate with breadcrumbs |
+| **Enable / Disable** | Turn commands on and off without deleting them |
+| **Admin-only commands** | Restrict commands to your admin users |
+| **Inline keyboards** | URL, callback, and command buttons — built visually |
+| **Reply keyboards** | Drag-and-drop button builder, no JSON required |
+| **Menu commands** | Publish `/help`, `/start`, `/settings`… to Telegram with one click |
+| **Automatic webhooks** | Registered, secured, and re-registered for you |
+| **Backup & Restore** | Export and import all your bot data (commands, users, AI memory, settings) as a JSON file. |
+| **User Blocking** | Block users entirely or only from the AI chatbot. |
+| **AI Multi‑Provider Fallback** | Add up to 5 alternate AI providers as fallback if the main one fails. |
+| **AI Strict Mode** | Force the AI to answer only using your instructions and knowledge bases. |
+| **AI RTL Support** | Automatic right‑to‑left rendering for Persian (Farsi) and Arabic text. |
+| **AI Rate Limiting** | Set per‑user request limits to prevent abuse. |
+| **Overview Dashboard** | Real‑time statistics and quick actions on a new landing page. |
+| **Dashboard Performance** | Improved caching and batch operations for faster loading. |
 
 ### 🎛️ Beautiful Dashboard
 
@@ -534,6 +542,22 @@ Future ideas include:
 ---
 
 ## Changelog
+
+### v3.0.0 — Major Overhaul (2026-08-18)
+
+- **New Overview Dashboard** with statistics and quick actions.
+- **Backup & Restore** – export/import all data.
+- **User Management Enhancements** – block users, send private messages.
+- **AI Assistant Overhaul**:
+  - Up to 5 alternate providers as fallback.
+  - Strict Mode (knowledge‑only answers).
+  - RTL support for Persian/Arabic.
+  - Rate limiting and memory trimming.
+- **Command Management** – drag‑and‑drop reordering of keyboard buttons, move commands up/down.
+- **UI/UX Redesign** – modern dark theme, Vazirmatn font, better mobile responsiveness.
+- **Performance** – caching and batch DB operations.
+- **Security** – webhook secret rotation on update.
+- Bug fixes: command rename references, webhook test, same‑token updates, memory clear.
 
 ### v2.3.1 — Bugfixes
 

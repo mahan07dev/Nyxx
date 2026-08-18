@@ -1,6 +1,6 @@
 {
-  "version": "2.3.1",
-  "released": "2026-08-16",
-  "notes": "🐛 Fixes: working Test Webhook diagnostic (getWebhookInfo), same-token updates no longer fail, Telegram API retries with clear errors",
+  "version": "3.0.0",
+  "released": "2026-08-19",
+  "notes": "🎉 Major overhaul: new Overview tab, Backup/Restore, AI alternate providers, Strict mode, RTL support, User blocking, and much more.",
   "worker_url": "https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/worker.js"
 }
