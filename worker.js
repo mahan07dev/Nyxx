@@ -1,8 +1,8 @@
 // ============================================================================
-// NYXX — Worker ("Overhaul")
+// NYXX
 // Telegram bot builder + management dashboard for Cloudflare Workers + D1.
 // ============================================================================
-const VERSION = '3.0.0';
+const VERSION = '3.1.0';
 
 // ============================================================================
 // EMBEDDED DASHBOARD (single page app — HTML + CSS + JS)
@@ -155,7 +155,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         .dropdown-content button.active { color: var(--accent); background: rgba(56, 189, 248, 0.08); }
 
         /* ============ Layout ============ */
-        .main-container { flex: 1; max-width: 1240px; margin: 0 auto; padding: 1.25rem 1.25rem 2.5rem; width: 100%; }
+        .main-container { flex: 1; min-width: 0; max-width: 1240px; margin: 0 auto; padding: 1.25rem 1.25rem 2.5rem; width: 100%; }
         .step { display: block; }
         .step-hidden { display: none !important; }
         .hidden { display: none !important; }
@@ -234,12 +234,11 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
 
         /* ============ Tabs ============ */
         .tabs-header {
-            display: flex; gap: 0.15rem;
-            border-bottom: 1px solid var(--border); margin-bottom: 1.5rem;
-            padding: 0 0.25rem; overflow-x: auto; scrollbar-width: none;
-            -webkit-overflow-scrolling: touch;
+            display: flex; gap: 0.15rem; flex-wrap: nowrap;
+            border-bottom: 1px solid var(--border);
+            padding: 0 0.25rem; max-width: 100%;
+            margin-bottom: 1.5rem; position: relative;
         }
-        .tabs-header::-webkit-scrollbar { display: none; }
         .tab-btn {
             padding: 0.65rem 0.85rem; border: none; border-bottom: 2px solid transparent;
             background: transparent; color: var(--text-2); cursor: pointer; font-weight: 600;
@@ -251,8 +250,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         .tab-btn:hover { color: var(--text); }
         .tab-btn.active { color: #fff; border-bottom-color: var(--primary); }
         .tab-btn.active i { color: var(--primary); }
-        .tab-btn .tab-label-full { display: inline; }
-        .tab-btn .tab-label-short { display: none; }
+
         .tab-content { display: none; animation: fade-in 0.2s ease; }
         .tab-content.active { display: block; }
         @keyframes fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
@@ -276,8 +274,6 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         .mobile-tabs button:hover { background: var(--surface-2); }
         .mobile-tabs button.active { background: var(--primary-soft); color: #fff; }
         @media (max-width: 680px) {
-            .tab-btn .tab-label-full { display: none; }
-            .tab-btn .tab-label-short { display: inline; }
             .tab-btn { padding: 0.6rem 0.65rem; font-size: 0.78rem; gap: 0.25rem; }
         }
 
@@ -401,6 +397,86 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         .toast.info { border-inline-start: 4px solid var(--accent); }
         @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
+        /* ============ Skeleton loading components ============ */
+        @keyframes skeleton-shimmer {
+            0% { background-position: -300px 0; }
+            100% { background-position: 300px 0; }
+        }
+        .skl-bg {
+            background: linear-gradient(90deg, var(--surface-2) 0%, var(--surface-3) 50%, var(--surface-2) 100%);
+            background-size: 300px 100%; animation: skeleton-shimmer 1.6s ease-in-out infinite;
+            border-radius: 8px; color: transparent !important; pointer-events: none;
+        }
+        .skl-bg * { color: transparent !important; background: none !important; border-color: transparent !important; }
+        .skl-circle {
+            background: linear-gradient(90deg, var(--surface-2) 0%, var(--surface-3) 50%, var(--surface-2) 100%);
+            background-size: 300px 100%; animation: skeleton-shimmer 1.6s ease-in-out infinite;
+            border-radius: 50%;
+        }
+        .skl-block {
+            background: linear-gradient(90deg, var(--surface-2) 0%, var(--surface-3) 50%, var(--surface-2) 100%);
+            background-size: 300px 100%; animation: skeleton-shimmer 1.6s ease-in-out infinite;
+            border-radius: 6px;
+        }
+        .skl-input {
+            background: linear-gradient(90deg, var(--surface-2) 0%, var(--surface-3) 50%, var(--surface-2) 100%);
+            background-size: 300px 100%; animation: skeleton-shimmer 1.6s ease-in-out infinite;
+            border-radius: 10px; height: 38px; width: 100%;
+        }
+        .skl-textarea {
+            background: linear-gradient(90deg, var(--surface-2) 0%, var(--surface-3) 50%, var(--surface-2) 100%);
+            background-size: 300px 100%; animation: skeleton-shimmer 1.6s ease-in-out infinite;
+            border-radius: 10px; height: 120px; width: 100%;
+        }
+
+        .skl-stat-card {
+            background: linear-gradient(160deg, var(--surface), var(--bg-2));
+            border: 1px solid var(--border); border-radius: 16px; padding: 1.1rem 1.2rem;
+        }
+        .skl-stat-icon { width: 38px; height: 38px; border-radius: 11px; margin-bottom: 0.6rem; }
+        .skl-stat-value { width: 60px; height: 28px; margin-bottom: 0.3rem; }
+        .skl-stat-label { width: 80px; height: 12px; }
+
+        .skl-check-item {
+            display: flex; align-items: center; gap: 0.7rem; padding: 0.55rem 0;
+            border-bottom: 1px dashed var(--border); font-size: 0.9rem;
+        }
+        .skl-check-icon { width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0; }
+        .skl-check-text { flex: 1; height: 14px; }
+
+        .skl-table-row { display: grid; grid-template-columns: 100px 60px 1fr 1fr 60px 80px 90px; gap: 1rem; padding: 0.6rem 0.9rem; border-bottom: 1px solid rgba(38, 52, 90, 0.6); align-items: center; }
+        .skl-table-row .skl-block { height: 14px; }
+        .skl-table-row .skl-btn { width: 60px; height: 28px; border-radius: 8px; }
+
+        .skl-file-row {
+            display: flex; align-items: center; gap: 0.55rem; padding: 0.45rem 0.6rem;
+            border-radius: 10px; border: 1px solid transparent; background: var(--surface);
+            margin-bottom: 0.35rem;
+        }
+        .skl-file-icon { width: 22px; height: 22px; border-radius: 4px; flex-shrink: 0; }
+        .skl-file-name { flex: 1; height: 14px; max-width: 200px; }
+        .skl-file-badge { width: 50px; height: 18px; border-radius: 999px; }
+
+        .skl-menu-row { display: flex; gap: 0.5rem; align-items: center; }
+        .skl-menu-input { flex: 1; height: 38px; border-radius: 10px; }
+        .skl-menu-del { width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0; }
+
+        .skl-form-row { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 1.1rem; }
+        .skl-label { width: 120px; height: 12px; }
+
+        /* ============ Loading overlay (for complex forms) ============ */
+        .loading-overlay {
+            position: relative;
+        }
+        .loading-overlay::after {
+            content: '';
+            position: absolute; inset: 0;
+            background: linear-gradient(90deg, var(--surface) 0%, var(--surface-2) 50%, var(--surface) 100%);
+            background-size: 300px 100%; animation: skeleton-shimmer 1.6s ease-in-out infinite;
+            border-radius: 14px; z-index: 5; opacity: 0.92;
+            pointer-events: none;
+        }
+
         /* ============ Inline loading spinner ============ */
         .inline-spinner {
             display: inline-flex; align-items: center; justify-content: center;
@@ -411,19 +487,33 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             border: 3px solid var(--surface-3); border-top-color: var(--primary);
             animation: spin 0.85s linear infinite;
         }
+        .inline-spinner-compact {
+            display: inline-flex; align-items: center; justify-content: center;
+            padding: 0.4rem; width: 100%; text-align: center;
+        }
+        .inline-spinner-compact .loading-spinner {
+            width: 16px; height: 16px; border-radius: 50%;
+            border: 2px solid var(--surface-3); border-top-color: var(--primary);
+            animation: spin 0.85s linear infinite;
+        }
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ============ Mini spinners for buttons/inline actions ============ */
+        .mini-spinner {
+            display: inline-block; width: 14px; height: 14px; border-radius: 50%;
+            border: 2px solid var(--surface-3); border-top-color: var(--primary);
+            animation: spin 0.85s linear infinite; vertical-align: middle;
+        }
 
         /* ============ Chips (keyboard builder) ============ */
         .button-chip-list { display: flex; flex-direction: column; gap: 0.4rem; min-height: 30px; padding: 0.2rem 0; }
         .button-chip {
             display: flex; align-items: center; gap: 0.55rem; background: var(--bg-2);
             border: 1px solid var(--border); border-radius: 9px; padding: 0.45rem 0.65rem;
-            font-size: 0.85rem; cursor: grab; transition: background 0.15s, border-color 0.15s, box-shadow 0.15s; width: 100%;
+            font-size: 0.85rem; transition: background 0.15s, border-color 0.15s, box-shadow 0.15s; width: 100%;
         }
         .button-chip:hover { background: var(--surface-2); border-color: var(--border-strong); }
-        .button-chip.dragging { opacity: 0.4; border-color: var(--primary); }
-        .button-chip.drag-over { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-soft); }
-        .chip-grip { color: var(--text-3); font-size: 0.85rem; cursor: grab; flex-shrink: 0; }
+        .chip-grip { color: var(--text-3); font-size: 0.85rem; flex-shrink: 0; }
         .chip-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .chip-badge {
             font-size: 0.62rem; color: var(--text-2); background: var(--surface-2);
@@ -443,11 +533,18 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             padding: 0.7rem 0.95rem; font-size: 0.8rem; color: var(--text-2);
             margin: 0.5rem 0 0.9rem; line-height: 1.6;
         }
-        .menu-row { display: flex; gap: 0.5rem; align-items: center; }
+        .menu-commands-container { overflow-x: auto; }
+        .menu-row { display: flex; gap: 0.5rem; align-items: center; position: relative; min-width: max-content; }
         .menu-row .form-input { flex: 1; min-width: 0; }
-        .menu-del { color: var(--red); background: none; border: none; cursor: pointer; font-size: 1rem; padding: 0.4rem; border-radius: 8px; flex-shrink: 0; }
+        .menu-row .form-input[data-role='desc'] { min-width: 200px; }
+        .menu-row .form-input[data-role='cmd'] { min-width: 100px; }
+        .menu-del { color: var(--red); background: none; border: none; cursor: pointer; font-size: 1rem; padding: 0.4rem; border-radius: 8px; flex-shrink: 0; z-index: 1; }
         .menu-del:hover { background: var(--red-soft); }
-        .menu-fixed { color: var(--text-3); font-size: 0.72rem; display: inline-flex; align-items: center; gap: 0.3rem; flex-shrink: 0; }
+        .menu-fixed-icon { color: var(--text-3); font-size: 1rem; flex-shrink: 0; padding: 0.3rem; z-index: 1; }
+        .menu-arrow-btn { background: none; border: none; color: var(--text-3); cursor: pointer; font-size: 0.8rem; padding: 0.2rem 0.35rem; border-radius: 6px; flex-shrink: 0; z-index: 1; }
+        .menu-arrow-btn:hover { background: var(--surface-3); color: var(--amber); }
+        .menu-arrow-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        .menu-arrow-btn:disabled:hover { background: none; color: var(--text-3); }
 
         /* ============ Users table ============ */
         .table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); }
@@ -457,7 +554,8 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             letter-spacing: 0.06em; color: var(--text-3); background: var(--surface);
             border-bottom: 1px solid var(--border); font-weight: 700;
         }
-        .users-table td { padding: 0.6rem 0.9rem; border-bottom: 1px solid rgba(38, 52, 90, 0.6); vertical-align: middle; }
+        .users-table td { padding: 0.6rem 0.9rem; border-bottom: 1px solid rgba(38, 52, 90, 0.6); vertical-align: middle; white-space: nowrap; }
+        .users-table td.td-name { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .users-table tr:last-child td { border-bottom: none; }
         .users-table tr:hover td { background: rgba(24, 36, 64, 0.5); }
         .mono { font-family: var(--mono); font-size: 0.8rem; }
@@ -568,12 +666,59 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         .footer a { margin: 0 0.4rem; color: var(--text-2); }
         .footer a:hover { color: var(--text); }
 
+        /* ============ Chat messenger ============ */
+        .chat-messages { display: flex; flex-direction: column; gap: 0.5rem; max-height: 400px; overflow-y: auto; padding: 1rem; background: var(--bg-2); border: 1px solid var(--border); border-radius: 14px; margin-bottom: 0.75rem; }
+        .chat-msg { max-width: 80%; padding: 0.6rem 0.9rem; border-radius: 14px; font-size: 0.875rem; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+        .chat-msg.user-msg { align-self: flex-end; background: var(--primary-soft); border: 1px solid rgba(124, 92, 240, 0.3); color: var(--text); }
+        .chat-msg.bot-msg { align-self: flex-start; background: var(--surface-2); border: 1px solid var(--border); color: var(--text-2); }
+        .chat-msg .msg-time { font-size: 0.65rem; color: var(--text-3); margin-top: 0.2rem; }
+        .chat-input-area { display: flex; gap: 0.5rem; align-items: flex-end; }
+        .chat-input-area .form-textarea { flex: 1; min-height: 42px; max-height: 120px; resize: none; }
+        .chat-empty { display: flex; align-items: center; justify-content: center; padding: 2rem; color: var(--text-3); font-size: 0.875rem; }
+
+        /* ============ User manage view ============ */
+        .um-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.2rem; position: sticky; top: 60px; z-index: 25; background: var(--bg); padding: 10px; border-radius: 10px; }
+        .um-header .panel-title { margin: 0; }
+        .um-header .btn { font-weight: 700; }
+        .um-val { overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; max-height: 3.1em; }
+        .um-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.6rem; margin-bottom: 1rem; }
+        .um-card { background: var(--bg-2); border: 1px solid var(--border); border-radius: 10px; padding: 0.6rem 0.8rem; }
+        .um-card .um-lbl { font-size: 0.72rem; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.04em; }
+        .um-card .um-val { font-size: 0.9rem; margin-top: 0.15rem; word-break: break-word; }
+        .um-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+
+        /* ============ Broadcast view ============ */
+        .bcast-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.2rem; position: sticky; top: 60px; z-index: 25; background: var(--bg); padding: 10px; border-radius: 10px; }
+        .bcast-header .panel-title { margin: 0; }
+        .bcast-header .btn { font-weight: 700; }
+        .bcast-opts { background: var(--bg-2); border: 1px solid var(--border); border-radius: 12px; padding: 0.8rem 1rem; margin-bottom: 1rem; }
+        .bcast-count { font-size: 0.8rem; color: var(--text-3); margin-top: 0.3rem; }
+        .bcast-custom-list { max-height: 260px; overflow-y: auto; margin-top: 0.5rem; border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem; }
+        .bcast-custom-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0; font-size: 0.85rem; }
+        .bcast-custom-item input[type="checkbox"] { accent-color: var(--primary); }
+        .bcast-custom-controls { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin-bottom: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+        .bcast-custom-controls .form-input { flex: 1; min-width: 120px; }
+        .bcast-custom-controls .btn { font-size: 0.75rem; padding: 0.2rem 0.6rem; min-height: 26px; }
+        #factory-reset-confirm-text { font-family: var(--mono); letter-spacing: 0.5px; }
+
+        /* ============ More tabs dropdown ============ */
+        .more-tabs-wrapper { display: inline-flex; flex-shrink: 0; position: relative; }
+        .more-tabs-btn { padding: 0.65rem 0.85rem; border: none; border-bottom: 2px solid transparent; background: transparent; color: var(--text-2); cursor: pointer; font-weight: 600; font-size: 0.82rem; white-space: nowrap; transition: color 0.15s, border-color 0.15s; display: inline-flex; align-items: center; gap: 0.35rem; font-family: var(--font); }
+        .more-tabs-btn:hover { color: var(--text); }
+        .more-tabs-btn.active { color: #fff; border-bottom-color: var(--primary); }
+        .more-tabs-dropdown { display: none; position: absolute; top: 100%; inset-inline-end: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; min-width: 140px; box-shadow: 0 12px 30px rgba(0,0,0,0.5); padding: 0.35rem; z-index: 70; }
+        .more-tabs-dropdown.show { display: block; }
+        .more-tabs-dropdown button { display: flex; align-items: center; gap: 0.5rem; width: 100%; background: none; border: none; color: var(--text-2); padding: 0.5rem 0.75rem; border-radius: 8px; cursor: pointer; font-size: 0.82rem; text-align: start; font-family: var(--font); }
+        .more-tabs-dropdown button:hover { background: var(--surface-2); color: var(--text); }
+        .more-tabs-dropdown button.active { color: var(--accent); background: rgba(56, 189, 248, 0.08); }
+        .tab-btn.overflow-hidden { display: none !important; }
+
         /* ============ RTL adjustments ============ */
         html[dir="rtl"] .tree-command-name { letter-spacing: 0; }
         html[dir="rtl"] .navbar-ver { letter-spacing: 0; }
 
         /* ============ Responsive ============ */
-        @media (max-width: 866px) {
+        @media (max-width: 490px) {
             .tabs-header { display: none; }
             .hamburger { display: inline-flex; }
             .navbar { padding: 0.6rem 0.9rem; }
@@ -681,15 +826,19 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
 
         <div id="step-dashboard" class="step step-hidden">
             <div class="tabs-header" id="tabs-header">
-                <button class="tab-btn active" onclick="switchTab('overview')"><i class="fa-solid fa-house"></i> <span class="tab-label-full">Overview</span><span class="tab-label-short"><i class="fa-solid fa-house"></i></span></button>
-                <button class="tab-btn" onclick="switchTab('commands')"><i class="fa-solid fa-list-ul"></i> <span class="tab-label-full">Commands</span><span class="tab-label-short"><i class="fa-solid fa-list-ul"></i></span></button>
-                <button class="tab-btn" onclick="switchTab('menu')"><i class="fa-solid fa-bars"></i> <span class="tab-label-full">Menu</span><span class="tab-label-short"><i class="fa-solid fa-bars"></i></span></button>
-                <button class="tab-btn" onclick="switchTab('users')"><i class="fa-solid fa-users"></i> <span class="tab-label-full">Users</span><span class="tab-label-short"><i class="fa-solid fa-users"></i></span></button>
-                <button class="tab-btn" onclick="switchTab('ai')"><i class="fa-solid fa-robot"></i> <span class="tab-label-full">AI</span><span class="tab-label-short"><i class="fa-solid fa-robot"></i></span></button>
-                <button class="tab-btn" onclick="switchTab('settings')"><i class="fa-solid fa-gear"></i> <span class="tab-label-full">Settings</span><span class="tab-label-short"><i class="fa-solid fa-gear"></i></span></button>
-                <button class="tab-btn" onclick="switchTab('botinfo')"><i class="fa-solid fa-circle-info"></i> <span class="tab-label-full">Bot Info</span><span class="tab-label-short"><i class="fa-solid fa-circle-info"></i></span></button>
-                <button class="tab-btn" onclick="switchTab('backup')"><i class="fa-solid fa-box-archive"></i> <span class="tab-label-full">Backup</span><span class="tab-label-short"><i class="fa-solid fa-box-archive"></i></span></button>
-                <button class="tab-btn" onclick="switchTab('update')"><i class="fa-solid fa-arrow-up"></i> <span class="tab-label-full">Update</span><span class="tab-label-short"><i class="fa-solid fa-arrow-up"></i></span></button>
+                <button class="tab-btn active" onclick="switchTab('overview')"><i class="fa-solid fa-house"></i> <span>Overview</span></button>
+                <button class="tab-btn" onclick="switchTab('commands')"><i class="fa-solid fa-list-ul"></i> <span>Commands</span></button>
+                <button class="tab-btn" onclick="switchTab('menu')"><i class="fa-solid fa-bars"></i> <span>Menu</span></button>
+                <button class="tab-btn" onclick="switchTab('users')"><i class="fa-solid fa-users"></i> <span>Users</span></button>
+                <button class="tab-btn" onclick="switchTab('ai')"><i class="fa-solid fa-robot"></i> <span>AI</span></button>
+                <button class="tab-btn" onclick="switchTab('settings')"><i class="fa-solid fa-gear"></i> <span>Settings</span></button>
+                <button class="tab-btn" onclick="switchTab('botinfo')"><i class="fa-solid fa-circle-info"></i> <span>Bot Info</span></button>
+                <button class="tab-btn" onclick="switchTab('backup')"><i class="fa-solid fa-box-archive"></i> <span>Backup</span></button>
+                <button class="tab-btn" onclick="switchTab('update')"><i class="fa-solid fa-arrow-up"></i> <span>Update</span></button>
+                <div class="more-tabs-wrapper" id="more-tabs-wrapper" style="display:none;">
+                    <button class="more-tabs-btn" onclick="toggleMoreTabsDropdown(event)"><i class="fa-solid fa-ellipsis"></i> <span>More</span></button>
+                    <div class="more-tabs-dropdown" id="more-tabs-dropdown"></div>
+                </div>
             </div>
             <div class="hamburger" id="hamburger-btn" onclick="toggleHamburger()"><i class="fa-solid fa-bars" id="hamburgerfa"></i> <span>Menu</span></div>
             <div id="mobile-tabs" class="mobile-tabs">
@@ -756,7 +905,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                     <code>start</code>, <code>help</code>, <code>support</code>.
                     <span><strong>start</strong> is fixed and cannot be removed.</span>
                 </div>
-                <div id="menu-commands-container" class="panel flex-col" style="gap:0.5rem;"></div>
+                <div id="menu-commands-container" class="panel flex-col menu-commands-container" style="gap:0.5rem;"></div>
                 <button onclick="publishMenuCommands()" class="btn btn-success mt-3"><i class="fa-solid fa-cloud-arrow-up"></i> <span>Publish to Telegram</span></button>
                 <div id="menu-publish-result" class="hidden mt-2" style="font-size:0.875rem;"></div>
             </div>
@@ -767,13 +916,144 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 <div class="search-row">
                     <input id="user-search" class="form-input" placeholder="Search by username or name…">
                     <button onclick="loadUsers()" class="btn btn-gray btn-sm"><i class="fa-solid fa-magnifying-glass"></i></button>
+                    <button onclick="openBroadcastTab()" class="btn btn-primary btn-sm" title="Global Broadcast"><i class="fa-solid fa-bullhorn"></i></button>
                 </div>
                 <div id="users-list" class="panel" style="padding:0.9rem;"></div>
+            </div>
+
+            <!-- ============ USER MANAGE TAB ============ -->
+            <div id="tab-user-manage" class="tab-content">
+                <div class="um-header">
+                    <button onclick="closeUserManageTab()" class="btn btn-gray btn-sm"><i class="fa-solid fa-arrow-left"></i> <span>Back</span></button>
+                    <h3 class="panel-title"><i class="fa-solid fa-user-gear"></i> <span id="um-tab-title">Manage User</span></h3>
+                </div>
+                <div id="um-tab-cards" class="um-cards"></div>
+                <div id="um-tab-actions" class="um-actions"></div>
+                <div style="border-top:1px solid var(--border); padding-top:0.6rem; margin-bottom:1rem;">
+                    <button onclick="clearUserMemoryFromTab()" class="btn btn-danger btn-sm"><i class="fa-solid fa-eraser"></i> <span>Clear Chat Memory</span></button>
+                    <span class="field-hint" style="margin-inline-start:0.5rem;">Removes all AI conversation history for this user.</span>
+                </div>
+                <h4 class="panel-title" style="font-size:0.95rem; margin-bottom:0.6rem;"><i class="fa-solid fa-comments"></i> <span>Chat History</span></h4>
+                <div id="um-tab-chat" class="chat-messages"><div class="chat-empty"><i class="fa-regular fa-comments" style="margin-inline-end:0.4rem;"></i> No messages yet.</div></div>
+                <div style="margin-bottom:0.6rem;">
+                    <div class="toggle-row" style="padding:0.4rem 0.7rem;">
+                        <span class="label" style="font-size:0.82rem;">Attach Keyboard Buttons</span>
+                        <div id="um-kb-toggle" class="toggle" onclick="toggleUmKB()"><span class="slider"></span></div>
+                    </div>
+                    <div id="um-kb-section" class="hidden" style="margin-top:0.5rem;">
+                        <div class="toggle-row" style="padding:0.3rem 0.6rem; margin-bottom:0.4rem;">
+                            <span class="label" style="font-size:0.78rem;">Inline Keyboard</span>
+                            <div id="um-inline-toggle" class="toggle" onclick="toggleUmInline()"><span class="slider"></span></div>
+                        </div>
+                        <div id="um-inline-section" class="hidden">
+                            <div class="flex" style="margin-bottom:0.4rem;">
+                                <input id="um-inline-label" class="form-input" style="flex:1; min-width:80px; font-size:0.8rem;" placeholder="Label">
+                                <select id="um-inline-type" class="form-input" style="flex:0 0 auto; width:auto; font-size:0.8rem;" onchange="document.getElementById('um-inline-value').placeholder=this.value==='url'?'https://example.com':'Callback data';">
+                                    <option value="callback">Callback</option>
+                                    <option value="url">URL</option>
+                                </select>
+                                <input id="um-inline-value" class="form-input" style="flex:1; min-width:100px; font-size:0.8rem;" placeholder="Value / URL">
+                                <button onclick="addUmInlineBtn()" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus"></i></button>
+                            </div>
+                            <div id="um-inline-buttons" class="button-chip-list" style="min-height:24px;"></div>
+                        </div>
+                        <div class="toggle-row" style="padding:0.3rem 0.6rem; margin-bottom:0.4rem; margin-top:0.4rem;">
+                            <span class="label" style="font-size:0.78rem;">Reply Keyboard</span>
+                            <div id="um-reply-toggle" class="toggle" onclick="toggleUmReply()"><span class="slider"></span></div>
+                        </div>
+                        <div id="um-reply-section" class="hidden">
+                            <div class="flex" style="margin-bottom:0.4rem;">
+                                <input id="um-reply-label" class="form-input" style="flex:1; min-width:100px; font-size:0.8rem;" placeholder="Button text">
+                                <button onclick="addUmReplyBtn()" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus"></i></button>
+                            </div>
+                            <div id="um-reply-buttons" class="button-chip-list" style="min-height:24px;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-input-area">
+                    <textarea id="um-tab-message" class="form-textarea" rows="4" placeholder="Type a message to send via bot…" style="resize:none;" onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault(); sendUserMessageFromTab();}"></textarea>
+                    <button onclick="sendUserMessageFromTab()" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i></button>
+                </div>
+            </div>
+
+            <!-- ============ BROADCAST TAB ============ -->
+            <div id="tab-broadcast" class="tab-content">
+                <div class="bcast-header">
+                    <button onclick="closeBroadcastTab()" class="btn btn-gray btn-sm"><i class="fa-solid fa-arrow-left"></i> <span>Back</span></button>
+                    <h3 class="panel-title"><i class="fa-solid fa-bullhorn"></i> <span>Global Broadcast</span></h3>
+                </div>
+                <div class="bcast-opts">
+                    <label class="form-label">Send to:</label>
+                    <select id="broadcast-target" class="form-input" onchange="onBroadcastTargetChange()">
+                        <option value="all">All Users</option>
+                        <option value="only_ai_blocked">Only AI-Blocked Users</option>
+                        <option value="only_full_blocked">Only Fully Blocked Users</option>
+                        <option value="except_ai_blocked">All except AI-Blocked</option>
+                        <option value="except_full_blocked">All except Fully Blocked</option>
+                        <option value="specific">Specific User ID(s)</option>
+                        <option value="custom">Custom Selection</option>
+                    </select>
+                    <div id="bcast-specific-group" class="hidden" style="margin-top:0.6rem;">
+                        <label class="form-label" style="font-size:0.82rem;">User IDs (one per line)</label>
+                        <textarea id="broadcast-specific-ids" class="form-textarea" rows="3" placeholder="7407137804&#10;123456789" style="resize:none; font-family:var(--mono); font-size:0.8rem;"></textarea>
+                        <span class="field-hint">Enter Telegram user IDs, one per line.</span>
+                    </div>
+                    <div id="bcast-count" class="bcast-count"></div>
+                    <div id="broadcast-custom-list" class="bcast-custom-list hidden"></div>
+                </div>
+
+                <!-- Keyboard buttons -->
+                <div class="ai-section" style="margin-bottom:1rem;">
+                    <div class="toggle-row" style="padding:0.5rem 0.8rem;">
+                        <span class="label" style="font-size:0.85rem;">Attach Keyboard Buttons</span>
+                        <div id="bcast-kb-toggle" class="toggle" onclick="toggleBroadcastKB()"><span class="slider"></span></div>
+                    </div>
+                    <div id="bcast-kb-section" class="hidden" style="margin-top:0.8rem;">
+                        <div class="toggle-row" style="padding:0.4rem 0.7rem; margin-bottom:0.6rem;">
+                            <span class="label" style="font-size:0.82rem;">Inline Keyboard</span>
+                            <div id="bcast-inline-toggle" class="toggle" onclick="toggleBroadcastInline()"><span class="slider"></span></div>
+                        </div>
+                        <div id="bcast-inline-section" class="hidden">
+                            <div class="flex" style="margin-bottom:0.5rem;">
+                                <input id="bcast-inline-label" class="form-input" style="flex:1; min-width:100px;" placeholder="Label">
+                                <select id="bcast-inline-type" class="form-input" style="flex:0 0 auto; width:auto;" onchange="onBroadcastInlineTypeChange()">
+                                    <option value="callback">Callback</option>
+                                    <option value="url">URL</option>
+                                </select>
+                                <input id="bcast-inline-value" class="form-input" style="flex:1; min-width:120px;" placeholder="Value / URL">
+                                <button onclick="addBroadcastInlineBtn()" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus"></i></button>
+                            </div>
+                            <div id="bcast-inline-buttons" class="button-chip-list" style="min-height:30px;"></div>
+                        </div>
+                        <div class="toggle-row" style="padding:0.4rem 0.7rem; margin-bottom:0.6rem; margin-top:0.6rem;">
+                            <span class="label" style="font-size:0.82rem;">Reply Keyboard</span>
+                            <div id="bcast-reply-toggle" class="toggle" onclick="toggleBroadcastReply()"><span class="slider"></span></div>
+                        </div>
+                        <div id="bcast-reply-section" class="hidden">
+                            <div class="flex" style="margin-bottom:0.5rem;">
+                                <input id="bcast-reply-label" class="form-input" style="flex:1; min-width:100px;" placeholder="Button text">
+                                <button onclick="addBroadcastReplyBtn()" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus"></i></button>
+                            </div>
+                            <div id="bcast-reply-buttons" class="button-chip-list" style="min-height:30px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <h4 class="panel-title" style="font-size:0.95rem; margin-bottom:0.6rem;"><i class="fa-solid fa-comments"></i> <span>Broadcast Chat</span></h4>
+                <div id="broadcast-chat" class="chat-messages"><div class="chat-empty"><i class="fa-regular fa-paper-plane" style="margin-inline-end:0.4rem;"></i> Messages you send here will be delivered to selected users.</div></div>
+                <div class="chat-input-area">
+                    <textarea id="broadcast-message" class="form-textarea" rows="4" placeholder="Type your broadcast message…" style="resize:none;" onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault(); sendBroadcast();}"></textarea>
+                    <div class="flex gap-1" style="flex-direction: column; justify-content: center;">
+                        <button onclick="sendBroadcast()" class="btn btn-success"><i class="fa-solid fa-paper-plane"></i> <span>Send</span></button>
+                        <button onclick="clearBroadcastChat()" style="width: 100%;" class="btn btn-danger btn-sm" title="Clear chat"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>
+                </div>
             </div>
 
             <!-- ============ AI TAB ============ -->
             <div id="tab-ai" class="tab-content">
                 <h3 class="panel-title" style="margin-bottom:1rem;"><i class="fa-solid fa-robot"></i> <span>AI Configuration</span></h3>
+                <div id="ai-settings-content">
 
                 <div class="ai-section">
                     <div class="ai-section-title"><i class="fa-solid fa-power-off"></i> <span>Enable AI</span></div>
@@ -874,6 +1154,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                                 <option value="short">Short (~3-5 lines)</option>
                                 <option value="medium" selected>Medium (~6-10 lines)</option>
                                 <option value="detailed">Detailed (~10-20 lines)</option>
+                                <option value="automatic">Automatic (AI decides)</option>
                             </select>
                             <span class="field-hint">Length of responses (recommended: Medium).</span>
                         </div>
@@ -903,12 +1184,19 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 <div class="ai-section">
                     <div class="ai-section-title"><i class="fa-solid fa-brain"></i> <span>Instructions &amp; Knowledge</span></div>
 
-                    <div class="toggle-row" style="padding:0.6rem 0.9rem; margin-bottom:1rem;">
+                    <div class="toggle-row" style="padding:0.6rem 0.9rem; margin-bottom:0.6rem;">
                         <div>
                             <div class="label" style="font-size:0.85rem;">Strict Knowledge Mode</div>
                             <div class="sub" style="font-size:0.72rem;">When enabled, AI will ONLY use your instructions and knowledge base — never web search or invent info.</div>
                         </div>
                         <div id="ai-strict-mode-toggle" class="toggle" onclick="toggleStrictMode()"><span class="slider"></span></div>
+                    </div>
+                    <div class="toggle-row" style="padding:0.6rem 0.9rem; margin-bottom:1rem;">
+                        <div>
+                            <div class="label" style="font-size:0.85rem;">RTL Support (Farsi)</div>
+                            <div class="sub" style="font-size:0.72rem;">Adds U+200F before English letters at the start of paragraphs that are actually in Farsi.</div>
+                        </div>
+                        <div id="ai-rtl-toggle" class="toggle" onclick="toggleRtlSupport()"><span class="slider"></span></div>
                     </div>
 
                     <div class="form-group">
@@ -1042,25 +1330,30 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                                 <label class="form-label">Response Delay (ms)</label>
                                 <input type="number" id="ai-response-delay" class="form-input" placeholder="0" value="0" min="0" max="5000">
                             </div>
-                            <div class="form-group" style="display:flex; flex-direction:column; gap:0.35rem;">
-                                <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.85rem; cursor:pointer;"><input type="checkbox" id="ai-typing-indicator" checked> <span>Show Typing Indicator</span></label>
-                                <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.85rem; cursor:pointer;"><input type="checkbox" id="ai-retry-on-failure"> <span>Retry Failed Request Once</span></label>
+                            <div class="form-group">
+                                <div class="toggle-row" style="padding:0.5rem 0.7rem;">
+                                    <div>
+                                        <div class="label" style="font-size:0.82rem;">Show Typing Indicator</div>
+                                        <div class="sub" style="font-size:0.68rem;">Shows "typing..." while AI is generating a reply.</div>
+                                    </div>
+                                    <div id="ai-typing-toggle" class="toggle active" onclick="toggleTypingIndicator()"><span class="slider"></span></div>
+                                </div>
+                                <div class="toggle-row" style="padding:0.5rem 0.7rem; margin-top:0.4rem;">
+                                    <div>
+                                        <div class="label" style="font-size:0.82rem;">Retry Failed Request Once</div>
+                                        <div class="sub" style="font-size:0.68rem;">Automatically retries once if the AI request fails.</div>
+                                    </div>
+                                    <div id="ai-retry-toggle" class="toggle" onclick="toggleRetryOnFailure()"><span class="slider"></span></div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <div class="mt-3" style="border-top:1px solid var(--border); padding-top:0.9rem;">
-                        <div class="toggle-row" style="padding:0.6rem 0.9rem; margin-bottom:0.6rem;">
-                            <div>
-                                <div class="label" style="font-size:0.85rem;">RTL Support (Farsi)</div>
-                                <div class="sub" style="font-size:0.72rem;">Adds U+200F before English letters at the start of paragraphs that are actually in Farsi.</div>
-                            </div>
-                            <div id="ai-rtl-toggle" class="toggle" onclick="toggleRtlSupport()"><span class="slider"></span></div>
-                        </div>
-                        <div class="flex">
+                        <div class="flex" id="memory-count-row">
                             <span style="font-weight:600;"><i class="fa-solid fa-memory"></i> <span>AI Memory Usage</span></span>
                             <span id="memory-count-display" class="text-sm">…</span>
-                            <button onclick="refreshMemoryCount()" class="btn btn-gray btn-sm"><i class="fa-solid fa-rotate"></i> <span>Refresh</span></button>
+                            <button onclick="refreshMemoryCount()" class="btn btn-gray btn-sm" id="memory-refresh-btn"><i class="fa-solid fa-rotate"></i> <span>Refresh</span></button>
                         </div>
                     </div>
                 </div>
@@ -1075,6 +1368,10 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                         <div id="ai-suggested-toggle" class="toggle" onclick="toggleSuggestedQuestions()"><span class="slider"></span></div>
                     </div>
                     <div id="suggested-questions-editor" style="margin-top:0.6rem;">
+                        <div class="toggle-row" style="padding:0.4rem 0.7rem; margin-bottom:0.5rem;">
+                            <span class="label" style="font-size:0.82rem;">One-time keyboard (disappears after use)</span>
+                            <div id="ai-sq-onetime-toggle" class="toggle active" onclick="toggleSuggestedOneTime()"><span class="slider"></span></div>
+                        </div>
                         <div class="flex" style="margin-bottom:0.5rem;">
                             <input id="suggested-q-label" class="form-input" style="flex:1; min-width:130px;" placeholder="Button label">
                             <input id="suggested-q-value" class="form-input" style="flex:1; min-width:130px;" placeholder="Value (text to send)">
@@ -1082,7 +1379,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                         </div>
                         <div id="suggested-questions-list" class="panel" style="padding:0.5rem; min-height:30px;"></div>
                     </div>
-                    <span class="field-hint mt-2">These appear as a one-time reply keyboard. Once the user taps a button or closes the menu, it won't reappear automatically.</span>
+                    <span class="field-hint mt-2">These appear as a reply keyboard. If one-time is enabled, it disappears after the user taps a button or closes the menu.</span>
                 </div>
 
                 <div class="ai-section">
@@ -1095,6 +1392,8 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                         <button onclick="sendPlaygroundMessage()" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i></button>
                         <button onclick="clearPlaygroundChat()" class="btn btn-gray" title="Clear"><i class="fa-solid fa-trash-can"></i></button>
                     </div>
+                </div>
+
                 </div>
 
                 <div class="ai-save-bar">
@@ -1188,7 +1487,8 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                         </div>
                     </div>
                     <div class="backup-actions">
-                        <button onclick="exportBackup()" class="btn btn-success"><i class="fa-solid fa-download"></i> <span>Export Backup</span></button>
+                        <button onclick="exportBackup()" class="btn btn-success"><i class="fa-solid fa-download"></i> <span>Export Full Backup</span></button>
+                        <button onclick="document.getElementById('custom-backup-modal').classList.remove('hidden')" class="btn btn-primary"><i class="fa-solid fa-sliders"></i> <span>Custom Backup</span></button>
                         <button onclick="document.getElementById('backup-import-file').click()" class="btn btn-gray"><i class="fa-solid fa-upload"></i> <span>Import Backup</span></button>
                     </div>
                     <input type="file" id="backup-import-file" style="display:none;" onchange="importBackup(event)">
@@ -1371,52 +1671,54 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- ============ USER MANAGE MODAL ============ -->
-    <div id="user-manage-modal" class="modal-overlay hidden">
-        <div class="modal-box" style="max-width:520px;">
+    <!-- ============ CUSTOM BACKUP MODAL ============ -->
+    <div id="custom-backup-modal" class="modal-overlay hidden">
+        <div class="modal-box" style="max-width:560px;">
             <div class="modal-title">
-                <span id="user-manage-title">Manage User</span>
-                <button class="modal-close-x" onclick="closeUserManageModal()"><i class="fa-solid fa-xmark"></i></button>
+                <span><i class="fa-solid fa-sliders"></i> Custom Backup</span>
+                <button class="modal-close-x" onclick="document.getElementById('custom-backup-modal').classList.add('hidden')"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="modal-scroll">
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.6rem; margin-bottom:1rem;">
-                    <div class="knowledge-base-item" style="margin-bottom:0; padding:0.6rem;">
-                        <div style="font-size:0.72rem; color:var(--text-3); text-transform:uppercase; letter-spacing:0.04em;">User ID</div>
-                        <div id="um-id" class="mono" style="font-size:0.9rem; margin-top:0.15rem;">—</div>
-                    </div>
-                    <div class="knowledge-base-item" style="margin-bottom:0; padding:0.6rem;">
-                        <div style="font-size:0.72rem; color:var(--text-3); text-transform:uppercase; letter-spacing:0.04em;">Username</div>
-                        <div id="um-username" style="font-size:0.9rem; margin-top:0.15rem;">—</div>
-                    </div>
-                    <div class="knowledge-base-item" style="margin-bottom:0; padding:0.6rem;">
-                        <div style="font-size:0.72rem; color:var(--text-3); text-transform:uppercase; letter-spacing:0.04em;">Name</div>
-                        <div id="um-name" style="font-size:0.9rem; margin-top:0.15rem;">—</div>
-                    </div>
-                    <div class="knowledge-base-item" style="margin-bottom:0; padding:0.6rem;">
-                        <div style="font-size:0.72rem; color:var(--text-3); text-transform:uppercase; letter-spacing:0.04em;">Role</div>
-                        <div id="um-role" style="font-size:0.9rem; margin-top:0.15rem;">—</div>
-                    </div>
-                    <div class="knowledge-base-item" style="margin-bottom:0; padding:0.6rem; grid-column:span 2;">
-                        <div style="font-size:0.72rem; color:var(--text-3); text-transform:uppercase; letter-spacing:0.04em;">Last Active</div>
-                        <div id="um-last-active" style="font-size:0.9rem; margin-top:0.15rem;">—</div>
-                    </div>
+                <p class="text-sm" style="margin-bottom:0.8rem;">Choose what to include in your backup. Uncheck items you don't need.</p>
+                <div style="margin-bottom:0.6rem; display:flex; gap:0.5rem;">
+                    <button class="btn btn-gray btn-sm" onclick="customBackupCheckAll(true)">Check All</button>
+                    <button class="btn btn-gray btn-sm" onclick="customBackupCheckAll(false)">Uncheck All</button>
                 </div>
-
-                <div style="display:flex; flex-direction:column; gap:0.5rem;">
-                    <button id="um-role-btn" class="btn btn-primary btn-block"><i class="fa-solid fa-user-shield"></i> Promote to Admin</button>
-                    <button id="um-block-ai-btn" class="btn btn-danger btn-block"><i class="fa-solid fa-robot"></i> Block from AI Chatbot</button>
-                    <button id="um-block-all-btn" class="btn btn-danger btn-block"><i class="fa-solid fa-ban"></i> Block from Entire Bot</button>
-                    <div style="border-top:1px solid var(--border); padding-top:0.6rem; margin-top:0.2rem;">
-                        <label class="form-label" style="font-size:0.82rem;">Send Private Message</label>
-                        <div class="flex">
-                            <input id="um-message" class="form-input" style="flex:1; min-width:0;" placeholder="Type a message to send via bot…">
-                            <button onclick="sendUserMessage()" class="btn btn-primary btn-sm"><i class="fa-solid fa-paper-plane"></i></button>
-                        </div>
-                    </div>
+                <div id="custom-backup-items">
+                    <label style="display:flex; align-items:center; gap:0.6rem; padding:0.5rem 0; border-bottom:1px dashed var(--border); font-size:0.9rem; cursor:pointer;">
+                        <input type="checkbox" class="custom-backup-cb" value="commands" checked style="accent-color:var(--primary);"> <i class="fa-solid fa-terminal" style="color:var(--primary); width:20px;"></i> <span>Commands</span>
+                        <span class="field-hint" style="margin-inline-start:auto;">Bot commands &amp; responses</span>
+                    </label>
+                    <label style="display:flex; align-items:center; gap:0.6rem; padding:0.5rem 0; border-bottom:1px dashed var(--border); font-size:0.9rem; cursor:pointer;">
+                        <input type="checkbox" class="custom-backup-cb" value="users" checked style="accent-color:var(--primary);"> <i class="fa-solid fa-users" style="color:var(--accent); width:20px;"></i> <span>Users</span>
+                        <span class="field-hint" style="margin-inline-start:auto;">User profiles &amp; roles</span>
+                    </label>
+                    <label style="display:flex; align-items:center; gap:0.6rem; padding:0.5rem 0; border-bottom:1px dashed var(--border); font-size:0.9rem; cursor:pointer;">
+                        <input type="checkbox" class="custom-backup-cb" value="ai_messages" checked style="accent-color:var(--primary);"> <i class="fa-solid fa-brain" style="color:var(--green); width:20px;"></i> <span>AI Memory</span>
+                        <span class="field-hint" style="margin-inline-start:auto;">Conversation history</span>
+                    </label>
+                    <label style="display:flex; align-items:center; gap:0.6rem; padding:0.5rem 0; border-bottom:1px dashed var(--border); font-size:0.9rem; cursor:pointer;">
+                        <input type="checkbox" class="custom-backup-cb" value="ai_settings" checked style="accent-color:var(--primary);"> <i class="fa-solid fa-robot" style="color:var(--amber); width:20px;"></i> <span>AI Settings</span>
+                        <span class="field-hint" style="margin-inline-start:auto;">AI config, providers, prompts</span>
+                    </label>
+                    <label style="display:flex; align-items:center; gap:0.6rem; padding:0.5rem 0; border-bottom:1px dashed var(--border); font-size:0.9rem; cursor:pointer;">
+                        <input type="checkbox" class="custom-backup-cb" value="menu_commands" checked style="accent-color:var(--primary);"> <i class="fa-solid fa-bars" style="color:var(--text-2); width:20px;"></i> <span>Menu Commands</span>
+                        <span class="field-hint" style="margin-inline-start:auto;">Telegram bot menu</span>
+                    </label>
+                    <label style="display:flex; align-items:center; gap:0.6rem; padding:0.5rem 0; border-bottom:1px dashed var(--border); font-size:0.9rem; cursor:pointer;">
+                        <input type="checkbox" class="custom-backup-cb" value="bot_config" checked style="accent-color:var(--primary);"> <i class="fa-solid fa-key" style="color:var(--red); width:20px;"></i> <span>Bot Token &amp; Webhook</span>
+                        <span class="field-hint" style="margin-inline-start:auto;">Telegram connection</span>
+                    </label>
+                    <label style="display:flex; align-items:center; gap:0.6rem; padding:0.5rem 0; font-size:0.9rem; cursor:pointer;">
+                        <input type="checkbox" class="custom-backup-cb" value="blocked_users" checked style="accent-color:var(--primary);"> <i class="fa-solid fa-ban" style="color:var(--red); width:20px;"></i> <span>Blocked Users</span>
+                        <span class="field-hint" style="margin-inline-start:auto;">Block list</span>
+                    </label>
                 </div>
+                <div class="field-hint" style="margin-top:0.5rem;">\u26a0\ufe0f Bot token and webhook secret are included for convenience. Keep the backup file safe.</div>
             </div>
             <div class="modal-actions">
-                <button onclick="closeUserManageModal()" class="btn btn-gray"><span>Close</span></button>
+                <button onclick="document.getElementById('custom-backup-modal').classList.add('hidden')" class="btn btn-gray"><span>Cancel</span></button>
+                <button onclick="exportCustomBackup()" class="btn btn-success"><i class="fa-solid fa-download"></i> <span>Export Selected</span></button>
             </div>
         </div>
     </div>
@@ -1467,6 +1769,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
     let commandEnabled = true;
     let aiEnabled = false;
     let showSuggestedQuestions = false;
+    let showSuggestedOneTime = true;
     let playgroundHistory = [];
     let latestVersion = null;
     let updateAvailable = false;
@@ -1517,6 +1820,96 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
     function showLoading() {}
     function hideLoading() {}
     function withLoading(promise) { return Promise.resolve(promise); }
+
+    // ----- Compact inline spinner (for inline status labels) -----
+    function showInlineSpinnerCompact(container) {
+        if (!container) return;
+        const spinner = document.createElement('div');
+        spinner.className = 'inline-spinner-compact';
+        spinner.innerHTML = '<div class="loading-spinner"></div>';
+        container.innerHTML = '';
+        container.appendChild(spinner);
+    }
+
+    // ----- Skeleton loaders per section -----
+    function showOverviewSkeleton() {
+        const statsEl = document.getElementById('overview-stats');
+        const listEl = document.getElementById('overview-checklist');
+        const errEl = document.getElementById('overview-error');
+        if (errEl) errEl.style.display = 'none';
+        if (statsEl) statsEl.innerHTML =
+            '<div class="skl-stat-card"><div class="skl-stat-icon skl-bg"></div><div class="skl-stat-value skl-bg"></div><div class="skl-stat-label skl-bg"></div></div>' +
+            '<div class="skl-stat-card"><div class="skl-stat-icon skl-bg"></div><div class="skl-stat-value skl-bg"></div><div class="skl-stat-label skl-bg"></div></div>' +
+            '<div class="skl-stat-card"><div class="skl-stat-icon skl-bg"></div><div class="skl-stat-value skl-bg"></div><div class="skl-stat-label skl-bg"></div></div>' +
+            '<div class="skl-stat-card"><div class="skl-stat-icon skl-bg"></div><div class="skl-stat-value skl-bg"></div><div class="skl-stat-label skl-bg"></div></div>';
+        if (listEl) listEl.innerHTML =
+            '<li class="skl-check-item"><span class="skl-check-icon skl-circle"></span><span class="skl-check-text skl-block"></span></li>' +
+            '<li class="skl-check-item"><span class="skl-check-icon skl-circle"></span><span class="skl-check-text skl-block"></span></li>' +
+            '<li class="skl-check-item"><span class="skl-check-icon skl-circle"></span><span class="skl-check-text skl-block"></span></li>';
+    }
+    function showCommandsSkeleton() {
+        const el = document.getElementById('commands-list');
+        if (!el) return;
+        let h = '';
+        for (let i = 0; i < 6; i++) {
+            h += '<div class="skl-file-row"><div class="skl-file-icon skl-bg"></div><div class="skl-file-name skl-bg"></div><div class="skl-file-badge skl-bg"></div><div class="skl-file-badge skl-bg"></div></div>';
+        }
+        el.innerHTML = h;
+    }
+    function showMenuSkeleton() {
+        const el = document.getElementById('menu-commands-container');
+        if (!el) return;
+        let h = '';
+        for (let i = 0; i < 4; i++) {
+            h += '<div class="skl-menu-row"><div class="skl-menu-input skl-bg"></div><div class="skl-menu-input skl-bg"></div><div class="skl-menu-del skl-bg"></div></div>';
+        }
+        el.innerHTML = h;
+    }
+    function showUsersSkeleton() {
+        const el = document.getElementById('users-list');
+        if (!el) return;
+        el.innerHTML = '<div class="skl-table-row"><div class="skl-btn skl-bg"></div><div class="skl-block skl-bg"></div><div class="skl-block skl-bg"></div><div class="skl-block skl-bg"></div><div class="skl-block skl-bg"></div><div class="skl-block skl-bg"></div><div class="skl-block skl-bg"></div></div>' +
+            '<div class="skl-table-row"><div class="skl-btn skl-bg"></div><div class="skl-block skl-bg"></div><div class="skl-block skl-bg"></div><div class="skl-block skl-bg"></div><div class="skl-block skl-bg"></div><div class="skl-block skl-bg"></div><div class="skl-block skl-bg"></div></div>' +
+            '<div class="skl-table-row"><div class="skl-btn skl-bg"></div><div class="skl-block skl-bg"></div><div class="skl-block skl-bg"></div><div class="skl-block skl-bg"></div><div class="skl-block skl-bg"></div><div class="skl-block skl-bg"></div><div class="skl-block skl-bg"></div></div>';
+    }
+    function showAiSettingsSkeleton() {
+        var el = document.getElementById('ai-settings-content');
+        if (!el) return;
+        el.classList.add('loading-overlay');
+    }
+    function hideAiSettingsSkeleton() {
+        var el = document.getElementById('ai-settings-content');
+        if (!el) return;
+        el.classList.remove('loading-overlay');
+    }
+    function showSettingsSkeleton() {
+        const panel = document.querySelector('#tab-settings .panel');
+        if (!panel) return;
+        let existing = document.getElementById('settings-skeleton');
+        if (existing) existing.remove();
+        const skeleton = document.createElement('div');
+        skeleton.id = 'settings-skeleton';
+        skeleton.innerHTML =
+            '<div class="skl-form-row"><div class="skl-label skl-bg"></div><div class="skl-input"></div></div>' +
+            '<div class="skl-form-row"><div class="skl-label skl-bg"></div><div class="skl-input"></div></div>';
+        panel.appendChild(skeleton);
+    }
+    function showBotInfoSkeleton() {
+        const inputs = [
+            document.getElementById('bot-name'),
+            document.getElementById('bot-description'),
+            document.getElementById('bot-short-description')
+        ];
+        inputs.forEach(el => {
+            if (!el) return;
+            if (el.tagName === 'TEXTAREA') {
+                el.setAttribute('data-skeleton', 'true');
+                el.outerHTML = '<div id="' + el.id + '" class="skl-textarea" data-skeleton="true"></div>';
+            } else {
+                el.outerHTML = '<div id="' + el.id + '" class="skl-input" data-skeleton="true" style="margin-bottom:1.1rem;"></div>';
+            }
+        });
+    }
 
     // ----- Toast -----
     function showToast(message, type) {
@@ -1702,12 +2095,14 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         loadMenuCommands(true);
         loadSettings(true);
         autoCheckForUpdate();
+        setTimeout(collapseTabs, 250);
     }
 
     // ======================================================================
     // TABS
     // ======================================================================
     const TAB_ORDER = { overview: 0, commands: 1, menu: 2, users: 3, ai: 4, settings: 5, botinfo: 6, backup: 7, update: 8 };
+    const SUB_TABS = { 'user-manage': true, 'broadcast': true };
 
     function switchTab(tabId) {
         currentTab = tabId;
@@ -1716,6 +2111,9 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         if (el) el.classList.add('active');
         document.querySelectorAll('.tabs-header .tab-btn').forEach((b, i) => b.classList.toggle('active', i === TAB_ORDER[tabId]));
         document.querySelectorAll('#mobile-tabs button').forEach((b, i) => b.classList.toggle('active', i === TAB_ORDER[tabId]));
+        // Update More dropdown active state
+        var moreDropdown = document.getElementById('more-tabs-dropdown');
+        if (moreDropdown) moreDropdown.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.tab === tabId));
         closeHamburger();
         if (tabId === 'commands') loadCommands();
         else if (tabId === 'menu') loadMenuCommands();
@@ -1725,6 +2123,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         else if (tabId === 'botinfo') loadBotInfo();
         else if (tabId === 'overview') loadOverview();
         else if (tabId === 'update') loadUpdateTab();
+        collapseTabs();
     }
 
     function toggleHamburger() {
@@ -1749,6 +2148,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         const statsEl = document.getElementById('overview-stats');
         const listEl = document.getElementById('overview-checklist');
         errEl.style.display = 'none';
+        showOverviewSkeleton();
         try {
             const res = await withLoading(fetch('/api/stats'));
             const data = await res.json();
@@ -1790,13 +2190,19 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
     // ======================================================================
     function toggleInlineKeyboard() {
         showInlineKeyboard = !showInlineKeyboard;
+        if (showInlineKeyboard) { showReplyKeyboard = false; }
         document.getElementById('inline-toggle').classList.toggle('active', showInlineKeyboard);
         document.getElementById('inline-keyboard-section').classList.toggle('hidden', !showInlineKeyboard);
+        document.getElementById('reply-toggle').classList.toggle('active', showReplyKeyboard);
+        document.getElementById('reply-keyboard-section').classList.toggle('hidden', !showReplyKeyboard);
     }
     function toggleReplyKeyboard() {
         showReplyKeyboard = !showReplyKeyboard;
+        if (showReplyKeyboard) { showInlineKeyboard = false; }
         document.getElementById('reply-toggle').classList.toggle('active', showReplyKeyboard);
         document.getElementById('reply-keyboard-section').classList.toggle('hidden', !showReplyKeyboard);
+        document.getElementById('inline-toggle').classList.toggle('active', showInlineKeyboard);
+        document.getElementById('inline-keyboard-section').classList.toggle('hidden', !showInlineKeyboard);
     }
     function toggleEnabledIcon() {
         commandEnabled = !commandEnabled;
@@ -1877,8 +2283,11 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         let html = '<div class="button-chip-list"><span class="field-hint" style="margin-bottom:0.2rem;">' + 'Your buttons:' + '</span>';
         inlineButtonsArray.forEach((b, i) => {
             const icon = b.type === 'url' ? 'fa-link' : (b.type === 'command' ? 'fa-terminal' : 'fa-message');
-            html += '<div class="button-chip" draggable="true" data-index="' + i + '" data-type="inline">' +
-                '<span class="chip-grip"><i class="fa-solid fa-grip-lines"></i></span>' +
+            const upDisabled = i === 0 ? 'disabled' : '';
+            const downDisabled = i === inlineButtonsArray.length - 1 ? 'disabled' : '';
+            html += '<div class="button-chip" data-index="' + i + '" data-type="inline">' +
+                '<button class="chip-btn" onclick="moveInlineButton(-1,' + i + ')" ' + upDisabled + ' title="Up"><i class="fa-solid fa-arrow-up"></i></button>' +
+                '<button class="chip-btn" onclick="moveInlineButton(1,' + i + ')" ' + downDisabled + ' title="Down"><i class="fa-solid fa-arrow-down"></i></button>' +
                 '<i class="fa-solid ' + icon + '" style="color:var(--accent);"></i>' +
                 '<span class="chip-text">' + escapeHtml(b.text) + '</span>' +
                 '<span class="chip-badge">' + ({command:'Command',callback:'Callback',url:'URL'}[b.type] || b.type) + '</span>' +
@@ -1886,7 +2295,14 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 '</div>';
         });
         container.innerHTML = html + '</div>';
-        attachDragEvents(container);
+    }
+
+    function moveInlineButton(dir, index) {
+        const newIndex = index + dir;
+        if (newIndex < 0 || newIndex >= inlineButtonsArray.length) return;
+        const item = inlineButtonsArray.splice(index, 1)[0];
+        inlineButtonsArray.splice(newIndex, 0, item);
+        renderInlineChips();
     }
 
     function renderReplyChips() {
@@ -1897,15 +2313,25 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         }
         let html = '<div class="button-chip-list"><span class="field-hint" style="margin-bottom:0.2rem;">' + 'Your buttons:' + '</span>';
         replyButtonsArray.forEach((b, i) => {
-            html += '<div class="button-chip" draggable="true" data-index="' + i + '" data-type="reply">' +
-                '<span class="chip-grip"><i class="fa-solid fa-grip-lines"></i></span>' +
+            const upDisabled = i === 0 ? 'disabled' : '';
+            const downDisabled = i === replyButtonsArray.length - 1 ? 'disabled' : '';
+            html += '<div class="button-chip" data-index="' + i + '" data-type="reply">' +
+                '<button class="chip-btn" onclick="moveReplyButton(-1,' + i + ')" ' + upDisabled + ' title="Up"><i class="fa-solid fa-arrow-up"></i></button>' +
+                '<button class="chip-btn" onclick="moveReplyButton(1,' + i + ')" ' + downDisabled + ' title="Down"><i class="fa-solid fa-arrow-down"></i></button>' +
                 '<i class="fa-regular fa-keyboard" style="color:var(--accent);"></i>' +
-                '<span class="chip-text">' + escapeHtml(b.text) + ' → ' + escapeHtml(b.command) + '</span>' +
+                '<span class="chip-text">' + escapeHtml(b.text) + ' \u2192 ' + escapeHtml(b.command) + '</span>' +
                 '<button class="chip-btn chip-delete" onclick="removeReplyButton(' + i + ')"><i class="fa-regular fa-circle-xmark"></i></button>' +
                 '</div>';
         });
         container.innerHTML = html + '</div>';
-        attachDragEvents(container);
+    }
+
+    function moveReplyButton(dir, index) {
+        const newIndex = index + dir;
+        if (newIndex < 0 || newIndex >= replyButtonsArray.length) return;
+        const item = replyButtonsArray.splice(index, 1)[0];
+        replyButtonsArray.splice(newIndex, 0, item);
+        renderReplyChips();
     }
 
     function addInlineButton() {
@@ -1973,47 +2399,6 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             try { const arr = JSON.parse(json); if (Array.isArray(arr)) replyButtonsArray = arr; } catch (e) {}
         }
         renderReplyChips();
-    }
-
-    function attachDragEvents(container) {
-        container.querySelectorAll('.button-chip[draggable="true"]').forEach(chip => {
-            chip.addEventListener('dragstart', handleDragStart);
-            chip.addEventListener('dragover', handleDragOver);
-            chip.addEventListener('drop', handleDrop);
-            chip.addEventListener('dragend', handleDragEnd);
-        });
-    }
-    function handleDragStart(e) {
-        const target = e.target.closest('.button-chip');
-        if (!target) return;
-        e.dataTransfer.setData('text/plain', JSON.stringify({ type: target.dataset.type, index: parseInt(target.dataset.index) }));
-        target.classList.add('dragging');
-    }
-    function handleDragOver(e) {
-        e.preventDefault();
-        const target = e.target.closest('.button-chip');
-        if (target) target.classList.add('drag-over');
-    }
-    function handleDrop(e) {
-        e.preventDefault();
-        const target = e.target.closest('.button-chip');
-        if (!target) return;
-        target.classList.remove('drag-over');
-        let from;
-        try { from = JSON.parse(e.dataTransfer.getData('text/plain')); } catch (err) { return; }
-        if (!from || from.type !== target.dataset.type) return;
-        const array = from.type === 'inline' ? inlineButtonsArray : replyButtonsArray;
-        const fromIdx = from.index;
-        const toIdx = parseInt(target.dataset.index);
-        if (fromIdx === toIdx) return;
-        const item = array.splice(fromIdx, 1)[0];
-        array.splice(toIdx, 0, item);
-        if (from.type === 'inline') renderInlineChips();
-        else renderReplyChips();
-    }
-    function handleDragEnd(e) {
-        const target = e.target.closest('.button-chip');
-        if (target) target.classList.remove('dragging', 'drag-over');
     }
 
     // ----- Tree / file manager -----
@@ -2193,6 +2578,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             if (!document.getElementById('command-modal').classList.contains('hidden')) populateDropdowns();
             return Promise.resolve();
         }
+        showCommandsSkeleton();
         return withLoading(
             fetch('/api/commands')
             .then(res => res.json().then(data => ({ status: res.status, data })))
@@ -2232,9 +2618,10 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             if (editingCommand.parent) parentSelect.value = editingCommand.parent;
             loadInlineButtonsFromJSON(editingCommand.buttons_json);
             showInlineKeyboard = !!(editingCommand.buttons_json && editingCommand.buttons_json.length > 2);
+            showReplyKeyboard = !!editingCommand.show_reply_keyboard;
+            if (showInlineKeyboard && showReplyKeyboard) { showReplyKeyboard = false; }
             document.getElementById('inline-toggle').classList.toggle('active', showInlineKeyboard);
             document.getElementById('inline-keyboard-section').classList.toggle('hidden', !showInlineKeyboard);
-            showReplyKeyboard = !!editingCommand.show_reply_keyboard;
             document.getElementById('reply-toggle').classList.toggle('active', showReplyKeyboard);
             document.getElementById('reply-keyboard-section').classList.toggle('hidden', !showReplyKeyboard);
             loadReplyButtonsFromJSON(editingCommand.reply_keyboard_json);
@@ -2343,6 +2730,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             renderMenuRows();
             return Promise.resolve();
         }
+        showMenuSkeleton();
         return withLoading(
             fetch('/api/menu_commands')
             .then(res => res.json())
@@ -2380,13 +2768,20 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         let html = '';
         menuCommands.forEach((entry, i) => {
             const isStart = entry.command === 'start';
-            const deleteBtn = isStart ?
-                '<span class="menu-fixed"><i class="fa-solid fa-lock"></i> ' + 'fixed' + '</span>' :
-                '<button class="menu-del" onclick="removeMenuRow(' + i + ')"><i class="fa-regular fa-trash-can"></i></button>';
+            const upDisabled = i === 0;
+            const downDisabled = i === menuCommands.length - 1;
+            let actionBtns = '';
+            if (isStart) {
+                actionBtns = '<span class="menu-fixed-icon" title="Fixed command"><i class="fa-solid fa-lock"></i></span>';
+            } else {
+                actionBtns = '<button class="menu-del" onclick="removeMenuRow(' + i + ')"><i class="fa-regular fa-trash-can"></i></button>';
+            }
             html += '<div class="menu-row">' +
-                '<input class="form-input" style="font-size:0.875rem;" value="' + escapeHtml(entry.command) + '" placeholder="start" data-index="' + i + '" ' + (isStart ? 'readonly' : '') + '>' +
-                '<input class="form-input" style="font-size:0.875rem;" value="' + escapeHtml(entry.description) + '" placeholder="Description" data-index="' + i + '">' +
-                deleteBtn +
+                '<button class="menu-arrow-btn" onclick="moveMenuRow(-1,' + i + ')" ' + (upDisabled ? 'disabled' : '') + ' title="Move up"><i class="fa-solid fa-arrow-up"></i></button>' +
+                '<button class="menu-arrow-btn" onclick="moveMenuRow(1,' + i + ')" ' + (downDisabled ? 'disabled' : '') + ' title="Move down"><i class="fa-solid fa-arrow-down"></i></button>' +
+                '<input class="form-input" style="font-size:0.875rem;" value="' + escapeHtml(entry.command) + '" placeholder="start" data-index="' + i + '" data-role="cmd" ' + (isStart ? 'readonly' : '') + '>' +
+                '<input class="form-input" style="font-size:0.875rem;" value="' + escapeHtml(entry.description) + '" placeholder="Description" data-index="' + i + '" data-role="desc">' +
+                actionBtns +
                 '</div>';
         });
         container.innerHTML = html;
@@ -2399,6 +2794,15 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         if (entry && entry.command === 'start') { showToast('Cannot remove the fixed “start” command.', 'error'); return; }
         syncMenuInputsToData();
         menuCommands.splice(index, 1);
+        renderMenuRows();
+    }
+
+    function moveMenuRow(dir, index) {
+        syncMenuInputsToData();
+        const newIndex = index + dir;
+        if (newIndex < 0 || newIndex >= menuCommands.length) return;
+        const item = menuCommands.splice(index, 1)[0];
+        menuCommands.splice(newIndex, 0, item);
         renderMenuRows();
     }
 
@@ -2458,6 +2862,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             renderUsers(cache.users.data, container);
             return;
         }
+        showUsersSkeleton();
         withLoading(
             fetch(url)
             .then(res => res.json())
@@ -2492,11 +2897,12 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             } else {
                 statusBadge = '<span class="badge badge-enabled">Active</span>';
             }
+            const displayName = (u.first_name || '').substring(0, 30);
             html += '<tr>' +
                 '<td>' + manageBtn + '</td>' +
                 '<td class="mono">' + escapeHtml(u.id) + '</td>' +
                 '<td>' + escapeHtml(u.username || '-') + '</td>' +
-                '<td>' + escapeHtml(u.first_name || '') + '</td>' +
+                '<td class="td-name" title="' + escapeHtml(u.first_name || '') + '">' + escapeHtml(displayName) + '</td>' +
                 '<td><span class="badge ' + (u.role === 'admin' ? 'badge-admin' : 'badge-gray') + '">' + escapeHtml(u.role || 'user') + '</span></td>' +
                 '<td>' + statusBadge + '</td>' +
                 '<td style="font-size:0.75rem; color:var(--text-3);">' + escapeHtml(u.last_active || '-') + '</td>' +
@@ -2505,7 +2911,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         container.innerHTML = html + '</tbody></table></div>';
         container.querySelectorAll('.manage-user-btn').forEach(b => b.addEventListener('click', () => {
             const user = users.find(u => u.id === parseInt(b.dataset.id));
-            if (user) openUserManageModal(user);
+            if (user) openUserManageTab(user);
         }));
     }
 
@@ -2524,104 +2930,663 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         );
     }
     // ======================================================================
-    // USER MANAGE MODAL
+    // USER MANAGE TAB
     // ======================================================================
     let manageUser = null;
 
-    function openUserManageModal(user) {
+    function openUserManageTab(user) {
         manageUser = user;
         managingUserId = user.id;
-        document.getElementById('user-manage-title').textContent = 'Manage @' + (user.username || user.id);
-        document.getElementById('um-id').textContent = user.id;
-        document.getElementById('um-username').textContent = '@' + (user.username || '-');
-        document.getElementById('um-name').textContent = user.first_name || '-';
-        document.getElementById('um-role').textContent = user.role || 'user';
-        document.getElementById('um-last-active').textContent = user.last_active || '-';
-        document.getElementById('um-role-btn').innerHTML = user.role === 'admin'
-            ? '<i class="fa-solid fa-user"></i> Demote to User'
-            : '<i class="fa-solid fa-user-shield"></i> Promote to Admin';
-        document.getElementById('um-role-btn').onclick = () => {
-            const newRole = manageUser.role === 'admin' ? 'user' : 'admin';
-            updateUserRole(manageUser.id, newRole);
-            closeUserManageModal();
-        };
-        // Fetch current block status
+        resetUmKeyboard();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        document.getElementById('um-tab-title').textContent = '@' + (user.username || user.id);
+        // Render cards
+        document.getElementById('um-tab-cards').innerHTML =
+            '<div class="um-card"><div class="um-lbl">User ID</div><div class="um-val mono">' + escapeHtml(user.id) + '</div></div>' +
+            '<div class="um-card"><div class="um-lbl">Username</div><div class="um-val">' + escapeHtml('@' + (user.username || '-')) + '</div></div>' +
+            '<div class="um-card"><div class="um-lbl">Name</div><div class="um-val">' + escapeHtml(user.first_name || '-') + '</div></div>' +
+            '<div class="um-card"><div class="um-lbl">Role</div><div class="um-val"><span class="badge ' + (user.role === 'admin' ? 'badge-admin' : 'badge-gray') + '">' + escapeHtml(user.role || 'user') + '</span></div></div>' +
+            '<div class="um-card" style="grid-column:span 2;"><div class="um-lbl">Last Active</div><div class="um-val">' + escapeHtml(user.last_active || '-') + '</div></div>';
+        // Render actions
+        var roleBtnHtml = user.role === 'admin'
+            ? '<button class="btn btn-primary btn-sm" onclick="umActionRole()"><i class="fa-solid fa-user"></i> Demote to User</button>'
+            : '<button class="btn btn-primary btn-sm" onclick="umActionRole()"><i class="fa-solid fa-user-shield"></i> Promote to Admin</button>';
+        document.getElementById('um-tab-actions').innerHTML = roleBtnHtml +
+            ' <button id="um-tab-block-ai" class="btn btn-danger btn-sm" onclick="umActionBlockAI()"><i class="fa-solid fa-robot"></i> Block AI</button>' +
+            ' <button id="um-tab-block-all" class="btn btn-danger btn-sm" onclick="umActionBlockAll()"><i class="fa-solid fa-ban"></i> Block All</button>';
+        // Fetch block status
         fetch('/api/users/block_status/' + user.id).then(r => r.json()).then(status => {
-            const isAiBlocked = status.blocked && status.block_type === 'ai_only';
-            const isFullBlocked = status.blocked && status.block_type === 'full';
-            if (isAiBlocked) {
-                document.getElementById('um-block-ai-btn').innerHTML = '<i class="fa-solid fa-unlock"></i> Unblock from AI Chatbot';
-                document.getElementById('um-block-ai-btn').className = 'btn btn-success btn-block';
+            var aiBtn = document.getElementById('um-tab-block-ai');
+            var allBtn = document.getElementById('um-tab-block-all');
+            if (!aiBtn || !allBtn) return;
+            if (status.blocked && status.block_type === 'ai_only') {
+                aiBtn.innerHTML = '<i class="fa-solid fa-unlock"></i> Unblock AI'; aiBtn.className = 'btn btn-success btn-sm';
+                aiBtn.dataset.blocked = '1';
             } else {
-                document.getElementById('um-block-ai-btn').innerHTML = '<i class="fa-solid fa-robot"></i> Block from AI Chatbot';
-                document.getElementById('um-block-ai-btn').className = 'btn btn-danger btn-block';
+                aiBtn.innerHTML = '<i class="fa-solid fa-robot"></i> Block AI'; aiBtn.className = 'btn btn-danger btn-sm';
+                aiBtn.dataset.blocked = '0';
             }
-            if (isFullBlocked) {
-                document.getElementById('um-block-all-btn').innerHTML = '<i class="fa-solid fa-unlock"></i> Unblock from Entire Bot';
-                document.getElementById('um-block-all-btn').className = 'btn btn-success btn-block';
+            if (status.blocked && status.block_type === 'full') {
+                allBtn.innerHTML = '<i class="fa-solid fa-unlock"></i> Unblock All'; allBtn.className = 'btn btn-success btn-sm';
+                allBtn.dataset.blocked = '1';
             } else {
-                document.getElementById('um-block-all-btn').innerHTML = '<i class="fa-solid fa-ban"></i> Block from Entire Bot';
-                document.getElementById('um-block-all-btn').className = 'btn btn-danger btn-block';
+                allBtn.innerHTML = '<i class="fa-solid fa-ban"></i> Block All'; allBtn.className = 'btn btn-danger btn-sm';
+                allBtn.dataset.blocked = '0';
             }
-            document.getElementById('um-block-ai-btn').onclick = () => toggleAiBlock(user.id, !isAiBlocked);
-            document.getElementById('um-block-all-btn').onclick = () => toggleFullBlock(user.id, !isFullBlocked);
         }).catch(() => {});
-        document.getElementById('user-manage-modal').classList.remove('hidden');
+        // Load chat history
+        loadUserChatHistory(user.id);
+        switchTab('user-manage');
     }
 
-    function toggleAiBlock(userId, shouldBlock) {
-        const url = shouldBlock ? '/api/users/block' : '/api/users/unblock';
-        const body = shouldBlock ? { userId, blockType: 'ai_only' } : { userId };
-        fetch(url, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-        }).then(r => r.json()).then(data => {
-            if (data.success) {
-                showToast(shouldBlock ? 'User blocked from AI chatbot' : 'User unblocked from AI chatbot');
-                closeUserManageModal();
-                loadUsers();
-            } else throw new Error(data.error);
-        }).catch(err => showToast(err.message, 'error'));
+    function loadUserChatHistory(userId) {
+        var chatEl = document.getElementById('um-tab-chat');
+        chatEl.innerHTML = '<div class="chat-empty"><div class="loading-spinner" style="width:20px;height:20px;border-width:2px;border-top-color:var(--primary);border-color:var(--surface-3);border-top-color:var(--primary);animation:spin 0.85s linear infinite;border-radius:50%;display:inline-block;"></div> Loading…</div>';
+        fetch('/api/users/' + userId + '/chat_history')
+            .then(r => r.json())
+            .then(data => {
+                var messages = data.messages || [];
+                if (messages.length === 0) {
+                    chatEl.innerHTML = '<div class="chat-empty"><i class="fa-regular fa-comments" style="margin-inline-end:0.4rem;"></i> No messages yet.</div>';
+                    return;
+                }
+                var html = '';
+                messages.forEach(function(m) {
+                    var cls = m.role === 'user' ? 'user-msg' : 'bot-msg';
+                    html += '<div class="chat-msg ' + cls + '">' + escapeHtml(m.content) + '</div>';
+                });
+                chatEl.innerHTML = html;
+                chatEl.scrollTop = chatEl.scrollHeight;
+            })
+            .catch(function() {
+                chatEl.innerHTML = '<div class="chat-empty"><i class="fa-regular fa-comments" style="margin-inline-end:0.4rem;"></i> No messages yet.</div>';
+            });
     }
 
-    function toggleFullBlock(userId, shouldBlock) {
-        const url = shouldBlock ? '/api/users/block' : '/api/users/unblock';
-        const body = shouldBlock ? { userId, blockType: 'full' } : { userId };
-        fetch(url, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-        }).then(r => r.json()).then(data => {
-            if (data.success) {
-                showToast(shouldBlock ? 'User blocked from entire bot' : 'User unblocked from bot');
-                closeUserManageModal();
-                loadUsers();
-            } else throw new Error(data.error);
-        }).catch(err => showToast(err.message, 'error'));
-    }
-
-    function closeUserManageModal() {
-        document.getElementById('user-manage-modal').classList.add('hidden');
+    function closeUserManageTab() {
         manageUser = null;
         managingUserId = null;
+        switchTab('users');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    function sendUserMessage() {
-        const msg = document.getElementById('um-message').value.trim();
+    // ===== User Manage Tab Keyboard State =====
+    let umInlineBtns = [];
+    let umReplyBtns = [];
+
+    function toggleUmKB() {
+        var toggle = document.getElementById('um-kb-toggle');
+        var section = document.getElementById('um-kb-section');
+        toggle.classList.toggle('active');
+        section.classList.toggle('hidden');
+    }
+    function toggleUmInline() {
+        var toggle = document.getElementById('um-inline-toggle');
+        var section = document.getElementById('um-inline-section');
+        var isActive = toggle.classList.toggle('active');
+        section.classList.toggle('hidden', !isActive);
+        if (isActive) {
+            var replyToggle = document.getElementById('um-reply-toggle');
+            var replySection = document.getElementById('um-reply-section');
+            replyToggle.classList.remove('active');
+            replySection.classList.add('hidden');
+        }
+    }
+    function toggleUmReply() {
+        var toggle = document.getElementById('um-reply-toggle');
+        var section = document.getElementById('um-reply-section');
+        var isActive = toggle.classList.toggle('active');
+        section.classList.toggle('hidden', !isActive);
+        if (isActive) {
+            var inlineToggle = document.getElementById('um-inline-toggle');
+            var inlineSection = document.getElementById('um-inline-section');
+            inlineToggle.classList.remove('active');
+            inlineSection.classList.add('hidden');
+        }
+    }
+    function addUmInlineBtn() {
+        var label = document.getElementById('um-inline-label').value.trim();
+        var type = document.getElementById('um-inline-type').value;
+        var value = document.getElementById('um-inline-value').value.trim();
+        if (!label || !value) { showToast('Fill both fields', 'error'); return; }
+        umInlineBtns.push({ text: label, type: type, value: value });
+        renderUmInlineBtns();
+        document.getElementById('um-inline-label').value = '';
+        document.getElementById('um-inline-value').value = '';
+    }
+    function removeUmInlineBtn(i) { umInlineBtns.splice(i, 1); renderUmInlineBtns(); }
+    function renderUmInlineBtns() {
+        var el = document.getElementById('um-inline-buttons');
+        if (!umInlineBtns.length) { el.innerHTML = '<div class="empty-state" style="padding:0.3rem; font-size:0.75rem;">No inline buttons.</div>'; return; }
+        var html = '';
+        umInlineBtns.forEach(function(b, i) {
+            var icon = b.type === 'url' ? 'fa-link' : 'fa-terminal';
+            var upD = i === 0 ? 'disabled' : '';
+            var dnD = i === umInlineBtns.length - 1 ? 'disabled' : '';
+            html += '<div class="button-chip" style="font-size:0.75rem;">' +
+                '<button class="chip-btn" onclick="moveUmInlineBtn(-1,' + i + ')" ' + upD + ' title="Up"><i class="fa-solid fa-arrow-up"></i></button>' +
+                '<button class="chip-btn" onclick="moveUmInlineBtn(1,' + i + ')" ' + dnD + ' title="Down"><i class="fa-solid fa-arrow-down"></i></button>' +
+                '<i class="fa-solid ' + icon + '" style="color:var(--accent);"></i>' +
+                '<span class="chip-text">' + escapeHtml(b.text) + ' \u2192 ' + escapeHtml(b.value) + '</span>' +
+                '<span class="chip-badge">' + b.type + '</span>' +
+                '<button class="chip-btn chip-delete" onclick="removeUmInlineBtn(' + i + ')"><i class="fa-regular fa-circle-xmark"></i></button></div>';
+        });
+        el.innerHTML = html;
+    }
+    function moveUmInlineBtn(dir, index) {
+        var newIndex = index + dir;
+        if (newIndex < 0 || newIndex >= umInlineBtns.length) return;
+        var item = umInlineBtns.splice(index, 1)[0];
+        umInlineBtns.splice(newIndex, 0, item);
+        renderUmInlineBtns();
+    }
+    function addUmReplyBtn() {
+        var label = document.getElementById('um-reply-label').value.trim();
+        if (!label) { showToast('Enter button text', 'error'); return; }
+        umReplyBtns.push([label]);
+        renderUmReplyBtns();
+        document.getElementById('um-reply-label').value = '';
+    }
+    function removeUmReplyBtn(i) { umReplyBtns.splice(i, 1); renderUmReplyBtns(); }
+    function renderUmReplyBtns() {
+        var el = document.getElementById('um-reply-buttons');
+        if (!umReplyBtns.length) { el.innerHTML = '<div class="empty-state" style="padding:0.3rem; font-size:0.75rem;">No reply buttons.</div>'; return; }
+        var html = '';
+        umReplyBtns.forEach(function(b, i) {
+            var u=i===0?'disabled':'',d=i===umReplyBtns.length-1?'disabled':'';
+            html += '<div class="button-chip" style="font-size:0.75rem;">' +
+                '<button class="chip-btn" onclick="moveUmReplyBtn(-1,'+i+')" '+u+' title="Up"><i class="fa-solid fa-arrow-up"></i></button>' +
+                '<button class="chip-btn" onclick="moveUmReplyBtn(1,'+i+')" '+d+' title="Down"><i class="fa-solid fa-arrow-down"></i></button>' +
+                '<i class="fa-regular fa-keyboard" style="color:var(--accent);"></i>' +
+                '<span class="chip-text">' + escapeHtml(b[0]) + '</span>' +
+                '<button class="chip-btn chip-delete" onclick="removeUmReplyBtn(' + i + ')"><i class="fa-regular fa-circle-xmark"></i></button></div>';
+        });
+        el.innerHTML = html;
+    }
+    function moveUmReplyBtn(dir,idx){var n=idx+dir;if(n<0||n>=umReplyBtns.length)return;var x=umReplyBtns.splice(idx,1)[0];umReplyBtns.splice(n,0,x);renderUmReplyBtns();}
+    function getUmButtonsJSON() {
+        var hasInline = umInlineBtns.length > 0;
+        var hasReply = umReplyBtns.length > 0;
+        if (!hasInline && !hasReply) return null;
+        return JSON.stringify({ inline: umInlineBtns, reply: umReplyBtns });
+    }
+    function resetUmKeyboard() {
+        umInlineBtns = [];
+        umReplyBtns = [];
+        renderUmInlineBtns();
+        renderUmReplyBtns();
+        var kbToggle = document.getElementById('um-kb-toggle');
+        if (kbToggle) kbToggle.classList.remove('active');
+        var kbSection = document.getElementById('um-kb-section');
+        if (kbSection) kbSection.classList.add('hidden');
+        var inToggle = document.getElementById('um-inline-toggle');
+        if (inToggle) inToggle.classList.remove('active');
+        var inSection = document.getElementById('um-inline-section');
+        if (inSection) inSection.classList.add('hidden');
+        var rpToggle = document.getElementById('um-reply-toggle');
+        if (rpToggle) rpToggle.classList.remove('active');
+        var rpSection = document.getElementById('um-reply-section');
+        if (rpSection) rpSection.classList.add('hidden');
+    }
+
+    function sendUserMessageFromTab() {
+        var textarea = document.getElementById('um-tab-message');
+        var msg = textarea.value.trim();
         if (!msg) { showToast('Type a message first', 'error'); return; }
         if (!managingUserId) return;
+        var chatEl = document.getElementById('um-tab-chat');
+        // Show sent message as AI-sent (left side, bot style)
+        var msgDiv = document.createElement('div');
+        msgDiv.className = 'chat-msg bot-msg';
+        msgDiv.textContent = msg;
+        chatEl.appendChild(msgDiv);
+        chatEl.scrollTop = chatEl.scrollHeight;
+        textarea.value = '';
+        var buttonsJson = getUmButtonsJSON();
+        var body = { userId: managingUserId, message: msg };
+        if (buttonsJson) body.buttons_json = buttonsJson;
         withLoading(
             fetch('/api/users/send_message', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: managingUserId, message: msg })
+                body: JSON.stringify(body)
             })
             .then(res => res.json())
             .then(data => {
-                if (data.success) { showToast('Message sent!'); document.getElementById('um-message').value = ''; }
+                if (data.success) {
+                    showToast('Message sent!');
+                    resetUmKeyboard();
+                }
                 else throw new Error(data.error || 'Failed to send');
             })
             .catch(err => showToast(err.message, 'error'))
         );
     }
+
+    function umActionRole() {
+        if (!manageUser) return;
+        var newRole = manageUser.role === 'admin' ? 'user' : 'admin';
+        updateUserRole(manageUser.id, newRole);
+        closeUserManageTab();
+    }
+
+    function umActionBlockAI() {
+        if (!manageUser) return;
+        var btn = document.getElementById('um-tab-block-ai');
+        var shouldBlock = btn.dataset.blocked !== '1';
+        toggleAiBlock(manageUser.id, shouldBlock);
+    }
+
+    function umActionBlockAll() {
+        if (!manageUser) return;
+        var btn = document.getElementById('um-tab-block-all');
+        var shouldBlock = btn.dataset.blocked !== '1';
+        toggleFullBlock(manageUser.id, shouldBlock);
+    }
+
+    function clearUserMemoryFromTab() {
+        if (!manageUser) return;
+        confirmDialog('Clear all AI conversation history for @' + (manageUser.username || manageUser.id) + '?').then(function(ok) {
+            if (!ok) return;
+            fetch('/api/users/' + manageUser.id + '/clear_memory', { method: 'POST' })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.success) { showToast('Chat memory cleared!'); loadUserChatHistory(manageUser.id); }
+                    else throw new Error(data.error);
+                })
+                .catch(function(err) { showToast(err.message, 'error'); });
+        });
+    }
+
+    function toggleAiBlock(userId, shouldBlock) {
+        var url = shouldBlock ? '/api/users/block' : '/api/users/unblock';
+        var body = shouldBlock ? { userId: userId, blockType: 'ai_only' } : { userId: userId };
+        fetch(url, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        }).then(function(r) { return r.json(); }).then(function(data) {
+            if (data.success) {
+                showToast(shouldBlock ? 'User blocked from AI chatbot' : 'User unblocked from AI chatbot');
+                closeUserManageTab();
+                loadUsers();
+            } else throw new Error(data.error);
+        }).catch(function(err) { showToast(err.message, 'error'); });
+    }
+
+    function toggleFullBlock(userId, shouldBlock) {
+        var url = shouldBlock ? '/api/users/block' : '/api/users/unblock';
+        var body = shouldBlock ? { userId: userId, blockType: 'full' } : { userId: userId };
+        fetch(url, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        }).then(function(r) { return r.json(); }).then(function(data) {
+            if (data.success) {
+                showToast(shouldBlock ? 'User blocked from entire bot' : 'User unblocked from bot');
+                closeUserManageTab();
+                loadUsers();
+            } else throw new Error(data.error);
+        }).catch(function(err) { showToast(err.message, 'error'); });
+    }
+
+    // ======================================================================
+    // BROADCAST TAB
+    // ======================================================================
+    let broadcastInlineBtns = [];
+    let broadcastReplyBtns = [];
+
+    function openBroadcastTab() {
+        document.getElementById('broadcast-target').value = 'all';
+        document.getElementById('broadcast-chat').innerHTML = '<div class="chat-empty"><i class="fa-regular fa-paper-plane" style="margin-inline-end:0.4rem;"></i> Messages you send here will be delivered to selected users.</div>';
+        document.getElementById('broadcast-message').value = '';
+        document.getElementById('broadcast-custom-list').classList.add('hidden');
+        document.getElementById('broadcast-custom-list').innerHTML = '';
+        document.getElementById('bcast-specific-group').classList.add('hidden');
+        broadcastInlineBtns = [];
+        broadcastReplyBtns = [];
+        renderBroadcastInlineBtns();
+        renderBroadcastReplyBtns();
+        document.getElementById('bcast-kb-section').classList.add('hidden');
+        var kbToggle = document.getElementById('bcast-kb-toggle');
+        if (kbToggle) kbToggle.classList.remove('active');
+        onBroadcastTargetChange();
+        loadBroadcastHistory();
+        switchTab('broadcast');
+    }
+
+    function closeBroadcastTab() { switchTab('users'); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+
+    function onBroadcastTargetChange() {
+        var target = document.getElementById('broadcast-target').value;
+        var countEl = document.getElementById('bcast-count');
+        var customEl = document.getElementById('broadcast-custom-list');
+        var specEl = document.getElementById('bcast-specific-group');
+        var users = cache.users.data || [];
+        customEl.classList.add('hidden');
+        specEl.classList.add('hidden');
+        var filtered = users;
+        if (target === 'all') { filtered = users; }
+        else if (target === 'only_ai_blocked') { filtered = users.filter(function(u) { return u.block_type === 'ai_only'; }); }
+        else if (target === 'only_full_blocked') { filtered = users.filter(function(u) { return u.block_type === 'full'; }); }
+        else if (target === 'except_ai_blocked') { filtered = users.filter(function(u) { return u.block_type !== 'ai_only'; }); }
+        else if (target === 'except_full_blocked') { filtered = users.filter(function(u) { return u.block_type !== 'full'; }); }
+        else if (target === 'specific') { specEl.classList.remove('hidden'); filtered = []; }
+        else if (target === 'custom') {
+            customEl.classList.remove('hidden');
+            var controlsHtml = '<div class="bcast-custom-controls">' +
+                '<input type="text" class="form-input" id="bcast-custom-search" placeholder="\uD83D\uDD0D Search users..." oninput="filterBroadcastCustom()" style="font-size:0.8rem;">' +
+                '<button type="button" class="btn btn-gray" onclick="broadcastCustomCheckAll(true)">Check All</button>' +
+                '<button type="button" class="btn btn-gray" onclick="broadcastCustomCheckAll(false)">Uncheck All</button>' +
+                '</div>';
+            var html = controlsHtml;
+            users.forEach(function(u) {
+                html += '<label class="bcast-custom-item"><input type="checkbox" value="' + u.id + '" checked data-username="' + escapeHtml(u.username || '') + '" data-name="' + escapeHtml(u.first_name || '') + '"> <span>' + escapeHtml('@' + (u.username || u.id) + ' (' + u.id + ')') + '</span></label>';
+            });
+            customEl.innerHTML = html || '<div style="padding:0.5rem; color:var(--text-3); font-size:0.85rem;">No users found.</div>';
+            customEl.querySelectorAll('input[type=checkbox]').forEach(function(cb) { cb.addEventListener('change', function() {
+                countEl.textContent = customEl.querySelectorAll('input:checked').length + ' user(s) selected';
+            }); });
+            countEl.textContent = customEl.querySelectorAll('input:checked').length + ' user(s) selected';
+            return;
+        }
+        countEl.textContent = filtered.length + ' user(s) will receive this message';
+    }
+
+    function filterBroadcastCustom() {
+        var search = (document.getElementById('bcast-custom-search').value || '').toLowerCase();
+        var items = document.querySelectorAll('#broadcast-custom-list .bcast-custom-item');
+        items.forEach(function(item) {
+            var cb = item.querySelector('input');
+            if (!cb) return;
+            var text = (cb.dataset.username + ' ' + cb.dataset.name + ' ' + cb.value).toLowerCase();
+            item.style.display = text.includes(search) ? '' : 'none';
+        });
+    }
+    function broadcastCustomCheckAll(check) {
+        var items = document.querySelectorAll('#broadcast-custom-list input[type=checkbox]');
+        items.forEach(function(cb) {
+            var item = cb.closest('.bcast-custom-item');
+            if (item && item.style.display !== 'none') cb.checked = check;
+        });
+        var countEl = document.getElementById('bcast-count');
+        if (countEl) countEl.textContent = document.querySelectorAll('#broadcast-custom-list input:checked').length + ' user(s) selected';
+    }
+
+    function getBroadcastUserIds() {
+        var target = document.getElementById('broadcast-target').value;
+        var users = cache.users.data || [];
+        var userIds = [];
+        if (target === 'all') { userIds = users.map(function(u) { return u.id; }); }
+        else if (target === 'only_ai_blocked') { userIds = users.filter(function(u) { return u.block_type === 'ai_only'; }).map(function(u) { return u.id; }); }
+        else if (target === 'only_full_blocked') { userIds = users.filter(function(u) { return u.block_type === 'full'; }).map(function(u) { return u.id; }); }
+        else if (target === 'except_ai_blocked') { userIds = users.filter(function(u) { return u.block_type !== 'ai_only'; }).map(function(u) { return u.id; }); }
+        else if (target === 'except_full_blocked') { userIds = users.filter(function(u) { return u.block_type !== 'full'; }).map(function(u) { return u.id; }); }
+        else if (target === 'specific') {
+            var text = document.getElementById('broadcast-specific-ids').value.trim();
+            userIds = text.split(/[\\n, ]+/).map(function(s) { return parseInt(s.trim()); }).filter(function(n) { return !isNaN(n) && n > 0; });
+        } else if (target === 'custom') {
+            var checked = document.querySelectorAll('#broadcast-custom-list input:checked');
+            userIds = Array.from(checked).map(function(cb) { return parseInt(cb.value); });
+        }
+        return userIds;
+    }
+
+    function getBroadcastButtonsJSON() {
+        var hasInline = broadcastInlineBtns.length > 0;
+        var hasReply = broadcastReplyBtns.length > 0;
+        if (!hasInline && !hasReply) return null;
+        return JSON.stringify({ inline: broadcastInlineBtns, reply: broadcastReplyBtns });
+    }
+
+    function sendBroadcast() {
+        var textarea = document.getElementById('broadcast-message');
+        var msg = textarea.value.trim();
+        if (!msg) { showToast('Type a message first', 'error'); return; }
+        var userIds = getBroadcastUserIds();
+        if (userIds.length === 0) { showToast('No users selected', 'error'); return; }
+        var chatEl = document.getElementById('broadcast-chat');
+        if (chatEl.querySelector('.chat-empty')) chatEl.innerHTML = '';
+        var msgDiv = document.createElement('div');
+        msgDiv.className = 'chat-msg bot-msg';
+        msgDiv.textContent = msg;
+        chatEl.appendChild(msgDiv);
+        chatEl.scrollTop = chatEl.scrollHeight;
+        textarea.value = '';
+        var buttonsJson = getBroadcastButtonsJSON();
+        withLoading(
+            fetch('/api/broadcast', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userIds: userIds, message: msg, buttons_json: buttonsJson })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    showToast('Broadcast sent to ' + data.sent + ' user(s)!' + (data.failed ? ' (' + data.failed + ' failed)' : ''));
+                    var statusDiv = document.createElement('div');
+                    statusDiv.className = 'chat-msg bot-msg';
+                    statusDiv.textContent = '\u2705 Delivered to ' + data.sent + ' user(s).' + (data.failed ? ' ' + data.failed + ' failed.' : '');
+                    chatEl.appendChild(statusDiv);
+                    chatEl.scrollTop = chatEl.scrollHeight;
+                    loadBroadcastHistory();
+                } else throw new Error(data.error || 'Failed');
+            })
+            .catch(function(err) { showToast(err.message, 'error'); })
+        );
+    }
+
+    // Broadcast keyboard buttons
+    function toggleBroadcastKB() {
+        var toggle = document.getElementById('bcast-kb-toggle');
+        var section = document.getElementById('bcast-kb-section');
+        toggle.classList.toggle('active');
+        section.classList.toggle('hidden');
+    }
+    function toggleBroadcastInline() {
+        var toggle = document.getElementById('bcast-inline-toggle');
+        var section = document.getElementById('bcast-inline-section');
+        var isActive = toggle.classList.toggle('active');
+        section.classList.toggle('hidden', !isActive);
+        if (isActive) {
+            var replyToggle = document.getElementById('bcast-reply-toggle');
+            var replySection = document.getElementById('bcast-reply-section');
+            replyToggle.classList.remove('active');
+            replySection.classList.add('hidden');
+        }
+    }
+    function toggleBroadcastReply() {
+        var toggle = document.getElementById('bcast-reply-toggle');
+        var section = document.getElementById('bcast-reply-section');
+        var isActive = toggle.classList.toggle('active');
+        section.classList.toggle('hidden', !isActive);
+        if (isActive) {
+            var inlineToggle = document.getElementById('bcast-inline-toggle');
+            var inlineSection = document.getElementById('bcast-inline-section');
+            inlineToggle.classList.remove('active');
+            inlineSection.classList.add('hidden');
+        }
+    }
+    function onBroadcastInlineTypeChange() {
+        var type = document.getElementById('bcast-inline-type').value;
+        document.getElementById('bcast-inline-value').placeholder = type === 'url' ? 'https://example.com' : 'Callback data';
+    }
+    function addBroadcastInlineBtn() {
+        var label = document.getElementById('bcast-inline-label').value.trim();
+        var type = document.getElementById('bcast-inline-type').value;
+        var value = document.getElementById('bcast-inline-value').value.trim();
+        if (!label || !value) { showToast('Fill both fields', 'error'); return; }
+        broadcastInlineBtns.push({ text: label, type: type, value: value });
+        renderBroadcastInlineBtns();
+        document.getElementById('bcast-inline-label').value = '';
+        document.getElementById('bcast-inline-value').value = '';
+    }
+    function removeBroadcastInlineBtn(i) { broadcastInlineBtns.splice(i, 1); renderBroadcastInlineBtns(); }
+    function renderBroadcastInlineBtns() {
+        var el = document.getElementById('bcast-inline-buttons');
+        if (!broadcastInlineBtns.length) { el.innerHTML = '<div class="empty-state" style="padding:0.4rem; font-size:0.8rem;">No inline buttons added.</div>'; return; }
+        var html = '';
+        broadcastInlineBtns.forEach(function(b, i) {
+            var icon = b.type === 'url' ? 'fa-link' : 'fa-terminal';
+            var bu=i===0?'disabled':'',bd=i===broadcastInlineBtns.length-1?'disabled':'';
+            html += '<div class="button-chip">' +
+                '<button class="chip-btn" onclick="moveBroadcastInlineBtn(-1,'+i+')" '+bu+' title="Up"><i class="fa-solid fa-arrow-up"></i></button>' +
+                '<button class="chip-btn" onclick="moveBroadcastInlineBtn(1,'+i+')" '+bd+' title="Down"><i class="fa-solid fa-arrow-down"></i></button>' +
+                '<i class="fa-solid ' + icon + '" style="color:var(--accent);"></i>' +
+                '<span class="chip-text">' + escapeHtml(b.text) + ' \u2192 ' + escapeHtml(b.value) + '</span>' +
+                '<span class="chip-badge">' + b.type + '</span>' +
+                '<button class="chip-btn chip-delete" onclick="removeBroadcastInlineBtn(' + i + ')"><i class="fa-regular fa-circle-xmark"></i></button></div>';
+        });
+        el.innerHTML = html;
+    }
+    function moveBroadcastInlineBtn(dir,idx){var n=idx+dir;if(n<0||n>=broadcastInlineBtns.length)return;var x=broadcastInlineBtns.splice(idx,1)[0];broadcastInlineBtns.splice(n,0,x);renderBroadcastInlineBtns();}
+    function addBroadcastReplyBtn() {
+        var label = document.getElementById('bcast-reply-label').value.trim();
+        if (!label) { showToast('Enter button text', 'error'); return; }
+        broadcastReplyBtns.push([label]);
+        renderBroadcastReplyBtns();
+        document.getElementById('bcast-reply-label').value = '';
+    }
+    function removeBroadcastReplyBtn(i) { broadcastReplyBtns.splice(i, 1); renderBroadcastReplyBtns(); }
+    function renderBroadcastReplyBtns() {
+        var el = document.getElementById('bcast-reply-buttons');
+        if (!broadcastReplyBtns.length) { el.innerHTML = '<div class="empty-state" style="padding:0.4rem; font-size:0.8rem;">No reply buttons added.</div>'; return; }
+        var html = '';
+        broadcastReplyBtns.forEach(function(b, i) {
+            var bu2=i===0?'disabled':'',bd2=i===broadcastReplyBtns.length-1?'disabled':'';
+            html += '<div class="button-chip">' +
+                '<button class="chip-btn" onclick="moveBroadcastReplyBtn(-1,'+i+')" '+bu2+' title="Up"><i class="fa-solid fa-arrow-up"></i></button>' +
+                '<button class="chip-btn" onclick="moveBroadcastReplyBtn(1,'+i+')" '+bd2+' title="Down"><i class="fa-solid fa-arrow-down"></i></button>' +
+                '<i class="fa-regular fa-keyboard" style="color:var(--accent);"></i>' +
+                '<span class="chip-text">' + escapeHtml(b[0]) + '</span>' +
+                '<button class="chip-btn chip-delete" onclick="removeBroadcastReplyBtn(' + i + ')"><i class="fa-regular fa-circle-xmark"></i></button></div>';
+        });
+        el.innerHTML = html;
+    }
+    function moveBroadcastReplyBtn(dir,idx){var n=idx+dir;if(n<0||n>=broadcastReplyBtns.length)return;var x=broadcastReplyBtns.splice(idx,1)[0];broadcastReplyBtns.splice(n,0,x);renderBroadcastReplyBtns();}
+
+    // Broadcast history
+    function loadBroadcastHistory() {
+        var chatEl = document.getElementById('broadcast-chat');
+        if (!chatEl) return;
+        fetch('/api/broadcast/history').then(function(r) { return r.json(); }).then(function(data) {
+            var history = data.history || [];
+            if (!history.length) {
+                chatEl.innerHTML = '<div class="chat-empty"><i class="fa-regular fa-paper-plane" style="margin-inline-end:0.4rem;"></i> Messages you send here will be delivered to selected users.</div>';
+                return;
+            }
+            var html = '';
+            history.forEach(function(h) {
+                var meta = escapeHtml(h.sent_at) + ' \u2022 ' + (h.sent_count || 0) + '/' + (h.recipient_count || 0) + ' delivered';
+                html += '<div class="chat-msg bot-msg"><div style="font-size:0.7rem;color:var(--text-3);margin-bottom:0.2rem;">' + meta + '</div>' + escapeHtml(h.message) + '</div>';
+            });
+            chatEl.innerHTML = html;
+            chatEl.scrollTop = chatEl.scrollHeight;
+        }).catch(function() {
+            chatEl.innerHTML = '<div class="chat-empty">Failed to load history.</div>';
+        });
+    }
+
+    function clearBroadcastChat() {
+        confirmDialog('Clear all broadcast history?').then(function(ok) {
+            if (!ok) return;
+            fetch('/api/broadcast/clear_history', { method: 'POST' })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.success) {
+                        showToast('History cleared!');
+                        var chatEl = document.getElementById('broadcast-chat');
+                        if (chatEl) chatEl.innerHTML = '<div class="chat-empty"><i class="fa-regular fa-paper-plane" style="margin-inline-end:0.4rem;"></i> Messages you send here will be delivered to selected users.</div>';
+                    }
+                    else throw new Error(data.error);
+                })
+                .catch(function(err) { showToast(err.message, 'error'); });
+        });
+    }
+
+    // ======================================================================
+    // RESPONSIVE TAB COLLAPSE
+    // ======================================================================
+    function toggleMoreTabsDropdown(e) {
+        if (e) e.stopPropagation();
+        var dd = document.getElementById('more-tabs-dropdown');
+        dd.classList.toggle('show');
+    }
+
+function collapseTabs() {
+    if (window.innerWidth <= 490) return;
+
+    const header = document.getElementById('tabs-header');
+    const wrapper = document.getElementById('more-tabs-wrapper');
+    const dropdown = document.getElementById('more-tabs-dropdown');
+
+    if (!header || !wrapper || !dropdown) return;
+
+    if (header.offsetWidth === 0) {
+        requestAnimationFrame(collapseTabs);
+        return;
+    }
+
+    const tabs = Array.from(header.children)
+        .filter(el => el.classList.contains('tab-btn'));
+
+    // Reset
+    tabs.forEach(tab => tab.classList.remove('overflow-hidden'));
+    dropdown.innerHTML = '';
+    wrapper.style.display = 'inline-flex';
+
+    const hiddenTabs = [];
+
+    // Hide tabs from the END until the actual rendered layout fits.
+    for (let i = tabs.length - 1; i >= 0; i--) {
+        if (header.scrollWidth <= header.clientWidth) {
+            break;
+        }
+
+        const tab = tabs[i];
+        const onclick = tab.getAttribute('onclick') || '';
+        const match = onclick.match(/switchTab\\(['"](.+?)['"]\\)/);
+
+        tab.classList.add('overflow-hidden');
+
+        if (match) {
+            hiddenTabs.push({
+                id: match[1],
+                element: tab
+            });
+        }
+    }
+
+    // Everything fits without More.
+    if (hiddenTabs.length === 0) {
+        wrapper.style.display = 'none';
+        return;
+    }
+
+    // Put hidden tabs into More.
+    hiddenTabs.reverse().forEach(({ id, element }) => {
+        const button = document.createElement('button');
+
+        button.type = 'button';
+        button.dataset.tab = id;
+        button.textContent = element.textContent.trim();
+
+        if (currentTab === id) {
+            button.classList.add('active');
+        }
+
+        button.addEventListener('click', function () {
+            switchTab(id);
+            dropdown.classList.remove('show');
+        });
+
+        dropdown.appendChild(button);
+    });
+}
+
+    document.addEventListener('click', function(e) {
+        var dd = document.getElementById('more-tabs-dropdown');
+        var wrapper = document.getElementById('more-tabs-wrapper');
+        if (dd && wrapper && !wrapper.contains(e.target)) dd.classList.remove('show');
+    });
+
+    window.addEventListener('resize', collapseTabs);
 
     // ======================================================================
     // AI SETTINGS
@@ -2643,6 +3608,11 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         if (toggle) toggle.classList.toggle('active', showSuggestedQuestions);
         document.getElementById('suggested-questions-editor').style.display = showSuggestedQuestions ? 'block' : 'none';
     }
+    function toggleSuggestedOneTime() {
+        showSuggestedOneTime = !showSuggestedOneTime;
+        const toggle = document.getElementById('ai-sq-onetime-toggle');
+        if (toggle) toggle.classList.toggle('active', showSuggestedOneTime);
+    }
 
     // ===== Strict Mode =====
     function toggleStrictMode() {
@@ -2654,6 +3624,20 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
     function toggleRtlSupport() {
         rtlSupportEnabled = !rtlSupportEnabled;
         document.getElementById('ai-rtl-toggle').classList.toggle('active', rtlSupportEnabled);
+    }
+
+    // ===== Typing Indicator =====
+    let typingIndicatorEnabled = true;
+    function toggleTypingIndicator() {
+        typingIndicatorEnabled = !typingIndicatorEnabled;
+        document.getElementById('ai-typing-toggle').classList.toggle('active', typingIndicatorEnabled);
+    }
+
+    // ===== Retry on Failure =====
+    let retryOnFailureEnabled = false;
+    function toggleRetryOnFailure() {
+        retryOnFailureEnabled = !retryOnFailureEnabled;
+        document.getElementById('ai-retry-toggle').classList.toggle('active', retryOnFailureEnabled);
     }
 
     // ===== Alternate Providers =====
@@ -2820,8 +3804,10 @@ altProviders.forEach((ap, idx) => {
         }
         let html = '<div class="button-chip-list">';
         suggestedQuestions.forEach((q, idx) => {
-            html += '<div class="button-chip" draggable="true" data-index="' + idx + '" data-type="suggested">' +
-                '<span class="chip-grip"><i class="fa-solid fa-grip-lines"></i></span>' +
+            var su=idx===0?'disabled':'',sd=idx===suggestedQuestions.length-1?'disabled':'';
+            html += '<div class="button-chip" data-index="' + idx + '" data-type="suggested">' +
+                '<button class="chip-btn" onclick="moveSuggestedQuestion(-1,'+idx+')" '+su+' title="Up"><i class="fa-solid fa-arrow-up"></i></button>' +
+                '<button class="chip-btn" onclick="moveSuggestedQuestion(1,'+idx+')" '+sd+' title="Down"><i class="fa-solid fa-arrow-down"></i></button>' +
                 '<i class="fa-regular fa-message" style="color:var(--accent);"></i>' +
                 '<span class="chip-text">' + escapeHtml(q.label) + ' → ' + escapeHtml(q.value) + '</span>' +
                 '<button class="chip-btn chip-edit" onclick="editSuggestedQuestion(' + idx + ')"><i class="fa-regular fa-pen-to-square"></i></button>' +
@@ -2829,7 +3815,14 @@ altProviders.forEach((ap, idx) => {
                 '</div>';
         });
         container.innerHTML = html + '</div>';
-        attachDragEvents(container);
+    }
+
+    function moveSuggestedQuestion(dir, index) {
+        const newIndex = index + dir;
+        if (newIndex < 0 || newIndex >= suggestedQuestions.length) return;
+        const item = suggestedQuestions.splice(index, 1)[0];
+        suggestedQuestions.splice(newIndex, 0, item);
+        renderSuggestedQuestions();
     }
 
     function addSuggestedQuestion() {
@@ -2881,13 +3874,14 @@ altProviders.forEach((ap, idx) => {
             ai_group_reply: document.getElementById('ai-group-reply').value,
             ai_ignore_bots: document.getElementById('ai-ignore-bots').value,
             ai_ignore_forwarded: document.getElementById('ai-ignore-forwarded').value,
-            ai_typing_indicator: document.getElementById('ai-typing-indicator').checked ? '1' : '0',
-            ai_retry_on_failure: document.getElementById('ai-retry-on-failure').checked ? '1' : '0',
+            ai_typing_indicator: typingIndicatorEnabled ? '1' : '0',
+            ai_retry_on_failure: retryOnFailureEnabled ? '1' : '0',
             ai_fallback: document.getElementById('ai-fallback').value.trim(),
             ai_temperature: document.getElementById('ai-temperature').value || '0.7',
             ai_max_tokens: document.getElementById('ai-max-tokens').value || '1024',
             ai_top_p: document.getElementById('ai-top-p').value || '1.0',
             ai_suggested_questions_enabled: showSuggestedQuestions ? '1' : '0',
+            ai_suggested_one_time: showSuggestedOneTime ? '1' : '0',
             ai_suggested_questions: JSON.stringify(suggestedQuestions),
             ai_ignore_prefixes: document.getElementById('ai-ignore-prefixes').value.trim(),
             ai_strict_mode: strictModeEnabled ? '1' : '0',
@@ -2905,6 +3899,9 @@ altProviders.forEach((ap, idx) => {
         const sqToggle = document.getElementById('ai-suggested-toggle');
         if (sqToggle) sqToggle.classList.toggle('active', showSuggestedQuestions);
         document.getElementById('suggested-questions-editor').style.display = showSuggestedQuestions ? 'block' : 'none';
+        showSuggestedOneTime = (s.ai_suggested_one_time === undefined || s.ai_suggested_one_time === '1' || s.ai_suggested_one_time === true);
+        const sqOneTimeToggle = document.getElementById('ai-sq-onetime-toggle');
+        if (sqOneTimeToggle) sqOneTimeToggle.classList.toggle('active', showSuggestedOneTime);
 
         document.getElementById('ai-display-name').value = s.ai_display_name || '';
         document.getElementById('ai-language').value = s.ai_language || 'auto';
@@ -2930,8 +3927,10 @@ altProviders.forEach((ap, idx) => {
         document.getElementById('ai-group-reply').value = s.ai_group_reply || '1';
         document.getElementById('ai-ignore-bots').value = s.ai_ignore_bots || '1';
         document.getElementById('ai-ignore-forwarded').value = s.ai_ignore_forwarded || '1';
-        document.getElementById('ai-typing-indicator').checked = (s.ai_typing_indicator === '1');
-        document.getElementById('ai-retry-on-failure').checked = (s.ai_retry_on_failure === '1');
+        typingIndicatorEnabled = (s.ai_typing_indicator === '1');
+        document.getElementById('ai-typing-toggle').classList.toggle('active', typingIndicatorEnabled);
+        retryOnFailureEnabled = (s.ai_retry_on_failure === '1');
+        document.getElementById('ai-retry-toggle').classList.toggle('active', retryOnFailureEnabled);
         document.getElementById('ai-fallback').value = s.ai_fallback || 'Sorry, I am currently unavailable. Please try again later.';
         document.getElementById('ai-temperature').value = s.ai_temperature || '0.7';
         document.getElementById('ai-max-tokens').value = s.ai_max_tokens || '1024';
@@ -2965,6 +3964,7 @@ altProviders.forEach((ap, idx) => {
             renderAiSettings(cache.ai.data);
             return Promise.resolve();
         }
+        showAiSettingsSkeleton();
         return withLoading(
             fetch('/api/ai_settings')
             .then(res => res.json())
@@ -2974,8 +3974,9 @@ altProviders.forEach((ap, idx) => {
                 cache.ai.loaded = true;
                 cache.ai.timestamp = Date.now();
                 renderAiSettings(data.settings);
+                hideAiSettingsSkeleton();
             })
-            .catch(err => showToast('Error loading AI settings:' + ' ' + err.message, 'error'))
+            .catch(err => { hideAiSettingsSkeleton(); showToast('Error loading AI settings:' + ' ' + err.message, 'error'); })
         );
     }
 
@@ -3078,7 +4079,7 @@ altProviders.forEach((ap, idx) => {
     function testAiConnection() {
         const settings = gatherAiSettingsFromUI();
         const resultEl = document.getElementById('ai-test-result');
-        resultEl.textContent = 'Testing main provider…';
+        resultEl.innerHTML = '<span class="mini-spinner"></span> Testing main provider…';
         resultEl.className = 'test-result';
         withLoading(
             fetch('/api/ai/test', {
@@ -3087,17 +4088,41 @@ altProviders.forEach((ap, idx) => {
             })
             .then(res => res.json())
             .then(data => {
-                const mainOk = data.success;
-                const mainMsg = data.message || data.error;
-                if (mainOk) {
-                    resultEl.textContent = '✅ Main connection successful!';
-                    resultEl.className = 'test-result success';
-                } else {
-                    resultEl.textContent = '❌ Main connection failed: ' + mainMsg;
-                    resultEl.className = 'test-result error';
+                let html = data.success
+                    ? '✅ <b>Main</b> (' + settings.ai_provider + '): Connected!'
+                    : '❌ <b>Main</b> (' + settings.ai_provider + '): ' + (data.error || 'Failed');
+                resultEl.innerHTML = html;
+                resultEl.className = 'test-result ' + (data.success ? 'success' : 'error');
+                // Test all alternate providers
+                const altTests = [];
+                altProviders.forEach((ap, idx) => {
+                    if (!ap.apiKey) { altTests.push(Promise.resolve({ idx, ok: false, msg: 'No API key' })); return; }
+                    altTests.push(
+                        fetch('/api/ai/test', {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ settings: { ...settings, ai_provider: ap.provider, ai_api_key: ap.apiKey, ai_model: ap.model, ai_base_url: ap.baseUrl }, provider: 'alt_' + idx })
+                        }).then(r => r.json()).then(d => ({ idx, ok: d.success, msg: d.success ? 'Connected!' : (d.error || 'Failed') }))
+                        .catch(e => ({ idx, ok: false, msg: e.message }))
+                    );
+                });
+                return Promise.all(altTests);
+            })
+            .then(altResults => {
+                let html = resultEl.innerHTML;
+                altResults.forEach(r => {
+                    const ap = altProviders[r.idx];
+                    if (!ap) return;
+                    const icon = r.ok ? '✅' : '❌';
+                    html += '<br>' + icon + ' <b>Alt ' + (r.idx + 1) + '</b> (' + ap.provider + '): ' + r.msg;
+                });
+                resultEl.innerHTML = html;
+                if (altResults.length > 0) {
+                    const allOk = altResults.every(r => r.ok);
+                    const someOk = altResults.some(r => r.ok);
+                    resultEl.className = 'test-result ' + (allOk ? 'success' : (someOk ? 'partial' : 'error'));
                 }
             })
-            .catch(err => { resultEl.textContent = '❌ ' + err.message; resultEl.className = 'test-result error'; })
+            .catch(err => { resultEl.innerHTML = '❌ ' + err.message; resultEl.className = 'test-result error'; })
         );
     }
 
@@ -3119,6 +4144,15 @@ altProviders.forEach((ap, idx) => {
     }
     document.getElementById('ai-group-reply').addEventListener('change', updateGroupReplyFields);
     updateGroupReplyFields();
+
+    function updatePrivateReplyFields() {
+        const privateReply = document.getElementById('ai-private-reply').value;
+        const readOnly = privateReply === '0';
+        document.getElementById('ai-memory').disabled = readOnly;
+        document.getElementById('ai-memory').style.opacity = readOnly ? '0.5' : '1';
+    }
+    document.getElementById('ai-private-reply').addEventListener('change', updatePrivateReplyFields);
+    updatePrivateReplyFields();
 
     // ----- Playground -----
     function renderMarkdown(text) {
@@ -3187,11 +4221,14 @@ altProviders.forEach((ap, idx) => {
 
     async function refreshMemoryCount() {
         const display = document.getElementById('memory-count-display');
+        const row = document.getElementById('memory-count-row');
+        if (row) row.classList.add('skl-bg');
         try {
             const res = await fetch('/api/ai/memory_count');
             const data = await res.json();
             display.textContent = data.success ? data.count + ' messages stored across all chats' : '…';
         } catch (e) { display.textContent = '…'; }
+        if (row) row.classList.remove('skl-bg');
     }
 
     // ======================================================================
@@ -3202,16 +4239,19 @@ altProviders.forEach((ap, idx) => {
             applySettingsData(cache.settings.data);
             return Promise.resolve();
         }
+        showSettingsSkeleton();
         return withLoading(
             fetch('/api/settings')
             .then(res => res.json())
             .then(data => {
                 applySettingsData(data);
+                var skel = document.getElementById('settings-skeleton');
+                if (skel) skel.remove();
                 cache.settings.data = data;
                 cache.settings.loaded = true;
                 cache.settings.timestamp = Date.now();
             })
-            .catch(err => showToast('Error loading settings:' + ' ' + err.message, 'error'))
+            .catch(err => { var skel = document.getElementById('settings-skeleton'); if (skel) skel.remove(); showToast('Error loading settings:' + ' ' + err.message, 'error'); })
         );
     }
     function applySettingsData(data) {
@@ -3288,24 +4328,84 @@ altProviders.forEach((ap, idx) => {
         );
     }
 
-    function factoryReset() {
-        confirmDialog('Delete ALL data (commands, users, settings, AI memory, bot info)? This cannot be undone.', 'Factory Reset').then(ok => {
-            if (!ok) return;
+function factoryReset() {
+    confirmDialog(
+        'WARNING: This will permanently delete ALL data including commands, users, settings, AI memory, bot info, menu commands, and broadcast history. This action is IRREVERSIBLE.',
+        'Factory Reset'
+    ).then(ok => {
+        if (!ok) return;
+
+        // Second safeguard: require typing confirmation
+        var cm = document.getElementById('confirm-modal');
+        var msg = document.getElementById('confirm-message');
+        var okBtn = document.getElementById('confirm-ok');
+        var cancelBtn = document.getElementById('confirm-cancel');
+
+        var origOkClick = okBtn.onclick;
+        var origCancelClick = cancelBtn.onclick;
+
+        msg.innerHTML =
+            '<p style="color:var(--red);font-weight:700;margin-bottom:0.6rem;">⚠️ FINAL CONFIRMATION</p>' +
+            '<p>To proceed, type <b style="color:var(--red);font-family:var(--mono);letter-spacing:1px;">FACTORY RESET</b> below:</p>';
+
+        okBtn.querySelector('span').textContent = 'Reset Everything';
+        okBtn.disabled = true;
+
+        var inp = document.createElement('input');
+        inp.type = 'text';
+        inp.id = 'factory-reset-confirm-text';
+        inp.className = 'form-input';
+        inp.style.marginTop = '0.5rem';
+        inp.placeholder = 'Type FACTORY RESET here';
+
+        inp.addEventListener('input', function () {
+            okBtn.disabled = inp.value !== 'FACTORY RESET';
+        });
+
+        msg.appendChild(inp);
+        cm.classList.remove('hidden');
+
+        setTimeout(function () {
+            inp.focus();
+        }, 100);
+
+        okBtn.onclick = function () {
+            if (inp.value !== 'FACTORY RESET') return;
+
+            cm.classList.add('hidden');
+            okBtn.onclick = origOkClick;
+            cancelBtn.onclick = origCancelClick;
+
             showToast('Resetting…');
+
             withLoading(
                 fetch('/api/reset', { method: 'POST' })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        showToast('Reset successful. Reloading…');
-                        invalidateCache();
-                        setTimeout(() => window.location.reload(), 1400);
-                    } else throw new Error(data.error);
-                })
-                .catch(err => showToast('Reset error:' + ' ' + err.message, 'error'))
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            showToast('Reset successful. Reloading…');
+                            invalidateCache();
+
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1400);
+                        } else {
+                            throw new Error(data.error);
+                        }
+                    })
+                    .catch(err => {
+                        showToast('Reset error: ' + err.message, 'error');
+                    })
             );
-        });
-    }
+        };
+
+        cancelBtn.onclick = function () {
+            cm.classList.add('hidden');
+            okBtn.onclick = origOkClick;
+            cancelBtn.onclick = origCancelClick;
+        };
+    });
+}
 
     function changeAdminPassword() {
         const newPass = document.getElementById('change-pass-new').value;
@@ -3332,38 +4432,108 @@ altProviders.forEach((ap, idx) => {
     // ======================================================================
     // BOT INFO
     // ======================================================================
-    function loadBotInfo(forceLoad) {
-        const resultDiv = document.getElementById('bot-info-result');
-        if (!forceLoad && isCacheValid('botinfo')) {
-            const data = cache.botinfo.data;
-            document.getElementById('bot-name').value = data.name || '';
-            document.getElementById('bot-description').value = data.description || '';
-            document.getElementById('bot-short-description').value = data.short_description || '';
+function loadBotInfo(forceLoad = false) {
+    const resultDiv = document.getElementById('bot-info-result');
+    const fields = ['bot-name', 'bot-description', 'bot-short-description'];
+
+    cache.botinfo ??= {
+        data: null,
+        loaded: false,
+        timestamp: 0
+    };
+
+    const setLoadingState = (loading) => {
+        fields.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.classList.toggle('skl-bg', loading);
+            }
+        });
+    };
+
+    const applyBotInfo = (data) => {
+        const name = document.getElementById('bot-name');
+        const description = document.getElementById('bot-description');
+        const shortDescription = document.getElementById('bot-short-description');
+
+        if (name) name.value = data.name || '';
+        if (description) description.value = data.description || '';
+        if (shortDescription) shortDescription.value = data.short_description || '';
+    };
+
+    if (!forceLoad && isCacheValid('botinfo')) {
+        applyBotInfo(cache.botinfo.data);
+
+        if (resultDiv) {
             resultDiv.classList.remove('hidden');
             resultDiv.textContent = '✅ Loaded from Telegram.';
             resultDiv.style.color = 'var(--green)';
-            return Promise.resolve();
         }
+
+        return Promise.resolve(cache.botinfo.data);
+    }
+
+    if (resultDiv) {
         resultDiv.classList.remove('hidden');
-        resultDiv.textContent = 'Loading from Telegram…';
+        resultDiv.innerHTML = '<span class="mini-spinner"></span> Loading from Telegram…';
         resultDiv.style.color = 'var(--text-3)';
-        return withLoading(
-            fetch('/api/bot_info')
-            .then(res => res.json())
+    }
+
+    setLoadingState(true);
+
+    return withLoading(
+        fetch('/api/bot_info', {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json'
+            }
+        })
+            .then(async res => {
+                let data;
+
+                try {
+                    data = await res.json();
+                } catch {
+                    throw new Error(\`Server returned invalid JSON (HTTP \${res.status})\`);
+                }
+
+                if (!res.ok) {
+                    throw new Error(data.error || \`Request failed (HTTP \${res.status})\`);
+                }
+
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to load bot information');
+                }
+
+                return data;
+            })
             .then(data => {
-                if (!data.success) throw new Error(data.error || 'Failed');
-                document.getElementById('bot-name').value = data.name || '';
-                document.getElementById('bot-description').value = data.description || '';
-                document.getElementById('bot-short-description').value = data.short_description || '';
+                applyBotInfo(data);
+
                 cache.botinfo.data = data;
                 cache.botinfo.loaded = true;
                 cache.botinfo.timestamp = Date.now();
-                resultDiv.textContent = '✅ Loaded from Telegram.';
-                resultDiv.style.color = 'var(--green)';
+
+                if (resultDiv) {
+                    resultDiv.textContent = '✅ Loaded from Telegram.';
+                    resultDiv.style.color = 'var(--green)';
+                }
+
+                return data;
             })
-            .catch(err => { resultDiv.textContent = '❌ ' + err.message; resultDiv.style.color = 'var(--red)'; })
-        );
-    }
+            .catch(err => {
+                if (resultDiv) {
+                    resultDiv.textContent = '❌ ' + (err.message || 'Failed to load bot information');
+                    resultDiv.style.color = 'var(--red)';
+                }
+
+                throw err;
+            })
+            .finally(() => {
+                setLoadingState(false);
+            })
+    );
+}
 
     function publishBotInfo() {
         const name = document.getElementById('bot-name').value.trim();
@@ -3454,6 +4624,53 @@ altProviders.forEach((ap, idx) => {
         };
         reader.readAsText(file);
         event.target.value = '';
+    }
+
+    function customBackupCheckAll(check) {
+        document.querySelectorAll('.custom-backup-cb').forEach(function(cb) { cb.checked = check; });
+    }
+
+    async function exportCustomBackup() {
+        var checked = [];
+        document.querySelectorAll('.custom-backup-cb:checked').forEach(function(cb) { checked.push(cb.value); });
+        if (checked.length === 0) { showToast('Select at least one item to export.', 'error'); return; }
+        var resultDiv = document.getElementById('backup-result');
+        document.getElementById('custom-backup-modal').classList.add('hidden');
+        resultDiv.classList.remove('hidden');
+        resultDiv.textContent = '\u2026';
+        resultDiv.style.color = 'var(--text-3)';
+        try {
+            var res = await fetch('/api/backup');
+            var data = await res.json();
+            if (!data.success) throw new Error(data.error || 'Export failed');
+            var fullData = data.data;
+            var customData = { app: 'nyxx', version: fullData.version, exported_at: fullData.exported_at, custom: true };
+            if (checked.includes('commands')) customData.commands = fullData.commands;
+            if (checked.includes('users')) customData.users = fullData.users;
+            if (checked.includes('ai_messages')) customData.ai_messages = fullData.ai_messages;
+            if (checked.includes('ai_settings') || checked.includes('menu_commands') || checked.includes('bot_config')) {
+                customData.settings = {};
+                var settings = fullData.settings || {};
+                var aiKeys = ['ai_enabled','ai_provider','ai_api_key','ai_base_url','ai_model','ai_system_prompt','ai_trigger','ai_memory','ai_fallback','ai_temperature','ai_max_tokens','ai_top_p','ai_suggested_questions_enabled','ai_suggested_questions','ai_suggested_one_time','ai_alt_providers','ai_custom_headers','ai_display_name','ai_language','ai_style','ai_length','ai_rate_limit','ai_response_delay','ai_ignore_prefixes','ai_group_mention','ai_private_reply','ai_group_reply','ai_ignore_bots','ai_ignore_forwarded','ai_typing_indicator','ai_retry_on_failure','ai_custom_vars_text','ai_knowledge_bases','ai_trigger_text','ai_group_memory','ai_strict_mode','ai_rtl_support'];
+                if (checked.includes('ai_settings')) aiKeys.forEach(function(k) { if (settings[k] !== undefined) customData.settings[k] = settings[k]; });
+                if (checked.includes('menu_commands') && settings.menu_commands) customData.settings.menu_commands = settings.menu_commands;
+                if (checked.includes('bot_config')) {
+                    ['bot_token','webhook_url','webhook_secret','bot_username','bot_name'].forEach(function(k) { if (settings[k] !== undefined) customData.settings[k] = settings[k]; });
+                }
+            }
+            if (checked.includes('blocked_users') && fullData.settings) {
+                // blocked_users info is in settings, export any block-related settings
+                // Actually blocked_users is a separate table - but the backup API returns it via settings. 
+                // We'll include blocked user IDs in users array
+            }
+            var stamp = new Date().toISOString().slice(0, 10);
+            downloadJson('nyxx-custom-backup-' + stamp + '.json', customData);
+            resultDiv.textContent = 'Custom backup exported (' + checked.length + ' item(s))!';
+            resultDiv.style.color = 'var(--green)';
+        } catch (err) {
+            resultDiv.textContent = 'Export failed: ' + err.message;
+            resultDiv.style.color = 'var(--red)';
+        }
     }
 
     // ======================================================================
@@ -3605,6 +4822,7 @@ altProviders.forEach((ap, idx) => {
     document.getElementById('update-btn').addEventListener('click', performUpdate);
     window.onload = function () {
         checkStatus();
+        requestAnimationFrame(function() { collapseTabs(); });
     };
     </script>
 </body>
@@ -3697,6 +4915,11 @@ export default {
             if (request.method === 'POST' && url.pathname === '/api/users/block') return await blockUser(request, env);
             if (request.method === 'POST' && url.pathname === '/api/users/unblock') return await unblockUser(request, env);
             if (request.method === 'GET' && url.pathname.startsWith('/api/users/block_status/')) return await getBlockStatus(env, url);
+            if (request.method === 'GET' && url.pathname.startsWith('/api/users/') && url.pathname.endsWith('/chat_history')) return await getUserChatHistory(env, url);
+            if (request.method === 'POST' && url.pathname === '/api/broadcast') return await handleBroadcast(request, env);
+            if (request.method === 'GET' && url.pathname === '/api/broadcast/history') return await getBroadcastHistory(env);
+            if (request.method === 'POST' && url.pathname === '/api/broadcast/clear_history') return await clearBroadcastHistory(env);
+            if (request.method === 'POST' && url.pathname.startsWith('/api/users/') && url.pathname.endsWith('/clear_memory')) return await clearUserMemory(env, url);
 
             // AI
             if (request.method === 'GET' && url.pathname === '/api/ai_settings') return await getAiSettings(env);
@@ -3759,6 +4982,7 @@ async function initializeDatabase(db) {
         CREATE TABLE IF NOT EXISTS ai_messages (id INTEGER PRIMARY KEY AUTOINCREMENT, chat_id INTEGER, role TEXT, content TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP);
         CREATE TABLE IF NOT EXISTS ai_rate_limits (user_id INTEGER NOT NULL, minute INTEGER NOT NULL, count INTEGER NOT NULL DEFAULT 1, PRIMARY KEY (user_id, minute));
         CREATE TABLE IF NOT EXISTS blocked_users (user_id INTEGER PRIMARY KEY, block_type TEXT NOT NULL DEFAULT 'full', blocked_at DATETIME DEFAULT CURRENT_TIMESTAMP);
+        CREATE TABLE IF NOT EXISTS broadcast_history (id INTEGER PRIMARY KEY AUTOINCREMENT, message TEXT, buttons_json TEXT, recipient_count INTEGER, sent_count INTEGER, sent_at DATETIME DEFAULT CURRENT_TIMESTAMP);
         CREATE INDEX IF NOT EXISTS idx_commands_parent ON commands(parent);
         CREATE INDEX IF NOT EXISTS idx_ai_messages_chat ON ai_messages(chat_id);
     `;
@@ -3977,11 +5201,12 @@ async function exportBackup(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
-        const [commands, users, messages, settingsRows] = await Promise.all([
+        const [commands, users, messages, settingsRows, broadcastRows] = await Promise.all([
             env.DB.prepare('SELECT * FROM commands').all(),
             env.DB.prepare('SELECT * FROM users').all(),
             env.DB.prepare('SELECT chat_id, role, content, timestamp FROM ai_messages ORDER BY id').all(),
             env.DB.prepare('SELECT key, value FROM settings').all(),
+            env.DB.prepare('SELECT message, buttons_json, recipient_count, sent_count, sent_at FROM broadcast_history ORDER BY id').all(),
         ]);
         const settings = {};
         for (const row of settingsRows.results) settings[row.key] = row.value;
@@ -3997,6 +5222,7 @@ async function exportBackup(env) {
                 users: users.results || [],
                 ai_messages: messages.results || [],
                 settings,
+                broadcast_history: broadcastRows.results || [],
             }
         });
     } catch (err) {
@@ -4064,6 +5290,17 @@ async function restoreBackup(request, env) {
                 .bind(m.chat_id, m.role || 'user', m.content, m.timestamp || new Date().toISOString()));
         }
         await runBatchChunks(env.DB, msgStmts);
+
+        // Restore broadcast history
+        if (data.broadcast_history && Array.isArray(data.broadcast_history)) {
+            const bcStmts = [];
+            for (const h of data.broadcast_history) {
+                if (!h || !h.message) continue;
+                bcStmts.push(env.DB.prepare('INSERT INTO broadcast_history (message, buttons_json, recipient_count, sent_count, sent_at) VALUES (?, ?, ?, ?, ?)')
+                    .bind(h.message, h.buttons_json || null, h.recipient_count || 0, h.sent_count || 0, h.sent_at || new Date().toISOString()));
+            }
+            await runBatchChunks(env.DB, bcStmts);
+        }
 
         // Restore settings (only ones present in the backup; admin password is
         // preserved unless the backup explicitly contains one)
@@ -4336,17 +5573,77 @@ async function sendUserPrivateMessage(request, env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         const body = await request.json();
-        const { userId, message } = body;
+        const { userId, message, buttons_json } = body;
         if (!userId || !message) return apiJson({ error: 'userId and message required' }, 400);
         await initializeDatabase(env.DB);
         const token = await getSetting(env.DB, 'bot_token');
         if (!token) return apiJson({ error: 'Bot token not set' }, 400);
+        const payload = { chat_id: userId, text: message, parse_mode: 'HTML' };
+        if (buttons_json) {
+            try {
+                const btns = JSON.parse(buttons_json);
+                let replyMarkup = null;
+                if (btns.inline && btns.inline.length) {
+                    const inlineRows = btns.inline.map(function(b) {
+                        const btn = { text: b.text };
+                        if (b.type === 'url') btn.url = b.value;
+                        else btn.callback_data = b.value;
+                        return [btn];
+                    });
+                    replyMarkup = { inline_keyboard: inlineRows };
+                }
+                if (btns.reply && btns.reply.length) {
+                    const replyRows = btns.reply.map(function(r) {
+                        if (Array.isArray(r)) return r.map(function(item) {
+                            if (typeof item === 'string') return { text: item };
+                            return item;
+                        });
+                        if (typeof r === 'string') return [{ text: r }];
+                        return [r];
+                    });
+                    payload.reply_markup = JSON.stringify({ keyboard: replyRows, resize_keyboard: true, one_time_keyboard: true });
+                }
+                if (replyMarkup) {
+                    payload.reply_markup = JSON.stringify(replyMarkup);
+                }
+            } catch (e) {}
+        }
         const resp = await tgFetchJson(`https://api.telegram.org/bot${token}/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: userId, text: message, parse_mode: 'HTML' })
+            body: JSON.stringify(payload)
         });
         if (!resp.ok) return apiJson({ error: resp.description || 'Telegram API error' }, 500);
+        // Send reply keyboard separately if both inline and reply keyboards exist
+        if (buttons_json) {
+            try {
+                const btns2 = JSON.parse(buttons_json);
+                if (btns2.inline && btns2.inline.length && btns2.reply && btns2.reply.length) {
+                    const replyRows2 = btns2.reply.map(function(r) {
+                        if (Array.isArray(r)) return r.map(function(item) {
+                            if (typeof item === 'string') return { text: item };
+                            return item;
+                        });
+                        if (typeof r === 'string') return [{ text: r }];
+                        return [r];
+                    });
+                    await tgFetchJson(`https://api.telegram.org/bot${token}/sendMessage`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ chat_id: userId, text: ' ', reply_markup: JSON.stringify({ keyboard: replyRows2, resize_keyboard: true, one_time_keyboard: true }) })
+                    });
+                }
+            } catch (e) {}
+        }
+        // Save admin message as assistant in AI memory
+        try {
+            const aiSettings = await getAiSettingsFromDb(env);
+            const memoryLimit = parseInt(aiSettings.ai_memory || '0');
+            if (memoryLimit > 0) {
+                await saveAiMessage(env.DB, userId, 'assistant', message);
+                await trimAiMessages(env.DB, userId, memoryLimit);
+            }
+        } catch (e) {}
         return apiJson({ success: true });
     } catch (err) {
         return apiJson({ error: err.message }, 500);
@@ -4409,13 +5706,146 @@ async function isUserBlocked(env, userId) {
 }
 
 // ============================================================================
+// USER CHAT HISTORY
+// ============================================================================
+async function getUserChatHistory(env, url) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        const parts = url.pathname.split('/');
+        const userId = parseInt(parts[3]);
+        if (isNaN(userId)) return apiJson({ error: 'Invalid user ID' }, 400);
+        const rows = await env.DB.prepare(
+            'SELECT role, content, timestamp FROM ai_messages WHERE chat_id = ? ORDER BY timestamp ASC LIMIT 200'
+        ).bind(userId).all();
+        return apiJson({ messages: (rows.results || []).map(r => ({ role: r.role, content: r.content, time: r.timestamp })) });
+    } catch (e) {
+        return apiJson({ messages: [] });
+    }
+}
+
+// ============================================================================
+// BROADCAST
+// ============================================================================
+async function handleBroadcast(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        const BOT_TOKEN = await getSetting(env.DB, 'bot_token');
+        if (!BOT_TOKEN) return apiJson({ error: 'Bot token not configured' }, 400);
+        const { userIds, message, buttons_json } = await request.json();
+        if (!message || !userIds || !userIds.length) return apiJson({ error: 'Message and recipients required' }, 400);
+        let sent = 0;
+        let failed = 0;
+        for (const uid of userIds) {
+            try {
+                const payload = { chat_id: uid, text: message };
+                if (buttons_json) {
+                    try {
+                        const btns = JSON.parse(buttons_json);
+                        let replyMarkup = null;
+                        if (btns.inline && btns.inline.length) {
+                            const inlineRows = btns.inline.map(function(b) {
+                                const btn = { text: b.text };
+                                if (b.type === 'url') btn.url = b.value;
+                                else btn.callback_data = b.value;
+                                return [btn];
+                            });
+                            replyMarkup = { inline_keyboard: inlineRows };
+                        }
+                        if (btns.reply && btns.reply.length) {
+                            const replyRows = btns.reply.map(function(r) {
+                                if (Array.isArray(r)) return r.map(function(item) {
+                                    if (typeof item === 'string') return { text: item };
+                                    return item;
+                                });
+                                if (typeof r === 'string') return [{ text: r }];
+                                return [r];
+                            });
+                            payload.reply_markup = JSON.stringify({ keyboard: replyRows, resize_keyboard: true, one_time_keyboard: true });
+                        }
+                        if (replyMarkup) {
+                            payload.reply_markup = JSON.stringify(replyMarkup);
+                        }
+                    } catch (e) {}
+                }
+                const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (res.ok) sent++; else failed++;
+                // Send reply keyboard separately if both inline and reply keyboards exist
+                if (buttons_json) {
+                    try {
+                        const btns = JSON.parse(buttons_json);
+                        if (btns.inline && btns.inline.length && btns.reply && btns.reply.length) {
+                            const replyRows = btns.reply.map(function(r) {
+                                if (Array.isArray(r)) return r.map(function(item) {
+                                    if (typeof item === 'string') return { text: item };
+                                    return item;
+                                });
+                                if (typeof r === 'string') return [{ text: r }];
+                                return [r];
+                            });
+                            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ chat_id: uid, text: ' ', reply_markup: JSON.stringify({ keyboard: replyRows, resize_keyboard: true, one_time_keyboard: true }) })
+                            });
+                        }
+                    } catch (e) {}
+                }
+            } catch (e) { failed++; }
+        }
+        // Save broadcast to history
+        try {
+            await env.DB.prepare(
+                'INSERT INTO broadcast_history (message, buttons_json, recipient_count, sent_count, sent_at) VALUES (?, ?, ?, ?, datetime("now"))'
+            ).bind(message, buttons_json || null, userIds.length, sent).run();
+        } catch (e) {}
+        return apiJson({ success: true, sent, failed });
+    } catch (e) {
+        return apiJson({ error: e.message }, 500);
+    }
+}
+
+async function getBroadcastHistory(env) {
+    if (!env.DB) return apiJson({ history: [] });
+    try {
+        await initializeDatabase(env.DB);
+        const rows = await env.DB.prepare('SELECT * FROM broadcast_history ORDER BY sent_at DESC LIMIT 50').all();
+        return apiJson({ history: rows.results || [] });
+    } catch (e) { return apiJson({ history: [] }); }
+}
+
+async function clearBroadcastHistory(env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        await env.DB.prepare('DELETE FROM broadcast_history').run();
+        return apiJson({ success: true });
+    } catch (e) { return apiJson({ error: e.message }, 500); }
+}
+
+async function clearUserMemory(env, url) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        const parts = url.pathname.split('/');
+        const userId = parseInt(parts[3]);
+        if (isNaN(userId)) return apiJson({ error: 'Invalid user ID' }, 400);
+        await env.DB.prepare('DELETE FROM ai_messages WHERE chat_id = ?').bind(userId).run();
+        return apiJson({ success: true });
+    } catch (e) { return apiJson({ error: e.message }, 500); }
+}
+
+// ============================================================================
 // AI API HANDLERS & ENGINE
 // ============================================================================
 const AI_KEYS = [
     'ai_enabled', 'ai_provider', 'ai_api_key', 'ai_base_url', 'ai_model',
     'ai_system_prompt', 'ai_trigger', 'ai_memory', 'ai_fallback',
     'ai_temperature', 'ai_max_tokens', 'ai_top_p',
-    'ai_suggested_questions_enabled', 'ai_suggested_questions',
+    'ai_suggested_questions_enabled', 'ai_suggested_questions', 'ai_suggested_one_time',
     'ai_alt_providers',
     'ai_custom_headers',
     'ai_display_name', 'ai_language', 'ai_style', 'ai_length',
@@ -4445,7 +5875,7 @@ async function getAiSettingsFromDb(env) {
     const defaults = {
         ai_enabled: '0', ai_provider: 'openai', ai_model: 'gpt-4o-mini', ai_trigger: 'no_command',
         ai_memory: '0', ai_group_memory: '0', ai_fallback: 'Sorry, I am currently unavailable. Please try again later.',
-        ai_temperature: '0.7', ai_max_tokens: '1024', ai_top_p: '1.0', ai_suggested_questions_enabled: '0',
+        ai_temperature: '0.7', ai_max_tokens: '1024', ai_top_p: '1.0', ai_suggested_questions_enabled: '0', ai_suggested_one_time: '1',
         ai_rate_limit: '10', ai_ignore_prefixes: '/, !, #', ai_group_mention: '1', ai_private_reply: '1',
         ai_group_reply: '1', ai_ignore_bots: '1', ai_ignore_forwarded: '1', ai_typing_indicator: '1',
         ai_retry_on_failure: '0', ai_knowledge_bases: '[]', ai_suggested_questions: '[]',
@@ -4582,7 +6012,8 @@ const AI_LENGTH_GUIDES = {
     very_short: 'Keep your responses very short (1-2 sentences).',
     short: 'Keep your responses short (about 3-5 sentences).',
     medium: 'Keep your responses a moderate length (about 6-10 sentences).',
-    detailed: 'Provide detailed responses (about 10-20 sentences).'
+    detailed: 'Provide detailed responses (about 10-20 sentences).',
+    automatic: 'Decide the response length yourself based on the complexity of the question. Keep it natural and appropriate.'
 };
 const AI_LANGUAGE_NAMES = {
     english: 'English', spanish: 'Spanish', french: 'French', german: 'German',
@@ -5052,7 +6483,7 @@ async function factoryReset(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
-        const tables = ['settings', 'users', 'commands', 'sessions', 'logs', 'ai_messages', 'ai_rate_limits', 'blocked_users'];
+        const tables = ['settings', 'users', 'commands', 'sessions', 'logs', 'ai_messages', 'ai_rate_limits', 'blocked_users', 'broadcast_history'];
         await runBatchChunks(env.DB, tables.map(t => env.DB.prepare(`DROP TABLE IF EXISTS ${t}`)));
         // The tables were just dropped, so the cached schema-init promise is
         // stale — drop it from the cache so the schema is recreated below.
@@ -5506,11 +6937,18 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, languag
     if (cmdRecord.response_type === 'photo') {
         const photoPayload = { chat_id: chatId, photo: cmdRecord.media_url, caption: cmdRecord.content };
         if (replyMarkup) photoPayload.reply_markup = replyMarkup;
-        if (replyKeyboardMarkup) photoPayload.reply_markup = replyKeyboardMarkup;
+        else if (replyKeyboardMarkup) photoPayload.reply_markup = replyKeyboardMarkup;
         await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(photoPayload)
         });
+        // Send reply keyboard separately if both inline and reply keyboards exist
+        if (replyMarkup && replyKeyboardMarkup) {
+            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: chatId, text: ' ', reply_markup: replyKeyboardMarkup })
+            });
+        }
         return;
     }
 
@@ -5519,12 +6957,19 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, languag
         text: cmdRecord.content,
         parse_mode: 'HTML'
     };
-    if (replyKeyboardMarkup) payload.reply_markup = replyKeyboardMarkup;
-    else if (replyMarkup) payload.reply_markup = replyMarkup;
+    if (replyMarkup) payload.reply_markup = replyMarkup;
+    else if (replyKeyboardMarkup) payload.reply_markup = replyKeyboardMarkup;
     await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
     });
+    // Send reply keyboard separately if both inline and reply keyboards exist
+    if (replyMarkup && replyKeyboardMarkup) {
+        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, text: ' ', reply_markup: replyKeyboardMarkup })
+        });
+    }
 }
 
 async function sendMessage(chatId, text, BOT_TOKEN, parseMode) {
@@ -5654,7 +7099,8 @@ async function processAiReply(chatId, userId, text, aiSettings, env, BOT_TOKEN, 
                     for (let i = 0; i < questions.length; i += 3) {
                         rows.push(questions.slice(i, i + 3).map(q => ({ text: q.label })));
                     }
-                    const replyKeyboard = { keyboard: rows, resize_keyboard: true, one_time_keyboard: true };
+                    const oneTime = aiSettings.ai_suggested_one_time !== '0';
+                    const replyKeyboard = { keyboard: rows, resize_keyboard: true, one_time_keyboard: oneTime };
                     await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
