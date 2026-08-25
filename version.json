@@ -1,6 +1,6 @@
 {
-  "version": "3.0.0",
-  "released": "2026-08-19",
-  "notes": "🎉 Major overhaul: new Overview tab, Backup/Restore, AI alternate providers, Strict mode, RTL support, User blocking, and much more.",
+  "version": "3.1.0",
+  "released": "2026-08-25",
+  "notes": "✨ Broadcast, User Management Tab, Custom Backup, Skeleton Loaders, Keyboard Reordering, and more.",
   "worker_url": "https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/worker.js"
 }
