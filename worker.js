@@ -2,7 +2,7 @@
 // NYXX
 // Telegram bot builder + management dashboard for Cloudflare Workers + D1.
 // ============================================================================
-const VERSION = '3.1.0';
+const VERSION = '3.2.0';
 
 // ============================================================================
 // EMBEDDED DASHBOARD (single page app — HTML + CSS + JS)
@@ -429,6 +429,10 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             border-radius: 10px; height: 120px; width: 100%;
         }
 
+        /* Sending-in-progress skeleton bubble for chat panels */
+        .chat-sending { align-self: flex-start; display: flex; align-items: center; gap: 0.45rem; padding: 0.6rem 0.9rem; border-radius: 14px; background: var(--surface-2); border: 1px solid var(--border); }
+        .chat-sending .skl-block { display: inline-block; }
+
         .skl-stat-card {
             background: linear-gradient(160deg, var(--surface), var(--bg-2));
             border: 1px solid var(--border); border-radius: 16px; padding: 1.1rem 1.2rem;
@@ -503,6 +507,71 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             display: inline-block; width: 14px; height: 14px; border-radius: 50%;
             border: 2px solid var(--surface-3); border-top-color: var(--primary);
             animation: spin 0.85s linear infinite; vertical-align: middle;
+        }
+        .mini-spinner.on-primary { border-color: rgba(255,255,255,0.35); border-top-color: #fff; }
+
+        /* ============ Button loading state ============ */
+        .btn.loading { position: relative; pointer-events: none; opacity: 0.85; }
+        .btn.loading > :not(.btn-spinner) { visibility: hidden; }
+        .form-busy .form-input { opacity: 0.55; pointer-events: none; transition: opacity 0.2s; }
+        .form-busy { position: relative; }
+        .btn .btn-spinner {
+            display: none; position: absolute; inset: 0; align-items: center; justify-content: center; gap: 0.4rem;
+            font-size: 0.85rem; color: inherit;
+        }
+        .btn.loading .btn-spinner { display: flex; }
+        .btn-spinner .mini-spinner { width: 13px; height: 13px; }
+
+        /* ============ Inline button pulsing dots (in-place busy hint) ============ */
+        .busy-dots { display: inline-flex; gap: 3px; align-items: center; }
+        .busy-dots span { width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: 0.4; animation: busyDot 1s infinite; }
+        .busy-dots span:nth-child(2) { animation-delay: 0.15s; }
+        .busy-dots span:nth-child(3) { animation-delay: 0.3s; }
+        @keyframes busyDot { 0%, 100% { opacity: 0.25; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-2px); } }
+
+        /* ============ Keyboard builder ============ */
+        .kb-grid { display: flex; flex-direction: column; gap: 0.45rem; }
+        .kb-row-chips { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+        .kb-chip {
+            display: inline-flex; align-items: center; gap: 0.4rem; background: var(--bg-2);
+            border: 1px solid var(--border); border-radius: 9px; padding: 0.4rem 0.6rem;
+            font-size: 0.8rem; max-width: 100%;
+        }
+        .kb-chip:hover { border-color: var(--border-strong); background: var(--surface-2); }
+        .kb-chip .chip-label { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .kb-chip .kb-arrow { color: var(--text-3); background: none; border: none; cursor: pointer; font-size: 0.72rem; padding: 0 0.12rem; border-radius: 5px; }
+        .kb-chip .kb-arrow:hover:not(:disabled) { color: var(--text); background: var(--surface-3); }
+        .kb-chip .kb-arrow:disabled { opacity: 0.25; cursor: default; }
+        .kb-chip .chip-delete:hover { color: var(--red); }
+        .kb-row-head {
+            font-size: 0.66rem; color: var(--text-3); display: flex; align-items: center; gap: 0.4rem;
+            text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .kb-preview {
+            display: flex; flex-direction: column; gap: 0.3rem; margin-top: 0.5rem; padding: 0.6rem;
+            background: var(--bg-2); border: 1px dashed var(--border); border-radius: 10px;
+        }
+        .kb-preview-row { display: flex; gap: 0.3rem; justify-content: stretch; }
+        .kb-preview-btn {
+            flex: 1; text-align: center; font-size: 0.74rem; padding: 0.35rem 0.3rem; border-radius: 7px;
+            background: var(--surface-2); border: 1px solid var(--border); color: var(--text-2);
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .kb-preview-btn.kb-pv-url { color: var(--accent); }
+        .kb-preview-btn.kb-pv-command { color: var(--green); }
+
+        /* ============ Sent admin messages in user chat ============ */
+        .chat-msg.admin-msg { background: rgba(124, 92, 240, 0.14); border: 1px solid rgba(124, 92, 240, 0.35); align-self: flex-end; }
+        .msg-actions { display: flex; gap: 0.3rem; margin-top: 0.35rem; justify-content: flex-end; }
+        .msg-action-btn {
+            background: none; border: 1px solid var(--border); color: var(--text-3); cursor: pointer;
+            font-size: 0.68rem; padding: 0.14rem 0.5rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.25rem;
+        }
+        .msg-action-btn:hover { color: var(--text); border-color: var(--border-strong); background: var(--surface-2); }
+        .msg-action-btn.danger:hover { color: var(--red); border-color: var(--red); }
+        .msg-photo-chip {
+            font-size: 0.66rem; color: var(--accent); background: rgba(56, 189, 248, 0.1);
+            padding: 0.05rem 0.45rem; border-radius: 999px; display: inline-block; margin-bottom: 0.25rem;
         }
 
         /* ============ Chips (keyboard builder) ============ */
@@ -832,8 +901,10 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 <button class="tab-btn" onclick="switchTab('users')"><i class="fa-solid fa-users"></i> <span>Users</span></button>
                 <button class="tab-btn" onclick="switchTab('ai')"><i class="fa-solid fa-robot"></i> <span>AI</span></button>
                 <button class="tab-btn" onclick="switchTab('settings')"><i class="fa-solid fa-gear"></i> <span>Settings</span></button>
+                <button class="tab-btn" onclick="switchTab('cron')"><i class="fa-solid fa-clock-rotate-left"></i> <span>Cron</span></button>
                 <button class="tab-btn" onclick="switchTab('botinfo')"><i class="fa-solid fa-circle-info"></i> <span>Bot Info</span></button>
                 <button class="tab-btn" onclick="switchTab('backup')"><i class="fa-solid fa-box-archive"></i> <span>Backup</span></button>
+                <button class="tab-btn" onclick="switchTab('logs')"><i class="fa-solid fa-clipboard-list"></i> <span>Logs</span></button>
                 <button class="tab-btn" onclick="switchTab('update')"><i class="fa-solid fa-arrow-up"></i> <span>Update</span></button>
                 <div class="more-tabs-wrapper" id="more-tabs-wrapper" style="display:none;">
                     <button class="more-tabs-btn" onclick="toggleMoreTabsDropdown(event)"><i class="fa-solid fa-ellipsis"></i> <span>More</span></button>
@@ -848,8 +919,10 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 <button onclick="switchTab('users'); closeHamburger();"><i class="fa-solid fa-users"></i> <span>Users</span></button>
                 <button onclick="switchTab('ai'); closeHamburger();"><i class="fa-solid fa-robot"></i> <span>AI</span></button>
                 <button onclick="switchTab('settings'); closeHamburger();"><i class="fa-solid fa-gear"></i> <span>Settings</span></button>
+                <button onclick="switchTab('cron'); closeHamburger();"><i class="fa-solid fa-clock-rotate-left"></i> <span>Cron</span></button>
                 <button onclick="switchTab('botinfo'); closeHamburger();"><i class="fa-solid fa-circle-info"></i> <span>Bot Info</span></button>
                 <button onclick="switchTab('backup'); closeHamburger();"><i class="fa-solid fa-box-archive"></i> <span>Backup</span></button>
+                <button onclick="switchTab('logs'); closeHamburger();"><i class="fa-solid fa-clipboard-list"></i> <span>Logs</span></button>
                 <button onclick="switchTab('update'); closeHamburger();"><i class="fa-solid fa-arrow-up"></i> <span>Update</span></button>
             </div>
 
@@ -880,8 +953,13 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             <div id="tab-commands" class="tab-content">
                 <div class="flex justify-between items-center mb-3" style="margin-bottom:1.2rem;">
                     <h3 class="panel-title"><i class="fa-solid fa-list-ul"></i> <span>Commands</span></h3>
-                    <button onclick="showAddCommandModal()" class="btn btn-success btn-sm"><i class="fa-solid fa-plus"></i> <span>Add Command</span></button>
+                    <div class="flex">
+                        <button onclick="exportCommandPack()" class="btn btn-gray btn-sm" title="Download commands as a shareable pack"><i class="fa-solid fa-file-export"></i> <span>Export Pack</span></button>
+                        <button onclick="document.getElementById('command-pack-file').click()" class="btn btn-gray btn-sm" title="Import a command pack"><i class="fa-solid fa-file-import"></i> <span>Import Pack</span></button>
+                        <button onclick="showAddCommandModal()" class="btn btn-success btn-sm"><i class="fa-solid fa-plus"></i> <span>Add Command</span></button>
+                    </div>
                 </div>
+                <input type="file" id="command-pack-file" accept=".json,application/json" style="display:none;" onchange="importCommandPack(event)">
                 <div class="search-row">
                     <input id="command-search" class="form-input" placeholder="Search commands…" oninput="renderFileManager()">
                 </div>
@@ -935,6 +1013,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 </div>
                 <h4 class="panel-title" style="font-size:0.95rem; margin-bottom:0.6rem;"><i class="fa-solid fa-comments"></i> <span>Chat History</span></h4>
                 <div id="um-tab-chat" class="chat-messages"><div class="chat-empty"><i class="fa-regular fa-comments" style="margin-inline-end:0.4rem;"></i> No messages yet.</div></div>
+                <div id="um-admin-messages" style="margin-top:0.4rem;"></div>
                 <div style="margin-bottom:0.6rem;">
                     <div class="toggle-row" style="padding:0.4rem 0.7rem;">
                         <span class="label" style="font-size:0.82rem;">Attach Keyboard Buttons</span>
@@ -947,15 +1026,17 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                         </div>
                         <div id="um-inline-section" class="hidden">
                             <div class="flex" style="margin-bottom:0.4rem;">
-                                <input id="um-inline-label" class="form-input" style="flex:1; min-width:80px; font-size:0.8rem;" placeholder="Label">
-                                <select id="um-inline-type" class="form-input" style="flex:0 0 auto; width:auto; font-size:0.8rem;" onchange="document.getElementById('um-inline-value').placeholder=this.value==='url'?'https://example.com':'Callback data';">
+                                <input id="kbUm-inline-label" class="form-input" style="flex:1.1; min-width:80px; font-size:0.8rem;" placeholder="Label">
+                                <select id="kbUm-inline-type" class="form-input" style="flex:0 0 auto; width:auto; font-size:0.8rem;" onchange="kbInlineTypeToggle('kbUm')">
+                                    <option value="command" selected>Command</option>
                                     <option value="callback">Callback</option>
                                     <option value="url">URL</option>
                                 </select>
-                                <input id="um-inline-value" class="form-input" style="flex:1; min-width:100px; font-size:0.8rem;" placeholder="Value / URL">
-                                <button onclick="addUmInlineBtn()" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus"></i></button>
+                                <select id="kbUm-inline-cmd" class="form-input" style="flex:1; min-width:100px; font-size:0.8rem;"><option value="">Select command…</option></select>
+                                <input id="kbUm-inline-value" class="form-input hidden" style="flex:1; min-width:90px; font-size:0.8rem;" placeholder="Value / URL">
+                                <button onclick="kbUm.inlineAdd()" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus"></i></button>
                             </div>
-                            <div id="um-inline-buttons" class="button-chip-list" style="min-height:24px;"></div>
+                            <div id="kbUm-inline-list" class="button-chip-list" style="min-height:24px;"></div>
                         </div>
                         <div class="toggle-row" style="padding:0.3rem 0.6rem; margin-bottom:0.4rem; margin-top:0.4rem;">
                             <span class="label" style="font-size:0.78rem;">Reply Keyboard</span>
@@ -963,16 +1044,29 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                         </div>
                         <div id="um-reply-section" class="hidden">
                             <div class="flex" style="margin-bottom:0.4rem;">
-                                <input id="um-reply-label" class="form-input" style="flex:1; min-width:100px; font-size:0.8rem;" placeholder="Button text">
-                                <button onclick="addUmReplyBtn()" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus"></i></button>
+                                <input id="kbUm-reply-label" class="form-input" style="flex:1.1; min-width:90px; font-size:0.8rem;" placeholder="Button text">
+                                <select id="kbUm-reply-cmd" class="form-input" style="flex:1; min-width:100px; font-size:0.8rem;"><option value="">Run command… (optional)</option></select>
+                                <button onclick="kbUm.replyAdd()" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus"></i></button>
                             </div>
-                            <div id="um-reply-buttons" class="button-chip-list" style="min-height:24px;"></div>
+                            <div id="kbUm-reply-list" class="button-chip-list" style="min-height:24px;"></div>
+                            <div id="kbUm-reply-preview" class="kb-preview"></div>
+                            <div class="flex" style="gap:0.9rem; margin-top:0.4rem; flex-wrap:wrap; font-size:0.74rem; color:var(--text-2);">
+                                <label style="display:flex; align-items:center; gap:0.3rem; cursor:pointer;"><input type="checkbox" id="kbUm-reply-resize" checked> Resize</label>
+                                <label style="display:flex; align-items:center; gap:0.3rem; cursor:pointer;"><input type="checkbox" id="kbUm-reply-onetime"> One-time</label>
+                                <label style="display:flex; align-items:center; gap:0.3rem; cursor:pointer;"><input type="checkbox" id="kbUm-reply-persistent" checked> Persistent</label>
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div class="chat-input-area">
-                    <textarea id="um-tab-message" class="form-textarea" rows="4" placeholder="Type a message to send via bot…" style="resize:none;" onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault(); sendUserMessageFromTab();}"></textarea>
-                    <button onclick="sendUserMessageFromTab()" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i></button>
+                    <textarea id="um-tab-message" class="form-textarea" rows="4" placeholder="Type a message to send via bot… (or set a photo URL below)" style="resize:none;" onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault(); sendUserMessageFromTab();}"></textarea>
+                    <div class="flex gap-1" style="flex-direction: column; justify-content: center;">
+                        <button onclick="sendUserMessageFromTab()" id="um-send-btn" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i></button>
+                        <button onclick="clearUmPhoto()" id="um-photo-clear" class="btn btn-danger btn-sm hidden" title="Clear photo"><i class="fa-solid fa-xmark"></i> <span>Photo</span></button>
+                    </div>
+                </div>
+                <div class="flex" style="margin-top:0.5rem; gap:0.5rem; align-items:center;">
+                    <input id="um-photo-url" class="form-input" style="flex:1; font-size:0.78rem;" placeholder="📷 Photo URL (optional — sends a photo, text becomes the caption)">
                 </div>
             </div>
 
@@ -1015,15 +1109,17 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                         </div>
                         <div id="bcast-inline-section" class="hidden">
                             <div class="flex" style="margin-bottom:0.5rem;">
-                                <input id="bcast-inline-label" class="form-input" style="flex:1; min-width:100px;" placeholder="Label">
-                                <select id="bcast-inline-type" class="form-input" style="flex:0 0 auto; width:auto;" onchange="onBroadcastInlineTypeChange()">
+                                <input id="kbBc-inline-label" class="form-input" style="flex:1.1; min-width:100px;" placeholder="Label">
+                                <select id="kbBc-inline-type" class="form-input" style="flex:0 0 auto; width:auto;" onchange="kbInlineTypeToggle('kbBc')">
+                                    <option value="command" selected>Command</option>
                                     <option value="callback">Callback</option>
                                     <option value="url">URL</option>
                                 </select>
-                                <input id="bcast-inline-value" class="form-input" style="flex:1; min-width:120px;" placeholder="Value / URL">
-                                <button onclick="addBroadcastInlineBtn()" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus"></i></button>
+                                <select id="kbBc-inline-cmd" class="form-input" style="flex:1; min-width:120px;"><option value="">Select command…</option></select>
+                                <input id="kbBc-inline-value" class="form-input hidden" style="flex:1; min-width:110px;" placeholder="Value / URL">
+                                <button onclick="kbBc.inlineAdd()" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus"></i></button>
                             </div>
-                            <div id="bcast-inline-buttons" class="button-chip-list" style="min-height:30px;"></div>
+                            <div id="kbBc-inline-list" class="button-chip-list" style="min-height:30px;"></div>
                         </div>
                         <div class="toggle-row" style="padding:0.4rem 0.7rem; margin-bottom:0.6rem; margin-top:0.6rem;">
                             <span class="label" style="font-size:0.82rem;">Reply Keyboard</span>
@@ -1031,22 +1127,56 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                         </div>
                         <div id="bcast-reply-section" class="hidden">
                             <div class="flex" style="margin-bottom:0.5rem;">
-                                <input id="bcast-reply-label" class="form-input" style="flex:1; min-width:100px;" placeholder="Button text">
-                                <button onclick="addBroadcastReplyBtn()" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus"></i></button>
+                                <input id="kbBc-reply-label" class="form-input" style="flex:1.1; min-width:100px;" placeholder="Button text">
+                                <select id="kbBc-reply-cmd" class="form-input" style="flex:1; min-width:120px;"><option value="">Run command… (optional)</option></select>
+                                <button onclick="kbBc.replyAdd()" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus"></i></button>
                             </div>
-                            <div id="bcast-reply-buttons" class="button-chip-list" style="min-height:30px;"></div>
+                            <div id="kbBc-reply-list" class="button-chip-list" style="min-height:30px;"></div>
+                            <div id="kbBc-reply-preview" class="kb-preview"></div>
+                            <div class="flex" style="gap:0.9rem; margin-top:0.4rem; flex-wrap:wrap; font-size:0.74rem; color:var(--text-2);">
+                                <label style="display:flex; align-items:center; gap:0.3rem; cursor:pointer;"><input type="checkbox" id="kbBc-reply-resize" checked> Resize</label>
+                                <label style="display:flex; align-items:center; gap:0.3rem; cursor:pointer;"><input type="checkbox" id="kbBc-reply-onetime"> One-time</label>
+                                <label style="display:flex; align-items:center; gap:0.3rem; cursor:pointer;"><input type="checkbox" id="kbBc-reply-persistent" checked> Persistent</label>
+                            </div>
                         </div>
                     </div>
+                </div>
+
+                <!-- Delivery pacing (Telegram rate-limit protection) -->
+                <div class="ai-section" style="margin-bottom:1rem;">
+                    <div class="ai-section-title" style="font-size:0.85rem;"><i class="fa-solid fa-gauge-high"></i> <span>Delivery Pacing</span> <span class="sub">Protects against Telegram rate limits</span></div>
+                    <div id="bcast-pacing" class="ai-grid">
+                        <div class="form-group">
+                            <label class="form-label">Batch Size (parallel sends)</label>
+                            <input type="number" id="bcast-batch-size" class="form-input" min="1" max="100" placeholder="25">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Delay Between Batches (ms)</label>
+                            <input type="number" id="bcast-delay-ms" class="form-input" min="0" max="60000" placeholder="0">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Per-Request Timeout (ms)</label>
+                            <input type="number" id="bcast-timeout-ms" class="form-input" min="2000" max="60000" placeholder="10000">
+                        </div>
+                        <div class="form-group" style="display:flex; align-items:flex-end;">
+                            <button onclick="saveBroadcastSettings()" id="bcast-pacing-save" class="btn btn-gray btn-sm"><i class="fa-solid fa-floppy-disk"></i> <span>Save Pacing</span></button>
+                        </div>
+                    </div>
+                    <span class="field-hint">Tip: ~25 per batch with a 1000–1500 ms delay keeps even large broadcasts well under Telegram's ~30 msg/sec limit. 429 flood-waits are always honored automatically.</span>
                 </div>
 
                 <h4 class="panel-title" style="font-size:0.95rem; margin-bottom:0.6rem;"><i class="fa-solid fa-comments"></i> <span>Broadcast Chat</span></h4>
                 <div id="broadcast-chat" class="chat-messages"><div class="chat-empty"><i class="fa-regular fa-paper-plane" style="margin-inline-end:0.4rem;"></i> Messages you send here will be delivered to selected users.</div></div>
                 <div class="chat-input-area">
-                    <textarea id="broadcast-message" class="form-textarea" rows="4" placeholder="Type your broadcast message…" style="resize:none;" onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault(); sendBroadcast();}"></textarea>
+                    <textarea id="broadcast-message" class="form-textarea" rows="4" placeholder="Type your broadcast message… (or set a photo URL below)" style="resize:none;" onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault(); sendBroadcast();}"></textarea>
                     <div class="flex gap-1" style="flex-direction: column; justify-content: center;">
-                        <button onclick="sendBroadcast()" class="btn btn-success"><i class="fa-solid fa-paper-plane"></i> <span>Send</span></button>
+                        <button onclick="sendBroadcast()" id="bcast-send-btn" class="btn btn-success"><i class="fa-solid fa-paper-plane"></i> <span>Send</span></button>
                         <button onclick="clearBroadcastChat()" style="width: 100%;" class="btn btn-danger btn-sm" title="Clear chat"><i class="fa-solid fa-trash-can"></i></button>
                     </div>
+                </div>
+                <div class="flex" style="margin-top:0.5rem; gap:0.5rem; align-items:center;">
+                    <input id="broadcast-photo-url" class="form-input" style="flex:1; font-size:0.78rem;" placeholder="📷 Photo URL (optional — broadcasts a photo, text becomes the caption)">
+                    <button onclick="clearBroadcastPhoto()" id="bcast-photo-clear" class="btn btn-danger btn-sm hidden" title="Clear photo"><i class="fa-solid fa-xmark"></i></button>
                 </div>
             </div>
 
@@ -1327,6 +1457,16 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                                 <input type="number" id="ai-rate-limit" class="form-input" placeholder="10" value="10" min="0">
                             </div>
                             <div class="form-group">
+                                <label class="form-label">Global Rate Limit (all users combined, 0 = off)</label>
+                                <div class="flex" style="gap:0.4rem;">
+                                    <input type="number" id="ai-global-rate-limit" class="form-input" placeholder="0 = disabled" value="0" min="0" style="flex:1;">
+                                    <select id="ai-global-rate-window" class="form-input" style="flex:0 0 auto; width:auto;">
+                                        <option value="minute">per minute</option>
+                                        <option value="hour">per hour</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
                                 <label class="form-label">Response Delay (ms)</label>
                                 <input type="number" id="ai-response-delay" class="form-input" placeholder="0" value="0" min="0" max="5000">
                             </div>
@@ -1344,6 +1484,13 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                                         <div class="sub" style="font-size:0.68rem;">Automatically retries once if the AI request fails.</div>
                                     </div>
                                     <div id="ai-retry-toggle" class="toggle" onclick="toggleRetryOnFailure()"><span class="slider"></span></div>
+                                </div>
+                                <div class="toggle-row" style="padding:0.5rem 0.7rem; margin-top:0.4rem;">
+                                    <div>
+                                        <div class="label" style="font-size:0.82rem;">Streaming Replies</div>
+                                        <div class="sub" style="font-size:0.68rem;">ChatGPT-style live typing — the reply is progressively edited as the AI generates it.</div>
+                                    </div>
+                                    <div id="ai-streaming-toggle" class="toggle" onclick="toggleAiStreaming()"><span class="slider"></span></div>
                                 </div>
                             </div>
                         </div>
@@ -1431,7 +1578,10 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                             <input type="text" id="settings-webhook-url" class="form-input" style="font-size:0.8rem;" readonly>
                             <button onclick="copyText('settings-webhook-url')" class="btn btn-gray btn-sm" title="Copy"><i class="fa-regular fa-copy"></i></button>
                         </div>
-                        <button onclick="testWebhook()" class="btn btn-gray btn-sm mt-2"><i class="fa-solid fa-stethoscope"></i> <span>Test Webhook</span></button>
+                        <div class="flex" style="gap:0.5rem; flex-wrap:wrap;">
+                            <button onclick="testWebhook()" class="btn btn-gray btn-sm mt-2"><i class="fa-solid fa-stethoscope"></i> <span>Test Webhook</span></button>
+                            <button id="webhook-fix-btn" onclick="fixWebhook()" class="btn btn-primary btn-sm mt-2"><i class="fa-solid fa-heart-pulse"></i> <span>Health Check / Fix</span></button>
+                        </div>
                         <div id="webhook-test-detail" class="text-sm mt-2" style="display:none;"></div>
                     </div>
                     <div>
@@ -1448,6 +1598,33 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                         <button onclick="factoryReset()" class="btn btn-danger"><i class="fa-solid fa-arrow-rotate-left"></i> <span>Factory Reset</span></button>
                         <p class="text-danger mt-2" style="font-size:0.78rem;">Erases all commands, users, settings, AI memory and bot info. The bot will be disconnected.</p>
                     </div>
+                </div>
+            </div>
+
+            <!-- ============ CRON TAB ============ -->
+            <div id="tab-cron" class="tab-content">
+                <h3 class="panel-title" style="margin-bottom:1rem;"><i class="fa-solid fa-clock-rotate-left"></i> <span>Cron / Retention Manager</span></h3>
+                <div class="panel flex-col" style="gap:1rem;">
+                    <div class="toggle-row">
+                        <span class="label">Automatic cleanup enabled</span>
+                        <div id="cron-enabled-toggle" class="toggle" onclick="toggleCronEnabled()" role="switch" aria-checked="false"><span class="slider"></span></div>
+                    </div>
+                    <p class="text-sm" style="margin-top:-0.4rem;">💡 Requires a scheduled trigger in your <strong>wrangler.toml</strong> (<span style="font-family:var(--mono);">"triggers": { "crons": ["0 3 * * *"] }</span>). The dashboard below still works without it via “Run now”.</p>
+                    <div class="divider" style="margin:0.2rem 0;"></div>
+                    <div style="overflow-x:auto;">
+                        <table style="width:100%; border-collapse:collapse; font-size:0.82rem;">
+                            <thead><tr style="text-align:start; color:var(--text-3);">
+                                <th style="padding:0.4rem 0.5rem; font-weight:500;">Data / feature</th>
+                                <th style="padding:0.4rem 0.5rem; font-weight:500;">Delete older than</th>
+                            </tr></thead>
+                            <tbody id="cron-rows"></tbody>
+                        </table>
+                    </div>
+                    <div class="flex" style="gap:0.5rem; flex-wrap:wrap;">
+                        <button id="cron-save-btn" onclick="saveCronSettings()" class="btn btn-primary btn-sm"><i class="fa-solid fa-floppy-disk"></i> <span>Save Retention</span></button>
+                        <button id="cron-run-btn" onclick="runCronNow()" class="btn btn-gray btn-sm"><i class="fa-solid fa-play"></i> <span>Run Now</span></button>
+                    </div>
+                    <div id="cron-last-run" class="text-sm" style="color:var(--text-3);"></div>
                 </div>
             </div>
 
@@ -1495,6 +1672,26 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                     <div id="backup-result" class="hidden text-sm"></div>
                     <hr class="divider">
                     <p class="text-sm">⚠️ Restoring overwrites your current commands, users, AI settings and menu. The admin password is kept unless the backup contains one.</p>
+                </div>
+            </div>
+
+            <!-- ============ LOGS TAB (#22) ============ -->
+            <div id="tab-logs" class="tab-content">
+                <div class="flex justify-between items-center" style="margin-bottom:1rem;">
+                    <h3 class="panel-title"><i class="fa-solid fa-clipboard-list"></i> <span>Audit Logs</span></h3>
+                    <div class="flex">
+                        <button onclick="loadAuditLogs()" class="btn btn-gray btn-sm"><i class="fa-solid fa-rotate"></i> <span>Refresh</span></button>
+                        <button onclick="clearAuditLogs()" class="btn btn-danger btn-sm"><i class="fa-solid fa-trash"></i> <span>Clear</span></button>
+                    </div>
+                </div>
+                <p class="text-sm" style="margin-bottom:0.9rem;">Recent administrative events: logins, role changes, blocks, broadcasts, token updates and resets.</p>
+                <div class="table-wrap">
+                    <table class="users-table">
+                        <thead><tr><th>Time</th><th>User</th><th>Action</th></tr></thead>
+                        <tbody id="audit-logs-body">
+                            <tr><td colspan="3" class="empty-state">Loading…</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -1586,17 +1783,18 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 </div>
                 <div id="inline-keyboard-section" class="hidden" style="margin-bottom:1rem;">
                     <div class="flex" style="margin-bottom:0.5rem;">
-                        <input id="inline-btn-label" class="form-input" style="flex:1; min-width:120px;" placeholder="Label">
-                        <select id="inline-btn-type" class="form-input" style="flex:0 0 auto; width:auto;">
+                        <input id="kbCmd-inline-label" class="form-input" style="flex:1.2; min-width:110px;" placeholder="Label">
+                        <select id="kbCmd-inline-type" class="form-input" style="flex:0 0 auto; width:auto;" onchange="kbInlineTypeToggle('kbCmd')">
                             <option value="command" selected>Command</option>
                             <option value="callback">Callback</option>
                             <option value="url">URL</option>
                         </select>
-                        <input id="inline-btn-value" class="form-input" style="flex:1; min-width:150px;" placeholder="Value/URL">
-                        <select id="inline-btn-command-select" class="form-input hidden" style="flex:1; min-width:150px;"><option value=""></option></select>
-                        <button onclick="addInlineButton()" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus"></i></button>
+                        <select id="kbCmd-inline-cmd" class="form-input" style="flex:1; min-width:140px;"><option value="">Select command…</option></select>
+                        <input id="kbCmd-inline-value" class="form-input hidden" style="flex:1; min-width:140px;" placeholder="Value / URL">
+                        <button onclick="kbCmd.inlineAdd()" class="btn btn-primary btn-sm" title="Add button"><i class="fa-solid fa-plus"></i></button>
                     </div>
-                    <div id="inline-buttons-list" class="panel" style="padding:0.5rem; min-height:30px;"></div>
+                    <div id="kbCmd-inline-list" class="panel" style="padding:0.5rem; min-height:30px;"></div>
+                    <span class="field-hint">Command runs a bot command · Callback sends the value to your AI · URL opens a link. Up to 3 buttons share a row, then a new row starts.</span>
                 </div>
 
                 <div class="toggle-row" style="padding:0.6rem 0.9rem; margin-bottom:0.9rem;">
@@ -1605,12 +1803,20 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 </div>
                 <div id="reply-keyboard-section" class="hidden" style="margin-bottom:0.9rem;">
                     <div class="flex" style="margin-bottom:0.5rem;">
-                        <input id="reply-btn-label" class="form-input" style="flex:1; min-width:140px;" placeholder="Button text">
-                        <select id="reply-btn-command" class="form-input" style="flex:1; min-width:140px;"><option value=""></option></select>
-                        <button onclick="addReplyButton()" class="btn btn-primary btn-sm"><i class="fa-solid fa-plus"></i></button>
+                        <input id="kbCmd-reply-label" class="form-input" style="flex:1.2; min-width:110px;" placeholder="Button text">
+                        <select id="kbCmd-reply-cmd" class="form-input" style="flex:1; min-width:140px;"><option value="">Run command… (optional)</option></select>
+                        <input id="kbCmd-reply-value" class="form-input" style="flex:1; min-width:120px;" placeholder="Or custom command (e.g. /menu)">
+                        <button onclick="kbCmd.replyAdd()" class="btn btn-primary btn-sm" title="Add button"><i class="fa-solid fa-plus"></i></button>
                     </div>
-                    <div id="reply-buttons-list" class="panel" style="padding:0.5rem; min-height:30px;"></div>
-                    <span class="field-hint">A “Back” button is added automatically for sub‑commands.</span>
+                    <div id="kbCmd-reply-list" class="panel" style="padding:0.5rem; min-height:30px;"></div>
+                    <div id="kbCmd-reply-preview" class="kb-preview"></div>
+                    <div class="flex" style="gap:1rem; margin-top:0.5rem; flex-wrap:wrap; font-size:0.78rem; color:var(--text-2);">
+                        <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;"><input type="checkbox" id="kbCmd-reply-resize" checked> Resize keyboard</label>
+                        <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;"><input type="checkbox" id="kbCmd-reply-onetime"> One-time</label>
+                        <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer;"><input type="checkbox" id="kbCmd-reply-persistent" checked> Always visible</label>
+                        <input id="kbCmd-reply-placeholder" class="form-input" style="flex:1; min-width:130px; font-size:0.75rem;" placeholder="Input placeholder (optional)" oninput="kbSettingChanged('kbCmd')">
+                    </div>
+                    <span class="field-hint">A “Back” button is added automatically for sub‑commands. Text-only buttons still work as a menu.</span>
                 </div>
 
                 <div class="form-group">
@@ -1922,6 +2128,437 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         setTimeout(() => toast.remove(), 4800);
     }
 
+    // ----- Button loading states -----
+    // Turn any button into a spinner for the duration of a promise. Visual
+    // style is contextual: full-block buttons get a centered spinner, small
+    // icon-only buttons get busy dots.
+    function withButtonLoading(btn, promise) {
+        if (!btn) return promise;
+        if (btn.dataset.busy === '1') return promise;
+        btn.dataset.busy = '1';
+        const inner = btn.innerHTML;
+        const spinner = '<span class="btn-spinner"><span class="mini-spinner"></span></span>';
+        const dots = '<span class="btn-spinner busy-dots"><span></span><span></span><span></span></span>';
+        btn.classList.add('loading');
+        btn.innerHTML = inner + (btn.classList.contains('btn-sm') || btn.querySelectorAll('span').length === 0 ? dots : spinner);
+        const done = () => { btn.classList.remove('loading'); btn.innerHTML = inner; delete btn.dataset.busy; };
+        Promise.resolve(promise).finally(done);
+        return promise;
+    }
+    // In-place busy hint inside a status/detail element (no spinner swap).
+    function busyDotsHtml() { return '<span class="busy-dots"><span></span><span></span><span></span></span>'; }
+
+    // ======================================================================
+    // SHARED KEYBOARD BUILDER
+    // ======================================================================
+    // One component powers the Commands modal, the Users panel and the
+    // Broadcast tab. Each instance keeps its own state:
+    //   inline: [[{text,type:'command'|'callback'|'url',value}]]  (rows × buttons)
+    //   reply:  { rows: [['Text']], actions: {'Text': '/command'}, resize, one_time, persistent, placeholder }
+    // Output format is the v2 JSON understood by the worker:
+    //   { v:2, inline:[[btn]], reply:{ rows, actions, resize, one_time, persistent, placeholder } }
+    // Stored per command in buttons_json / reply_keyboard_json respectively.
+    function createKeyboardBuilder(prefix, opts) {
+        opts = opts || {};
+        const allowReply = opts.reply !== false;
+        const commands = () => (typeof commandsCache !== 'undefined' && Array.isArray(commandsCache)) ? commandsCache : [];
+        let inline = [];
+        let reply = { rows: [], actions: {}, resize: true, one_time: false, persistent: true, placeholder: '' };
+
+        const el = (id) => document.getElementById(prefix + '-' + id);
+        const esc = (s) => escapeHtml(String(s === undefined || s === null ? '' : s));
+
+        function render() {
+            renderInline();
+            if (allowReply) renderReply();
+        }
+
+        // ---------- inline ----------
+        function renderInline() {
+            const box = el('inline-list');
+            if (!box) return;
+            if (!inline.length) {
+                box.innerHTML = '<div class="empty-state" style="padding:0.5rem;"><i class="fa-regular fa-keyboard"></i> No inline buttons yet.</div>';
+                return;
+            }
+            const typeLabel = { command: 'Command', callback: 'Callback', url: 'URL' };
+            let html = '<div class="kb-grid">';
+            inline.forEach(function(row, ri) {
+                html += '<div class="kb-row-chips" data-row="' + ri + '">';
+                html += '<span class="kb-row-head">Row ' + (ri + 1) + '</span>';
+                row.forEach(function(b, bi) {
+                    const icon = b.type === 'url' ? 'fa-link' : (b.type === 'command' ? 'fa-terminal' : 'fa-message');
+                    html += '<span class="kb-chip">' +
+                        '<i class="fa-solid ' + icon + '" style="color:var(--accent);font-size:0.72rem;"></i>' +
+                        '<span class="chip-label">' + esc(b.text) + '</span>' +
+                        '<span class="chip-badge">' + (typeLabel[b.type] || b.type) + (b.value ? ' · ' + esc(b.value.length > 18 ? b.value.slice(0, 18) + '…' : b.value) : '') + '</span>' +
+                        '<button class="kb-arrow" title="Move left" onclick="' + prefix + 'KbInlineMove(' + ri + ',' + bi + ',-1)"' + (bi === 0 ? ' disabled' : '') + '><i class="fa-solid fa-angles-left"></i></button>' +
+                        '<button class="kb-arrow" title="Move right" onclick="' + prefix + 'KbInlineMove(' + ri + ',' + bi + ',1)"' + (bi === row.length - 1 ? ' disabled' : '') + '><i class="fa-solid fa-angles-right"></i></button>' +
+                        '<button class="kb-arrow" title="Move up" onclick="' + prefix + 'KbInlineRowMove(' + ri + ',-1)"' + (ri === 0 ? ' disabled' : '') + '><i class="fa-solid fa-chevron-up"></i></button>' +
+                        '<button class="kb-arrow" title="Move down" onclick="' + prefix + 'KbInlineRowMove(' + ri + ',1)"' + (ri === inline.length - 1 ? ' disabled' : '') + '><i class="fa-solid fa-chevron-down"></i></button>' +
+                        '<button class="kb-arrow chip-delete" title="Remove" onclick="' + prefix + 'KbInlineRemove(' + ri + ',' + bi + ')"><i class="fa-regular fa-circle-xmark"></i></button>' +
+                        '</span>';
+                });
+                html += '</div>';
+            });
+            html += '</div>';
+            box.innerHTML = html;
+        }
+
+        function inlineAdd() {
+            const label = el('inline-label').value.trim();
+            const type = el('inline-type').value;
+            const cmdSel = el('inline-cmd');
+            const valueInput = el('inline-value');
+            let value = type === 'command' ? (cmdSel ? cmdSel.value.trim() : '') : valueInput.value.trim();
+            if (!label) { showToast('Enter a button label.', 'error'); return; }
+            if (!value) { showToast(type === 'command' ? 'Select a command.' : (type === 'url' ? 'Enter the URL.' : 'Enter callback data.'), 'error'); return; }
+            if (type === 'command' && !value.startsWith('/')) value = '/' + value.replace(/^\\/+/, '');
+            // Add into the last row while it has fewer than 3 buttons,
+            // otherwise start a fresh row — matches Telegram's visual rhythm.
+            let last = inline.length ? inline[inline.length - 1] : null;
+            if (!last || last.length >= (opts.maxPerRow || 3)) { last = []; inline.push(last); }
+            last.push({ text: label, type: type, value: value });
+            el('inline-label').value = '';
+            valueInput.value = '';
+            if (cmdSel) cmdSel.value = '';
+            render();
+        }
+
+        function inlineMove(ri, bi, dir) {
+            const row = inline[ri];
+            if (!row) return;
+            const ni = bi + dir;
+            if (ni < 0 || ni >= row.length) return;
+            const item = row.splice(bi, 1)[0];
+            row.splice(ni, 0, item);
+            render();
+        }
+
+        function inlineRowMove(ri, dir) {
+            const ni = ri + dir;
+            if (ni < 0 || ni >= inline.length) return;
+            const r = inline.splice(ri, 1)[0];
+            inline.splice(ni, 0, r);
+            render();
+        }
+
+        function inlineRemove(ri, bi) {
+            const row = inline[ri];
+            if (!row) return;
+            row.splice(bi, 1);
+            if (!row.length) inline.splice(ri, 1);
+            render();
+        }
+
+        // ---------- reply ----------
+        function renderReply() {
+            const box = el('reply-list');
+            if (!box) return;
+            if (!reply.rows.length) {
+                box.innerHTML = '<div class="empty-state" style="padding:0.5rem;"><i class="fa-regular fa-keyboard"></i> No reply buttons yet.</div>';
+            } else {
+                let html = '<div class="kb-grid">';
+                reply.rows.forEach(function(row, ri) {
+                    html += '<div class="kb-row-chips" data-row="' + ri + '">';
+                    html += '<span class="kb-row-head">Row ' + (ri + 1) + '</span>';
+                    row.forEach(function(text, bi) {
+                        const action = reply.actions[text];
+                        html += '<span class="kb-chip">' +
+                            '<i class="fa-regular fa-keyboard" style="color:var(--accent);font-size:0.72rem;"></i>' +
+                            '<span class="chip-label">' + esc(text) + '</span>' +
+                            (action ? '<span class="chip-badge" style="cursor:pointer;" title="Click to change the command" onclick=\"' + prefix + 'KbReplySetAction(' + ri + ',' + bi + ')\">' + esc(action) + '</span>' : '<span class="chip-badge" style="cursor:pointer;opacity:0.65;" title="Click to attach a command" onclick=\"' + prefix + 'KbReplySetAction(' + ri + ',' + bi + ')\">no action</span>') +
+                            '<button class="kb-arrow" title="Move left" onclick="' + prefix + 'KbReplyMove(' + ri + ',' + bi + ',-1)"' + (bi === 0 ? ' disabled' : '') + '><i class="fa-solid fa-angles-left"></i></button>' +
+                            '<button class="kb-arrow" title="Move right" onclick="' + prefix + 'KbReplyMove(' + ri + ',' + bi + ',1)"' + (bi === row.length - 1 ? ' disabled' : '') + '><i class="fa-solid fa-angles-right"></i></button>' +
+                            '<button class="kb-arrow" title="Move up" onclick="' + prefix + 'KbReplyRowMove(' + ri + ',-1)"' + (ri === 0 ? ' disabled' : '') + '><i class="fa-solid fa-chevron-up"></i></button>' +
+                            '<button class="kb-arrow" title="Move down" onclick="' + prefix + 'KbReplyRowMove(' + ri + ',1)"' + (ri === reply.rows.length - 1 ? ' disabled' : '') + '><i class="fa-solid fa-chevron-down"></i></button>' +
+                            '<button class="kb-arrow chip-delete" title="Remove" onclick="' + prefix + 'KbReplyRemove(' + ri + ',' + bi + ')"><i class="fa-regular fa-circle-xmark"></i></button>' +
+                            '</span>';
+                    });
+                    html += '</div>';
+                });
+                html += '</div>';
+                box.innerHTML = html;
+            }
+            renderReplyPreview();
+        }
+
+        function renderReplyPreview() {
+            const pv = el('reply-preview');
+            if (!pv) return;
+            if (!reply.rows.length) { pv.innerHTML = ''; return; }
+            let html = '';
+            reply.rows.forEach(function(row) {
+                html += '<div class="kb-preview-row">' + row.map(function(t) {
+                    const action = reply.actions[t];
+                    return '<span class="kb-preview-btn' + (action ? ' kb-pv-command' : '') + '">' + esc(t) + '</span>';
+                }).join('') + '</div>';
+            });
+            pv.innerHTML = html;
+        }
+
+        function replyAdd() {
+            const label = el('reply-label').value.trim();
+            if (!label) { showToast('Enter the button text.', 'error'); return; }
+            const cmdSel = el('reply-cmd');
+            const valIn = el('reply-value');
+            let action = cmdSel && cmdSel.value ? cmdSel.value.trim() : '';
+            if (!action && valIn) action = valIn.value.trim();
+            if (action && !action.startsWith('/')) action = '/' + action.replace(/^\\/+/, '');
+            if (reply.rows.some(function(row) { return row.indexOf(label) >= 0; })) {
+                showToast('A button with this text already exists.', 'error'); return;
+            }
+            let last = reply.rows.length ? reply.rows[reply.rows.length - 1] : null;
+            if (!last || last.length >= (opts.maxPerRow || 3)) { last = []; reply.rows.push(last); }
+            last.push(label);
+            if (action) reply.actions[label] = action;
+            el('reply-label').value = '';
+            if (valIn) valIn.value = '';
+            if (cmdSel) cmdSel.value = '';
+            render();
+        }
+
+        function replySetAction(text) {
+            const cur = reply.actions[text] || '';
+            const val = prompt('Command to run when “' + text + '” is tapped:\\n(e.g. /menu — leave empty for no action)', cur);
+            if (val === null) return;
+            const v = val.trim();
+            if (v) { reply.actions[text] = v.startsWith('/') ? v : '/' + v.replace(/^\\/+/, ''); }
+            else delete reply.actions[text];
+            render();
+        }
+
+        function replyMove(ri, bi, dir) {
+            const row = reply.rows[ri];
+            if (!row) return;
+            const ni = bi + dir;
+            if (ni < 0 || ni >= row.length) return;
+            const item = row.splice(bi, 1)[0];
+            row.splice(ni, 0, item);
+            render();
+        }
+
+        function replyRowMove(ri, dir) {
+            const ni = ri + dir;
+            if (ni < 0 || ni >= reply.rows.length) return;
+            const r = reply.rows.splice(ri, 1)[0];
+            reply.rows.splice(ni, 0, r);
+            render();
+        }
+
+        function replyRemove(ri, bi) {
+            const row = reply.rows[ri];
+            if (!row) return;
+            const text = row.splice(bi, 1)[0];
+            delete reply.actions[text];
+            if (!row.length) reply.rows.splice(ri, 1);
+            render();
+        }
+
+        // ---------- settings row ----------
+        function syncSettings() {
+            if (!allowReply) return;
+            const r = el('reply-resize');
+            const o = el('reply-onetime');
+            const p = el('reply-persistent');
+            const ph = el('reply-placeholder');
+            if (r) reply.resize = r.checked;
+            if (o) reply.one_time = o.checked;
+            if (p) reply.persistent = p.checked;
+            if (ph) reply.placeholder = ph.value.trim().slice(0, 64);
+        }
+
+        function populateCommands() {
+            ['inline-cmd', 'reply-cmd'].forEach(function(id) {
+                const sel = el(id);
+                if (!sel) return;
+                const cur = sel.value;
+                sel.innerHTML = '';
+                const ph = document.createElement('option');
+                ph.value = '';
+                ph.textContent = id === 'inline-cmd' ? 'Select command…' : 'Run command… (optional)';
+                sel.appendChild(ph);
+                commands().forEach(function(cmd) {
+                    const opt = document.createElement('option');
+                    opt.value = cmd.command;
+                    opt.textContent = cmd.command;
+                    sel.appendChild(opt);
+                });
+                if (cur) sel.value = cur;
+            });
+        }
+
+        // ---------- load / save (accepts every legacy shape) ----------
+        function loadInline(raw) {
+            inline = [];
+            if (raw) {
+                try {
+                    const obj = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                    if (obj && Array.isArray(obj.inline) && obj.v === 2) {
+                        inline = obj.inline.map(function(row) {
+                            return (Array.isArray(row) ? row : [row]).map(function(b) {
+                                return { text: String(b.text || ''), type: b.type || 'callback', value: String(b.value || '') };
+                            }).filter(function(b) { return b.text; });
+                        }).filter(function(row) { return row.length; });
+                    } else if (obj && Array.isArray(obj.inline_keyboard)) {
+                        inline = obj.inline_keyboard.map(function(row) {
+                            return (Array.isArray(row) ? row : [row]).map(function(b) {
+                                if (!b || !b.text) return null;
+                                if (b.url) return { text: b.text, type: 'url', value: b.url };
+                                const value = String(b.callback_data || '');
+                                return { text: b.text, type: value.startsWith('/') ? 'command' : 'callback', value: value };
+                            }).filter(Boolean);
+                        }).filter(function(row) { return row.length; });
+                    } else if (obj && Array.isArray(obj.inline)) {
+                        inline = obj.inline.map(function(b) {
+                            if (!b || !b.text) return null;
+                            if (b.type === 'url' || b.url) return [{ text: b.text, type: 'url', value: b.url || b.value || '' }];
+                            const value = String(b.value !== undefined ? b.value : (b.callback_data || ''));
+                            return [{ text: b.text, type: value.startsWith('/') ? 'command' : 'callback', value: value }];
+                        }).filter(Boolean);
+                    }
+                } catch (e) { inline = []; }
+            }
+            renderInline();
+        }
+
+        function loadReply(raw) {
+            reply = { rows: [], actions: {}, resize: true, one_time: false, persistent: true, placeholder: '' };
+            if (raw) {
+                try {
+                    const obj = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                    const readItem = function(item) {
+                        if (typeof item === 'string') return { text: item, command: '' };
+                        if (item && typeof item === 'object') return { text: String(item.text || ''), command: String(item.command || item.value || '') };
+                        return null;
+                    };
+                    if (obj && obj.v === 2 && obj.reply) {
+                        const rep = obj.reply;
+                        reply.rows = (rep.rows || []).map(function(row) {
+                            return (Array.isArray(row) ? row : [row]).map(function(item) {
+                                const it = readItem(item);
+                                return it && it.text;
+                            }).filter(Boolean);
+                        }).filter(function(row) { return row.length; });
+                        reply.actions = (rep.actions && typeof rep.actions === 'object') ? rep.actions : {};
+                        if (typeof rep.resize === 'boolean') reply.resize = rep.resize;
+                        if (typeof rep.one_time === 'boolean') reply.one_time = rep.one_time;
+                        if (typeof rep.persistent === 'boolean') reply.persistent = rep.persistent;
+                        reply.placeholder = rep.placeholder || '';
+                    } else if (obj && Array.isArray(obj.keyboard)) {
+                        reply.rows = obj.keyboard.map(function(row) {
+                            return (Array.isArray(row) ? row : [row]).map(function(item) {
+                                const it = readItem(item);
+                                return it && it.text;
+                            }).filter(Boolean);
+                        }).filter(function(row) { return row.length; });
+                        if (obj.resize_keyboard === false) reply.resize = false;
+                        if (obj.one_time_keyboard === true) reply.one_time = true;
+                        if (obj.is_persistent === false) reply.persistent = false;
+                        reply.placeholder = obj.input_field_placeholder || '';
+                    } else if (obj && Array.isArray(obj.reply)) {
+                        reply.rows = obj.reply.map(function(row) {
+                            return (Array.isArray(row) ? row : [row]).map(function(item) {
+                                const it = readItem(item);
+                                return it && it.text;
+                            }).filter(Boolean);
+                        }).filter(function(row) { return row.length; });
+                    } else if (Array.isArray(obj)) {
+                        // Legacy commands format: flat [{text, command}].
+                        reply.rows = obj.map(function(item) {
+                            const it = readItem(item);
+                            return it && it.text;
+                        }).filter(Boolean).map(function(text) { return [text]; });
+                        obj.forEach(function(item) {
+                            if (item && item.text && item.command) reply.actions[item.text] = item.command;
+                        });
+                    }
+                } catch (e) { reply = { rows: [], actions: {}, resize: true, one_time: false, persistent: true, placeholder: '' }; }
+            }
+            renderReply();
+        }
+
+        function inlineJSON() {
+            if (!inline.length) return null;
+            return { v: 2, inline: inline };
+        }
+
+        function replyJSON() {
+            if (!reply.rows.length) return null;
+            return { v: 2, reply: reply };
+        }
+
+        function hasAny() {
+            return !!(inline.length || reply.rows.length);
+        }
+
+        function reset() {
+            inline = [];
+            reply = { rows: [], actions: {}, resize: true, one_time: false, persistent: true, placeholder: '' };
+            render();
+        }
+
+        // Expose the per-instance action functions on window so inline onclick
+        // handlers in the chips can reach them.
+        window[prefix + 'KbInlineMove'] = inlineMove;
+        window[prefix + 'KbInlineRowMove'] = inlineRowMove;
+        window[prefix + 'KbInlineRemove'] = inlineRemove;
+        window[prefix + 'KbReplyMove'] = replyMove;
+        window[prefix + 'KbReplyRowMove'] = replyRowMove;
+        window[prefix + 'KbReplyRemove'] = replyRemove;
+        window[prefix + 'KbReplySetAction'] = function(ri, bi) {
+            const row = reply.rows[ri];
+            if (row && row[bi] !== undefined) replySetAction(row[bi]);
+        };
+
+        return {
+            inlineAdd: inlineAdd,
+            replyAdd: replyAdd,
+            populateCommands: populateCommands,
+            loadInline: loadInline,
+            loadReply: loadReply,
+            inlineJSON: inlineJSON,
+            replyJSON: replyJSON,
+            hasAny: hasAny,
+            reset: reset,
+            render: render,
+            syncSettings: syncSettings
+        };
+    }
+
+    // Three shared-builder instances (commands modal, user panel, broadcast).
+    const kbCmd = createKeyboardBuilder('kbCmd', { reply: true, maxPerRow: 3 });
+    const kbUm = createKeyboardBuilder('kbUm', { reply: true, maxPerRow: 3 });
+    const kbBc = createKeyboardBuilder('kbBc', { reply: true, maxPerRow: 3 });
+
+    // Show the value input or the command select depending on inline type.
+    function kbInlineTypeToggle(prefix) {
+        const type = document.getElementById(prefix + '-inline-type').value;
+        const cmdSel = document.getElementById(prefix + '-inline-cmd');
+        const valIn = document.getElementById(prefix + '-inline-value');
+        if (!cmdSel || !valIn) return;
+        if (type === 'command') { cmdSel.classList.remove('hidden'); valIn.classList.add('hidden'); }
+        else { cmdSel.classList.add('hidden'); valIn.classList.remove('hidden'); valIn.placeholder = type === 'url' ? 'https://example.com' : 'Callback data'; }
+    }
+
+    // Push the settings-row checkboxes into the builder state.
+    function kbSettingChanged(prefix) {
+        const kb = { kbCmd: kbCmd, kbUm: kbUm, kbBc: kbBc }[prefix];
+        if (kb && kb.syncSettings) kb.syncSettings();
+    }
+
+    // Reflect the builder's current reply spec back onto the settings-row UI.
+    function kbSyncSettingsUI(prefix, kb) {
+        const spec = kb.replyJSON();
+        const rep = spec ? spec.reply : null;
+        const set = (id, val) => { const elx = document.getElementById(prefix + '-' + id); if (elx) elx.checked = !!val; };
+        set('reply-resize', rep ? rep.resize !== false : true);
+        set('reply-onetime', rep ? !!rep.one_time : false);
+        set('reply-persistent', rep ? rep.persistent !== false : true);
+        const ph = document.getElementById(prefix + '-reply-placeholder');
+        if (ph) ph.value = (rep && rep.placeholder) || '';
+    }
+
     // ----- Custom confirm modal -----
     function confirmDialog(message, dangerLabel) {
         return new Promise(resolve => {
@@ -2012,22 +2649,24 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         if (!skipBot && !botToken) { errorEl.textContent = 'Please provide a bot token or check “Skip”.'; errorEl.style.display = 'block'; return; }
         const payload = { adminPassword: password };
         if (botToken) payload.botToken = botToken;
-        showLoading();
-        try {
-            const res = await fetch('/api/setup', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            const data = await res.json();
-            if (!data.success) throw new Error(data.error || 'Setup failed');
-            showToast('Setup complete! Please log in.');
-            showStep('step-login');
-        } catch (err) {
-            errorEl.textContent = err.message;
-            errorEl.style.display = 'block';
-        } finally {
-            hideLoading();
-        }
+        const btn = document.querySelector('#step-setup .btn-success');
+        const form = btn ? btn.closest('form') : null;
+        if (form) form.classList.add('form-busy');
+        withButtonLoading(btn, (async () => {
+            try {
+                const res = await fetch('/api/setup', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!data.success) throw new Error(data.error || 'Setup failed');
+                showToast('Setup complete! Please log in.');
+                showStep('step-login');
+            } catch (err) {
+                errorEl.textContent = err.message;
+                errorEl.style.display = 'block';
+            }
+        })()).finally(() => { if (form) form.classList.remove('form-busy'); });
     }
 
     async function submitLogin() {
@@ -2035,34 +2674,36 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         const errorEl = document.getElementById('login-error');
         errorEl.style.display = 'none';
         if (!password) { errorEl.textContent = 'Please enter your password.'; errorEl.style.display = 'block'; return; }
-        showLoading();
-        try {
-            const res = await fetch('/api/login', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password })
-            });
-            const data = await res.json();
-            if (!data.success) throw new Error(data.error || 'Login failed');
-            showToast('Login successful!');
-            showDashboard();
-        } catch (err) {
-            errorEl.textContent = err.message;
-            errorEl.style.display = 'block';
-        } finally {
-            hideLoading();
-        }
+        const btn = document.querySelector('#step-login .btn-primary');
+        const form = btn ? btn.closest('form') : null;
+        if (form) form.classList.add('form-busy');
+        withButtonLoading(btn, (async () => {
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+                const data = await res.json();
+                if (!data.success) throw new Error(data.error || 'Login failed');
+                showToast('Login successful!');
+                await showDashboard();
+            } catch (err) {
+                errorEl.textContent = err.message;
+                errorEl.style.display = 'block';
+            }
+        })()).finally(() => { if (form) form.classList.remove('form-busy'); });
     }
 
     async function logout() {
-        showLoading();
-        try {
-            await fetch('/api/logout', { method: 'POST' });
-            showToast('Logged out.');
-            document.getElementById('logout-btn').classList.add('hidden');
-            showStep('step-login');
-        } finally {
-            hideLoading();
-        }
+        const btn = document.getElementById('logout-btn');
+        withButtonLoading(btn, (async () => {
+            try {
+                await fetch('/api/logout', { method: 'POST' });
+                showToast('Logged out.');
+                btn.classList.add('hidden');
+                showStep('step-login');
+            } finally {}
+        })());
     }
 
     async function showDashboard() {
@@ -2101,7 +2742,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
     // ======================================================================
     // TABS
     // ======================================================================
-    const TAB_ORDER = { overview: 0, commands: 1, menu: 2, users: 3, ai: 4, settings: 5, botinfo: 6, backup: 7, update: 8 };
+    const TAB_ORDER = { overview: 0, commands: 1, menu: 2, users: 3, ai: 4, settings: 5, cron: 6, botinfo: 7, backup: 8, logs: 9, update: 10 };
     const SUB_TABS = { 'user-manage': true, 'broadcast': true };
 
     function switchTab(tabId) {
@@ -2120,8 +2761,11 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         else if (tabId === 'users') loadUsers();
         else if (tabId === 'ai') { loadAiSettings(); refreshMemoryCount(); }
         else if (tabId === 'settings') loadSettings();
+        else if (tabId === 'cron') loadCronSettings();
         else if (tabId === 'botinfo') loadBotInfo();
         else if (tabId === 'overview') loadOverview();
+        else if (tabId === 'backup') { /* loaded on demand */ }
+        else if (tabId === 'logs') loadAuditLogs();
         else if (tabId === 'update') loadUpdateTab();
         collapseTabs();
     }
@@ -2163,7 +2807,11 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 '<div class="stat-value">' + (s.users_total || 0) + '</div><div class="stat-label">' + 'Users' +
                 ' · <span style="color:var(--primary);">' + (s.admins_total || 0) + ' ' + 'admins' + '</span></div></div>' +
                 '<div class="stat-card green"><div class="stat-icon"><i class="fa-solid fa-memory"></i></div>' +
-                '<div class="stat-value">' + (s.ai_memory_count || 0) + '</div><div class="stat-label">' + 'AI Memory' + ' · ' + 'messages' + '</div></div>' +
+                '<div class="stat-value">' + (s.ai_memory_count || 0) + '</div><div class="stat-label">' + 'AI Memory' + ' · ' +
+                ' · <span style="color:var(--accent);">' + (s.ai_replies_24h || 0) + ' replies/24h</span></div></div>' +
+                '<div class="stat-card blue"><div class="stat-icon"><i class="fa-solid fa-user-clock"></i></div>' +
+                '<div class="stat-value">' + (s.users_active_7d || 0) + '</div><div class="stat-label">' + 'Active users · 7d' +
+                ' · <span style="color:var(--primary);">' + (s.ai_requests_60m || 0) + ' AI req/60m</span></div></div>' +
                 '<div class="stat-card ' + (botLinked ? 'green' : 'amber') + '"><div class="stat-icon"><i class="fa-brands fa-telegram"></i></div>' +
                 '<div class="stat-value" style="font-size:1.1rem; word-break:break-word;">' + (s.bot_username ? '@' + escapeHtml(s.bot_username) : (botLinked ? 'Linked' : 'Unlinked')) + '</div>' +
                 '<div class="stat-label">' + 'Bot' + ' · ' + (s.ai_enabled ? 'AI enabled' : 'AI disabled') + '</div></div>';
@@ -2252,154 +2900,16 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             seen.add(cmd.command);
             const opt = document.createElement('option');
             opt.value = cmd.command;
-            opt.textContent = 'cmd.command';
+            opt.textContent = cmd.command;
             parentSelect.appendChild(opt);
         }
         if (editingCommand && editingCommand.parent) parentSelect.value = editingCommand.parent;
         if (!editingCommand && currentParent !== null) parentSelect.value = currentParent;
-        for (const selId of ['inline-btn-command-select', 'reply-btn-command']) {
-            const sel = document.getElementById(selId);
-            sel.innerHTML = '';
-            let ph = document.createElement('option');
-            ph.value = '';
-            ph.textContent = 'Select command…';
-            sel.appendChild(ph);
-            for (const cmd of commandsCache) {
-                if (cmd.command === currentCommand) continue;
-                const opt = document.createElement('option');
-                opt.value = cmd.command;
-                opt.textContent = 'cmd.command';
-                sel.appendChild(opt);
-            }
-        }
+        kbCmd.populateCommands();
     }
 
-    function renderInlineChips() {
-        const container = document.getElementById('inline-buttons-list');
-        if (inlineButtonsArray.length === 0) {
-            container.innerHTML = '<div class="empty-state" style="padding:0.6rem;"><i class="fa-regular fa-keyboard"></i>' + 'No buttons added yet.' + '</div>';
-            return;
-        }
-        let html = '<div class="button-chip-list"><span class="field-hint" style="margin-bottom:0.2rem;">' + 'Your buttons:' + '</span>';
-        inlineButtonsArray.forEach((b, i) => {
-            const icon = b.type === 'url' ? 'fa-link' : (b.type === 'command' ? 'fa-terminal' : 'fa-message');
-            const upDisabled = i === 0 ? 'disabled' : '';
-            const downDisabled = i === inlineButtonsArray.length - 1 ? 'disabled' : '';
-            html += '<div class="button-chip" data-index="' + i + '" data-type="inline">' +
-                '<button class="chip-btn" onclick="moveInlineButton(-1,' + i + ')" ' + upDisabled + ' title="Up"><i class="fa-solid fa-arrow-up"></i></button>' +
-                '<button class="chip-btn" onclick="moveInlineButton(1,' + i + ')" ' + downDisabled + ' title="Down"><i class="fa-solid fa-arrow-down"></i></button>' +
-                '<i class="fa-solid ' + icon + '" style="color:var(--accent);"></i>' +
-                '<span class="chip-text">' + escapeHtml(b.text) + '</span>' +
-                '<span class="chip-badge">' + ({command:'Command',callback:'Callback',url:'URL'}[b.type] || b.type) + '</span>' +
-                '<button class="chip-btn chip-delete" onclick="removeInlineButton(' + i + ')"><i class="fa-regular fa-circle-xmark"></i></button>' +
-                '</div>';
-        });
-        container.innerHTML = html + '</div>';
-    }
-
-    function moveInlineButton(dir, index) {
-        const newIndex = index + dir;
-        if (newIndex < 0 || newIndex >= inlineButtonsArray.length) return;
-        const item = inlineButtonsArray.splice(index, 1)[0];
-        inlineButtonsArray.splice(newIndex, 0, item);
-        renderInlineChips();
-    }
-
-    function renderReplyChips() {
-        const container = document.getElementById('reply-buttons-list');
-        if (replyButtonsArray.length === 0) {
-            container.innerHTML = '<div class="empty-state" style="padding:0.6rem;"><i class="fa-regular fa-keyboard"></i>' + 'No buttons added yet.' + '</div>';
-            return;
-        }
-        let html = '<div class="button-chip-list"><span class="field-hint" style="margin-bottom:0.2rem;">' + 'Your buttons:' + '</span>';
-        replyButtonsArray.forEach((b, i) => {
-            const upDisabled = i === 0 ? 'disabled' : '';
-            const downDisabled = i === replyButtonsArray.length - 1 ? 'disabled' : '';
-            html += '<div class="button-chip" data-index="' + i + '" data-type="reply">' +
-                '<button class="chip-btn" onclick="moveReplyButton(-1,' + i + ')" ' + upDisabled + ' title="Up"><i class="fa-solid fa-arrow-up"></i></button>' +
-                '<button class="chip-btn" onclick="moveReplyButton(1,' + i + ')" ' + downDisabled + ' title="Down"><i class="fa-solid fa-arrow-down"></i></button>' +
-                '<i class="fa-regular fa-keyboard" style="color:var(--accent);"></i>' +
-                '<span class="chip-text">' + escapeHtml(b.text) + ' \u2192 ' + escapeHtml(b.command) + '</span>' +
-                '<button class="chip-btn chip-delete" onclick="removeReplyButton(' + i + ')"><i class="fa-regular fa-circle-xmark"></i></button>' +
-                '</div>';
-        });
-        container.innerHTML = html + '</div>';
-    }
-
-    function moveReplyButton(dir, index) {
-        const newIndex = index + dir;
-        if (newIndex < 0 || newIndex >= replyButtonsArray.length) return;
-        const item = replyButtonsArray.splice(index, 1)[0];
-        replyButtonsArray.splice(newIndex, 0, item);
-        renderReplyChips();
-    }
-
-    function addInlineButton() {
-        const text = document.getElementById('inline-btn-label').value.trim();
-        const type = document.getElementById('inline-btn-type').value;
-        let value = document.getElementById('inline-btn-value').value.trim();
-        if (type === 'command') value = document.getElementById('inline-btn-command-select').value;
-        if (!text || !value) { showToast('Fill both fields.', 'error'); return; }
-        inlineButtonsArray.push({ text, type, value });
-        renderInlineChips();
-        document.getElementById('inline-btn-label').value = '';
-        document.getElementById('inline-btn-value').value = '';
-        document.getElementById('inline-btn-command-select').value = '';
-    }
-    function removeInlineButton(index) { inlineButtonsArray.splice(index, 1); renderInlineChips(); }
-
-    function getInlineButtonsJSON() {
-        if (inlineButtonsArray.length === 0) return '';
-        const rows = [];
-        for (let i = 0; i < inlineButtonsArray.length; i += 3) {
-            rows.push(inlineButtonsArray.slice(i, i + 3).map(b => {
-                const btn = { text: b.text };
-                if (b.type === 'url') btn.url = b.value;
-                else btn.callback_data = b.value;
-                return btn;
-            }));
-        }
-        return JSON.stringify({ inline_keyboard: rows });
-    }
-
-    function loadInlineButtonsFromJSON(json) {
-        inlineButtonsArray = [];
-        if (!json) { renderInlineChips(); return; }
-        try {
-            const obj = JSON.parse(json);
-            if (obj.inline_keyboard) {
-                obj.inline_keyboard.forEach(row => {
-                    (row || []).forEach(btn => {
-                        if (!btn) return;
-                        const isUrl = !!btn.url;
-                        const value = btn.url || btn.callback_data || '';
-                        const type = isUrl ? 'url' : (value.startsWith('/') ? 'command' : 'callback');
-                        inlineButtonsArray.push({ text: btn.text || '', type, value });
-                    });
-                });
-            }
-        } catch (e) {}
-        renderInlineChips();
-    }
-
-    function addReplyButton() {
-        const text = document.getElementById('reply-btn-label').value.trim();
-        const command = document.getElementById('reply-btn-command').value;
-        if (!text || !command) { showToast('Fill both fields.', 'error'); return; }
-        replyButtonsArray.push({ text, command });
-        renderReplyChips();
-        document.getElementById('reply-btn-label').value = '';
-        document.getElementById('reply-btn-command').value = '';
-    }
-    function removeReplyButton(index) { replyButtonsArray.splice(index, 1); renderReplyChips(); }
-    function getReplyButtonsJSON() { return JSON.stringify(replyButtonsArray); }
-    function loadReplyButtonsFromJSON(json) {
-        replyButtonsArray = [];
-        if (json) {
-            try { const arr = JSON.parse(json); if (Array.isArray(arr)) replyButtonsArray = arr; } catch (e) {}
-        }
-        renderReplyChips();
-    }
+    // (Keyboard building for the command modal lives in the shared
+    // createKeyboardBuilder above — instance kbCmd.)
 
     // ----- Tree / file manager -----
     function getSortedChildren(parentName) {
@@ -2606,6 +3116,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         commandEnabled = true;
         populateDropdowns();
         const parentSelect = document.getElementById('modal-parent');
+        kbCmd.populateCommands();
         if (editingCommand) {
             document.getElementById('command-modal-title').textContent = 'Edit Command';
             document.getElementById('modal-command').value = editingCommand.command || '';
@@ -2616,15 +3127,15 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             commandEnabled = editingCommand.enabled !== undefined ? (editingCommand.enabled == 1) : true;
             updateEnabledIconUI();
             if (editingCommand.parent) parentSelect.value = editingCommand.parent;
-            loadInlineButtonsFromJSON(editingCommand.buttons_json);
+            kbCmd.loadInline(editingCommand.buttons_json);
             showInlineKeyboard = !!(editingCommand.buttons_json && editingCommand.buttons_json.length > 2);
             showReplyKeyboard = !!editingCommand.show_reply_keyboard;
-            if (showInlineKeyboard && showReplyKeyboard) { showReplyKeyboard = false; }
             document.getElementById('inline-toggle').classList.toggle('active', showInlineKeyboard);
             document.getElementById('inline-keyboard-section').classList.toggle('hidden', !showInlineKeyboard);
             document.getElementById('reply-toggle').classList.toggle('active', showReplyKeyboard);
             document.getElementById('reply-keyboard-section').classList.toggle('hidden', !showReplyKeyboard);
-            loadReplyButtonsFromJSON(editingCommand.reply_keyboard_json);
+            kbCmd.loadReply(editingCommand.reply_keyboard_json);
+            kbSyncSettingsUI('kbCmd', kbCmd);
             document.getElementById('modal-save-btn').innerHTML = '<i class="fa-solid fa-floppy-disk"></i> ' + 'Update';
         } else {
             document.getElementById('command-modal-title').textContent = 'Add Command';
@@ -2638,16 +3149,13 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             if (parent) parentSelect.value = parent;
             else if (currentParent !== null) parentSelect.value = currentParent;
             else parentSelect.value = '';
-            inlineButtonsArray = [];
-            renderInlineChips();
+            kbCmd.reset();
             showInlineKeyboard = false;
             document.getElementById('inline-toggle').classList.remove('active');
             document.getElementById('inline-keyboard-section').classList.add('hidden');
             showReplyKeyboard = false;
             document.getElementById('reply-toggle').classList.remove('active');
             document.getElementById('reply-keyboard-section').classList.add('hidden');
-            replyButtonsArray = [];
-            renderReplyChips();
             document.getElementById('modal-save-btn').innerHTML = '<i class="fa-solid fa-plus"></i> ' + 'Save';
         }
         toggleMediaField();
@@ -2658,14 +3166,6 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         const type = document.getElementById('modal-type').value;
         document.getElementById('media-field').style.display = type === 'photo' ? 'block' : 'none';
     }
-
-    document.getElementById('inline-btn-type').addEventListener('change', function () {
-        const type = this.value;
-        const valInput = document.getElementById('inline-btn-value');
-        const cmdSelect = document.getElementById('inline-btn-command-select');
-        if (type === 'command') { valInput.classList.add('hidden'); cmdSelect.classList.remove('hidden'); }
-        else { valInput.classList.remove('hidden'); cmdSelect.classList.add('hidden'); }
-    });
 
     function closeCommandModal() {
         document.getElementById('command-modal').classList.add('hidden');
@@ -2680,9 +3180,12 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         const media_url = document.getElementById('modal-media').value.trim();
         const is_admin_only = document.getElementById('modal-admin-only').checked ? 1 : 0;
         const enabled = commandEnabled ? 1 : 0;
-        const buttons_json = getInlineButtonsJSON();
+        const inlineObj = kbCmd.inlineJSON();
+        const buttons_json = inlineObj ? JSON.stringify(inlineObj) : '';
         const show_reply_keyboard = showReplyKeyboard ? 1 : 0;
-        const reply_keyboard_json = getReplyButtonsJSON();
+        kbCmd.syncSettings();
+        const replyObj = kbCmd.replyJSON();
+        const reply_keyboard_json = replyObj ? JSON.stringify(replyObj) : '';
         const errorEl = document.getElementById('modal-error');
         if (!command || !content) { errorEl.textContent = 'Fill both fields.'; errorEl.classList.add('show'); return; }
         if (response_type === 'photo' && !media_url) { errorEl.textContent = 'Photo URL' + ' *'; errorEl.classList.add('show'); return; }
@@ -2690,7 +3193,8 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         const payload = { command, parent, response_type, content, media_url, is_admin_only, enabled, buttons_json, show_reply_keyboard, reply_keyboard_json };
         const url = editingCommand ? '/api/commands/' + encodeURIComponent(editingCommand.command) : '/api/commands';
         const method = editingCommand ? 'PUT' : 'POST';
-        withLoading(
+        const saveBtn = document.getElementById('modal-save-btn');
+        withButtonLoading(saveBtn,
             fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
             .then(res => res.json().then(data => ({ status: res.status, data })))
             .then(result => {
@@ -2974,8 +3478,9 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
                 allBtn.dataset.blocked = '0';
             }
         }).catch(() => {});
-        // Load chat history
+        // Load chat history + previously sent admin messages (editable/deletable)
         loadUserChatHistory(user.id);
+        loadUserAdminMessages(user.id);
         switchTab('user-manage');
     }
 
@@ -3010,111 +3515,36 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // ===== User Manage Tab Keyboard State =====
-    let umInlineBtns = [];
-    let umReplyBtns = [];
-
+    // ===== User Manage Tab Keyboard State (shared builder, instance kbUm) =====
     function toggleUmKB() {
         var toggle = document.getElementById('um-kb-toggle');
         var section = document.getElementById('um-kb-section');
         toggle.classList.toggle('active');
         section.classList.toggle('hidden');
+        if (!section.classList.contains('hidden')) kbUm.populateCommands();
     }
     function toggleUmInline() {
         var toggle = document.getElementById('um-inline-toggle');
         var section = document.getElementById('um-inline-section');
         var isActive = toggle.classList.toggle('active');
         section.classList.toggle('hidden', !isActive);
-        if (isActive) {
-            var replyToggle = document.getElementById('um-reply-toggle');
-            var replySection = document.getElementById('um-reply-section');
-            replyToggle.classList.remove('active');
-            replySection.classList.add('hidden');
-        }
     }
     function toggleUmReply() {
         var toggle = document.getElementById('um-reply-toggle');
         var section = document.getElementById('um-reply-section');
         var isActive = toggle.classList.toggle('active');
         section.classList.toggle('hidden', !isActive);
-        if (isActive) {
-            var inlineToggle = document.getElementById('um-inline-toggle');
-            var inlineSection = document.getElementById('um-inline-section');
-            inlineToggle.classList.remove('active');
-            inlineSection.classList.add('hidden');
-        }
     }
-    function addUmInlineBtn() {
-        var label = document.getElementById('um-inline-label').value.trim();
-        var type = document.getElementById('um-inline-type').value;
-        var value = document.getElementById('um-inline-value').value.trim();
-        if (!label || !value) { showToast('Fill both fields', 'error'); return; }
-        umInlineBtns.push({ text: label, type: type, value: value });
-        renderUmInlineBtns();
-        document.getElementById('um-inline-label').value = '';
-        document.getElementById('um-inline-value').value = '';
-    }
-    function removeUmInlineBtn(i) { umInlineBtns.splice(i, 1); renderUmInlineBtns(); }
-    function renderUmInlineBtns() {
-        var el = document.getElementById('um-inline-buttons');
-        if (!umInlineBtns.length) { el.innerHTML = '<div class="empty-state" style="padding:0.3rem; font-size:0.75rem;">No inline buttons.</div>'; return; }
-        var html = '';
-        umInlineBtns.forEach(function(b, i) {
-            var icon = b.type === 'url' ? 'fa-link' : 'fa-terminal';
-            var upD = i === 0 ? 'disabled' : '';
-            var dnD = i === umInlineBtns.length - 1 ? 'disabled' : '';
-            html += '<div class="button-chip" style="font-size:0.75rem;">' +
-                '<button class="chip-btn" onclick="moveUmInlineBtn(-1,' + i + ')" ' + upD + ' title="Up"><i class="fa-solid fa-arrow-up"></i></button>' +
-                '<button class="chip-btn" onclick="moveUmInlineBtn(1,' + i + ')" ' + dnD + ' title="Down"><i class="fa-solid fa-arrow-down"></i></button>' +
-                '<i class="fa-solid ' + icon + '" style="color:var(--accent);"></i>' +
-                '<span class="chip-text">' + escapeHtml(b.text) + ' \u2192 ' + escapeHtml(b.value) + '</span>' +
-                '<span class="chip-badge">' + b.type + '</span>' +
-                '<button class="chip-btn chip-delete" onclick="removeUmInlineBtn(' + i + ')"><i class="fa-regular fa-circle-xmark"></i></button></div>';
-        });
-        el.innerHTML = html;
-    }
-    function moveUmInlineBtn(dir, index) {
-        var newIndex = index + dir;
-        if (newIndex < 0 || newIndex >= umInlineBtns.length) return;
-        var item = umInlineBtns.splice(index, 1)[0];
-        umInlineBtns.splice(newIndex, 0, item);
-        renderUmInlineBtns();
-    }
-    function addUmReplyBtn() {
-        var label = document.getElementById('um-reply-label').value.trim();
-        if (!label) { showToast('Enter button text', 'error'); return; }
-        umReplyBtns.push([label]);
-        renderUmReplyBtns();
-        document.getElementById('um-reply-label').value = '';
-    }
-    function removeUmReplyBtn(i) { umReplyBtns.splice(i, 1); renderUmReplyBtns(); }
-    function renderUmReplyBtns() {
-        var el = document.getElementById('um-reply-buttons');
-        if (!umReplyBtns.length) { el.innerHTML = '<div class="empty-state" style="padding:0.3rem; font-size:0.75rem;">No reply buttons.</div>'; return; }
-        var html = '';
-        umReplyBtns.forEach(function(b, i) {
-            var u=i===0?'disabled':'',d=i===umReplyBtns.length-1?'disabled':'';
-            html += '<div class="button-chip" style="font-size:0.75rem;">' +
-                '<button class="chip-btn" onclick="moveUmReplyBtn(-1,'+i+')" '+u+' title="Up"><i class="fa-solid fa-arrow-up"></i></button>' +
-                '<button class="chip-btn" onclick="moveUmReplyBtn(1,'+i+')" '+d+' title="Down"><i class="fa-solid fa-arrow-down"></i></button>' +
-                '<i class="fa-regular fa-keyboard" style="color:var(--accent);"></i>' +
-                '<span class="chip-text">' + escapeHtml(b[0]) + '</span>' +
-                '<button class="chip-btn chip-delete" onclick="removeUmReplyBtn(' + i + ')"><i class="fa-regular fa-circle-xmark"></i></button></div>';
-        });
-        el.innerHTML = html;
-    }
-    function moveUmReplyBtn(dir,idx){var n=idx+dir;if(n<0||n>=umReplyBtns.length)return;var x=umReplyBtns.splice(idx,1)[0];umReplyBtns.splice(n,0,x);renderUmReplyBtns();}
     function getUmButtonsJSON() {
-        var hasInline = umInlineBtns.length > 0;
-        var hasReply = umReplyBtns.length > 0;
-        if (!hasInline && !hasReply) return null;
-        return JSON.stringify({ inline: umInlineBtns, reply: umReplyBtns });
+        kbUm.syncSettings();
+        var inline = kbUm.inlineJSON();
+        var reply = kbUm.replyJSON();
+        if (!inline && !reply) return null;
+        if (inline && reply) return JSON.stringify(Object.assign({}, inline, { reply: reply.reply }));
+        return JSON.stringify(inline || reply);
     }
     function resetUmKeyboard() {
-        umInlineBtns = [];
-        umReplyBtns = [];
-        renderUmInlineBtns();
-        renderUmReplyBtns();
+        kbUm.reset();
         var kbToggle = document.getElementById('um-kb-toggle');
         if (kbToggle) kbToggle.classList.remove('active');
         var kbSection = document.getElementById('um-kb-section');
@@ -3127,25 +3557,67 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         if (rpToggle) rpToggle.classList.remove('active');
         var rpSection = document.getElementById('um-reply-section');
         if (rpSection) rpSection.classList.add('hidden');
+        var photo = document.getElementById('um-photo-url');
+        if (photo) photo.value = '';
+        var photoClear = document.getElementById('um-photo-clear');
+        if (photoClear) photoClear.classList.add('hidden');
+    }
+    function clearUmPhoto() {
+        var photo = document.getElementById('um-photo-url');
+        if (photo) photo.value = '';
+        var photoClear = document.getElementById('um-photo-clear');
+        if (photoClear) photoClear.classList.add('hidden');
+    }
+    // (Keyboard building for the user panel lives in the shared
+    // createKeyboardBuilder above — instance kbUm.)
+
+    // Show a shimmering "sending" bubble in a chat panel while a request is
+    // in flight. Returns a function that removes it (or swaps in the final
+    // message on success).
+    function showChatSendingSkeleton(chatEl, text) {
+        var wrap = document.createElement('div');
+        wrap.className = 'chat-sending';
+        var label = document.createElement('span');
+        label.className = 'skl-block';
+        label.style.cssText = 'width:auto; height:14px; border-radius:6px;';
+        var inner = document.createElement('span');
+        inner.className = 'skl-bg';
+        inner.style.cssText = 'display:inline-block; width:' + Math.min(24 + text.length * 7, 220) + 'px; height:14px; border-radius:6px;';
+        label.appendChild(inner);
+        wrap.appendChild(label);
+        chatEl.appendChild(wrap);
+        chatEl.scrollTop = chatEl.scrollHeight;
+        return {
+            // Replace the skeleton with the real message bubble.
+            complete: function() {
+                var msgDiv = document.createElement('div');
+                msgDiv.className = 'chat-msg bot-msg';
+                msgDiv.textContent = text;
+                wrap.replaceWith(msgDiv);
+                chatEl.scrollTop = chatEl.scrollHeight;
+            },
+            fail: function() { wrap.remove(); }
+        }; 
     }
 
     function sendUserMessageFromTab() {
         var textarea = document.getElementById('um-tab-message');
         var msg = textarea.value.trim();
-        if (!msg) { showToast('Type a message first', 'error'); return; }
+        var photoInput = document.getElementById('um-photo-url');
+        var photoUrl = photoInput ? photoInput.value.trim() : '';
+        if (!msg && !photoUrl) { showToast('Type a message or set a photo URL first', 'error'); return; }
         if (!managingUserId) return;
         var chatEl = document.getElementById('um-tab-chat');
-        // Show sent message as AI-sent (left side, bot style)
-        var msgDiv = document.createElement('div');
-        msgDiv.className = 'chat-msg bot-msg';
-        msgDiv.textContent = msg;
-        chatEl.appendChild(msgDiv);
-        chatEl.scrollTop = chatEl.scrollHeight;
+        if (chatEl.querySelector('.chat-empty')) chatEl.innerHTML = '';
+        // Loading skeleton while the message is being delivered.
+        var skel = showChatSendingSkeleton(chatEl, msg || '📷 Photo');
         textarea.value = '';
         var buttonsJson = getUmButtonsJSON();
         var body = { userId: managingUserId, message: msg };
+        if (photoUrl) body.photo_url = photoUrl;
         if (buttonsJson) body.buttons_json = buttonsJson;
-        withLoading(
+        var sendBtn = document.getElementById('um-send-btn');
+        withButtonLoading(sendBtn,
             fetch('/api/users/send_message', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
@@ -3153,13 +3625,91 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
+                    skel.complete();
                     showToast('Message sent!');
                     resetUmKeyboard();
+                    loadUserAdminMessages(managingUserId);
                 }
                 else throw new Error(data.error || 'Failed to send');
             })
-            .catch(err => showToast(err.message, 'error'))
+            .catch(err => {
+                skel.fail();
+                textarea.value = msg;
+                showToast(err.message, 'error');
+            })
         );
+    }
+
+    // ----- Sent admin messages: edit / delete after delivery -----
+    function loadUserAdminMessages(userId) {
+        fetch('/api/users/' + userId + '/admin_messages')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var container = document.getElementById('um-admin-messages');
+                if (!container) return;
+                var messages = data.messages || [];
+                if (!messages.length) { container.innerHTML = ''; return; }
+                var html = '';
+                messages.forEach(function(m) {
+                    var isPhoto = m.kind === 'photo';
+                    html += '<div class="chat-msg admin-msg" data-chat="' + m.chat_id + '" data-mid="' + m.message_id + '" data-kind="' + m.kind + '">' +
+                        (isPhoto ? '<span class="msg-photo-chip"><i class=\"fa-regular fa-image\"></i> photo</span><br>' : '') +
+                        '<div class="msg-text">' + escapeHtml(m.text || '') + '</div>' +
+                        '<div class="msg-actions">' +
+                        '<button class="msg-action-btn" onclick="editAdminMessage(this)"><i class="fa-regular fa-pen-to-square"></i> Edit</button>' +
+                        '<button class="msg-action-btn danger" onclick="deleteAdminMessage(this)"><i class="fa-regular fa-trash-can"></i> Delete</button>' +
+                        '</div></div>';
+                });
+                container.innerHTML = '<div class="kb-row-head" style="margin-bottom:0.3rem;">Your sent messages (edit / delete)</div>' + html;
+            })
+            .catch(function() {});
+    }
+
+    function editAdminMessage(btn) {
+        var box = btn.closest('.admin-msg');
+        var chatId = parseInt(box.dataset.chat);
+        var messageId = parseInt(box.dataset.mid);
+        var kind = box.dataset.kind;
+        var textEl = box.querySelector('.msg-text');
+        var current = textEl.textContent;
+        var updated = prompt(kind === 'photo' ? 'Edit the photo caption:' : 'Edit the message:', current);
+        if (updated === null || updated.trim() === current) return;
+        var originalBtn = btn.innerHTML;
+        btn.innerHTML = busyDotsHtml();
+        btn.disabled = true;
+        fetch('/api/users/message/edit', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chatId: chatId, messageId: messageId, kind: kind, text: updated })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success) { textEl.textContent = updated; showToast('Message updated on Telegram.'); }
+            else throw new Error(data.error || 'Failed');
+        })
+        .catch(function(err) { showToast(err.message, 'error'); })
+        .finally(function() { btn.innerHTML = originalBtn; btn.disabled = false; });
+    }
+
+    function deleteAdminMessage(btn) {
+        var box = btn.closest('.admin-msg');
+        var chatId = parseInt(box.dataset.chat);
+        var messageId = parseInt(box.dataset.mid);
+        confirmDialog('Delete this message from the user\\'s chat on Telegram?').then(function(ok) {
+            if (!ok) return;
+            var originalBtn = btn.innerHTML;
+            btn.innerHTML = busyDotsHtml();
+            btn.disabled = true;
+            fetch('/api/users/message/delete', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chatId: chatId, messageId: messageId })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success) { box.remove(); showToast('Message deleted from Telegram.'); }
+                else throw new Error(data.error || 'Failed');
+            })
+            .catch(function(err) { showToast(err.message, 'error'); btn.innerHTML = originalBtn; btn.disabled = false; });
+        });
     }
 
     function umActionRole() {
@@ -3230,8 +3780,6 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
     // ======================================================================
     // BROADCAST TAB
     // ======================================================================
-    let broadcastInlineBtns = [];
-    let broadcastReplyBtns = [];
 
     function openBroadcastTab() {
         document.getElementById('broadcast-target').value = 'all';
@@ -3240,16 +3788,57 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
         document.getElementById('broadcast-custom-list').classList.add('hidden');
         document.getElementById('broadcast-custom-list').innerHTML = '';
         document.getElementById('bcast-specific-group').classList.add('hidden');
-        broadcastInlineBtns = [];
-        broadcastReplyBtns = [];
-        renderBroadcastInlineBtns();
-        renderBroadcastReplyBtns();
+        kbBc.reset();
         document.getElementById('bcast-kb-section').classList.add('hidden');
         var kbToggle = document.getElementById('bcast-kb-toggle');
         if (kbToggle) kbToggle.classList.remove('active');
+        var photoInput = document.getElementById('broadcast-photo-url');
+        if (photoInput) photoInput.value = '';
+        var photoClear = document.getElementById('bcast-photo-clear');
+        if (photoClear) photoClear.classList.add('hidden');
         onBroadcastTargetChange();
+        loadBroadcastSettings();
         loadBroadcastHistory();
         switchTab('broadcast');
+    }
+
+    // ----- Delivery pacing settings -----
+    function loadBroadcastSettings() {
+        fetch('/api/broadcast/settings')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (!data || !data.settings) return;
+                document.getElementById('bcast-batch-size').value = data.settings.batch_size;
+                document.getElementById('bcast-delay-ms').value = data.settings.delay_ms;
+                document.getElementById('bcast-timeout-ms').value = data.settings.timeout_ms;
+            })
+            .catch(function() {});
+    }
+    function saveBroadcastSettings() {
+        var body = {
+            batch_size: parseInt(document.getElementById('bcast-batch-size').value) || 25,
+            delay_ms: parseInt(document.getElementById('bcast-delay-ms').value) || 0,
+            timeout_ms: parseInt(document.getElementById('bcast-timeout-ms').value) || 10000,
+        };
+        var btn = document.getElementById('bcast-pacing-save');
+        withButtonLoading(btn,
+            fetch('/api/broadcast/settings', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success) { showToast('Delivery pacing saved.'); if (data.settings) loadBroadcastSettings(); }
+                else throw new Error(data.error || 'Failed');
+            })
+            .catch(function(err) { showToast(err.message, 'error'); })
+        );
+    }
+    function clearBroadcastPhoto() {
+        var photoInput = document.getElementById('broadcast-photo-url');
+        if (photoInput) photoInput.value = '';
+        var photoClear = document.getElementById('bcast-photo-clear');
+        if (photoClear) photoClear.classList.add('hidden');
     }
 
     function closeBroadcastTab() { switchTab('users'); window.scrollTo({ top: 0, behavior: 'smooth' }); }
@@ -3330,138 +3919,81 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
     }
 
     function getBroadcastButtonsJSON() {
-        var hasInline = broadcastInlineBtns.length > 0;
-        var hasReply = broadcastReplyBtns.length > 0;
-        if (!hasInline && !hasReply) return null;
-        return JSON.stringify({ inline: broadcastInlineBtns, reply: broadcastReplyBtns });
+        kbBc.syncSettings();
+        var inline = kbBc.inlineJSON();
+        var reply = kbBc.replyJSON();
+        if (!inline && !reply) return null;
+        if (inline && reply) return JSON.stringify(Object.assign({}, inline, { reply: reply.reply }));
+        return JSON.stringify(inline || reply);
     }
 
     function sendBroadcast() {
         var textarea = document.getElementById('broadcast-message');
         var msg = textarea.value.trim();
-        if (!msg) { showToast('Type a message first', 'error'); return; }
+        var photoInput = document.getElementById('broadcast-photo-url');
+        var photoUrl = photoInput ? photoInput.value.trim() : '';
+        if (!msg && !photoUrl) { showToast('Type a message or set a photo URL first', 'error'); return; }
         var userIds = getBroadcastUserIds();
         if (userIds.length === 0) { showToast('No users selected', 'error'); return; }
         var chatEl = document.getElementById('broadcast-chat');
         if (chatEl.querySelector('.chat-empty')) chatEl.innerHTML = '';
-        var msgDiv = document.createElement('div');
-        msgDiv.className = 'chat-msg bot-msg';
-        msgDiv.textContent = msg;
-        chatEl.appendChild(msgDiv);
-        chatEl.scrollTop = chatEl.scrollHeight;
+        // Loading skeleton while the broadcast is being delivered.
+        var skel = showChatSendingSkeleton(chatEl, photoUrl && !msg ? '\ud83d\udcf7 Photo broadcast' : msg);
         textarea.value = '';
         var buttonsJson = getBroadcastButtonsJSON();
-        withLoading(
+        var body = { userIds: userIds, message: msg, buttons_json: buttonsJson };
+        if (photoUrl) body.photo_url = photoUrl;
+        var sendBtn = document.getElementById('bcast-send-btn');
+        withButtonLoading(sendBtn,
             fetch('/api/broadcast', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userIds: userIds, message: msg, buttons_json: buttonsJson })
+                body: JSON.stringify(body)
             })
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 if (data.success) {
+                    skel.complete();
                     showToast('Broadcast sent to ' + data.sent + ' user(s)!' + (data.failed ? ' (' + data.failed + ' failed)' : ''));
                     var statusDiv = document.createElement('div');
                     statusDiv.className = 'chat-msg bot-msg';
-                    statusDiv.textContent = '\u2705 Delivered to ' + data.sent + ' user(s).' + (data.failed ? ' ' + data.failed + ' failed.' : '');
+                    statusDiv.textContent = '\u2705 Delivered to ' + data.sent + ' user(s).' + (data.failed ? ' ' + data.failed + ' failed.' : '') + (data.skipped ? ' ' + data.skipped + ' skipped.' : '');
                     chatEl.appendChild(statusDiv);
                     chatEl.scrollTop = chatEl.scrollHeight;
                     loadBroadcastHistory();
                 } else throw new Error(data.error || 'Failed');
             })
-            .catch(function(err) { showToast(err.message, 'error'); })
+            .catch(function(err) {
+                skel.fail();
+                textarea.value = msg;
+                showToast(err.message, 'error');
+            })
         );
     }
 
-    // Broadcast keyboard buttons
+    // Broadcast keyboard buttons (shared builder, instance kbBc)
     function toggleBroadcastKB() {
         var toggle = document.getElementById('bcast-kb-toggle');
         var section = document.getElementById('bcast-kb-section');
         toggle.classList.toggle('active');
         section.classList.toggle('hidden');
+        if (!section.classList.contains('hidden')) kbBc.populateCommands();
     }
     function toggleBroadcastInline() {
         var toggle = document.getElementById('bcast-inline-toggle');
         var section = document.getElementById('bcast-inline-section');
         var isActive = toggle.classList.toggle('active');
         section.classList.toggle('hidden', !isActive);
-        if (isActive) {
-            var replyToggle = document.getElementById('bcast-reply-toggle');
-            var replySection = document.getElementById('bcast-reply-section');
-            replyToggle.classList.remove('active');
-            replySection.classList.add('hidden');
-        }
     }
     function toggleBroadcastReply() {
         var toggle = document.getElementById('bcast-reply-toggle');
         var section = document.getElementById('bcast-reply-section');
         var isActive = toggle.classList.toggle('active');
         section.classList.toggle('hidden', !isActive);
-        if (isActive) {
-            var inlineToggle = document.getElementById('bcast-inline-toggle');
-            var inlineSection = document.getElementById('bcast-inline-section');
-            inlineToggle.classList.remove('active');
-            inlineSection.classList.add('hidden');
-        }
     }
-    function onBroadcastInlineTypeChange() {
-        var type = document.getElementById('bcast-inline-type').value;
-        document.getElementById('bcast-inline-value').placeholder = type === 'url' ? 'https://example.com' : 'Callback data';
-    }
-    function addBroadcastInlineBtn() {
-        var label = document.getElementById('bcast-inline-label').value.trim();
-        var type = document.getElementById('bcast-inline-type').value;
-        var value = document.getElementById('bcast-inline-value').value.trim();
-        if (!label || !value) { showToast('Fill both fields', 'error'); return; }
-        broadcastInlineBtns.push({ text: label, type: type, value: value });
-        renderBroadcastInlineBtns();
-        document.getElementById('bcast-inline-label').value = '';
-        document.getElementById('bcast-inline-value').value = '';
-    }
-    function removeBroadcastInlineBtn(i) { broadcastInlineBtns.splice(i, 1); renderBroadcastInlineBtns(); }
-    function renderBroadcastInlineBtns() {
-        var el = document.getElementById('bcast-inline-buttons');
-        if (!broadcastInlineBtns.length) { el.innerHTML = '<div class="empty-state" style="padding:0.4rem; font-size:0.8rem;">No inline buttons added.</div>'; return; }
-        var html = '';
-        broadcastInlineBtns.forEach(function(b, i) {
-            var icon = b.type === 'url' ? 'fa-link' : 'fa-terminal';
-            var bu=i===0?'disabled':'',bd=i===broadcastInlineBtns.length-1?'disabled':'';
-            html += '<div class="button-chip">' +
-                '<button class="chip-btn" onclick="moveBroadcastInlineBtn(-1,'+i+')" '+bu+' title="Up"><i class="fa-solid fa-arrow-up"></i></button>' +
-                '<button class="chip-btn" onclick="moveBroadcastInlineBtn(1,'+i+')" '+bd+' title="Down"><i class="fa-solid fa-arrow-down"></i></button>' +
-                '<i class="fa-solid ' + icon + '" style="color:var(--accent);"></i>' +
-                '<span class="chip-text">' + escapeHtml(b.text) + ' \u2192 ' + escapeHtml(b.value) + '</span>' +
-                '<span class="chip-badge">' + b.type + '</span>' +
-                '<button class="chip-btn chip-delete" onclick="removeBroadcastInlineBtn(' + i + ')"><i class="fa-regular fa-circle-xmark"></i></button></div>';
-        });
-        el.innerHTML = html;
-    }
-    function moveBroadcastInlineBtn(dir,idx){var n=idx+dir;if(n<0||n>=broadcastInlineBtns.length)return;var x=broadcastInlineBtns.splice(idx,1)[0];broadcastInlineBtns.splice(n,0,x);renderBroadcastInlineBtns();}
-    function addBroadcastReplyBtn() {
-        var label = document.getElementById('bcast-reply-label').value.trim();
-        if (!label) { showToast('Enter button text', 'error'); return; }
-        broadcastReplyBtns.push([label]);
-        renderBroadcastReplyBtns();
-        document.getElementById('bcast-reply-label').value = '';
-    }
-    function removeBroadcastReplyBtn(i) { broadcastReplyBtns.splice(i, 1); renderBroadcastReplyBtns(); }
-    function renderBroadcastReplyBtns() {
-        var el = document.getElementById('bcast-reply-buttons');
-        if (!broadcastReplyBtns.length) { el.innerHTML = '<div class="empty-state" style="padding:0.4rem; font-size:0.8rem;">No reply buttons added.</div>'; return; }
-        var html = '';
-        broadcastReplyBtns.forEach(function(b, i) {
-            var bu2=i===0?'disabled':'',bd2=i===broadcastReplyBtns.length-1?'disabled':'';
-            html += '<div class="button-chip">' +
-                '<button class="chip-btn" onclick="moveBroadcastReplyBtn(-1,'+i+')" '+bu2+' title="Up"><i class="fa-solid fa-arrow-up"></i></button>' +
-                '<button class="chip-btn" onclick="moveBroadcastReplyBtn(1,'+i+')" '+bd2+' title="Down"><i class="fa-solid fa-arrow-down"></i></button>' +
-                '<i class="fa-regular fa-keyboard" style="color:var(--accent);"></i>' +
-                '<span class="chip-text">' + escapeHtml(b[0]) + '</span>' +
-                '<button class="chip-btn chip-delete" onclick="removeBroadcastReplyBtn(' + i + ')"><i class="fa-regular fa-circle-xmark"></i></button></div>';
-        });
-        el.innerHTML = html;
-    }
-    function moveBroadcastReplyBtn(dir,idx){var n=idx+dir;if(n<0||n>=broadcastReplyBtns.length)return;var x=broadcastReplyBtns.splice(idx,1)[0];broadcastReplyBtns.splice(n,0,x);renderBroadcastReplyBtns();}
 
-    // Broadcast history
+    // Broadcast history — each entry can be edited (re-sends editMessageText /
+    // editMessageCaption to every recipient) or deleted (deleteMessage to
+    // every recipient) using the tracked per-recipient message ids.
     function loadBroadcastHistory() {
         var chatEl = document.getElementById('broadcast-chat');
         if (!chatEl) return;
@@ -3474,12 +4006,73 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
             var html = '';
             history.forEach(function(h) {
                 var meta = escapeHtml(h.sent_at) + ' \u2022 ' + (h.sent_count || 0) + '/' + (h.recipient_count || 0) + ' delivered';
-                html += '<div class="chat-msg bot-msg"><div style="font-size:0.7rem;color:var(--text-3);margin-bottom:0.2rem;">' + meta + '</div>' + escapeHtml(h.message) + '</div>';
+                html += '<div class="chat-msg bot-msg" data-bid="' + h.id + '" data-kind="' + (h.kind || 'text') + '">' +
+                    '<div style="font-size:0.7rem;color:var(--text-3);margin-bottom:0.2rem;">#' + h.id + ' \u2022 ' + meta + (h.kind === 'photo' ? ' \u2022 \ud83d\udcf7' : '') + '</div>' +
+                    '<div class="bcast-text">' + escapeHtml(h.message || '') + '</div>' +
+                    '<div class="msg-actions">' +
+                    '<button class="msg-action-btn" onclick="editBroadcastEntry(this)"><i class="fa-regular fa-pen-to-square"></i> Edit</button>' +
+                    '<button class="msg-action-btn danger" onclick="deleteBroadcastEntry(this)"><i class="fa-regular fa-trash-can"></i> Delete</button>' +
+                    '</div></div>';
             });
             chatEl.innerHTML = html;
-            chatEl.scrollTop = chatEl.scrollHeight;
         }).catch(function() {
             chatEl.innerHTML = '<div class="chat-empty">Failed to load history.</div>';
+        });
+    }
+
+    // ----- Edit / delete a delivered broadcast (applies to every tracked recipient) -----
+    function editBroadcastEntry(btn) {
+        var box = btn.closest('.bot-msg');
+        var bid = parseInt(box.dataset.bid);
+        var textEl = box.querySelector('.bcast-text');
+        var current = textEl.textContent;
+        var kind = box.dataset.kind || 'text';
+        var updated = prompt(kind === 'photo' ? 'Edit the photo caption (applies to every recipient):' : 'Edit the broadcast message (applies to every recipient):', current);
+        if (updated === null || updated.trim() === current) return;
+        var originalBtn = btn.innerHTML;
+        btn.innerHTML = busyDotsHtml();
+        btn.disabled = true;
+        fetch('/api/broadcast/edit', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ broadcastId: bid, text: updated })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success) {
+                textEl.textContent = updated;
+                var meta = box.querySelector('div');
+                if (meta && typeof data.edited === 'number') {
+                    meta.textContent = meta.textContent.replace(/\\d+\\/\\d+ delivered/, data.edited + ' edited');
+                }
+                showToast('Broadcast edited for ' + (data.edited || 0) + ' recipient(s).');
+            }
+            else throw new Error(data.error || 'Failed');
+        })
+        .catch(function(err) { showToast(err.message, 'error'); })
+        .finally(function() { btn.innerHTML = originalBtn; btn.disabled = false; });
+    }
+
+    function deleteBroadcastEntry(btn) {
+        var box = btn.closest('.bot-msg');
+        var bid = parseInt(box.dataset.bid);
+        confirmDialog('Delete this broadcast from every recipient\\'s chat on Telegram?').then(function(ok) {
+            if (!ok) return;
+            var originalBtn = btn.innerHTML;
+            btn.innerHTML = busyDotsHtml();
+            btn.disabled = true;
+            fetch('/api/broadcast/delete', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ broadcastId: bid })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    box.remove();
+                    showToast('Broadcast deleted from ' + (data.deleted || 0) + ' chat(s).');
+                }
+                else throw new Error(data.error || 'Failed');
+            })
+            .catch(function(err) { showToast(err.message, 'error'); btn.innerHTML = originalBtn; btn.disabled = false; });
         });
     }
 
@@ -3589,6 +4182,106 @@ function collapseTabs() {
     window.addEventListener('resize', collapseTabs);
 
     // ======================================================================
+    // CRON / RETENTION TAB
+    // ======================================================================
+    // One retention knob per feature. "0" means keep forever (the cleanup
+    // skips that feature); every other value prunes rows older than the
+    // configured number of days/hours.
+    const CRON_FIELDS = [
+        { key: 'cron_sessions_days', label: 'Dashboard login sessions', unit: 'days', min: 1, max: 365, def: 1 },
+        { key: 'cron_bot_sessions_days', label: 'Bot user sessions', unit: 'days', min: 1, max: 3650, def: 30 },
+        { key: 'cron_login_attempts_hours', label: 'Login attempt records', unit: 'hours', min: 1, max: 720, def: 2 },
+        { key: 'cron_rate_limits_hours', label: 'AI rate-limit buckets', unit: 'hours', min: 1, max: 2160, def: 24 },
+        { key: 'cron_logs_days', label: 'Audit logs', unit: 'days', min: 1, max: 3650, def: 7 },
+        { key: 'cron_ai_messages_days', label: 'AI chat memory', unit: 'days (0 = keep forever)', min: 0, max: 3650, def: 0 },
+        { key: 'cron_broadcast_days', label: 'Broadcast history & recipients', unit: 'days (0 = keep forever)', min: 0, max: 3650, def: 30 },
+        { key: 'cron_inactive_users_days', label: 'Inactive users (removes user + memory)', unit: 'days (0 = never)', min: 0, max: 3650, def: 0 },
+    ];
+    let cronEnabled = true;
+
+    function loadCronSettings() {
+        var rowsEl = document.getElementById('cron-rows');
+        var lastRunEl = document.getElementById('cron-last-run');
+        if (!rowsEl) return;
+        rowsEl.innerHTML = CRON_FIELDS.map(function(f) {
+            return '<tr><td style="padding:0.45rem 0.5rem;">' + escapeHtml(f.label) + '</td>' +
+                '<td style="padding:0.45rem 0.5rem;"><input type="number" class="form-input" id="cron-' + f.key + '" min="' + f.min + '" max="' + f.max + '" ' +
+                'value="' + f.def + '" style="width:190px; font-size:0.8rem;" data-key="' + f.key + '"></td></tr>';
+        }).join('');
+        if (lastRunEl) lastRunEl.innerHTML = '<span class="skl-block skl-bg" style="display:inline-block; width:260px; height:12px; border-radius:6px;"></span>';
+        fetch('/api/cron')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (!data || data.error || !data.settings) { if (lastRunEl) lastRunEl.textContent = ''; return; }
+                cronEnabled = data.settings.cron_enabled !== '0';
+                var t = document.getElementById('cron-enabled-toggle');
+                if (t) { t.classList.toggle('active', cronEnabled); t.setAttribute('aria-checked', String(cronEnabled)); }
+                CRON_FIELDS.forEach(function(f) {
+                    var el = document.getElementById('cron-' + f.key);
+                    if (el && data.settings[f.key] !== undefined) el.value = data.settings[f.key];
+                });
+                if (lastRunEl) {
+                    if (data.last_run) {
+                        var s = data.last_run.summary || {};
+                        var parts = Object.keys(s).map(function(k) { return k + ': ' + s[k]; });
+                        lastRunEl.textContent = 'Last cleanup: ' + data.last_run.at + (parts.length ? ' \u2014 ' + parts.join(', ') : '');
+                    } else lastRunEl.textContent = 'Cleanup has not run yet.';
+                }
+            })
+            .catch(function() { if (lastRunEl) lastRunEl.textContent = ''; });
+    }
+
+    function toggleCronEnabled() {
+        cronEnabled = !cronEnabled;
+        var t = document.getElementById('cron-enabled-toggle');
+        if (t) { t.classList.toggle('active', cronEnabled); t.setAttribute('aria-checked', String(cronEnabled)); }
+    }
+
+    function saveCronSettings() {
+        var body = { cron_enabled: cronEnabled ? '1' : '0' };
+        var valid = true;
+        CRON_FIELDS.forEach(function(f) {
+            var el = document.getElementById('cron-' + f.key);
+            if (!el) return;
+            var v = parseInt(el.value);
+            if (isNaN(v) || v < f.min || v > f.max) { el.style.borderColor = 'var(--red)'; valid = false; }
+            else { el.style.borderColor = ''; body[f.key] = v; }
+        });
+        if (!valid) { showToast('Fix the highlighted values first', 'error'); return; }
+        var btn = document.getElementById('cron-save-btn');
+        withButtonLoading(btn,
+            fetch('/api/cron', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success) showToast('Retention settings saved.');
+                else throw new Error(data.error || 'Failed');
+            })
+            .catch(function(err) { showToast(err.message, 'error'); })
+        );
+    }
+
+    function runCronNow() {
+        var btn = document.getElementById('cron-run-btn');
+        withButtonLoading(btn,
+            fetch('/api/cron/run', { method: 'POST' })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.success) {
+                        var s = data.summary || {};
+                        var parts = Object.keys(s).map(function(k) { return k + ': ' + s[k]; });
+                        showToast('Cleanup done.' + (parts.length ? ' ' + parts.join(', ') : ''));
+                        loadCronSettings();
+                    }
+                    else throw new Error(data.error || 'Failed');
+                })
+                .catch(function(err) { showToast(err.message, 'error'); })
+        );
+    }
+
+    // ======================================================================
     // AI SETTINGS
     // ======================================================================
     let strictModeEnabled = false;
@@ -3638,6 +4331,13 @@ function collapseTabs() {
     function toggleRetryOnFailure() {
         retryOnFailureEnabled = !retryOnFailureEnabled;
         document.getElementById('ai-retry-toggle').classList.toggle('active', retryOnFailureEnabled);
+    }
+
+    // ===== Streaming Replies (#30) =====
+    let aiStreamingEnabled = false;
+    function toggleAiStreaming() {
+        aiStreamingEnabled = !aiStreamingEnabled;
+        document.getElementById('ai-streaming-toggle').classList.toggle('active', aiStreamingEnabled);
     }
 
     // ===== Alternate Providers =====
@@ -3868,6 +4568,8 @@ altProviders.forEach((ap, idx) => {
             ai_memory: document.getElementById('ai-memory').value,
             ai_group_memory: document.getElementById('ai-group-memory').value || '0',
             ai_rate_limit: document.getElementById('ai-rate-limit').value || '10',
+            ai_global_rate_limit: document.getElementById('ai-global-rate-limit').value || '0',
+            ai_global_rate_window: document.getElementById('ai-global-rate-window').value || 'minute',
             ai_response_delay: document.getElementById('ai-response-delay').value || '0',
             ai_group_mention: document.getElementById('ai-group-mention').value,
             ai_private_reply: document.getElementById('ai-private-reply').value,
@@ -3876,6 +4578,7 @@ altProviders.forEach((ap, idx) => {
             ai_ignore_forwarded: document.getElementById('ai-ignore-forwarded').value,
             ai_typing_indicator: typingIndicatorEnabled ? '1' : '0',
             ai_retry_on_failure: retryOnFailureEnabled ? '1' : '0',
+            ai_streaming: aiStreamingEnabled ? '1' : '0',
             ai_fallback: document.getElementById('ai-fallback').value.trim(),
             ai_temperature: document.getElementById('ai-temperature').value || '0.7',
             ai_max_tokens: document.getElementById('ai-max-tokens').value || '1024',
@@ -3921,6 +4624,8 @@ altProviders.forEach((ap, idx) => {
         document.getElementById('ai-memory').value = s.ai_memory || '0';
         document.getElementById('ai-group-memory').value = s.ai_group_memory || '0';
         document.getElementById('ai-rate-limit').value = s.ai_rate_limit || '10';
+        document.getElementById('ai-global-rate-limit').value = s.ai_global_rate_limit || '0';
+        document.getElementById('ai-global-rate-window').value = (s.ai_global_rate_window === 'hour') ? 'hour' : 'minute';
         document.getElementById('ai-response-delay').value = s.ai_response_delay || '0';
         document.getElementById('ai-group-mention').value = s.ai_group_mention || '1';
         document.getElementById('ai-private-reply').value = s.ai_private_reply || '1';
@@ -3931,6 +4636,8 @@ altProviders.forEach((ap, idx) => {
         document.getElementById('ai-typing-toggle').classList.toggle('active', typingIndicatorEnabled);
         retryOnFailureEnabled = (s.ai_retry_on_failure === '1');
         document.getElementById('ai-retry-toggle').classList.toggle('active', retryOnFailureEnabled);
+        aiStreamingEnabled = (s.ai_streaming === '1');
+        document.getElementById('ai-streaming-toggle').classList.toggle('active', aiStreamingEnabled);
         document.getElementById('ai-fallback').value = s.ai_fallback || 'Sorry, I am currently unavailable. Please try again later.';
         document.getElementById('ai-temperature').value = s.ai_temperature || '0.7';
         document.getElementById('ai-max-tokens').value = s.ai_max_tokens || '1024';
@@ -4058,7 +4765,8 @@ altProviders.forEach((ap, idx) => {
 
     function saveAiSettings() {
         const settings = gatherAiSettingsFromUI();
-        withLoading(
+        const btn = document.querySelector('#tab-ai .btn-success');
+        withButtonLoading(btn,
             fetch('/api/ai_settings', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(settings)
@@ -4100,7 +4808,7 @@ altProviders.forEach((ap, idx) => {
                     altTests.push(
                         fetch('/api/ai/test', {
                             method: 'POST', headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ settings: { ...settings, ai_provider: ap.provider, ai_api_key: ap.apiKey, ai_model: ap.model, ai_base_url: ap.baseUrl }, provider: 'alt_' + idx })
+                            body: JSON.stringify({ settings: { ...settings, ai_provider: ap.provider, ai_api_key: ap.apiKey, ai_model: ap.model, ai_base_url: ap.baseUrl }, provider: 'main' })
                         }).then(r => r.json()).then(d => ({ idx, ok: d.success, msg: d.success ? 'Connected!' : (d.error || 'Failed') }))
                         .catch(e => ({ idx, ok: false, msg: e.message }))
                     );
@@ -4328,6 +5036,34 @@ altProviders.forEach((ap, idx) => {
         );
     }
 
+    function fixWebhook() {
+        const detail = document.getElementById('webhook-test-detail');
+        const btn = document.getElementById('webhook-fix-btn');
+        if (detail) { detail.style.display = 'block'; detail.textContent = 'Checking webhook health…'; detail.style.color = 'var(--text-3)'; }
+        withButtonLoading(btn,
+            fetch('/api/settings/webhook-fix', { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success) throw new Error(data.error || 'Fix failed');
+                if (data.fixed) {
+                    let msg = '✅ Webhook was missing — registered now: ' + data.url;
+                    if (data.pending_updates > 0) msg += ' (' + data.pending_updates + ' pending)';
+                    detail.textContent = msg;
+                    detail.style.color = 'var(--green)';
+                    cache.settings.loaded = false;
+                    loadSettings();
+                } else if (data.url && data.url_matches) {
+                    detail.textContent = '✅ Webhook already healthy: ' + data.url;
+                    detail.style.color = 'var(--green)';
+                } else {
+                    detail.textContent = '⚠️ Could not confirm registration. Try again or re-save the bot token.';
+                    detail.style.color = 'var(--amber)';
+                }
+            })
+            .catch(err => { detail.textContent = '❌ ' + err.message; detail.style.color = 'var(--red)'; })
+        );
+    }
+
 function factoryReset() {
     confirmDialog(
         'WARNING: This will permanently delete ALL data including commands, users, settings, AI memory, bot info, menu commands, and broadcast history. This action is IRREVERSIBLE.',
@@ -4379,7 +5115,11 @@ function factoryReset() {
             showToast('Resetting…');
 
             withLoading(
-                fetch('/api/reset', { method: 'POST' })
+                fetch('/api/reset', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ confirmation: 'FACTORY RESET' })
+                })
                     .then(res => res.json())
                     .then(data => {
                         if (data.success) {
@@ -4562,6 +5302,63 @@ function loadBotInfo(forceLoad = false) {
     // ======================================================================
     // BACKUP & RESTORE
     // ======================================================================
+    // ======================================================================
+    // COMMAND PACK IMPORT/EXPORT (#31)
+    // ======================================================================
+    function exportCommandPack() {
+        fetch('/api/commands/export')
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success) throw new Error(data.error || 'Export failed');
+                const stamp = new Date().toISOString().slice(0, 10);
+                downloadJson('nyxx-command-pack-' + stamp + '.json', data.data);
+                showToast('Command pack exported.', 'success');
+            })
+            .catch(err => showToast(err.message, 'error'));
+    }
+
+    function importCommandPack(event) {
+        const file = event.target.files[0];
+        if (!file) { event.target.value = ''; return; }
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            let parsed;
+            try { parsed = JSON.parse(e.target.result); } catch (err) { showToast('Invalid command pack file.', 'error'); event.target.value = ''; return; }
+            if (!parsed || parsed.app !== 'nyxx-command-pack') { showToast('Invalid command pack file.', 'error'); event.target.value = ''; return; }
+            const cmdCount = (parsed.commands || []).length;
+            // Two-step choice: Merge (overwrite same names) or Replace (wipe
+            // everything first). Cancelling at either step aborts.
+            confirmDialog('Import ' + cmdCount + ' commands as MERGE?\\nExisting commands with the same name will be overwritten.')
+                .then(merge => {
+                    if (merge) { sendCommandPackImport(event, parsed, 'merge'); return; }
+                    return confirmDialog('REPLACE all current commands with the pack?\\nYour existing commands will be deleted first!')
+                        .then(replace => {
+                            if (replace) sendCommandPackImport(event, parsed, 'replace');
+                            else event.target.value = '';
+                        });
+                })
+                .catch(() => { event.target.value = ''; });
+        };
+        reader.readAsText(file);
+    }
+
+    function sendCommandPackImport(event, parsed, mode) {
+        fetch('/api/commands/import', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ data: parsed, mode })
+        })
+            .then(res => res.json())
+            .then(data => {
+                event.target.value = '';
+                if (!data.success) throw new Error(data.error || 'Import failed');
+                showToast('Imported ' + data.imported + ' commands.', 'success');
+                invalidateCache();
+                loadCommands();
+            })
+            .catch(err => { event.target.value = ''; showToast(err.message, 'error'); });
+    }
+
     function downloadJson(filename, obj) {
         const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(obj, null, 2));
         const a = document.createElement('a');
@@ -4589,6 +5386,45 @@ function loadBotInfo(forceLoad = false) {
             })
             .catch(err => { resultDiv.textContent = 'Export failed:' + ' ' + err.message; resultDiv.style.color = 'var(--red)'; })
         );
+    }
+
+    // ======================================================================
+    // AUDIT LOGS (#22)
+    // ======================================================================
+    function loadAuditLogs() {
+        const body = document.getElementById('audit-logs-body');
+        if (!body) return;
+        fetch('/api/logs?limit=150')
+            .then(res => res.json())
+            .then(data => {
+                if (!data.logs) throw new Error(data.error || 'Failed to load logs');
+                if (data.logs.length === 0) {
+                    body.innerHTML = '<tr><td colspan="3" class="empty-state"><i class="fa-solid fa-inbox"></i>No activity recorded yet.</td></tr>';
+                    return;
+                }
+                body.innerHTML = data.logs.map(l => {
+                    const time = l.timestamp ? escapeHtml(String(l.timestamp).replace('T', ' ').slice(0, 19)) : '';
+                    const user = (l.user_id === null || l.user_id === undefined) ? '<span class="muted">—</span>' : escapeHtml(String(l.user_id));
+                    return '<tr><td class="mono">' + time + '</td><td class="mono">' + user + '</td><td>' + escapeHtml(l.action || '') + '</td></tr>';
+                }).join('');
+            })
+            .catch(err => {
+                body.innerHTML = '<tr><td colspan="3" class="empty-state text-danger">' + escapeHtml(err.message) + '</td></tr>';
+            });
+    }
+
+    function clearAuditLogs() {
+        confirmDialog('Delete all audit log entries? This cannot be undone.').then(ok => {
+            if (!ok) return;
+            fetch('/api/logs', { method: 'DELETE' })
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.success) throw new Error(data.error || 'Failed to clear logs');
+                    showToast('Audit logs cleared.', 'success');
+                    loadAuditLogs();
+                })
+                .catch(err => showToast(err.message, 'error'));
+        });
     }
 
     function importBackup(event) {
@@ -4644,25 +5480,23 @@ function loadBotInfo(forceLoad = false) {
             var data = await res.json();
             if (!data.success) throw new Error(data.error || 'Export failed');
             var fullData = data.data;
-            var customData = { app: 'nyxx', version: fullData.version, exported_at: fullData.exported_at, custom: true };
-            if (checked.includes('commands')) customData.commands = fullData.commands;
-            if (checked.includes('users')) customData.users = fullData.users;
-            if (checked.includes('ai_messages')) customData.ai_messages = fullData.ai_messages;
+            // Arrays are always present (possibly empty) so /api/backup/restore
+            // accepts the file even when only settings were selected.
+            var customData = { app: 'nyxx', version: fullData.version, exported_at: fullData.exported_at, commands: [], users: [], ai_messages: [], blocked_users: [], settings: {}, custom: true };
+            if (checked.includes('commands')) customData.commands = fullData.commands || [];
+            if (checked.includes('users')) customData.users = fullData.users || [];
+            if (checked.includes('ai_messages')) customData.ai_messages = fullData.ai_messages || [];
             if (checked.includes('ai_settings') || checked.includes('menu_commands') || checked.includes('bot_config')) {
                 customData.settings = {};
                 var settings = fullData.settings || {};
-                var aiKeys = ['ai_enabled','ai_provider','ai_api_key','ai_base_url','ai_model','ai_system_prompt','ai_trigger','ai_memory','ai_fallback','ai_temperature','ai_max_tokens','ai_top_p','ai_suggested_questions_enabled','ai_suggested_questions','ai_suggested_one_time','ai_alt_providers','ai_custom_headers','ai_display_name','ai_language','ai_style','ai_length','ai_rate_limit','ai_response_delay','ai_ignore_prefixes','ai_group_mention','ai_private_reply','ai_group_reply','ai_ignore_bots','ai_ignore_forwarded','ai_typing_indicator','ai_retry_on_failure','ai_custom_vars_text','ai_knowledge_bases','ai_trigger_text','ai_group_memory','ai_strict_mode','ai_rtl_support'];
+                var aiKeys = ['ai_enabled','ai_provider','ai_api_key','ai_base_url','ai_model','ai_system_prompt','ai_trigger','ai_memory','ai_fallback','ai_temperature','ai_max_tokens','ai_top_p','ai_suggested_questions_enabled','ai_suggested_questions','ai_suggested_one_time','ai_alt_providers','ai_custom_headers','ai_display_name','ai_language','ai_style','ai_length','ai_rate_limit','ai_response_delay','ai_ignore_prefixes','ai_group_mention','ai_private_reply','ai_group_reply','ai_ignore_bots','ai_ignore_forwarded','ai_typing_indicator','ai_retry_on_failure','ai_custom_vars_text','ai_knowledge_bases','ai_trigger_text','ai_group_memory','ai_strict_mode','ai_rtl_support','ai_streaming','ai_global_rate_limit','ai_global_rate_window'];
                 if (checked.includes('ai_settings')) aiKeys.forEach(function(k) { if (settings[k] !== undefined) customData.settings[k] = settings[k]; });
                 if (checked.includes('menu_commands') && settings.menu_commands) customData.settings.menu_commands = settings.menu_commands;
                 if (checked.includes('bot_config')) {
                     ['bot_token','webhook_url','webhook_secret','bot_username','bot_name'].forEach(function(k) { if (settings[k] !== undefined) customData.settings[k] = settings[k]; });
                 }
             }
-            if (checked.includes('blocked_users') && fullData.settings) {
-                // blocked_users info is in settings, export any block-related settings
-                // Actually blocked_users is a separate table - but the backup API returns it via settings. 
-                // We'll include blocked user IDs in users array
-            }
+            if (checked.includes('blocked_users')) customData.blocked_users = fullData.blocked_users || [];
             var stamp = new Date().toISOString().slice(0, 10);
             downloadJson('nyxx-custom-backup-' + stamp + '.json', customData);
             resultDiv.textContent = 'Custom backup exported (' + checked.length + ' item(s))!';
@@ -4846,24 +5680,89 @@ function apiJson(body, status = 200) {
     return new Response(JSON.stringify(body), { status, headers: JSON_HEADERS });
 }
 
+// Uniform 500 for unexpected internal errors (#27): details go to the server
+// log, clients only get a generic message.
+function internalError(err) {
+    console.error('API error:', err);
+    return apiJson({ error: 'Internal server error' }, 500);
+}
+
 const PASSWORD_PREFIX = 'sha256$';
 
+// Constant-time string comparison for secrets (webhook token, etc.) so
+// response timing cannot leak how many leading characters matched.
+function timingSafeEqual(a, b) {
+    const enc = new TextEncoder();
+    const ab = enc.encode(String(a));
+    const bb = enc.encode(String(b));
+    const len = Math.max(ab.length, bb.length);
+    let diff = ab.length ^ bb.length;
+    for (let i = 0; i < len; i++) {
+        diff |= (ab[i] || 0) ^ (bb[i] || 0);
+    }
+    return diff === 0;
+}
+
+const PBKDF2_PREFIX = 'pbkdf2$';
+const PBKDF2_ITERATIONS = 100000;
+
+// Salted PBKDF2-SHA256 password hashing (#7). Stored format:
+//   pbkdf2$<iterations>$<salt-hex>$<hash-hex>
+// Legacy formats (plain text and unsalted "sha256$<hex>") still verify and
+// are transparently re-hashed on the next successful login.
 async function hashPassword(password) {
-    const data = new TextEncoder().encode(password);
-    const digest = await crypto.subtle.digest('SHA-256', data);
-    const hex = [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join('');
-    return PASSWORD_PREFIX + hex;
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const hex = await pbkdf2Hash(password, salt, PBKDF2_ITERATIONS);
+    return `${PBKDF2_PREFIX}${PBKDF2_ITERATIONS}$${toHex(salt)}$${hex}`;
+}
+
+function toHex(buf) {
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function hexToBytes(hex) {
+    if (!hex || hex.length % 2 !== 0 || !/^[0-9a-f]+$/i.test(hex)) return null;
+    const out = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < out.length; i++) out[i] = parseInt(hex.substr(i * 2, 2), 16);
+    return out;
+}
+
+async function pbkdf2Hash(password, salt, iterations) {
+    const keyMaterial = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
+    const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations }, keyMaterial, 256);
+    return toHex(bits);
 }
 
 async function verifyPassword(stored, candidate) {
     if (!stored) return false;
-    if (stored.startsWith(PASSWORD_PREFIX)) {
-        const hash = await hashPassword(candidate);
-        return hash === stored;
+    if (stored.startsWith(PBKDF2_PREFIX)) {
+        const parts = stored.split('$');
+        if (parts.length !== 4) return false;
+        const iterations = parseInt(parts[1], 10);
+        if (!iterations || iterations < 1) return false;
+        const salt = hexToBytes(parts[2]);
+        if (!salt) return false;
+        const actual = await pbkdf2Hash(candidate, salt, iterations);
+        return timingSafeEqual(actual, parts[3]);
     }
-    // Legacy installs stored the admin password in plain text; keep them working
-    // until the password is next changed (which re-hashes it).
+    if (stored.startsWith(PASSWORD_PREFIX)) {
+        const data = new TextEncoder().encode(candidate);
+        const digest = await crypto.subtle.digest('SHA-256', data);
+        const hex = [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join('');
+        return timingSafeEqual(PASSWORD_PREFIX + hex, stored);
+    }
+    // Legacy installs stored the admin password in plain text; keep them
+    // working until the password is next changed (which re-hashes it).
     return stored === candidate;
+}
+
+// Transparent upgrade: re-hash legacy (plain / sha256) records with the
+// current salted scheme after a successful verification.
+async function maybeRehashPassword(db, stored, candidate) {
+    if (!stored || stored.startsWith(PBKDF2_PREFIX)) return;
+    if (await verifyPassword(stored, candidate)) {
+        await setSetting(db, 'admin_password', await hashPassword(candidate));
+    }
 }
 
 // ============================================================================
@@ -4881,11 +5780,22 @@ export default {
             }
 
             // Public endpoints
+            // CSRF defense: state-changing requests must originate from the
+            // dashboard itself. Telegram webhook deliveries (/webhook) are
+            // exempt — they carry the secret token instead of an Origin.
+            if (request.method !== 'GET' && url.pathname.startsWith('/api/')) {
+                const origin = request.headers.get('Origin');
+                if (origin) {
+                    let originOk = false;
+                    try { originOk = new URL(origin).host === url.host; } catch (e) {}
+                    if (!originOk) return apiJson({ error: 'Cross-origin request rejected' }, 403);
+                }
+            }
             if (request.method === 'GET' && url.pathname === '/api/status') return await getStatus(env);
             if (request.method === 'POST' && url.pathname === '/api/setup') return await handleSetup(request, env);
             if (request.method === 'POST' && url.pathname === '/api/login') return await handleLogin(request, env);
             if (request.method === 'GET' && url.pathname === '/api/version') return await getVersionInfo(env);
-            if (request.method === 'POST' && url.pathname === '/webhook') return await handleTelegramWebhook(request, env);
+            if (request.method === 'POST' && url.pathname === '/webhook') return await handleTelegramWebhook(request, env, ctx);
 
             // Protected endpoints
             const session = await getSession(request, env);
@@ -4898,6 +5808,8 @@ export default {
                 if (request.method === 'GET') return await getCommands(env);
                 if (request.method === 'POST') return await createCommand(request, env);
             }
+            if (url.pathname === '/api/commands/export' && request.method === 'GET') return await exportCommandPack(env);
+            if (url.pathname === '/api/commands/import' && request.method === 'POST') return await importCommandPack(request, env);
             if (url.pathname === '/api/commands/reorder' && request.method === 'POST') return await reorderCommands(request, env);
             if (url.pathname.startsWith('/api/commands/')) {
                 if (request.method === 'PUT') return await updateCommand(request, env);
@@ -4912,13 +5824,27 @@ export default {
             if (request.method === 'GET' && url.pathname === '/api/users') return await getUsers(env, url);
             if (request.method === 'PUT' && url.pathname === '/api/users/role') return await updateUserRole(request, env);
             if (request.method === 'POST' && url.pathname === '/api/users/send_message') return await sendUserPrivateMessage(request, env);
+            if (request.method === 'POST' && url.pathname === '/api/users/message/edit') return await editSentMessage(request, env);
+            if (request.method === 'POST' && url.pathname === '/api/users/message/delete') return await deleteSentMessage(request, env);
+            if (request.method === 'GET' && url.pathname.startsWith('/api/users/') && url.pathname.endsWith('/admin_messages')) return await getUserAdminMessages(env, url);
             if (request.method === 'POST' && url.pathname === '/api/users/block') return await blockUser(request, env);
             if (request.method === 'POST' && url.pathname === '/api/users/unblock') return await unblockUser(request, env);
             if (request.method === 'GET' && url.pathname.startsWith('/api/users/block_status/')) return await getBlockStatus(env, url);
             if (request.method === 'GET' && url.pathname.startsWith('/api/users/') && url.pathname.endsWith('/chat_history')) return await getUserChatHistory(env, url);
             if (request.method === 'POST' && url.pathname === '/api/broadcast') return await handleBroadcast(request, env);
+            if (url.pathname === '/api/broadcast/settings') {
+                if (request.method === 'GET') return await handleBroadcastSettings(request, env);
+                if (request.method === 'POST') return await handleBroadcastSettings(request, env);
+            }
+            if (request.method === 'POST' && url.pathname === '/api/broadcast/edit') return await editBroadcastMessage(request, env);
+            if (request.method === 'POST' && url.pathname === '/api/broadcast/delete') return await deleteBroadcastMessage(request, env);
             if (request.method === 'GET' && url.pathname === '/api/broadcast/history') return await getBroadcastHistory(env);
             if (request.method === 'POST' && url.pathname === '/api/broadcast/clear_history') return await clearBroadcastHistory(env);
+
+            // Cron management (#30)
+            if (request.method === 'GET' && url.pathname === '/api/cron') return await getCronSettings(env);
+            if (request.method === 'POST' && url.pathname === '/api/cron') return await saveCronSettings(request, env);
+            if (request.method === 'POST' && url.pathname === '/api/cron/run') return await runCronNow(env);
             if (request.method === 'POST' && url.pathname.startsWith('/api/users/') && url.pathname.endsWith('/clear_memory')) return await clearUserMemory(env, url);
 
             // AI
@@ -4934,6 +5860,7 @@ export default {
             if (request.method === 'GET' && url.pathname === '/api/settings') return await getSettings(env, url.origin);
             if (request.method === 'POST' && url.pathname === '/api/settings/token') return await updateBotToken(request, env, url.origin);
             if (request.method === 'POST' && url.pathname === '/api/settings/webhook-test') return await handleWebhookTest(env);
+            if (request.method === 'POST' && url.pathname === '/api/settings/webhook-fix') return await handleWebhookFix(env, url.origin);
             if (request.method === 'POST' && url.pathname === '/api/change_password') return await changeAdminPassword(request, env);
 
             // Bot info
@@ -4948,7 +5875,11 @@ export default {
             if (request.method === 'POST' && url.pathname === '/api/backup/restore') return await restoreBackup(request, env);
 
             // Reset
-            if (request.method === 'POST' && url.pathname === '/api/reset') return await factoryReset(env);
+            if (request.method === 'POST' && url.pathname === '/api/reset') return await factoryReset(request, env);
+
+            // Audit logs (#22)
+            if (request.method === 'GET' && url.pathname === '/api/logs') return await getAuditLogs(env, url);
+            if (request.method === 'DELETE' && url.pathname === '/api/logs') return await clearAuditLogs(env);
 
             // Update
             if (request.method === 'POST' && url.pathname === '/api/update/validate') return await validateCloudflareToken(request, env);
@@ -4963,13 +5894,190 @@ export default {
             // Never leak internal error details to clients.
             return apiJson({ error: 'Internal server error' }, 500);
         }
+    },
+
+    // Cron entry point (#29). Enable by adding a trigger in wrangler, e.g.:
+    //   "triggers": { "crons": ["0 3 * * *"] }
+    async scheduled(controller, env, ctx) {
+        ctx.waitUntil(runScheduledCleanup(env));
     }
 };
+
+// Daily housekeeping — fully configurable per feature from the Cron tab. Each
+// part of the data model has its own retention knob, and the whole job can be
+// disabled without touching the wrangler trigger. Safe to run at any frequency.
+const CRON_DEFAULTS = {
+    cron_enabled: '1',
+    cron_sessions_days: 1,
+    cron_bot_sessions_days: 30,
+    cron_login_attempts_hours: 2,
+    cron_rate_limits_hours: 24,
+    cron_logs_days: 7,
+    cron_ai_messages_days: 0,
+    cron_broadcast_days: 30,
+    cron_inactive_users_days: 0,
+};
+const CRON_BOUNDS = {
+    cron_sessions_days: [1, 365],
+    cron_bot_sessions_days: [1, 3650],
+    cron_login_attempts_hours: [1, 720],
+    cron_rate_limits_hours: [1, 2160],
+    cron_logs_days: [1, 3650],
+    cron_ai_messages_days: [0, 3650],
+    cron_broadcast_days: [1, 3650],
+    cron_inactive_users_days: [0, 3650],
+};
+
+async function getCronSettingsFromDb(env) {
+    const keys = Object.keys(CRON_DEFAULTS);
+    const placeholders = keys.map(() => '?').join(', ');
+    const rows = await env.DB.prepare(`SELECT key, value FROM settings WHERE key IN (${placeholders})`).bind(...keys).all();
+    const raw = {};
+    for (const row of (rows.results || [])) raw[row.key] = row.value;
+    const cfg = { cron_enabled: raw.cron_enabled === '0' ? '0' : '1' };
+    for (const key of keys) {
+        if (key === 'cron_enabled') continue;
+        const [min, max] = CRON_BOUNDS[key];
+        const parsed = parseInt(raw[key]);
+        cfg[key] = isNaN(parsed) ? CRON_DEFAULTS[key] : Math.min(Math.max(parsed, min), max);
+    }
+    return cfg;
+}
+
+async function runScheduledCleanup(env) {
+    if (!env.DB) return null;
+    let cfg;
+    try {
+        await initializeDatabase(env.DB);
+        cfg = await getCronSettingsFromDb(env);
+    } catch (e) {
+        console.error('Scheduled cleanup failed:', e);
+        return null;
+    }
+    if (cfg.cron_enabled === '0') return null;
+    try {
+        const db = env.DB;
+        const nowMinute = Math.floor(Date.now() / 60000);
+        const changes = async (stmt) => { try { const r = await stmt.run(); return (r && r.meta && r.meta.changes) || 0; } catch (e) { return 0; } };
+        const summary = {};
+        summary.dashboard_sessions = await changes(db.prepare(`DELETE FROM sessions WHERE user_id IS NULL AND created_at <= datetime('now', '-${cfg.cron_sessions_days} day')`));
+        summary.bot_sessions = await changes(db.prepare(`DELETE FROM sessions WHERE token LIKE 'bot-%' AND updated_at <= datetime('now', '-${cfg.cron_bot_sessions_days} day')`));
+        summary.login_attempts = await changes(db.prepare('DELETE FROM login_attempts WHERE minute <= ?').bind(nowMinute - cfg.cron_login_attempts_hours * 60));
+        summary.ai_rate_limits = await changes(db.prepare('DELETE FROM ai_rate_limits WHERE minute < ?').bind(nowMinute - cfg.cron_rate_limits_hours * 60));
+        summary.audit_logs = await changes(db.prepare(`DELETE FROM logs WHERE timestamp <= datetime('now', '-${cfg.cron_logs_days} day')`));
+        if (cfg.cron_ai_messages_days > 0) {
+            summary.ai_messages = await changes(db.prepare(`DELETE FROM ai_messages WHERE timestamp <= datetime('now', '-${cfg.cron_ai_messages_days} day')`));
+        }
+        if (cfg.cron_broadcast_days > 0) {
+            summary.broadcast_history = await changes(db.prepare(`DELETE FROM broadcast_history WHERE sent_at <= datetime('now', '-${cfg.cron_broadcast_days} day')`));
+            await changes(db.prepare('DELETE FROM broadcast_recipients WHERE broadcast_id NOT IN (SELECT id FROM broadcast_history)'));
+        }
+        if (cfg.cron_inactive_users_days > 0) {
+            const inactive = await db.prepare(`SELECT id FROM users WHERE last_active <= datetime('now', '-${cfg.cron_inactive_users_days} day')`).all();
+            const ids = (inactive.results || []).map(r => r.id);
+            if (ids.length) {
+                const placeholders = ids.map(() => '?').join(', ');
+                await db.prepare(`DELETE FROM ai_messages WHERE chat_id IN (${placeholders})`).bind(...ids).run();
+                await db.prepare(`DELETE FROM blocked_users WHERE user_id IN (${placeholders})`).bind(...ids).run();
+                await db.prepare(`DELETE FROM sessions WHERE user_id IN (${placeholders}) AND token LIKE 'bot-%'`).bind(...ids).run();
+                summary.users = await changes(db.prepare(`DELETE FROM users WHERE id IN (${placeholders})`).bind(...ids));
+            }
+        }
+        try {
+            await setSetting(db, 'cron_last_run', JSON.stringify({ at: new Date().toISOString(), summary }));
+        } catch (e) {}
+        await logAction(db, null, 'Scheduled cleanup: ' + JSON.stringify(summary));
+        return summary;
+    } catch (e) {
+        console.error('Scheduled cleanup failed:', e);
+        return null;
+    }
+}
+
+async function getCronSettings(env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        const cfg = await getCronSettingsFromDb(env);
+        let lastRun = null;
+        try {
+            const raw = await getSetting(env.DB, 'cron_last_run');
+            if (raw) lastRun = JSON.parse(raw);
+        } catch (e) {}
+        return apiJson({ success: true, settings: cfg, last_run: lastRun });
+    } catch (err) {
+        return internalError(err);
+    }
+}
+
+async function saveCronSettings(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const body = await request.json();
+        await initializeDatabase(env.DB);
+        for (const key of Object.keys(CRON_DEFAULTS)) {
+            if (body[key] === undefined) continue;
+            if (key === 'cron_enabled') {
+                await setSetting(env.DB, key, body[key] === '1' || body[key] === 1 || body[key] === true ? '1' : '0');
+                continue;
+            }
+            const [min, max] = CRON_BOUNDS[key];
+            const parsed = parseInt(body[key]);
+            if (isNaN(parsed) || parsed < min || parsed > max) {
+                return apiJson({ error: `Invalid value for ${key} (allowed ${min}-${max})` }, 400);
+            }
+            await setSetting(env.DB, key, String(parsed));
+        }
+        await logAction(env.DB, null, 'Cron retention settings updated');
+        return apiJson({ success: true, settings: await getCronSettingsFromDb(env) });
+    } catch (err) {
+        return internalError(err);
+    }
+}
+
+async function runCronNow(env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        const summary = await runScheduledCleanup(env);
+        if (!summary) return apiJson({ error: 'Cron is disabled (enable it first) or cleanup failed' }, 400);
+        return apiJson({ success: true, summary });
+    } catch (err) {
+        return internalError(err);
+    }
+}
 
 // ============================================================================
 // DATABASE INIT (cached per isolate — schema is created once, not per request)
 // ============================================================================
 const dbInitCache = new WeakMap();
+
+// Bump SCHEMA_VERSION when adding migrations below. Version 1 is the original
+// schema (created by the idempotent statements, safe on fresh databases too).
+const SCHEMA_VERSION = 3;
+
+// Ordered migrations: each key runs exactly once, guarded by the stored
+// schema_version setting (#17).
+const MIGRATIONS = {
+    // 1 -> 2: bot conversation state now uses synthetic 'bot-<user_id>'
+    // tokens so it never collides with dashboard session rows (#16).
+    2: [
+        `INSERT INTO sessions (token, user_id, command, created_at, updated_at)
+         SELECT 'bot-' || user_id, user_id, command, created_at, updated_at
+         FROM sessions WHERE user_id IS NOT NULL AND token NOT LIKE 'bot-%'`,
+        `DELETE FROM sessions WHERE user_id IS NOT NULL AND token NOT LIKE 'bot-%'`,
+    ],
+    // 2 -> 3: sent-message tracking (edit/delete from the dashboard) and
+    // broadcast photo/kind columns. ALTER TABLE statements are wrapped by the
+    // runner so they are safe to re-run.
+    3: [
+        `CREATE TABLE IF NOT EXISTS admin_messages (id INTEGER PRIMARY KEY AUTOINCREMENT, chat_id INTEGER, message_id INTEGER, kind TEXT DEFAULT 'text', text TEXT, buttons_json TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
+        `CREATE TABLE IF NOT EXISTS broadcast_recipients (broadcast_id INTEGER NOT NULL, chat_id INTEGER NOT NULL, message_id INTEGER, PRIMARY KEY (broadcast_id, chat_id))`,
+        `CREATE INDEX IF NOT EXISTS idx_admin_messages_chat ON admin_messages(chat_id)`,
+        `ALTER TABLE broadcast_history ADD COLUMN photo_url TEXT`,
+        `ALTER TABLE broadcast_history ADD COLUMN kind TEXT DEFAULT 'text'`,
+    ],
+};
 
 async function initializeDatabase(db) {
     if (dbInitCache.has(db)) return dbInitCache.get(db);
@@ -4982,13 +6090,40 @@ async function initializeDatabase(db) {
         CREATE TABLE IF NOT EXISTS ai_messages (id INTEGER PRIMARY KEY AUTOINCREMENT, chat_id INTEGER, role TEXT, content TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP);
         CREATE TABLE IF NOT EXISTS ai_rate_limits (user_id INTEGER NOT NULL, minute INTEGER NOT NULL, count INTEGER NOT NULL DEFAULT 1, PRIMARY KEY (user_id, minute));
         CREATE TABLE IF NOT EXISTS blocked_users (user_id INTEGER PRIMARY KEY, block_type TEXT NOT NULL DEFAULT 'full', blocked_at DATETIME DEFAULT CURRENT_TIMESTAMP);
-        CREATE TABLE IF NOT EXISTS broadcast_history (id INTEGER PRIMARY KEY AUTOINCREMENT, message TEXT, buttons_json TEXT, recipient_count INTEGER, sent_count INTEGER, sent_at DATETIME DEFAULT CURRENT_TIMESTAMP);
+        CREATE TABLE IF NOT EXISTS login_attempts (minute INTEGER PRIMARY KEY, count INTEGER NOT NULL DEFAULT 0);
+        CREATE TABLE IF NOT EXISTS broadcast_history (id INTEGER PRIMARY KEY AUTOINCREMENT, message TEXT, photo_url TEXT, kind TEXT DEFAULT 'text', buttons_json TEXT, recipient_count INTEGER, sent_count INTEGER, sent_at DATETIME DEFAULT CURRENT_TIMESTAMP);
+        CREATE TABLE IF NOT EXISTS admin_messages (id INTEGER PRIMARY KEY AUTOINCREMENT, chat_id INTEGER, message_id INTEGER, kind TEXT DEFAULT 'text', text TEXT, buttons_json TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP);
+        CREATE TABLE IF NOT EXISTS broadcast_recipients (broadcast_id INTEGER NOT NULL, chat_id INTEGER NOT NULL, message_id INTEGER, PRIMARY KEY (broadcast_id, chat_id));
         CREATE INDEX IF NOT EXISTS idx_commands_parent ON commands(parent);
         CREATE INDEX IF NOT EXISTS idx_ai_messages_chat ON ai_messages(chat_id);
+        CREATE INDEX IF NOT EXISTS idx_logs_user ON logs(user_id);
+        CREATE INDEX IF NOT EXISTS idx_sessions_bot ON sessions(user_id) WHERE user_id IS NOT NULL;
+        CREATE INDEX IF NOT EXISTS idx_admin_messages_chat ON admin_messages(chat_id);
     `;
     const statements = schema.split(';').filter(s => s.trim().length > 0);
     const p = (async () => {
+        // Base schema: idempotent, runs on fresh and existing databases alike.
         await db.batch(statements.map(s => db.prepare(s)));
+        // Then apply any pending versioned migrations.
+        let versionRow = null;
+        try {
+            versionRow = await db.prepare("SELECT value FROM settings WHERE key = 'schema_version'").first();
+        } catch (e) { /* settings table was just created; treat as version 1 */ }
+        const current = versionRow && versionRow.value ? parseInt(versionRow.value, 10) || 1 : 1;
+        for (let v = current + 1; v <= SCHEMA_VERSION; v++) {
+            const steps = MIGRATIONS[v] || [];
+            for (const sql of steps) {
+                // Individual steps may legitimately fail (e.g. ALTER TABLE on
+                // a column that already exists); the rest must still run.
+                try {
+                    await db.prepare(sql).run();
+                } catch (e) {
+                    if (!/duplicate column|already exists/i.test(String(e.message || ''))) throw e;
+                }
+            }
+            await db.prepare("INSERT INTO settings (key, value) VALUES ('schema_version', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+                .bind(String(v)).run();
+        }
     })();
     dbInitCache.set(db, p);
     try {
@@ -5011,9 +6146,28 @@ async function setSetting(db, key, value) {
     `).bind(key, value).run();
 }
 
+// Append an audit event to the `logs` table (#22). Never throws: logging must
+// not break the calling flow.
+async function logAction(db, userId, action) {
+    try {
+        await db.prepare('INSERT INTO logs (user_id, action) VALUES (?, ?)')
+            .bind(userId === undefined || userId === null ? null : userId, String(action)).run();
+    } catch (e) {
+        console.error('logAction failed:', e);
+    }
+}
+
 // ============================================================================
 // SESSION MANAGEMENT
 // ============================================================================
+// Dashboard sessions are purged when older than this (matching the 1-day
+// validity in getSession). Rows are deleted opportunistically so the table
+// stays small.
+const SESSION_TTL_SECONDS = 86400;
+
+// Dashboard cookie sessions live in `sessions` with user_id NULL. Bot command
+// state lives in the same table with user_id set (kept separate so the two
+// never interfere).
 async function getSession(request, env) {
     if (!env.DB) return null;
     const cookie = request.headers.get('Cookie') || '';
@@ -5022,7 +6176,7 @@ async function getSession(request, env) {
     const sessionToken = token.split('=')[1].trim();
     if (!sessionToken) return null;
     await initializeDatabase(env.DB);
-    const result = await env.DB.prepare('SELECT token FROM sessions WHERE token = ? AND created_at > datetime("now", "-1 day")')
+    const result = await env.DB.prepare('SELECT token FROM sessions WHERE token = ? AND user_id IS NULL AND created_at > datetime("now", "-1 day")')
         .bind(sessionToken)
         .first();
     return result ? sessionToken : null;
@@ -5112,18 +6266,44 @@ async function handleLogin(request, env) {
     const { password } = body;
     if (!password) return apiJson({ error: 'Password required' }, 400);
 
+    // Login rate limiting (#8): after 20 failed attempts within the last 5
+    // minutes, reject further attempts for a while. There is a single admin
+    // account, so failures are counted globally per minute bucket.
+    const minute = Math.floor(Date.now() / 60000);
+    const recentFails = await env.DB.prepare(
+        'SELECT COALESCE(SUM(count), 0) as n FROM login_attempts WHERE minute > ?'
+    ).bind(minute - 5).first();
+    if (recentFails && recentFails.n >= 20) {
+        return apiJson({ error: 'Too many failed login attempts. Please try again in a few minutes.' }, 429);
+    }
+
     const secure = new URL(request.url).protocol === 'https:';
     const envPass = env.ADMIN_PASS || null;
+    const stored = await getSetting(env.DB, 'admin_password');
     let ok = false;
     if (envPass && envPass === password) ok = true;
     if (!ok) {
-        const stored = await getSetting(env.DB, 'admin_password');
         ok = !!(stored && await verifyPassword(stored, password));
     }
-    if (!ok) return apiJson({ error: 'Invalid password' }, 401);
+    if (!ok) {
+        await env.DB.prepare(
+            'INSERT INTO login_attempts (minute, count) VALUES (?, 1) ON CONFLICT(minute) DO UPDATE SET count = count + 1'
+        ).bind(minute).run();
+        await env.DB.prepare('DELETE FROM login_attempts WHERE minute <= ?').bind(minute - 60).run();
+        await logAction(env.DB, null, 'Dashboard login failed');
+        return apiJson({ error: 'Invalid password' }, 401);
+    }
+    // Transparently upgrade legacy (plain / unsalted sha256) records.
+    await maybeRehashPassword(env.DB, stored, password);
+    // Successful login clears the failure counters.
+    await env.DB.prepare('DELETE FROM login_attempts').run();
+    await logAction(env.DB, null, 'Dashboard login successful');
 
     const token = crypto.randomUUID();
-    await env.DB.prepare('INSERT INTO sessions (token) VALUES (?)').bind(token).run();
+    await env.DB.prepare('INSERT INTO sessions (token, user_id) VALUES (?, NULL)').bind(token).run();
+    // Opportunistically purge expired dashboard sessions (cheap single DELETE
+    // bounded by the partial index) so the table does not grow forever.
+    await env.DB.prepare("DELETE FROM sessions WHERE user_id IS NULL AND created_at <= datetime('now', '-1 day')").run();
     return new Response(JSON.stringify({ success: true }), {
         status: 200,
         headers: { 'Set-Cookie': sessionCookie(token, secure), ...JSON_HEADERS }
@@ -5138,8 +6318,17 @@ async function handleLogout(request, env) {
     });
 }
 
+// Cache the GitHub version lookup for an hour per isolate (#21) so the
+// dashboard does not hit raw.githubusercontent.com on every load.
+const VERSION_CACHE_TTL_MS = 60 * 60 * 1000;
+const versionCache = { data: null, fetchedAt: 0 };
+
 async function getVersionInfo(env) {
     const current = VERSION;
+    const now = Date.now();
+    if (versionCache.data && (now - versionCache.fetchedAt) < VERSION_CACHE_TTL_MS) {
+        return apiJson({ current, ...versionCache.data });
+    }
     let latest = null, released = null, notes = null, workerUrl = null;
     try {
         const res = await fetch('https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/version.json');
@@ -5158,6 +6347,8 @@ async function getVersionInfo(env) {
             }
         }
     } catch (e) {}
+    versionCache.data = { latest, released, notes, worker_url: workerUrl };
+    versionCache.fetchedAt = now;
     return apiJson({ current, latest, released, notes, worker_url: workerUrl });
 }
 
@@ -5168,7 +6359,8 @@ async function getStats(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
-        const [cmds, enabledCmds, users, admins, aiCount, tokenRec, aiEnabledRec, botUsernameRec] = await Promise.all([
+        const nowMinute = Math.floor(Date.now() / 60000);
+        const [cmds, enabledCmds, users, admins, aiCount, tokenRec, aiEnabledRec, botUsernameRec, active7d, aiLast24h, aiLast60m, aiTopUsers, broadcastLast24h] = await Promise.all([
             env.DB.prepare('SELECT COUNT(*) as n FROM commands').first(),
             env.DB.prepare('SELECT COUNT(*) as n FROM commands WHERE enabled = 1').first(),
             env.DB.prepare('SELECT COUNT(*) as n FROM users').first(),
@@ -5177,6 +6369,12 @@ async function getStats(env) {
             env.DB.prepare("SELECT value FROM settings WHERE key = 'bot_token'").first(),
             env.DB.prepare("SELECT value FROM settings WHERE key = 'ai_enabled'").first(),
             env.DB.prepare("SELECT value FROM settings WHERE key = 'bot_username'").first(),
+            // Active users in the last 7 days (D1 timestamps are UTC strings)
+            env.DB.prepare("SELECT COUNT(*) as n FROM users WHERE last_active > datetime('now', '-7 day')").first(),
+            env.DB.prepare("SELECT COUNT(*) as n FROM ai_messages WHERE role = 'assistant' AND timestamp > datetime('now', '-1 day')").first(),
+            env.DB.prepare("SELECT COALESCE(SUM(count), 0) as n FROM ai_rate_limits WHERE minute > ?").bind(nowMinute - 60).first(),
+            env.DB.prepare("SELECT chat_id, COUNT(*) as n FROM ai_messages WHERE role = 'assistant' AND timestamp > datetime('now', '-7 day') GROUP BY chat_id ORDER BY n DESC LIMIT 5").all(),
+            env.DB.prepare("SELECT COALESCE(SUM(sent_count), 0) as n FROM broadcast_history WHERE sent_at > datetime('now', '-1 day')").first(),
         ]);
         return apiJson({
             success: true,
@@ -5186,17 +6384,25 @@ async function getStats(env) {
             commands_enabled: enabledCmds ? enabledCmds.n : 0,
             users_total: users ? users.n : 0,
             admins_total: admins ? admins.n : 0,
+            users_active_7d: active7d ? active7d.n : 0,
             ai_memory_count: aiCount ? aiCount.n : 0,
+            ai_replies_24h: aiLast24h ? aiLast24h.n : 0,
+            ai_requests_60m: aiLast60m ? aiLast60m.n : 0,
+            ai_top_users: (aiTopUsers && aiTopUsers.results) || [],
+            broadcast_sends_24h: broadcastLast24h ? broadcastLast24h.n : 0,
             ai_enabled: !!(aiEnabledRec && (aiEnabledRec.value === '1' || aiEnabledRec.value === true)),
         });
     } catch (err) {
-        return apiJson({ error: err.message }, 500);
+        return internalError(err);
     }
 }
 
 // ============================================================================
 // BACKUP & RESTORE
 // ============================================================================
+// Settings keys that must never appear in an exported backup (#9).
+const SECRET_SETTING_KEYS = ['bot_token', 'webhook_secret', 'cf_api_token', 'ai_api_key'];
+
 async function exportBackup(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
@@ -5212,6 +6418,10 @@ async function exportBackup(env) {
         for (const row of settingsRows.results) settings[row.key] = row.value;
         // Never ship live sessions in a backup
         delete settings.session;
+        // Never ship secrets in a backup file (#9): tokens and keys are
+        // replaced with a sentinel that restore() skips.
+        for (const k of SECRET_SETTING_KEYS) delete settings[k];
+        const blockedRows = await env.DB.prepare('SELECT user_id, block_type, blocked_at FROM blocked_users').all();
         return apiJson({
             success: true,
             data: {
@@ -5222,11 +6432,12 @@ async function exportBackup(env) {
                 users: users.results || [],
                 ai_messages: messages.results || [],
                 settings,
+                blocked_users: blockedRows.results || [],
                 broadcast_history: broadcastRows.results || [],
             }
         });
     } catch (err) {
-        return apiJson({ error: err.message }, 500);
+        return internalError(err);
     }
 }
 
@@ -5282,6 +6493,18 @@ async function restoreBackup(request, env) {
         }
         await runBatchChunks(env.DB, userStmts);
 
+        // Restore blocked users (#18)
+        if (Array.isArray(data.blocked_users)) {
+            const blockStmts = [];
+            for (const b of data.blocked_users) {
+                if (!b || !b.user_id) continue;
+                blockStmts.push(env.DB.prepare(
+                    'INSERT INTO blocked_users (user_id, block_type, blocked_at) VALUES (?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET block_type = excluded.block_type'
+                ).bind(b.user_id, b.block_type || 'full', b.blocked_at || new Date().toISOString()));
+            }
+            await runBatchChunks(env.DB, blockStmts);
+        }
+
         // Restore AI messages
         const msgStmts = [];
         for (const m of data.ai_messages || []) {
@@ -5308,6 +6531,8 @@ async function restoreBackup(request, env) {
         const setStmts = [];
         for (const [k, v] of Object.entries(settings)) {
             if (k === 'session') continue;
+            if (k === 'schema_version') continue; // migrations own this value
+            if (SECRET_SETTING_KEYS.includes(k)) continue; // secrets are never restored from files (#9)
             if (v === null || v === undefined) continue;
             setStmts.push(env.DB.prepare(`
                 INSERT INTO settings (key, value) VALUES (?, ?)
@@ -5318,13 +6543,230 @@ async function restoreBackup(request, env) {
 
         return apiJson({ success: true });
     } catch (err) {
-        return apiJson({ error: err.message }, 500);
+        return internalError(err);
     }
 }
 // ============================================================================
-// COMMANDS API
+// AUDIT LOGS (#22)
+// ============================================================================
+async function getAuditLogs(env, url) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        const limit = Math.min(parseInt(url.searchParams.get('limit')) || 100, 500);
+        const rows = await env.DB.prepare('SELECT id, user_id, action, timestamp FROM logs ORDER BY id DESC LIMIT ?').bind(limit).all();
+        return apiJson({ logs: rows.results || [] });
+    } catch (err) {
+        return internalError(err);
+    }
+}
+
+async function clearAuditLogs(env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        await env.DB.prepare('DELETE FROM logs').run();
+        await logAction(env.DB, null, 'Logs cleared');
+        return apiJson({ success: true });
+    } catch (err) {
+        return internalError(err);
+    }
+}
+
+// ============================================================================
+// KEYBOARD PIPELINE
 // ============================================================================
 const COMMAND_FIELDS = ['command', 'parent', 'response_type', 'content', 'media_url', 'is_admin_only', 'enabled', 'buttons_json', 'show_reply_keyboard', 'reply_keyboard_json'];
+
+// ---------------------------------------------------------------------------
+// Canonical on-disk formats (v2):
+//   buttons_json        {"v":2,"inline":[[{"text":"A","type":"command|callback|url","value":"..."}]]}
+//   reply_keyboard_json {"v":2,"rows":[["Back","Menu"]],"actions":{"Menu":"/menu"},
+//                        "resize":true,"one_time":false,"persistent":true,"placeholder":""}
+// Legacy formats (still parsed everywhere, so nothing saved by an older
+// version is ever lost):
+//   {"inline_keyboard":[[...]]} / {"keyboard":[[...]]}   — raw Telegram wire format
+//   {"inline":[{text,type,url|value}],"reply":[rows]}   — dashboard <=3.4 composer
+//   [{text, command}]                                    — flat reply-keyboard array
+// Every consumer (commands runtime, direct message, broadcast) reads keyboards
+// through this pipeline, so all send paths behave identically.
+// ---------------------------------------------------------------------------
+
+// Parse any known inline-button shape into rows of normalized buttons
+// { text, type: 'command'|'callback'|'url', value }.
+function kbNormalizeInline(raw) {
+    if (!raw) return null;
+    let obj = raw;
+    if (typeof raw === 'string') {
+        try { obj = JSON.parse(raw); } catch (e) { return null; }
+    }
+    if (!obj || typeof obj !== 'object') return null;
+    let rows = null;
+    if (obj.v === 2 && obj.inline) {
+        // v2: rows of normalized buttons.
+        rows = (Array.isArray(obj.inline) ? obj.inline : []).map(row =>
+            (Array.isArray(row) ? row : [row]).map(b => {
+                const type = b.type === 'url' ? 'url' : (b.type === 'command' || String(b.value || '').startsWith('/') ? 'command' : 'callback');
+                return { text: String(b.text || ''), type, value: String(b.value || '') };
+            }).filter(b => b.text)
+        ).filter(row => row.length);
+    } else if (Array.isArray(obj.inline_keyboard)) {
+        rows = obj.inline_keyboard.map(row =>
+            (Array.isArray(row) ? row : [row]).map(b => {
+                if (!b || !b.text) return null;
+                if (b.url) return { text: String(b.text), type: 'url', value: String(b.url) };
+                const value = String(b.callback_data || '');
+                return { text: String(b.text), type: value.startsWith('/') ? 'command' : 'callback', value };
+            }).filter(Boolean)
+        ).filter(row => row.length);
+    } else if (Array.isArray(obj.inline)) {
+        // Legacy composer: flat list → one button per row (same look as 3.4).
+        rows = obj.inline.map(b => {
+            if (!b || !b.text) return null;
+            if (b.type === 'url' || b.url) return [{ text: String(b.text), type: 'url', value: String(b.url || b.value || '') }];
+            const value = String(b.value !== undefined ? b.value : (b.callback_data || ''));
+            return [{ text: String(b.text), type: value.startsWith('/') ? 'command' : 'callback', value }];
+        }).filter(Boolean);
+    }
+    return (rows && rows.length) ? rows : null;
+}
+
+// Parse any known reply-keyboard shape into a normalized spec.
+function kbNormalizeReply(raw) {
+    if (!raw) return null;
+    let obj = raw;
+    if (typeof raw === 'string') {
+        try { obj = JSON.parse(raw); } catch (e) { return null; }
+    }
+    if (!obj || typeof obj !== 'object') return null;
+    const spec = { rows: [], actions: {}, resize: true, one_time: false, persistent: true, placeholder: '' };
+    const readItem = (item) => {
+        if (typeof item === 'string') return { text: item, command: '' };
+        if (item && typeof item === 'object') return { text: String(item.text || ''), command: String(item.command || item.value || '') };
+        return null;
+    };
+    if (obj.v === 2 && obj.reply) {
+        const rep = obj.reply;
+        const rows = Array.isArray(rep.rows) ? rep.rows : [];
+        spec.rows = rows.map(row => (Array.isArray(row) ? row.map(readItem) : [readItem(row)]).filter(b => b && b.text));
+        Object.assign(spec.actions, (rep.actions && typeof rep.actions === 'object') ? rep.actions : {});
+        if (typeof rep.resize === 'boolean') spec.resize = rep.resize;
+        if (typeof rep.one_time === 'boolean') spec.one_time = rep.one_time;
+        if (typeof rep.persistent === 'boolean') spec.persistent = rep.persistent;
+        if (rep.placeholder) spec.placeholder = String(rep.placeholder).slice(0, 64);
+    } else if (Array.isArray(obj.keyboard)) {
+        spec.rows = obj.keyboard.map(row => (Array.isArray(row) ? row.map(readItem) : [readItem(row)]).filter(b => b && b.text));
+        if (obj.resize_keyboard === false) spec.resize = false;
+        if (obj.one_time_keyboard === true) spec.one_time = true;
+        if (obj.is_persistent === false) spec.persistent = false;
+        if (obj.input_field_placeholder) spec.placeholder = String(obj.input_field_placeholder).slice(0, 64);
+    } else if (Array.isArray(obj.reply)) {
+        spec.rows = obj.reply.map(row => (Array.isArray(row) ? row.map(readItem) : [readItem(row)]).filter(b => b && b.text));
+    } else if (Array.isArray(obj.rows)) {
+        spec.rows = obj.rows.map(row => (Array.isArray(row) ? row.map(readItem) : [readItem(row)]).filter(b => b && b.text));
+        Object.assign(spec.actions, (obj.actions && typeof obj.actions === 'object') ? obj.actions : {});
+    } else if (Array.isArray(obj)) {
+        // Legacy commands format: flat [{text, command}].
+        spec.rows = obj.map(item => readItem(item)).filter(b => b && b.text).map(b => [b]);
+    }
+    spec.rows = spec.rows.filter(row => row.length);
+    if (!spec.rows.length) return null;
+    // Merge text → command pairs from the rows themselves into the actions map.
+    for (const row of spec.rows) for (const b of row) if (b.command) spec.actions[b.text] = b.command;
+    return spec;
+}
+
+// Build the Telegram inline_keyboard wire object from normalized rows.
+function kbInlineMarkup(rows) {
+    if (!rows || !rows.length) return null;
+    return {
+        inline_keyboard: rows.map(row => row.map(b => {
+            if (b.type === 'url') return { text: b.text, url: b.value };
+            return { text: b.text, callback_data: b.type === 'command' && !b.value.startsWith('/') ? '/' + b.value.replace(/^\/+/, '') : b.value };
+        }))
+    };
+}
+
+// Build the Telegram reply_keyboard wire object from a normalized spec.
+function kbReplyMarkup(spec) {
+    if (!spec || !spec.rows || !spec.rows.length) return null;
+    const markup = { keyboard: spec.rows.map(row => row.map(b => ({ text: b.text }))) };
+    markup.resize_keyboard = spec.resize !== false;
+    markup.one_time_keyboard = !!spec.one_time;
+    if (spec.persistent) markup.is_persistent = true;
+    if (spec.placeholder) markup.input_field_placeholder = spec.placeholder;
+    return markup;
+}
+
+// Top-level entry used by every send path. Accepts any supported format and
+// returns both markups plus counts. When both exist Telegram shows the inline
+// keyboard on the main message; the reply keyboard travels on a carrier
+// message (Telegram allows only one reply_markup per message).
+function buildReplyMarkup(buttonsJson) {
+    if (!buttonsJson) return null;
+    let inlineRows = null;
+    let replySpec = null;
+    if (typeof buttonsJson === 'string') {
+        let obj = null;
+        try { obj = JSON.parse(buttonsJson); } catch (e) { return null; }
+        if (!obj || typeof obj !== 'object') return null;
+        // A v2 object may carry both parts.
+        if (obj.v === 2) {
+            inlineRows = kbNormalizeInline(obj);
+            replySpec = kbNormalizeReply(obj.reply ? obj : null);
+        } else {
+            inlineRows = kbNormalizeInline(obj);
+            if (!inlineRows) replySpec = kbNormalizeReply(obj);
+        }
+    } else {
+        inlineRows = kbNormalizeInline(buttonsJson.inline ? { inline: buttonsJson.inline } : (buttonsJson.v === 2 ? buttonsJson : null));
+        replySpec = kbNormalizeReply(buttonsJson.reply ? { v: 2, reply: buttonsJson.reply } : buttonsJson);
+    }
+    const inlineMarkup = kbInlineMarkup(inlineRows);
+    const replyMarkup = kbReplyMarkup(replySpec);
+    if (!inlineMarkup && !replyMarkup) return null;
+    return {
+        markup: inlineMarkup || replyMarkup,
+        inlineMarkup,
+        replyMarkup,
+        replySpec: replySpec || null,
+        inlineCount: inlineRows ? inlineRows.reduce((n, r) => n + r.length, 0) : 0,
+        replyCount: replySpec ? replySpec.rows.reduce((n, r) => n + r.length, 0) : 0,
+        both: !!(inlineMarkup && replyMarkup)
+    };
+}
+
+// Persist reply-keyboard text → command mappings so buttons from direct
+// messages / broadcasts keep working after the original message is gone.
+async function mergeReplyActions(db, actions) {
+    if (!actions || !Object.keys(actions).length) return;
+    try {
+        let merged = {};
+        const raw = await getSetting(db, 'reply_actions');
+        if (raw) { try { merged = JSON.parse(raw) || {}; } catch (e) { merged = {}; } }
+        for (const [text, command] of Object.entries(actions)) {
+            if (text && command) merged[text] = command;
+        }
+        // Bound the map so it can never grow unbounded.
+        const keys = Object.keys(merged);
+        if (keys.length > 500) { for (const k of keys.slice(0, keys.length - 500)) delete merged[k]; }
+        await setSetting(db, 'reply_actions', JSON.stringify(merged));
+        replyActionsCache = { data: merged, fetchedAt: Date.now() };
+    } catch (e) { /* never break a send because of the action map */ }
+}
+
+let replyActionsCache = { data: null, fetchedAt: 0 };
+const REPLY_ACTIONS_TTL_MS = 60 * 1000;
+async function getReplyActions(db) {
+    if (replyActionsCache.data && Date.now() - replyActionsCache.fetchedAt < REPLY_ACTIONS_TTL_MS) return replyActionsCache.data;
+    let map = {};
+    try {
+        const raw = await getSetting(db, 'reply_actions');
+        if (raw) map = JSON.parse(raw) || {};
+    } catch (e) {}
+    replyActionsCache = { data: map, fetchedAt: Date.now() };
+    return map;
+}
 
 async function getCommands(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
@@ -5333,7 +6775,7 @@ async function getCommands(env) {
         const result = await env.DB.prepare('SELECT * FROM commands ORDER BY order_idx, command').all();
         return apiJson({ commands: result.results || [] });
     } catch (err) {
-        return apiJson({ error: err.message }, 500);
+        return internalError(err);
     }
 }
 
@@ -5375,7 +6817,7 @@ async function createCommand(request, env) {
         }
         return apiJson({ success: true });
     } catch (err) {
-        return apiJson({ error: err.message }, 500);
+        return internalError(err);
     }
 }
 
@@ -5448,7 +6890,7 @@ async function updateCommand(request, env) {
         }
         return apiJson({ success: true });
     } catch (err) {
-        return apiJson({ error: err.message }, 500);
+        return internalError(err);
     }
 }
 
@@ -5469,7 +6911,7 @@ async function deleteCommand(request, env) {
         await runBatchChunks(env.DB, toDelete.map(c => env.DB.prepare('DELETE FROM commands WHERE command = ?').bind(c)));
         return apiJson({ success: true });
     } catch (err) {
-        return apiJson({ error: err.message }, 500);
+        return internalError(err);
     }
 }
 
@@ -5483,7 +6925,105 @@ async function reorderCommands(request, env) {
         await runBatchChunks(env.DB, order.map((cmd, i) => env.DB.prepare('UPDATE commands SET order_idx = ? WHERE command = ?').bind(i, cmd)));
         return apiJson({ success: true });
     } catch (err) {
-        return apiJson({ error: err.message }, 500);
+        return internalError(err);
+    }
+}
+
+// ============================================================================
+// COMMAND PACK IMPORT/EXPORT (#31)
+// ============================================================================
+// Shareable bundles of commands (and menu entries) so bot builders can
+// distribute templates independently of full backups.
+async function exportCommandPack(env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        const commands = await env.DB.prepare('SELECT command, parent, response_type, content, media_url, buttons_json, is_admin_only, enabled, show_reply_keyboard, reply_keyboard_json FROM commands ORDER BY order_idx, command').all();
+        let menu = [];
+        const raw = await getSetting(env.DB, 'menu_commands');
+        if (raw) { try { menu = JSON.parse(raw); } catch (e) {} }
+        return apiJson({ success: true, data: {
+            app: 'nyxx-command-pack',
+            version: VERSION,
+            exported_at: new Date().toISOString(),
+            commands: commands.results || [],
+            menu,
+        } });
+    } catch (err) {
+        return internalError(err);
+    }
+}
+
+function isValidCommandPackRow(c) {
+    return c && typeof c.command === 'string' && c.command.startsWith('/')
+        && typeof c.content === 'string'
+        && (!c.parent || typeof c.parent === 'string');
+}
+
+async function importCommandPack(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const body = await request.json();
+        const data = body.data || {};
+        const mode = body.mode === 'replace' ? 'replace' : 'merge';
+        const rows = data.commands;
+        if (data.app !== 'nyxx-command-pack' || !Array.isArray(rows) || rows.length === 0) {
+            return apiJson({ error: 'Invalid command pack' }, 400);
+        }
+        const valid = rows.filter(isValidCommandPackRow);
+        if (valid.length === 0) {
+            return apiJson({ error: 'No valid commands in pack' }, 400);
+        }
+        await initializeDatabase(env.DB);
+
+        // Parents must exist before children: sort rows so parents come first.
+        const byName = new Map(valid.map(c => [c.command, c]));
+        const ordered = [];
+        const seen = new Set();
+        const visit = (c, chain) => {
+            if (!c || seen.has(c.command) || chain.has(c.command)) return;
+            chain.add(c.command);
+            if (c.parent && byName.has(c.parent)) visit(byName.get(c.parent), chain);
+            chain.delete(c.command);
+            seen.add(c.command);
+            ordered.push(c);
+        };
+        for (const c of valid) visit(c, new Set());
+
+        if (mode === 'replace') {
+            await env.DB.batch([
+                env.DB.prepare('DELETE FROM commands'),
+            ]);
+        }
+
+        let imported = 0;
+        const stmts = ordered.map((c, i) => env.DB.prepare(`
+            INSERT INTO commands (command, parent, response_type, content, media_url, buttons_json, is_admin_only, enabled, show_reply_keyboard, reply_keyboard_json, order_idx)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(command) DO UPDATE SET
+                parent = excluded.parent, response_type = excluded.response_type, content = excluded.content,
+                media_url = excluded.media_url, buttons_json = excluded.buttons_json,
+                is_admin_only = excluded.is_admin_only, enabled = excluded.enabled,
+                show_reply_keyboard = excluded.show_reply_keyboard, reply_keyboard_json = excluded.reply_keyboard_json
+        `).bind(
+            c.command, c.parent || null, c.response_type || 'text', c.content || '', c.media_url || '',
+            c.buttons_json || '', c.is_admin_only ? 1 : 0, c.enabled !== undefined && c.enabled !== null ? (c.enabled ? 1 : 0) : 1,
+            c.show_reply_keyboard ? 1 : 0, c.reply_keyboard_json || '', i
+        ));
+        await runBatchChunks(env.DB, stmts);
+        imported = ordered.length;
+
+        // Menu entries are optional in a pack.
+        if (Array.isArray(data.menu) && data.menu.length > 0) {
+            const okMenu = data.menu.filter(m => m && m.command && m.description);
+            if (okMenu.length > 0) {
+                await setSetting(env.DB, 'menu_commands', JSON.stringify(okMenu));
+            }
+        }
+        await logAction(env.DB, null, `Command pack imported (${imported} commands, ${mode} mode)`);
+        return apiJson({ success: true, imported });
+    } catch (err) {
+        return internalError(err);
     }
 }
 
@@ -5499,7 +7039,7 @@ async function getMenuCommands(env) {
         if (raw) { try { menu = JSON.parse(raw); } catch (e) {} }
         return apiJson({ menu });
     } catch (err) {
-        return apiJson({ error: err.message }, 500);
+        return internalError(err);
     }
 }
 
@@ -5528,7 +7068,7 @@ async function setMenuCommands(request, env) {
         await setSetting(env.DB, 'menu_commands', JSON.stringify(menu));
         return apiJson({ success: true });
     } catch (err) {
-        return apiJson({ error: err.message }, 500);
+        return internalError(err);
     }
 }
 
@@ -5551,7 +7091,7 @@ async function getUsers(env, url) {
         const result = await env.DB.prepare(query).bind(...params).all();
         return apiJson({ users: result.results || [] });
     } catch (err) {
-        return apiJson({ error: err.message }, 500);
+        return internalError(err);
     }
 }
 
@@ -5563,9 +7103,10 @@ async function updateUserRole(request, env) {
         if (!userId || !role) return apiJson({ error: 'userId and role required' }, 400);
         await initializeDatabase(env.DB);
         await env.DB.prepare('UPDATE users SET role = ? WHERE id = ?').bind(role, userId).run();
+        await logAction(env.DB, userId, `User role changed to "${role}"`);
         return apiJson({ success: true });
     } catch (err) {
-        return apiJson({ error: err.message }, 500);
+        return internalError(err);
     }
 }
 
@@ -5573,80 +7114,155 @@ async function sendUserPrivateMessage(request, env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         const body = await request.json();
-        const { userId, message, buttons_json } = body;
-        if (!userId || !message) return apiJson({ error: 'userId and message required' }, 400);
+        const { userId, message, photo_url: photoUrl, buttons_json: buttonsJson } = body;
+        if (!userId || (!message && !photoUrl)) return apiJson({ error: 'userId and message or photo URL required' }, 400);
         await initializeDatabase(env.DB);
         const token = await getSetting(env.DB, 'bot_token');
         if (!token) return apiJson({ error: 'Bot token not set' }, 400);
-        const payload = { chat_id: userId, text: message, parse_mode: 'HTML' };
-        if (buttons_json) {
-            try {
-                const btns = JSON.parse(buttons_json);
-                let replyMarkup = null;
-                if (btns.inline && btns.inline.length) {
-                    const inlineRows = btns.inline.map(function(b) {
-                        const btn = { text: b.text };
-                        if (b.type === 'url') btn.url = b.value;
-                        else btn.callback_data = b.value;
-                        return [btn];
-                    });
-                    replyMarkup = { inline_keyboard: inlineRows };
-                }
-                if (btns.reply && btns.reply.length) {
-                    const replyRows = btns.reply.map(function(r) {
-                        if (Array.isArray(r)) return r.map(function(item) {
-                            if (typeof item === 'string') return { text: item };
-                            return item;
-                        });
-                        if (typeof r === 'string') return [{ text: r }];
-                        return [r];
-                    });
-                    payload.reply_markup = JSON.stringify({ keyboard: replyRows, resize_keyboard: true, one_time_keyboard: true });
-                }
-                if (replyMarkup) {
-                    payload.reply_markup = JSON.stringify(replyMarkup);
-                }
-            } catch (e) {}
+
+        const built = buttonsJson ? buildReplyMarkup(buttonsJson) : null;
+        const markup = built && built.markup ? JSON.stringify(built.markup) : null;
+        const kind = photoUrl ? 'photo' : 'text';
+
+        let payload = /** @type {Record<string, any>} */ ({});
+        if (photoUrl) {
+            payload.chat_id = userId; payload.photo = photoUrl;
+            if (message) { payload.caption = message; payload.parse_mode = 'HTML'; }
+        } else {
+            payload.chat_id = userId; payload.text = message; payload.parse_mode = 'HTML';
         }
-        const resp = await tgFetchJson(`https://api.telegram.org/bot${token}/sendMessage`, {
+        if (markup) payload.reply_markup = markup;
+
+        const method = photoUrl ? 'sendPhoto' : 'sendMessage';
+        let resp = await tgFetchJson(`https://api.telegram.org/bot${token}/${method}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-        if (!resp.ok) return apiJson({ error: resp.description || 'Telegram API error' }, 500);
-        // Send reply keyboard separately if both inline and reply keyboards exist
-        if (buttons_json) {
-            try {
-                const btns2 = JSON.parse(buttons_json);
-                if (btns2.inline && btns2.inline.length && btns2.reply && btns2.reply.length) {
-                    const replyRows2 = btns2.reply.map(function(r) {
-                        if (Array.isArray(r)) return r.map(function(item) {
-                            if (typeof item === 'string') return { text: item };
-                            return item;
-                        });
-                        if (typeof r === 'string') return [{ text: r }];
-                        return [r];
-                    });
-                    await tgFetchJson(`https://api.telegram.org/bot${token}/sendMessage`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ chat_id: userId, text: ' ', reply_markup: JSON.stringify({ keyboard: replyRows2, resize_keyboard: true, one_time_keyboard: true }) })
-                    });
-                }
-            } catch (e) {}
+        // Admin-written text may contain a stray < or &; fall back to plain
+        // text instead of reporting a failure Telegram caused.
+        if (!resp.ok && isHtmlParseError(resp)) {
+            const plainPayload = /** @type {Record<string, any>} */ (Object.assign({}, payload));
+            if (photoUrl) {
+                if (message) plainPayload.caption = htmlToPlain(message);
+                delete plainPayload.parse_mode;
+            } else {
+                plainPayload.text = htmlToPlain(message);
+                delete plainPayload.parse_mode;
+            }
+            resp = await tgFetchJson(`https://api.telegram.org/bot${token}/${method}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(plainPayload)
+            });
         }
-        // Save admin message as assistant in AI memory
+        if (!resp.ok) return apiJson({ error: resp.description || 'Telegram API error' }, 500);
+        const messageId = resp.result && resp.result.message_id;
+
+        // Both keyboards exist: Telegram shows one per message, so the reply
+        // keyboard rides on a carrier message.
+        if (built && built.both && built.replyMarkup) {
+            await tgFetchJson(`https://api.telegram.org/bot${token}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: userId, text: ' ', reply_markup: JSON.stringify(built.replyMarkup) })
+            });
+        }
+
+        // Track the sent message so it can be edited or deleted later.
         try {
-            const aiSettings = await getAiSettingsFromDb(env);
-            const memoryLimit = parseInt(aiSettings.ai_memory || '0');
-            if (memoryLimit > 0) {
-                await saveAiMessage(env.DB, userId, 'assistant', message);
-                await trimAiMessages(env.DB, userId, memoryLimit);
+            await env.DB.prepare('INSERT INTO admin_messages (chat_id, message_id, kind, text, buttons_json) VALUES (?, ?, ?, ?, ?)')
+                .bind(userId, messageId, kind, message || '', buttonsJson || null).run();
+        } catch (e) {}
+
+        // Keyboard text → command mappings stay alive after the message is gone.
+        if (built && built.replySpec && built.replySpec.actions) {
+            await mergeReplyActions(env.DB, built.replySpec.actions);
+        }
+
+        // Save admin message as assistant in AI memory (text only)
+        try {
+            if (!photoUrl) {
+                const aiSettings = await getAiSettingsFromDb(env);
+                const memoryLimit = parseInt(aiSettings.ai_memory || '0');
+                if (memoryLimit > 0) {
+                    await saveAiMessage(env.DB, userId, 'assistant', message);
+                    await trimAiMessages(env.DB, userId, memoryLimit);
+                }
             }
         } catch (e) {}
+        return apiJson({ success: true, message_id: messageId });
+    } catch (err) {
+        return internalError(err);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Sent-message management: direct messages are tracked in admin_messages so
+// the owner can edit or delete them after delivery.
+// ---------------------------------------------------------------------------
+async function getUserAdminMessages(env, url) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const parts = url.pathname.split('/');
+        const userId = parseInt(parts[3]);
+        if (isNaN(userId)) return apiJson({ error: 'Invalid user ID' }, 400);
+        await initializeDatabase(env.DB);
+        const rows = await env.DB.prepare('SELECT id, chat_id, message_id, kind, text, created_at FROM admin_messages WHERE chat_id = ? ORDER BY id DESC LIMIT 30').bind(userId).all();
+        return apiJson({ messages: (rows.results || []).reverse() });
+    } catch (err) {
+        return internalError(err);
+    }
+}
+
+async function editSentMessage(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const { chatId, messageId, kind, text } = await request.json();
+        if (!chatId || !messageId || text === undefined) return apiJson({ error: 'chatId, messageId and text required' }, 400);
+        await initializeDatabase(env.DB);
+        const token = await getSetting(env.DB, 'bot_token');
+        if (!token) return apiJson({ error: 'Bot token not set' }, 400);
+        const method = kind === 'photo' ? 'editMessageCaption' : 'editMessageText';
+        const payload = /** @type {Record<string, any>} */ ({ chat_id: chatId, message_id: messageId, parse_mode: 'HTML' });
+        if (kind === 'photo') { if (text) payload.caption = text; } else { payload.text = text; }
+        let resp = await tgFetchJson(`https://api.telegram.org/bot${token}/${method}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+        });
+        if (!resp.ok && isHtmlParseError(resp)) {
+            const plain = /** @type {Record<string, any>} */ (Object.assign({}, payload));
+            delete plain.parse_mode;
+            if (kind === 'photo') { if (text) plain.caption = htmlToPlain(text); } else { plain.text = htmlToPlain(text); }
+            resp = await tgFetchJson(`https://api.telegram.org/bot${token}/${method}`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(plain)
+            });
+        }
+        if (!resp.ok) return apiJson({ error: resp.description || 'Telegram API error' }, 500);
+        try { await env.DB.prepare('UPDATE admin_messages SET text = ? WHERE chat_id = ? AND message_id = ?').bind(text || '', chatId, messageId).run(); } catch (e) {}
+        await logAction(env.DB, null, `Direct message edited (chat ${chatId})`);
         return apiJson({ success: true });
     } catch (err) {
-        return apiJson({ error: err.message }, 500);
+        return internalError(err);
+    }
+}
+
+async function deleteSentMessage(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const { chatId, messageId } = await request.json();
+        if (!chatId || !messageId) return apiJson({ error: 'chatId and messageId required' }, 400);
+        await initializeDatabase(env.DB);
+        const token = await getSetting(env.DB, 'bot_token');
+        if (!token) return apiJson({ error: 'Bot token not set' }, 400);
+        const resp = await tgFetchJson(`https://api.telegram.org/bot${token}/deleteMessage`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, message_id: messageId })
+        });
+        if (!resp.ok) return apiJson({ error: resp.description || 'Telegram API error' }, 500);
+        try { await env.DB.prepare('DELETE FROM admin_messages WHERE chat_id = ? AND message_id = ?').bind(chatId, messageId).run(); } catch (e) {}
+        await logAction(env.DB, null, `Direct message deleted (chat ${chatId})`);
+        return apiJson({ success: true });
+    } catch (err) {
+        return internalError(err);
     }
 }
 
@@ -5661,9 +7277,10 @@ async function blockUser(request, env) {
         await env.DB.prepare(
             'INSERT INTO blocked_users (user_id, block_type) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET block_type = excluded.block_type, blocked_at = CURRENT_TIMESTAMP'
         ).bind(userId, type).run();
+        await logAction(env.DB, userId, `User blocked (${type})`);
         return apiJson({ success: true, block_type: type });
     } catch (err) {
-        return apiJson({ error: err.message }, 500);
+        return internalError(err);
     }
 }
 
@@ -5675,9 +7292,10 @@ async function unblockUser(request, env) {
         if (!userId) return apiJson({ error: 'userId required' }, 400);
         await initializeDatabase(env.DB);
         await env.DB.prepare('DELETE FROM blocked_users WHERE user_id = ?').bind(userId).run();
+        await logAction(env.DB, userId, 'User unblocked');
         return apiJson({ success: true });
     } catch (err) {
-        return apiJson({ error: err.message }, 500);
+        return internalError(err);
     }
 }
 
@@ -5691,7 +7309,7 @@ async function getBlockStatus(env, url) {
         const row = await env.DB.prepare('SELECT block_type FROM blocked_users WHERE user_id = ?').bind(userId).first();
         return apiJson({ blocked: !!row, block_type: row ? row.block_type : null });
     } catch (err) {
-        return apiJson({ error: err.message }, 500);
+        return internalError(err);
     }
 }
 
@@ -5727,84 +7345,243 @@ async function getUserChatHistory(env, url) {
 // ============================================================================
 // BROADCAST
 // ============================================================================
+// BROADCAST
+// ============================================================================
+// Pacing is fully configurable from the dashboard: batch_size = parallel sends
+// per wave, delay_ms = pause between waves, timeout_ms = per-request timeout.
+// tgCall additionally honors Telegram's 429 retry_after, so bursts degrade
+// gracefully instead of dropping messages.
+const BROADCAST_DEFAULTS = { batch_size: 25, delay_ms: 0, timeout_ms: 10000 };
+
+async function getBroadcastSettings(env) {
+    const [bs, dm, tm] = await Promise.all([
+        getSetting(env.DB, 'broadcast_batch_size'),
+        getSetting(env.DB, 'broadcast_delay_ms'),
+        getSetting(env.DB, 'broadcast_timeout_ms'),
+    ]);
+    const clamp = (v, def, min, max) => Math.min(Math.max(parseInt(v) || def, min), max);
+    return {
+        batch_size: clamp(bs, BROADCAST_DEFAULTS.batch_size, 1, 100),
+        delay_ms: clamp(dm, BROADCAST_DEFAULTS.delay_ms, 0, 60000),
+        timeout_ms: clamp(tm, BROADCAST_DEFAULTS.timeout_ms, 2000, 60000),
+    };
+}
+
+async function handleBroadcastSettings(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        if (request.method === 'GET') {
+            return apiJson({ success: true, settings: await getBroadcastSettings(env) });
+        }
+        const body = await request.json();
+        const stmts = [];
+        if (body.batch_size !== undefined) stmts.push(['broadcast_batch_size', String(Math.min(Math.max(parseInt(body.batch_size) || 25, 1), 100))]);
+        if (body.delay_ms !== undefined) stmts.push(['broadcast_delay_ms', String(Math.min(Math.max(parseInt(body.delay_ms) || 0, 0), 60000))]);
+        if (body.timeout_ms !== undefined) stmts.push(['broadcast_timeout_ms', String(Math.min(Math.max(parseInt(body.timeout_ms) || 10000, 2000), 60000))]);
+        for (const [k, v] of stmts) await setSetting(env.DB, k, v);
+        await logAction(env.DB, null, 'Broadcast pacing settings updated');
+        return apiJson({ success: true, settings: await getBroadcastSettings(env) });
+    } catch (err) {
+        return internalError(err);
+    }
+}
+
+function sleepMs(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// Send one broadcast message (text or photo) to a single chat. Returns
+// { ok, status, messageId }.
+async function broadcastToUser(token, uid, built, markup, content, timeoutMs) {
+    if (content.kind === 'photo') {
+        const payload = /** @type {Record<string, any>} */ ({ chat_id: uid, photo: content.photoUrl });
+        if (content.text) { payload.caption = content.text; payload.parse_mode = 'HTML'; }
+        if (markup) payload.reply_markup = markup;
+        let res = await tgCall(token, 'sendPhoto', payload, { timeoutMs });
+        if ((!res || !res.ok) && content.text && isHtmlParseError(res)) {
+            res = await tgCall(token, 'sendPhoto', Object.assign({}, payload, { caption: htmlToPlain(content.text) }), { timeoutMs });
+        }
+        if (!res || !res.ok) return { ok: false, status: 'failed' };
+        if (built && built.both && built.replyMarkup) {
+            await tgCall(token, 'sendMessage', { chat_id: uid, text: ' ', reply_markup: built.replyMarkup }, { timeoutMs });
+        }
+        return { ok: true, status: 'sent', messageId: res.result && res.result.message_id };
+    }
+    const extra = markup ? { reply_markup: markup } : {};
+    const res = await sendRichText(token, uid, content.text, extra);
+    if (!res || !res.ok) return { ok: false, status: 'failed' };
+    if (built && built.both && built.replyMarkup) {
+        await tgCall(token, 'sendMessage', { chat_id: uid, text: ' ', reply_markup: built.replyMarkup }, { timeoutMs });
+    }
+    return { ok: true, status: 'sent', messageId: res.result && res.result.message_id };
+}
+
 async function handleBroadcast(request, env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
         const BOT_TOKEN = await getSetting(env.DB, 'bot_token');
         if (!BOT_TOKEN) return apiJson({ error: 'Bot token not configured' }, 400);
-        const { userIds, message, buttons_json } = await request.json();
-        if (!message || !userIds || !userIds.length) return apiJson({ error: 'Message and recipients required' }, 400);
+        const { userIds, message, photo_url: photoUrl, buttons_json: buttonsJson } = await request.json();
+        if ((!message || !String(message).trim()) && !photoUrl) return apiJson({ error: 'Message and recipients required' }, 400);
+        if (!userIds || !userIds.length) return apiJson({ error: 'Message and recipients required' }, 400);
+        if (photoUrl && !/^https?:\/\//i.test(photoUrl)) return apiJson({ error: 'Photo URL must start with http(s)://' }, 400);
+
+        // Precompute the reply_markup once instead of re-parsing per recipient.
+        const built = buttonsJson ? buildReplyMarkup(buttonsJson) : null;
+        const markup = built && built.markup ? built.markup : null;
+        const uniqueIds = [...new Set(userIds)];
+        const settings = await getBroadcastSettings(env);
+
+        // Skip users who blocked the bot entirely so they are not counted as
+        // failures.
+        const placeholders = uniqueIds.map(() => '?').join(', ');
+        let blockedRows = { results: [] };
+        try {
+            blockedRows = await env.DB.prepare(`SELECT user_id FROM blocked_users WHERE block_type = 'full' AND user_id IN (${placeholders})`)
+                .bind(...uniqueIds).all();
+        } catch (e) {}
+        const blockedSet = new Set((blockedRows.results || []).map(r => r.user_id));
+
+        const kind = photoUrl ? 'photo' : 'text';
+        const content = { kind, text: message || '', photoUrl: photoUrl || '' };
+
+        // History row is created up-front so recipient tracking (edit/delete
+        // later) is possible even for long broadcasts.
+        let broadcastId = null;
+        try {
+            const histRes = await env.DB.prepare(
+                'INSERT INTO broadcast_history (message, photo_url, kind, buttons_json, recipient_count, sent_count, sent_at) VALUES (?, ?, ?, ?, ?, 0, datetime("now"))'
+            ).bind(message || '', photoUrl || null, kind, buttonsJson || null, uniqueIds.length).run();
+            broadcastId = histRes && histRes.meta ? histRes.meta.last_row_id : null;
+        } catch (e) {}
+
         let sent = 0;
         let failed = 0;
-        for (const uid of userIds) {
-            try {
-                const payload = { chat_id: uid, text: message };
-                if (buttons_json) {
-                    try {
-                        const btns = JSON.parse(buttons_json);
-                        let replyMarkup = null;
-                        if (btns.inline && btns.inline.length) {
-                            const inlineRows = btns.inline.map(function(b) {
-                                const btn = { text: b.text };
-                                if (b.type === 'url') btn.url = b.value;
-                                else btn.callback_data = b.value;
-                                return [btn];
-                            });
-                            replyMarkup = { inline_keyboard: inlineRows };
-                        }
-                        if (btns.reply && btns.reply.length) {
-                            const replyRows = btns.reply.map(function(r) {
-                                if (Array.isArray(r)) return r.map(function(item) {
-                                    if (typeof item === 'string') return { text: item };
-                                    return item;
-                                });
-                                if (typeof r === 'string') return [{ text: r }];
-                                return [r];
-                            });
-                            payload.reply_markup = JSON.stringify({ keyboard: replyRows, resize_keyboard: true, one_time_keyboard: true });
-                        }
-                        if (replyMarkup) {
-                            payload.reply_markup = JSON.stringify(replyMarkup);
-                        }
-                    } catch (e) {}
+        let skipped = 0;
+        const recipientRows = [];
+        const chunks = [];
+        for (let i = 0; i < uniqueIds.length; i += settings.batch_size) chunks.push(uniqueIds.slice(i, i + settings.batch_size));
+        for (let ci = 0; ci < chunks.length; ci++) {
+            // Parallel within a chunk; sequential across chunks with a
+            // configurable pause so a large broadcast respects Telegram's
+            // rate limits.
+            const results = await Promise.allSettled(chunks[ci].map(async (uid) => {
+                if (blockedSet.has(uid)) return { ok: false, status: 'skipped' };
+                return broadcastToUser(BOT_TOKEN, uid, built, markup, content, settings.timeout_ms);
+            }));
+            for (let ri = 0; ri < results.length; ri++) {
+                const r = results[ri];
+                const v = r.status === 'fulfilled' ? r.value : { ok: false, status: 'failed' };
+                if (v.ok) {
+                    sent++;
+                    if (broadcastId !== null && v.messageId) recipientRows.push([broadcastId, chunks[ci][ri], v.messageId]);
                 }
-                const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                if (res.ok) sent++; else failed++;
-                // Send reply keyboard separately if both inline and reply keyboards exist
-                if (buttons_json) {
-                    try {
-                        const btns = JSON.parse(buttons_json);
-                        if (btns.inline && btns.inline.length && btns.reply && btns.reply.length) {
-                            const replyRows = btns.reply.map(function(r) {
-                                if (Array.isArray(r)) return r.map(function(item) {
-                                    if (typeof item === 'string') return { text: item };
-                                    return item;
-                                });
-                                if (typeof r === 'string') return [{ text: r }];
-                                return [r];
-                            });
-                            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-                                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ chat_id: uid, text: ' ', reply_markup: JSON.stringify({ keyboard: replyRows, resize_keyboard: true, one_time_keyboard: true }) })
-                            });
-                        }
-                    } catch (e) {}
-                }
-            } catch (e) { failed++; }
+                else if (v.status === 'skipped') skipped++;
+                else failed++;
+            }
+            if (settings.delay_ms > 0 && ci < chunks.length - 1) await sleepMs(settings.delay_ms);
         }
-        // Save broadcast to history
-        try {
-            await env.DB.prepare(
-                'INSERT INTO broadcast_history (message, buttons_json, recipient_count, sent_count, sent_at) VALUES (?, ?, ?, ?, datetime("now"))'
-            ).bind(message, buttons_json || null, userIds.length, sent).run();
-        } catch (e) {}
-        return apiJson({ success: true, sent, failed });
+
+        // Persist per-recipient message ids so this broadcast can be edited
+        // or deleted from the dashboard later.
+        if (broadcastId !== null && recipientRows.length) {
+            try {
+                await runBatchChunks(env.DB, recipientRows.map(r =>
+                    env.DB.prepare('INSERT OR IGNORE INTO broadcast_recipients (broadcast_id, chat_id, message_id) VALUES (?, ?, ?)').bind(...r)
+                ), 100);
+            } catch (e) {}
+        }
+        if (broadcastId !== null) {
+            try {
+                await env.DB.prepare('UPDATE broadcast_history SET sent_count = ? WHERE id = ?').bind(sent, broadcastId).run();
+            } catch (e) {}
+        }
+        if (built && built.replySpec && built.replySpec.actions) {
+            await mergeReplyActions(env.DB, built.replySpec.actions);
+        }
+        await logAction(env.DB, null, `Broadcast sent to ${sent}/${uniqueIds.length} recipients`);
+        return apiJson({ success: true, sent, failed, skipped, broadcast_id: broadcastId });
     } catch (e) {
-        return apiJson({ error: e.message }, 500);
+        return internalError(e);
+    }
+}
+
+// Edit a previously sent broadcast in every recipient's chat.
+async function editBroadcastMessage(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const { broadcastId, message } = await request.json();
+        if (!broadcastId || message === undefined || !String(message).trim()) return apiJson({ error: 'broadcastId and message required' }, 400);
+        await initializeDatabase(env.DB);
+        const token = await getSetting(env.DB, 'bot_token');
+        if (!token) return apiJson({ error: 'Bot token not set' }, 400);
+        const hist = await env.DB.prepare('SELECT kind FROM broadcast_history WHERE id = ?').bind(broadcastId).first();
+        if (!hist) return apiJson({ error: 'Broadcast not found' }, 404);
+        const settings = await getBroadcastSettings(env);
+        const recRows = await env.DB.prepare('SELECT chat_id, message_id FROM broadcast_recipients WHERE broadcast_id = ?').bind(broadcastId).all();
+        const recipients = recRows.results || [];
+        const method = hist.kind === 'photo' ? 'editMessageCaption' : 'editMessageText';
+        let updated = 0;
+        let failed = 0;
+        const chunks = [];
+        for (let i = 0; i < recipients.length; i += settings.batch_size) chunks.push(recipients.slice(i, i + settings.batch_size));
+        for (let ci = 0; ci < chunks.length; ci++) {
+            const results = await Promise.allSettled(chunks[ci].map(async (row) => {
+                const payload = /** @type {Record<string, any>} */ ({ chat_id: row.chat_id, message_id: row.message_id, parse_mode: 'HTML' });
+                if (hist.kind === 'photo') { if (message) payload.caption = message; } else { payload.text = message; }
+                let resp = await tgCall(token, method, payload, { timeoutMs: settings.timeout_ms });
+                if ((!resp || !resp.ok) && isHtmlParseError(resp)) {
+                    const plain = /** @type {Record<string, any>} */ (Object.assign({}, payload));
+                    delete plain.parse_mode;
+                    if (hist.kind === 'photo') { if (message) plain.caption = htmlToPlain(message); } else { plain.text = htmlToPlain(message); }
+                    resp = await tgCall(token, method, plain, { timeoutMs: settings.timeout_ms });
+                }
+                return !!(resp && resp.ok);
+            }));
+            for (const r of results) { if (r.status === 'fulfilled' && r.value) updated++; else failed++; }
+            if (settings.delay_ms > 0 && ci < chunks.length - 1) await sleepMs(settings.delay_ms);
+        }
+        try { await env.DB.prepare('UPDATE broadcast_history SET message = ? WHERE id = ?').bind(message, broadcastId).run(); } catch (e) {}
+        await logAction(env.DB, null, `Broadcast #${broadcastId} edited (${updated}/${recipients.length} chats)`);
+        return apiJson({ success: true, updated, failed, total: recipients.length });
+    } catch (err) {
+        return internalError(err);
+    }
+}
+
+// Delete a previously sent broadcast from every recipient's chat.
+async function deleteBroadcastMessage(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const { broadcastId } = await request.json();
+        if (!broadcastId) return apiJson({ error: 'broadcastId required' }, 400);
+        await initializeDatabase(env.DB);
+        const token = await getSetting(env.DB, 'bot_token');
+        if (!token) return apiJson({ error: 'Bot token not set' }, 400);
+        const settings = await getBroadcastSettings(env);
+        const recRows = await env.DB.prepare('SELECT chat_id, message_id FROM broadcast_recipients WHERE broadcast_id = ?').bind(broadcastId).all();
+        const recipients = recRows.results || [];
+        let deleted = 0;
+        let failed = 0;
+        const chunks = [];
+        for (let i = 0; i < recipients.length; i += settings.batch_size) chunks.push(recipients.slice(i, i + settings.batch_size));
+        for (let ci = 0; ci < chunks.length; ci++) {
+            const results = await Promise.allSettled(chunks[ci].map(row =>
+                tgCall(token, 'deleteMessage', { chat_id: row.chat_id, message_id: row.message_id }, { timeoutMs: settings.timeout_ms, retry: false })
+            ));
+            for (const r of results) { if (r.status === 'fulfilled' && r.value && r.value.ok) deleted++; else failed++; }
+            if (settings.delay_ms > 0 && ci < chunks.length - 1) await sleepMs(settings.delay_ms);
+        }
+        try {
+            await runBatchChunks(env.DB, [
+                env.DB.prepare('DELETE FROM broadcast_recipients WHERE broadcast_id = ?').bind(broadcastId),
+                env.DB.prepare('DELETE FROM broadcast_history WHERE id = ?').bind(broadcastId),
+            ]);
+        } catch (e) {}
+        await logAction(env.DB, null, `Broadcast #${broadcastId} deleted (${deleted}/${recipients.length} chats)`);
+        return apiJson({ success: true, deleted, failed, total: recipients.length });
+    } catch (err) {
+        return internalError(err);
     }
 }
 
@@ -5823,7 +7600,7 @@ async function clearBroadcastHistory(env) {
         await initializeDatabase(env.DB);
         await env.DB.prepare('DELETE FROM broadcast_history').run();
         return apiJson({ success: true });
-    } catch (e) { return apiJson({ error: e.message }, 500); }
+    } catch (e) { return internalError(e); }
 }
 
 async function clearUserMemory(env, url) {
@@ -5835,7 +7612,7 @@ async function clearUserMemory(env, url) {
         if (isNaN(userId)) return apiJson({ error: 'Invalid user ID' }, 400);
         await env.DB.prepare('DELETE FROM ai_messages WHERE chat_id = ?').bind(userId).run();
         return apiJson({ success: true });
-    } catch (e) { return apiJson({ error: e.message }, 500); }
+    } catch (e) { return internalError(e); }
 }
 
 // ============================================================================
@@ -5850,10 +7627,12 @@ const AI_KEYS = [
     'ai_custom_headers',
     'ai_display_name', 'ai_language', 'ai_style', 'ai_length',
     'ai_rate_limit', 'ai_response_delay', 'ai_ignore_prefixes',
+    'ai_global_rate_limit', 'ai_global_rate_window',
     'ai_group_mention', 'ai_private_reply', 'ai_group_reply',
     'ai_ignore_bots', 'ai_ignore_forwarded', 'ai_typing_indicator',
     'ai_retry_on_failure', 'ai_custom_vars_text', 'ai_knowledge_bases',
-    'ai_trigger_text', 'ai_group_memory', 'ai_strict_mode', 'ai_rtl_support'
+    'ai_trigger_text', 'ai_group_memory', 'ai_strict_mode', 'ai_rtl_support',
+    'ai_streaming'
 ];
 
 async function getAiSettings(env) {
@@ -5862,23 +7641,29 @@ async function getAiSettings(env) {
         await initializeDatabase(env.DB);
         return apiJson({ success: true, settings: await getAiSettingsFromDb(env) });
     } catch (err) {
-        return apiJson({ error: err.message }, 500);
+        return internalError(err);
     }
 }
 
+// Load all AI settings in a single D1 query instead of one round trip per
+// key (this runs on every incoming Telegram message).
 async function getAiSettingsFromDb(env) {
     const settings = {};
-    for (const k of AI_KEYS) {
-        const value = await getSetting(env.DB, k);
-        settings[k] = value || '';
+    for (const k of AI_KEYS) settings[k] = '';
+    const placeholders = AI_KEYS.map(() => '?').join(', ');
+    const rows = await env.DB.prepare(`SELECT key, value FROM settings WHERE key IN (${placeholders})`)
+        .bind(...AI_KEYS).all();
+    for (const row of (rows.results || [])) {
+        if (row.value !== null && row.value !== undefined) settings[row.key] = row.value;
     }
     const defaults = {
         ai_enabled: '0', ai_provider: 'openai', ai_model: 'gpt-4o-mini', ai_trigger: 'no_command',
         ai_memory: '0', ai_group_memory: '0', ai_fallback: 'Sorry, I am currently unavailable. Please try again later.',
         ai_temperature: '0.7', ai_max_tokens: '1024', ai_top_p: '1.0', ai_suggested_questions_enabled: '0', ai_suggested_one_time: '1',
-        ai_rate_limit: '10', ai_ignore_prefixes: '/, !, #', ai_group_mention: '1', ai_private_reply: '1',
+        ai_rate_limit: '10', ai_global_rate_limit: '0', ai_global_rate_window: 'minute', ai_ignore_prefixes: '/, !, #', ai_group_mention: '1', ai_private_reply: '1',
         ai_group_reply: '1', ai_ignore_bots: '1', ai_ignore_forwarded: '1', ai_typing_indicator: '1',
         ai_retry_on_failure: '0', ai_knowledge_bases: '[]', ai_suggested_questions: '[]',
+        ai_streaming: '0',
     };
     for (const [k, v] of Object.entries(defaults)) {
         if (!settings[k]) settings[k] = v;
@@ -5904,7 +7689,7 @@ async function saveAiSettings(request, env) {
         await runBatchChunks(env.DB, stmts);
         return apiJson({ success: true });
     } catch (err) {
-        return apiJson({ error: err.message }, 500);
+        return internalError(err);
     }
 }
 
@@ -5914,7 +7699,7 @@ async function getAiMemoryCount(env) {
         const result = await env.DB.prepare('SELECT COUNT(*) as count FROM ai_messages').first();
         return apiJson({ success: true, count: result ? result.count : 0 });
     } catch (err) {
-        return apiJson({ error: err.message }, 500);
+        return internalError(err);
     }
 }
 
@@ -6020,7 +7805,7 @@ const AI_LANGUAGE_NAMES = {
     persian: 'Persian (Farsi)', arabic: 'Arabic', farsi: 'Farsi', russian: 'Russian'
 };
 
-async function callAiCompletion(settings, chatHistory, userPrompt, context, providerType, altIndex) {
+async function callAiCompletion(settings, chatHistory, userPrompt, context, providerType, altIndex, stream, onChunk) {
     providerType = providerType || 'main';
     const isMain = providerType === 'main';
     let provider, apiKey, model, customHeaders, baseUrl;
@@ -6152,10 +7937,24 @@ The final output will be sent directly to Telegram with HTML parsing enabled. In
     }
 
     const payload = { model: finalModel, messages, temperature, max_tokens: maxTokens, top_p: topP };
-    const res = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify(payload) });
+    if (stream === true) payload.stream = true;
+    // Bound the provider call: a hanging API used to stall the whole reply so
+    // retries and fallback providers never got a chance to run.
+    const aiCtrl = new AbortController();
+    const aiTimer = setTimeout(() => aiCtrl.abort(), stream === true ? 120000 : 60000);
+    let res;
+    try {
+        res = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify(payload), signal: aiCtrl.signal });
+    } finally {
+        clearTimeout(aiTimer);
+    }
     if (!res.ok) {
         const errText = await res.text();
         throw new Error(`AI API error (${res.status}): ${errText.slice(0, 400)}`);
+    }
+    if (stream === true) {
+        if (!res.body) throw new Error('Streaming not supported by provider');
+        return await consumeStream(res.body, onChunk);
     }
     const data = await res.json();
     if (data.choices && data.choices[0] && data.choices[0].message) {
@@ -6165,6 +7964,50 @@ The final output will be sent directly to Telegram with HTML parsing enabled. In
     } else {
         throw new Error('Invalid response structure from AI provider');
     }
+}
+
+// Consume an OpenAI-compatible SSE stream and concatenate the message deltas.
+// onChunk(fullTextSoFar) is throttled so Telegram's editMessageText is called
+// at most every STREAM_EDIT_INTERVAL_MS AND only when meaningful new content
+// arrived (≥ MIN_STREAM_DELTA chars) — that keeps the preview feeling live
+// like ChatGPT without tripping Telegram's flood limits.
+const STREAM_EDIT_INTERVAL_MS = 1200;
+const MIN_STREAM_DELTA = 10;
+
+async function consumeStream(body, onChunk) {
+    const reader = body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let full = '';
+    let lastFire = 0;
+    let lastLen = 0;
+    for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let idx;
+        while ((idx = buffer.indexOf('\n')) >= 0) {
+            const line = buffer.slice(0, idx).trim();
+            buffer = buffer.slice(idx + 1);
+            if (!line.startsWith('data:')) continue;
+            const payloadText = line.slice(5).trim();
+            if (payloadText === '[DONE]') continue;
+            try {
+                const evt = JSON.parse(payloadText);
+                const delta = evt.choices && evt.choices[0] && evt.choices[0].delta && evt.choices[0].delta.content;
+                if (delta) {
+                    full += delta;
+                    const now = Date.now();
+                    if (onChunk && (now - lastFire) >= STREAM_EDIT_INTERVAL_MS && (full.length - lastLen) >= MIN_STREAM_DELTA) {
+                        lastFire = now;
+                        lastLen = full.length;
+                        onChunk(full);
+                    }
+                }
+            } catch (e) { /* ignore malformed keep-alive lines */ }
+        }
+    }
+    return full;
 }
 
 async function handleAiTest(request, env) {
@@ -6242,7 +8085,7 @@ async function resetAiSettings(env) {
         await runBatchChunks(env.DB, stmts);
         return apiJson({ success: true });
     } catch (err) {
-        return apiJson({ error: err.message }, 500);
+        return internalError(err);
     }
 }
 
@@ -6252,7 +8095,7 @@ async function clearAiMemory(env) {
         await env.DB.prepare('DELETE FROM ai_messages').run();
         return apiJson({ success: true });
     } catch (err) {
-        return apiJson({ error: err.message }, 500);
+        return internalError(err);
     }
 }
 // ============================================================================
@@ -6274,7 +8117,7 @@ async function getSettings(env, originUrl) {
             cf_script_name: cfScript || ''
         });
     } catch (err) {
-        return apiJson({ error: err.message }, 500);
+        return internalError(err);
     }
 }
 
@@ -6365,9 +8208,10 @@ async function updateBotToken(request, env, originUrl) {
         } catch (hookErr) {
             return apiJson({ error: `Webhook update failed (${hookErr.message})` }, 500);
         }
+        await logAction(env.DB, null, unchanged ? 'Bot token re-confirmed' : 'Bot token updated / webhook re-registered');
         return apiJson({ success: true });
     } catch (err) {
-        return apiJson({ error: err.message }, 500);
+        return internalError(err);
     }
 }
 
@@ -6390,6 +8234,7 @@ async function handleWebhookTest(env) {
             success: true,
             url: info.url || '',
             expected_url: expectedUrl,
+            registered: !!(info.url),
             url_matches: !!(expectedUrl && info.url === expectedUrl),
             pending_updates: info.pending_update_count || 0,
             last_error: info.last_error_message || '',
@@ -6397,7 +8242,57 @@ async function handleWebhookTest(env) {
             ip_address: info.ip_address || ''
         });
     } catch (err) {
-        return apiJson({ error: err.message }, 500);
+        return internalError(err);
+    }
+}
+
+// Webhook health-check + auto-repair: verifies the webhook is actually
+// registered at Telegram for the stored token and re-registers it when it is
+// missing or points somewhere else (a common state after token changes or
+// manual deletions).
+async function handleWebhookFix(env, originUrl) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        const token = await getSetting(env.DB, 'bot_token');
+        if (!token) return apiJson({ error: 'Bot token not set — configure a token first' }, 400);
+        const info0 = await tgFetchJson(`https://api.telegram.org/bot${token}/getWebhookInfo`);
+        if (!info0.ok) {
+            const msg = info0.description || (info0.error_code ? `error_code ${info0.error_code}` : 'unknown error');
+            return apiJson({ error: `Telegram API error: ${msg}` }, 502);
+        }
+        const before = (info0.result && info0.result.url) || '';
+        const expectedUrl = (await getSetting(env.DB, 'webhook_url')) || `${originUrl}/webhook`;
+        let fixed = false;
+        if (before !== expectedUrl) {
+            let secret = await getSetting(env.DB, 'webhook_secret');
+            if (!secret) {
+                secret = crypto.randomUUID();
+                await setSetting(env.DB, 'webhook_secret', secret);
+            }
+            try {
+                await registerWebhook(token, expectedUrl, secret);
+                fixed = true;
+            } catch (e) {
+                return apiJson({ error: `Failed to register webhook: ${e.message}`, url: before, expected_url: expectedUrl }, 502);
+            }
+            await setSetting(env.DB, 'webhook_url', expectedUrl);
+        }
+        const info1 = await tgFetchJson(`https://api.telegram.org/bot${token}/getWebhookInfo`);
+        const result = info1.ok ? (info1.result || {}) : {};
+        await logAction(env.DB, null, fixed ? 'Webhook was missing/mismatched — re-registered' : 'Webhook health-check: already registered');
+        return apiJson({
+            success: true,
+            fixed,
+            url: result.url || '',
+            expected_url: expectedUrl,
+            registered: !!(result.url),
+            url_matches: !!(result.url && result.url === expectedUrl),
+            pending_updates: result.pending_update_count || 0,
+            last_error: result.last_error_message || ''
+        });
+    } catch (err) {
+        return internalError(err);
     }
 }
 
@@ -6411,9 +8306,20 @@ async function changeAdminPassword(request, env) {
         }
         await initializeDatabase(env.DB);
         await setSetting(env.DB, 'admin_password', await hashPassword(newPassword));
+        await logAction(env.DB, null, 'Admin password changed');
+        // Invalidate all other dashboard sessions so a stolen cookie cannot
+        // outlive a password change; the caller's own session stays alive.
+        const cookie = request.headers.get('Cookie') || '';
+        const currentRaw = cookie.split(';').find(c => c.trim().startsWith('session='));
+        const currentToken = currentRaw ? currentRaw.split('=')[1].trim() : null;
+        if (currentToken) {
+            await env.DB.prepare('DELETE FROM sessions WHERE user_id IS NULL AND token != ?').bind(currentToken).run();
+        } else {
+            await env.DB.prepare('DELETE FROM sessions WHERE user_id IS NULL').run();
+        }
         return apiJson({ success: true });
     } catch (err) {
-        return apiJson({ error: err.message }, 500);
+        return internalError(err);
     }
 }
 
@@ -6438,7 +8344,7 @@ async function getBotInfo(env) {
             short_description: shortDescRes.ok ? shortDescRes.result.short_description : ''
         });
     } catch (err) {
-        return apiJson({ error: err.message }, 500);
+        return internalError(err);
     }
 }
 
@@ -6472,26 +8378,34 @@ async function setBotInfo(request, env) {
         await Promise.all(promises);
         return apiJson({ success: true });
     } catch (err) {
-        return apiJson({ error: err.message }, 500);
+        return internalError(err);
     }
 }
 
 // ============================================================================
 // FACTORY RESET
 // ============================================================================
-async function factoryReset(env) {
+// The dashboard must send the exact confirmation phrase (#13); the old
+// client-side-only check is not a real safeguard.
+async function factoryReset(request, env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
+        let body = null;
+        try { body = await request.json(); } catch (e) {}
+        if (!body || body.confirmation !== 'FACTORY RESET') {
+            return apiJson({ error: 'Confirmation phrase required' }, 400);
+        }
         await initializeDatabase(env.DB);
-        const tables = ['settings', 'users', 'commands', 'sessions', 'logs', 'ai_messages', 'ai_rate_limits', 'blocked_users', 'broadcast_history'];
+        const tables = ['settings', 'users', 'commands', 'sessions', 'logs', 'ai_messages', 'ai_rate_limits', 'blocked_users', 'login_attempts', 'broadcast_history'];
         await runBatchChunks(env.DB, tables.map(t => env.DB.prepare(`DROP TABLE IF EXISTS ${t}`)));
         // The tables were just dropped, so the cached schema-init promise is
         // stale — drop it from the cache so the schema is recreated below.
         dbInitCache.delete(env.DB);
         await initializeDatabase(env.DB);
+        await logAction(env.DB, null, 'FACTORY RESET performed — all data wiped');
         return apiJson({ success: true });
     } catch (err) {
-        return apiJson({ error: err.message }, 500);
+        return internalError(err);
     }
 }
 
@@ -6570,7 +8484,8 @@ async function validateCloudflareToken(request, env) {
 
         return apiJson({ valid: true, accountId, scriptName: scriptName || null });
     } catch (e) {
-        return apiJson({ valid: false, error: e.message }, 500);
+        console.error('Token validation failed:', e);
+        return apiJson({ valid: false, error: 'Internal error while validating token' }, 500);
     }
 }
 
@@ -6599,7 +8514,19 @@ async function performUpdate(request, env) {
             bindings = settingsData.result.bindings;
         }
 
-        const scriptUrl = workerUrl || 'https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/worker.js';
+        // Only allow updating from the project's own repository (#14). An
+        // arbitrary URL would let a hijacked dashboard deploy any code.
+        const DEFAULT_UPDATE_URL = 'https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/worker.js';
+        const allowedHosts = ['raw.githubusercontent.com'];
+        let scriptUrl = workerUrl || DEFAULT_UPDATE_URL;
+        try {
+            const u = new URL(scriptUrl);
+            if (u.protocol !== 'https:' || !allowedHosts.includes(u.hostname)) {
+                return apiJson({ success: false, error: 'Update URL is not allowed' }, 400);
+            }
+        } catch (e) {
+            return apiJson({ success: false, error: 'Invalid update URL' }, 400);
+        }
         const scriptRes = await fetch(scriptUrl);
         if (!scriptRes.ok) {
             return apiJson({ success: false, error: 'Failed to download script from ' + scriptUrl }, 500);
@@ -6647,11 +8574,113 @@ async function performUpdate(request, env) {
 
         return apiJson({ success: true, version: newVersion || 'unknown' });
     } catch (e) {
-        return apiJson({ success: false, error: e.message }, 500);
+        console.error('Update failed:', e);
+        return apiJson({ success: false, error: 'Update failed due to an internal error' }, 500);
     }
 }
 // ============================================================================
 // TELEGRAM BOT ENGINE
+// ============================================================================
+// Per-isolate bot username cache. Groups mention-requirement checks need the
+// bot username on every group message; instead of a getMe round trip per
+// message we read the stored username and refresh from Telegram at most once
+// per hour per isolate.
+const botUsernameCache = { username: null, fetchedAt: 0 };
+const BOT_USERNAME_TTL_MS = 60 * 60 * 1000;
+
+async function getBotUsername(env, BOT_TOKEN) {
+    const now = Date.now();
+    if (botUsernameCache.username && (now - botUsernameCache.fetchedAt) < BOT_USERNAME_TTL_MS) {
+        return botUsernameCache.username;
+    }
+    const stored = await getSetting(env.DB, 'bot_username');
+    if (stored) {
+        botUsernameCache.username = stored;
+        botUsernameCache.fetchedAt = now;
+        return stored;
+    }
+    try {
+        const info = await tgFetchJson(`https://api.telegram.org/bot${BOT_TOKEN}/getMe`);
+        if (info && info.ok && info.result && info.result.username) {
+            botUsernameCache.username = info.result.username;
+            botUsernameCache.fetchedAt = now;
+            return botUsernameCache.username;
+        }
+    } catch (e) { /* fall through */ }
+    return '';
+}
+
+// Central Telegram API client. Centralizing the fetch lets every call get a
+// timeout, an error check, and consistent logging — see #26/#20.
+const TG_API_BASE = 'https://api.telegram.org';
+const TG_TIMEOUT_MS = 10000;
+
+// Non-fatal Telegram error codes: a send that hits these is expected under
+// load and must not be logged as an engine error.
+const TG_BENIGN_ERROR_CODES = new Set([400, 403, 429]);
+
+async function tgCall(token, method, payload, opts = {}) {
+    const body = payload === undefined ? undefined : JSON.stringify(payload);
+    // One bounded retry on 429 so short flood-waits never silently drop a
+    // reply under burst load.
+    const maxAttempts = opts.retry === false ? 1 : 2;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), opts.timeoutMs || TG_TIMEOUT_MS);
+        try {
+            const res = await fetch(`${TG_API_BASE}/bot${token}/${method}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body,
+                signal: ctrl.signal,
+            });
+            const data = await res.json().catch(() => null);
+            if (data && data.ok === true) return data;
+            const description = (data && (data.description || data.error_code)) || `HTTP ${res.status}`;
+            // 400 (parse/bad request), 403 (blocked bot) and 429 (flood) are
+            // routine outcomes for a broadcast to arbitrary chat ids.
+            if (TG_BENIGN_ERROR_CODES.has(res.status)) {
+                console.log(`Telegram ${method} failed: ${description}`);
+            } else {
+                console.error(`Telegram ${method} failed: ${description}`);
+            }
+            const retryAfter = data && data.parameters && data.parameters.retry_after
+                ? parseInt(data.parameters.retry_after, 10) || 1
+                : (res.status === 429 ? 1 : 0);
+            if (attempt < maxAttempts && retryAfter > 0) {
+                await new Promise(r => setTimeout(r, Math.min(retryAfter, 3) * 1000));
+                continue;
+            }
+            return data;
+        } catch (err) {
+            console.error(`Telegram ${method} request failed: ${err.message}`);
+            // A transient network blip must not silently drop a reply — retry
+            // once before giving up.
+            if (attempt < maxAttempts) {
+                await new Promise(r => setTimeout(r, 500));
+                continue;
+            }
+            return null;
+        } finally {
+            clearTimeout(timer);
+        }
+    }
+    return null;
+}
+
+// Fire-and-forget message send: never throws, logs failures.
+async function tgSend(token, method, payload) {
+    return tgCall(token, method, payload);
+}
+
+// Strict send used for critical replies: returns the Telegram result or null.
+async function tgSendStrict(token, method, payload) {
+    const data = await tgCall(token, method, payload);
+    return (data && data.ok) ? data.result : null;
+}
+
+// ============================================================================
+// BOT STRINGS
 // ============================================================================
 const BOT_STRINGS = {
     en: {
@@ -6659,6 +8688,7 @@ const BOT_STRINGS = {
         unauthorized: '⚠️ Unauthorized.',
         back: 'Back',
         rate_limited: '⏳ Too many requests. Please wait a moment and try again.',
+        rate_limited_global: '🌍 The bot is receiving a lot of requests right now. Please try again in a few minutes.',
         welcome: (botName, dashboardUrl) => `👋 Welcome to <b>${botName}</b>!\n\n` +
             `This bot is powered by <a href="https://github.com/Mahan07dev/nyxx">Nyxx</a>, ` +
             `an open‑source Telegram bot builder for Cloudflare Workers.\n\n` +
@@ -6668,6 +8698,8 @@ const BOT_STRINGS = {
 };
 
 function botStrings(languageCode) {
+    // Only English is implemented; the languageCode parameter is kept so the
+    // call sites do not need to change if more languages are added later.
     return BOT_STRINGS.en;
 }
 
@@ -6676,8 +8708,33 @@ function isBackWord(text) {
     return lower === 'back';
 }
 
-async function handleTelegramWebhook(request, env) {
+// Does the AI respond in this chat type at all? Shared by text and callback
+// paths so the two can never disagree.
+function aiEnabledFor(chatType) {
+    if (chatType === 'private') return true;
+    if (chatType === 'group' || chatType === 'supergroup') return true;
+    return false;
+}
+
+async function handleTelegramWebhook(request, env, ctx) {
     if (!env.DB) return new Response('DB not available', { status: 500 });
+
+    // CRITICAL: every path through the webhook must resolve to a real 200
+    // Response. Returning undefined (e.g. a bare Promise.resolve()) makes the
+    // Workers runtime answer Telegram with 500, and Telegram then redelivers
+    // the same update again and again — the bot re-executes the command and
+    // sends the same reply to the user NON-STOP. This was the root cause of
+    // the endless repeated replies.
+    const runWithAck = (p) => {
+        if (ctx && typeof ctx.waitUntil === 'function') {
+            ctx.waitUntil(p.catch(err => console.error('Background update processing failed:', err)));
+            return new Response('OK', { status: 200 });
+        }
+        return p.then(() => new Response('OK', { status: 200 })).catch(err => {
+            console.error('Update processing failed:', err);
+            return new Response('OK', { status: 200 });
+        });
+    };
 
     // If a webhook secret is configured, only Telegram (which echoes it back in
     // the X-Telegram-Bot-Api-Secret-Token header) may deliver updates.
@@ -6686,8 +8743,10 @@ async function handleTelegramWebhook(request, env) {
         const secret = await getSetting(env.DB, 'webhook_secret');
         if (secret) {
             const header = request.headers.get('X-Telegram-Bot-Api-Secret-Token');
-            if (!header || header !== secret) {
-                return new Response('Forbidden', { status: 401 });
+            if (!header || !timingSafeEqual(header, secret)) {
+                // 403 makes Telegram retry and eventually disable the webhook;
+                // 200 acknowledges an unauthorised delivery without retrying.
+                return new Response('OK', { status: 200 });
             }
         }
     } catch (e) {
@@ -6702,10 +8761,47 @@ async function handleTelegramWebhook(request, env) {
         return new Response('OK', { status: 200 });
     }
 
+    // De-duplicate redelivered updates: if this update was already processed
+    // (e.g. the connection dropped right after our 200 OK), never re-run it —
+    // re-running is the other way the same reply gets sent over and over.
+    if (update && typeof update === 'object' && update.update_id !== undefined) {
+        if (wasUpdateSeen(update.update_id)) return new Response('OK', { status: 200 });
+        markUpdateSeen(update.update_id);
+    }
+
+    // Everything else (D1 reads, matching, sends, AI) runs in the background
+    // so Telegram gets its 200 OK immediately. Slow acknowledgements are
+    // another classic cause of Telegram redelivering updates (the "delays").
+    return runWithAck(processTelegramUpdate(update, env));
+}
+
+// De-duplication of webhook updates within this isolate. Telegram retries any
+// delivery it considers unacknowledged; a small TTL map catches the immediate
+// retries that produce duplicate replies.
+const seenUpdateIds = new Map();
+const UPDATE_DEDUP_TTL_MS = 10 * 60 * 1000;
+function wasUpdateSeen(updateId) {
+    const now = Date.now();
+    if (seenUpdateIds.size > 500) {
+        for (const [id, ts] of seenUpdateIds) {
+            if (now - ts > UPDATE_DEDUP_TTL_MS) seenUpdateIds.delete(id);
+        }
+    }
+    const ts = seenUpdateIds.get(updateId);
+    return ts !== undefined && (now - ts) < UPDATE_DEDUP_TTL_MS;
+}
+function markUpdateSeen(updateId) {
+    seenUpdateIds.set(updateId, Date.now());
+}
+
+// Process one already-authenticated Telegram update. Runs in the background
+// (ctx.waitUntil) after the webhook has been acknowledged, so a slow AI
+// provider or a burst of commands never delays the 200 OK.
+async function processTelegramUpdate(update, env) {
     const BOT_TOKEN = await getSetting(env.DB, 'bot_token');
     if (!BOT_TOKEN) {
         console.error('Bot token not set');
-        return new Response('Token not set', { status: 500 });
+        return;
     }
 
     const upsertUser = async (from) => {
@@ -6716,70 +8812,96 @@ async function handleTelegramWebhook(request, env) {
         `).bind(from.id, from.username || '', from.first_name || '').run();
     };
 
+    // Guard every user-supplied field: channels can post updates without a
+    // from (or chat), and malformed ids must not crash the engine.
     try {
-        if (update.message && update.message.text) {
+        if (update.message && update.message.text && update.message.chat && update.message.from) {
             const msg = update.message;
             const chatId = msg.chat.id;
-            const text = msg.text.trim();
             const userId = msg.from.id;
+            if (!userId) return;
+            // Never react to bot-originated messages (ours or other bots').
+            // A bot echoing a command could otherwise trigger itself forever.
+            if (msg.from.is_bot) return;
+
+            const text = String(msg.text || '').trim();
             const languageCode = msg.from.language_code;
             const strings = botStrings(languageCode);
 
-            await upsertUser(msg.from);
-
-            // Check if user is fully blocked
-            const blockType = await isUserBlocked(env, userId);
-            if (blockType === 'full') return new Response('OK', { status: 200 });
+            // Upsert and block-check are independent — run them together.
+            const [, blockType] = await Promise.all([upsertUser(msg.from), isUserBlocked(env, userId)]);
+            if (blockType === 'full') return;
 
             let targetCommand = null;
-            if (isBackWord(text)) {
-                const session = await env.DB.prepare('SELECT command FROM sessions WHERE user_id = ?').bind(userId).first();
+            if (text.startsWith('/')) {
+                // Slash commands: one indexed lookup — cheapest match first.
+                // /cmd@BotName is what Telegram sends in groups; match the
+                // bare name.
+                const bare = text.split('@')[0].split('?')[0].split(' ')[0];
+                const cmdRecord = await env.DB.prepare('SELECT command FROM commands WHERE command = ? AND enabled = 1').bind(bare).first();
+                if (cmdRecord) targetCommand = cmdRecord.command;
+            }
+            if (!targetCommand && isBackWord(text)) {
+                const session = await env.DB.prepare("SELECT command FROM sessions WHERE user_id = ? AND token LIKE 'bot-%'").bind(userId).first();
                 if (session && session.command) {
                     const parentCmd = await env.DB.prepare('SELECT parent FROM commands WHERE command = ?').bind(session.command).first();
+                    // 'Back' at a root command (or with no session) is not an
+                    // error — fall through to normal handling instead of
+                    // replying "Command not found".
                     if (parentCmd && parentCmd.parent) targetCommand = parentCmd.parent;
                 }
-            } else {
-                const allCmds = await env.DB.prepare('SELECT command, reply_keyboard_json FROM commands WHERE enabled = 1 AND show_reply_keyboard = 1').all();
+            }
+            // Reply-keyboard button text → command. First the commands table
+            // (per-command keyboards), then the global actions map that
+            // direct messages / broadcasts contribute to. Only runs when the
+            // cheaper matches missed.
+            if (!targetCommand && !text.startsWith('/')) {
+                const allCmds = await env.DB.prepare('SELECT reply_keyboard_json FROM commands WHERE enabled = 1 AND show_reply_keyboard = 1').all();
                 for (const row of allCmds.results) {
-                    if (row.reply_keyboard_json) {
-                        try {
-                            const buttons = JSON.parse(row.reply_keyboard_json);
-                            if (Array.isArray(buttons)) {
-                                for (const btn of buttons) {
-                                    if (btn.text === text) { targetCommand = btn.command; break; }
-                                }
-                            }
-                        } catch (e) {}
+                    if (!row.reply_keyboard_json) continue;
+                    const spec = kbNormalizeReply(row.reply_keyboard_json);
+                    if (!spec) continue;
+                    for (const btnRow of spec.rows) {
+                        for (const btn of btnRow) {
+                            if (btn.text === text && btn.command) { targetCommand = btn.command; break; }
+                        }
+                        if (targetCommand) break;
                     }
                     if (targetCommand) break;
                 }
-                if (!targetCommand && text.startsWith('/')) {
-                    const cmdRecord = await env.DB.prepare('SELECT command FROM commands WHERE command = ? AND enabled = 1').bind(text).first();
-                    if (cmdRecord) targetCommand = cmdRecord.command;
+                if (!targetCommand) {
+                    const globalActions = await getReplyActions(env.DB);
+                    if (globalActions[text]) targetCommand = globalActions[text];
                 }
             }
-
-            const aiSettings = await getAiSettingsFromDb(env);
 
             if (targetCommand) {
                 const cmdRecord = await env.DB.prepare('SELECT * FROM commands WHERE command = ? AND enabled = 1').bind(targetCommand).first();
                 if (cmdRecord) {
                     await executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, languageCode);
-                    if (aiSettings.ai_enabled === '1' && aiSettings.ai_trigger === 'all_messages' && blockType !== 'ai_only') {
-                        await processAiReply(chatId, userId, text, aiSettings, env, BOT_TOKEN, msg.chat.type, languageCode);
+                    // Optional AI commentary when the trigger asks for every message.
+                    if (blockType !== 'ai_only') {
+                        const aiSettings = await getAiSettingsFromDb(env);
+                        if (aiSettings.ai_enabled === '1' && aiSettings.ai_trigger === 'all_messages') {
+                            await processAiReply(chatId, userId, text, aiSettings, env, BOT_TOKEN, msg.chat.type, languageCode);
+                        }
                     }
-                    return new Response('OK', { status: 200 });
+                    return;
                 }
             }
 
             if (text === '/start') {
                 await sendDefaultStart(chatId, env, BOT_TOKEN, languageCode);
-                if (aiSettings.ai_enabled === '1' && aiSettings.ai_trigger === 'all_messages' && blockType !== 'ai_only') {
-                    await processAiReply(chatId, userId, text, aiSettings, env, BOT_TOKEN, msg.chat.type, languageCode);
+                if (blockType !== 'ai_only') {
+                    const aiSettings = await getAiSettingsFromDb(env);
+                    if (aiSettings.ai_enabled === '1' && aiSettings.ai_trigger === 'all_messages') {
+                        await processAiReply(chatId, userId, text, aiSettings, env, BOT_TOKEN, msg.chat.type, languageCode);
+                    }
                 }
-                return new Response('OK', { status: 200 });
+                return;
             }
 
+            const aiSettings = await getAiSettingsFromDb(env);
             if (aiSettings.ai_enabled === '1') {
                 let shouldReply = true;
                 const trigger = aiSettings.ai_trigger || 'no_command';
@@ -6792,6 +8914,7 @@ async function handleTelegramWebhook(request, env) {
 
                 // Chat type filters
                 if (shouldReply) {
+                    if (!aiEnabledFor(msg.chat.type)) shouldReply = false;
                     const isPrivate = msg.chat.type === 'private';
                     const isGroup = msg.chat.type === 'group' || msg.chat.type === 'supergroup';
                     if (isPrivate && aiSettings.ai_private_reply === '0') shouldReply = false;
@@ -6801,9 +8924,8 @@ async function handleTelegramWebhook(request, env) {
                 // Group mention requirement
                 if (shouldReply && (msg.chat.type === 'group' || msg.chat.type === 'supergroup')) {
                     if (aiSettings.ai_group_mention === '1') {
-                        const botInfo = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getMe`).then(r => r.json());
-                        const botUsername = botInfo.ok ? botInfo.result.username : '';
-                        if (!text.includes('@' + botUsername)) shouldReply = false;
+                        const botUsername = await getBotUsername(env, BOT_TOKEN);
+                        if (!botUsername || !text.includes('@' + botUsername)) shouldReply = false;
                     }
                 }
 
@@ -6822,45 +8944,70 @@ async function handleTelegramWebhook(request, env) {
             } else {
                 await sendMessage(chatId, strings.not_found, BOT_TOKEN, 'HTML');
             }
-            return new Response('OK', { status: 200 });
+            return;
         }
 
-        if (update.callback_query) {
+        if (update.message && !update.message.text && update.message.chat) {
+            const m = update.message;
+            if (m.chat.type === 'private' && m.from && m.from.id && !m.from.is_bot) {
+                const mediaBlockType = await isUserBlocked(env, m.from.id);
+                if (mediaBlockType !== 'full') {
+                    await upsertUser(m.from);
+                    await sendMessage(m.chat.id, botStrings(m.from.language_code).not_found, BOT_TOKEN, 'HTML');
+                }
+            }
+        }
+
+        if (update.callback_query && update.callback_query.message && update.callback_query.message.chat) {
             const cb = update.callback_query;
-            const data = cb.data;
+            const data = typeof cb.data === 'string' ? cb.data.trim() : '';
             const languageCode = cb.from.language_code;
             await upsertUser(cb.from);
             const cbBlockType = await isUserBlocked(env, cb.from.id);
             if (cbBlockType === 'full') {
-                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ callback_query_id: cb.id })
-                });
-                return new Response('OK', { status: 200 });
+                await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
+                return;
             }
             if (data && data.startsWith('/')) {
+                // /start is served by sendDefaultStart, not the commands table.
+                if (data === '/start') {
+                    const answer = tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
+                    await sendDefaultStart(cb.message.chat.id, env, BOT_TOKEN, languageCode);
+                    await answer;
+                    return;
+                }
                 const cmdRecord = await env.DB.prepare('SELECT * FROM commands WHERE command = ? AND enabled = 1').bind(data).first();
+                const answer = tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
                 if (cmdRecord) {
                     await executeCommand(cb.message.chat.id, cb.from.id, cmdRecord, BOT_TOKEN, env, languageCode);
                 }
-                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ callback_query_id: cb.id })
-                });
+                await answer;
+                return;
             } else if (data && cbBlockType !== 'ai_only') {
+                // Custom callback buttons only make sense when the AI is on;
+                // with the AI off they used to trigger the fallback message on
+                // every click. Answer the query and stay quiet instead.
                 const aiSettings = await getAiSettingsFromDb(env);
-                await processAiReply(cb.message.chat.id, cb.from.id, data, aiSettings, env, BOT_TOKEN, cb.message.chat.type, languageCode);
-                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ callback_query_id: cb.id })
-                });
+                if (aiSettings.ai_enabled === '1' && aiEnabledFor(cb.message.chat.type)) {
+                    const answer = tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
+                    await processAiReply(cb.message.chat.id, cb.from.id, data, aiSettings, env, BOT_TOKEN, cb.message.chat.type, languageCode);
+                    await answer;
+                    return;
+                }
+                await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
+                return;
             }
+            return;
         }
     } catch (err) {
         console.error('Webhook error:', err);
     }
-    return new Response('OK', { status: 200 });
 }
+
+// Cache the bot display name (getMyName) so /start does not pay a Telegram
+// round-trip on every call when no name is stored in settings.
+const botNameCache = { name: null, fetchedAt: 0 };
+const BOT_NAME_TTL_MS = 10 * 60 * 1000;
 
 async function sendDefaultStart(chatId, env, BOT_TOKEN, languageCode) {
     const strings = botStrings(languageCode);
@@ -6868,9 +9015,15 @@ async function sendDefaultStart(chatId, env, BOT_TOKEN, languageCode) {
     try {
         const stored = await getSetting(env.DB, 'bot_name');
         if (stored) botName = stored;
-        else {
+        else if (botNameCache.name && (Date.now() - botNameCache.fetchedAt) < BOT_NAME_TTL_MS) {
+            botName = botNameCache.name;
+        } else {
             const nameRes = await tgFetchJson(`https://api.telegram.org/bot${BOT_TOKEN}/getMyName`);
-            if (nameRes.ok && nameRes.result.name) botName = nameRes.result.name;
+            if (nameRes.ok && nameRes.result.name) {
+                botName = nameRes.result.name;
+                botNameCache.name = botName;
+                botNameCache.fetchedAt = Date.now();
+            }
         }
     } catch (e) {}
 
@@ -6885,24 +9038,75 @@ async function sendDefaultStart(chatId, env, BOT_TOKEN, languageCode) {
             [{ text: '🔗 GitHub', url: 'https://github.com/Mahan07dev' }, { text: '📊 Dashboard', url: dashboardUrl }]
         ]
     };
-    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            chat_id: chatId,
-            text: strings.welcome(botName, dashboardUrl),
-            parse_mode: 'HTML',
-            reply_markup: keyboard
-        })
+    await tgCall(BOT_TOKEN, 'sendMessage', {
+        chat_id: chatId,
+        text: strings.welcome(botName, dashboardUrl),
+        parse_mode: 'HTML',
+        reply_markup: keyboard
     });
+}
+
+// Convert authored HTML to readable plain text (used when Telegram rejects
+// the HTML entities of a message and we fall back to a plain resend).
+function htmlToPlain(html) {
+    if (!html) return '';
+    return String(html)
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/(?:p|div|blockquote|pre)>/gi, '\n')
+        .replace(/<[^>]*>/g, '')
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&lt;/gi, '<')
+        .replace(/&gt;/gi, '>')
+        .replace(/&quot;/gi, '"')
+        .replace(/&#39;/gi, "'")
+        .replace(/&amp;/gi, '&');
+}
+
+// Detect Telegram's HTML entity parse failures (bad/unclosed tags, stray <).
+function isHtmlParseError(data) {
+    const desc = String((data && data.description) || '');
+    return /can't parse entities|unsupported start tag|unclosed tag|unclosed angle/i.test(desc);
+}
+
+// Render the text exactly as authored (fully escaped). Used when Telegram
+// rejects an ambiguous entity such as a stray < — nothing is lost this way.
+function htmlToLiteral(html) {
+    return String(html || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// Send text that may contain user-authored HTML. Tries HTML first so authors
+// keep their formatting, and resends as plain text when Telegram rejects the
+// entities — a reply must never be silently dropped.
+async function sendRichText(token, chatId, text, extra = {}) {
+    if (!text) return null;
+    const payload = Object.assign({ chat_id: chatId, text, parse_mode: 'HTML' }, extra);
+    const data = await tgCall(token, 'sendMessage', payload);
+    if (data && data.ok) return data;
+    if (isHtmlParseError(data)) {
+        const desc = String((data && data.description) || '');
+        // Ambiguous entity (e.g. "a < b"): escape everything literally.
+        // Structural tag error (e.g. <div>): strip tags, keep the words.
+        const fallbackText = /unsupported start tag|unclosed tag/i.test(desc) ? htmlToPlain(text) : htmlToLiteral(text);
+        const plainPayload = Object.assign({ chat_id: chatId, text: fallbackText, parse_mode: 'HTML' }, extra);
+        return tgCall(token, 'sendMessage', plainPayload);
+    }
+    return data;
+}
+
+// Streaming previews are plain text: a partial tag (e.g. an unclosed <b>)
+// would fail Telegram's parser on every edit.
+function stripTagsForPreview(text) {
+    return String(text || '').replace(/<[^>]*>/g, '');
 }
 
 async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, languageCode) {
     const strings = botStrings(languageCode);
+    // Bot conversation state lives in the sessions table under a synthetic
+    // token so it is fully separated from dashboard login sessions (#16).
     await env.DB.prepare(`
-        INSERT INTO sessions (user_id, command, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
-        ON CONFLICT(user_id) DO UPDATE SET command = excluded.command, updated_at = CURRENT_TIMESTAMP
-    `).bind(userId, cmdRecord.command).run();
+        INSERT INTO sessions (token, user_id, command, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(token) DO UPDATE SET command = excluded.command, updated_at = CURRENT_TIMESTAMP
+    `).bind('bot-' + userId, userId, cmdRecord.command).run();
 
     if (cmdRecord.is_admin_only) {
         const user = await env.DB.prepare('SELECT role FROM users WHERE id = ?').bind(userId).first();
@@ -6912,75 +9116,109 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, languag
         }
     }
 
-    let replyMarkup = null;
-    if (cmdRecord.buttons_json) {
-        try { replyMarkup = JSON.parse(cmdRecord.buttons_json); } catch (e) {}
+    // Both keyboards flow through the shared pipeline so commands, direct
+    // messages and broadcasts render identically.
+    const built = cmdRecord.buttons_json ? buildReplyMarkup(cmdRecord.buttons_json) : null;
+    const inlineMarkup = built && built.inlineMarkup ? built.inlineMarkup : null;
+
+    let replySpec = (cmdRecord.show_reply_keyboard && cmdRecord.reply_keyboard_json)
+        ? kbNormalizeReply(cmdRecord.reply_keyboard_json) : null;
+    if (replySpec && cmdRecord.parent) {
+        // Sub-commands always offer a way back up the tree.
+        const hasBack = replySpec.rows.some(row => row.some(b => b.text === strings.back));
+        if (!hasBack) replySpec.rows.push([{ text: strings.back, command: '' }]);
+    }
+    const replyKeyboardMarkup = replySpec ? kbReplyMarkup(replySpec) : null;
+    if (replySpec && replySpec.actions && Object.keys(replySpec.actions).length) {
+        await mergeReplyActions(env.DB, replySpec.actions);
     }
 
-    let keyboard = null;
-    if (cmdRecord.show_reply_keyboard && cmdRecord.reply_keyboard_json) {
-        try {
-            const buttons = JSON.parse(cmdRecord.reply_keyboard_json);
-            if (Array.isArray(buttons) && buttons.length > 0) {
-                const rows = [];
-                const rowSize = 3;
-                for (let i = 0; i < buttons.length; i += rowSize) {
-                    rows.push(buttons.slice(i, i + rowSize).map(b => ({ text: b.text })));
-                }
-                if (cmdRecord.parent) rows.push([{ text: strings.back }]);
-                keyboard = rows;
-            }
-        } catch (e) {}
-    }
-    const replyKeyboardMarkup = keyboard ? { keyboard, resize_keyboard: true, one_time_keyboard: false } : undefined;
+    const markup = inlineMarkup || replyKeyboardMarkup || undefined;
 
     if (cmdRecord.response_type === 'photo') {
-        const photoPayload = { chat_id: chatId, photo: cmdRecord.media_url, caption: cmdRecord.content };
-        if (replyMarkup) photoPayload.reply_markup = replyMarkup;
-        else if (replyKeyboardMarkup) photoPayload.reply_markup = replyKeyboardMarkup;
-        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(photoPayload)
-        });
-        // Send reply keyboard separately if both inline and reply keyboards exist
-        if (replyMarkup && replyKeyboardMarkup) {
-            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ chat_id: chatId, text: ' ', reply_markup: replyKeyboardMarkup })
-            });
+        const caption = cmdRecord.content || undefined;
+        const photoPayload = /** @type {Record<string, any>} */ ({ chat_id: chatId, photo: cmdRecord.media_url });
+        if (caption) photoPayload.caption = caption;
+        if (markup) photoPayload.reply_markup = markup;
+        let res = null;
+        if (cmdRecord.media_url) {
+            res = await tgCall(BOT_TOKEN, 'sendPhoto', photoPayload);
+            if (res && !res.ok && caption && isHtmlParseError(res)) {
+                // Telegram rejected the caption entities — resend with a
+                // plain caption instead of dropping the whole photo reply.
+                res = await tgCall(BOT_TOKEN, 'sendPhoto', Object.assign({}, photoPayload, { caption: htmlToPlain(caption) }));
+            }
+        }
+        if ((!res || !res.ok) && cmdRecord.content) {
+            // Photo failed (missing/broken URL, network): never lose the
+            // message content — deliver it as text with the same keyboard.
+            await sendRichText(BOT_TOKEN, chatId, cmdRecord.content, markup ? { reply_markup: markup } : {});
+        }
+        // Both keyboards exist: the reply keyboard rides on a carrier message.
+        if (inlineMarkup && replyKeyboardMarkup) {
+            await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: ' ', reply_markup: replyKeyboardMarkup });
         }
         return;
     }
 
-    const payload = {
-        chat_id: chatId,
-        text: cmdRecord.content,
-        parse_mode: 'HTML'
-    };
-    if (replyMarkup) payload.reply_markup = replyMarkup;
-    else if (replyKeyboardMarkup) payload.reply_markup = replyKeyboardMarkup;
-    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-    });
-    // Send reply keyboard separately if both inline and reply keyboards exist
-    if (replyMarkup && replyKeyboardMarkup) {
-        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: chatId, text: ' ', reply_markup: replyKeyboardMarkup })
-        });
+    const extra = /** @type {Record<string, any>} */ ({});
+    if (markup) extra.reply_markup = markup;
+    if (cmdRecord.content) {
+        // HTML first with a plain-text fallback: a stray < or & in the command
+        // content used to make Telegram reject the whole reply silently.
+        await sendRichText(BOT_TOKEN, chatId, cmdRecord.content, extra);
+    } else if (extra.reply_markup) {
+        // Keyboard-only command: Telegram only shows a keyboard attached to a
+        // message, so send a minimal carrier message for it.
+        await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: ' ', reply_markup: extra.reply_markup });
+    }
+    // Both keyboards exist: the reply keyboard rides on a carrier message.
+    if (inlineMarkup && replyKeyboardMarkup) {
+        await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: ' ', reply_markup: replyKeyboardMarkup });
     }
 }
 
+// Telegram's hard limit for a single message.
+const TG_MESSAGE_LIMIT = 4096;
+
+// Split long text into Telegram-sized chunks (#4). Split preference:
+// paragraph (blank line) > newline > space > hard cut, so chunks stay readable.
+function splitTelegramMessage(text, limit = TG_MESSAGE_LIMIT) {
+    if (!text) return [];
+    if (text.length <= limit) return [text];
+    const chunks = [];
+    let rest = text;
+    while (rest.length > limit) {
+        let cut = rest.lastIndexOf('\n\n', limit);
+        if (cut < limit * 0.3) cut = rest.lastIndexOf('\n', limit);
+        if (cut < limit * 0.3) cut = rest.lastIndexOf(' ', limit);
+        if (cut <= 0) cut = limit;
+        chunks.push(rest.slice(0, cut));
+        rest = rest.slice(cut).replace(/^\n+/, '');
+    }
+    if (rest) chunks.push(rest);
+    return chunks;
+}
+
 async function sendMessage(chatId, text, BOT_TOKEN, parseMode) {
-    let finalText = text;
-    if (parseMode === 'HTML') finalText = escapeTelegramHTML(text);
-    const payload = { chat_id: chatId, text: finalText };
-    if (parseMode) payload.parse_mode = parseMode;
-    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-    });
+    if (!text) return;
+    const chunks = splitTelegramMessage(text);
+    for (const chunk of chunks) {
+        let finalText = chunk;
+        if (parseMode === 'HTML') finalText = escapeTelegramHTML(finalText);
+        const payload = /** @type {Record<string, any>} */ ({ chat_id: chatId, text: finalText });
+        if (parseMode) payload.parse_mode = parseMode;
+        const data = await tgCall(BOT_TOKEN, 'sendMessage', payload);
+        // If HTML parsing failed (e.g. the AI produced a malformed tag),
+        // resend as plain text instead of dropping the reply entirely (#5).
+        if ((!data || !data.ok) && parseMode === 'HTML') {
+            if (isHtmlParseError(data)) {
+                // finalText is escaped HTML: strip tags AND decode entities,
+                // otherwise the plain resend shows double-escaped text.
+                await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: htmlToPlain(finalText) });
+            }
+        }
+    }
 }
 
 async function getAiHistory(db, chatId, limit) {
@@ -7003,20 +9241,21 @@ async function trimAiMessages(db, chatId, keep) {
 
 async function processAiReply(chatId, userId, text, aiSettings, env, BOT_TOKEN, chatType, languageCode) {
     const strings = botStrings(languageCode);
+    // Hoisted above the try so the error handler can clean up a stuck
+    // streaming preview even when the failure happens mid-stream.
+    let streamMsgId = null;
     try {
         // Typing indicator
         if (aiSettings.ai_typing_indicator === '1') {
-            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendChatAction`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ chat_id: chatId, action: 'typing' })
-            });
+            await tgCall(BOT_TOKEN, 'sendChatAction', { chat_id: chatId, action: 'typing' });
         }
 
         // Rate limiting (per user per minute)
         const rateLimit = parseInt(aiSettings.ai_rate_limit) || 0;
         if (rateLimit > 0) {
             const minute = Math.floor(Date.now() / 60000);
-            await env.DB.prepare('DELETE FROM ai_rate_limits WHERE minute < ?').bind(minute - 1440).run();
+            // Cleanup of old buckets happens in the daily cron, not on every
+            // message — one less D1 round-trip per reply.
             await env.DB.prepare(`
                 INSERT INTO ai_rate_limits (user_id, minute, count) VALUES (?, ?, 1)
                 ON CONFLICT(user_id, minute) DO UPDATE SET count = count + 1
@@ -7024,6 +9263,33 @@ async function processAiReply(chatId, userId, text, aiSettings, env, BOT_TOKEN, 
             const row = await env.DB.prepare('SELECT count FROM ai_rate_limits WHERE user_id = ? AND minute = ?').bind(userId, minute).first();
             if (row && row.count > rateLimit) {
                 await sendMessage(chatId, strings.rate_limited, BOT_TOKEN, 'HTML');
+                return;
+            }
+        }
+
+        // Global rate limit (per minute or per hour across ALL users). Stored
+        // under the reserved user_id = 0 sentinel in the same bucket table;
+        // the owner can disable it (limit 0) and rely on the per-user cap,
+        // or combine both.
+        const globalLimit = parseInt(aiSettings.ai_global_rate_limit) || 0;
+        if (globalLimit > 0) {
+            const minute = Math.floor(Date.now() / 60000);
+            const isHour = aiSettings.ai_global_rate_window === 'hour';
+            const windowMinute = isHour ? Math.floor(minute / 60) * 60 : minute;
+            await env.DB.prepare(`
+                INSERT INTO ai_rate_limits (user_id, minute, count) VALUES (0, ?, 1)
+                ON CONFLICT(user_id, minute) DO UPDATE SET count = count + 1
+            `).bind(minute).run();
+            let used = 0;
+            if (isHour) {
+                const row = await env.DB.prepare('SELECT COALESCE(SUM(count), 0) as n FROM ai_rate_limits WHERE user_id = 0 AND minute >= ?').bind(windowMinute).first();
+                used = row ? row.n : 0;
+            } else {
+                const row = await env.DB.prepare('SELECT count FROM ai_rate_limits WHERE user_id = 0 AND minute = ?').bind(minute).first();
+                used = row ? row.count : 0;
+            }
+            if (used > globalLimit) {
+                await sendMessage(chatId, strings.rate_limited_global, BOT_TOKEN, 'HTML');
                 return;
             }
         }
@@ -7045,13 +9311,35 @@ async function processAiReply(chatId, userId, text, aiSettings, env, BOT_TOKEN, 
         let history = [];
         if (memoryLimit > 0) history = await getAiHistory(env.DB, chatId, memoryLimit);
 
+        // Opt-in streaming (#30): when enabled, progressively edit a single
+        // Telegram message while tokens arrive from the provider. Retries and
+        // fallback providers run non-streamed.
+        const streaming = aiSettings.ai_streaming === '1';
         let reply = null;
         let mainError = null;
+        // All preview sends/edits are serialized in order and awaited before
+        // the final edit, so a preview can never race or overwrite the reply.
+        let publishChain = Promise.resolve();
+        let lastPreview = '';
         try {
-            reply = await callAiCompletion(aiSettings, history, text, ctx, 'main');
+            const onChunk = streaming ? (partial) => {
+                const t = stripTagsForPreview(partial);
+                if (!t || t === lastPreview) return;
+                lastPreview = t;
+                const body = (t + ' ▌').slice(0, 4000);
+                publishChain = publishChain.then(async () => {
+                    if (streamMsgId === null) {
+                        const data = await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: body });
+                        if (data && data.ok && data.result && data.result.message_id) streamMsgId = data.result.message_id;
+                    } else {
+                        await tgCall(BOT_TOKEN, 'editMessageText', { chat_id: chatId, message_id: streamMsgId, text: body });
+                    }
+                }).catch(() => {});
+            } : null;
+            reply = await callAiCompletion(aiSettings, history, text, ctx, 'main', undefined, streaming, onChunk);
         } catch (err) {
             mainError = err.message;
-            // Optional single retry on the main provider
+            // Optional single retry on the main provider (non-streamed)
             if (aiSettings.ai_retry_on_failure === '1') {
                 try {
                     reply = await callAiCompletion(aiSettings, history, text, ctx, 'main');
@@ -7073,22 +9361,51 @@ async function processAiReply(chatId, userId, text, aiSettings, env, BOT_TOKEN, 
             }
             if (mainError) throw new Error(mainError);
         }
+        // An empty provider response must fall through to the fallback message
+        // instead of silently sending nothing.
+        if (!reply || !String(reply).trim()) {
+            throw new Error('Empty response from AI provider');
+        }
 
-        if (memoryLimit > 0) {
+        // If streaming produced a placeholder message, replace it with the
+        // final formatted text; otherwise send normally.
+        let sentFinal = false;
+        if (streamMsgId !== null) {
+            await publishChain;
+            const finalHtml = escapeTelegramHTML(reply || '').slice(0, 4000);
+            const edit = await tgCall(BOT_TOKEN, 'editMessageText', { chat_id: chatId, message_id: streamMsgId, text: finalHtml, parse_mode: 'HTML' });
+            sentFinal = !!(edit && edit.ok);
+            if (!sentFinal) {
+                // The final edit can fail on Telegram's entity parser — fall
+                // back to plain text on the same message, never leave the ▌.
+                const plainEdit = await tgCall(BOT_TOKEN, 'editMessageText', { chat_id: chatId, message_id: streamMsgId, text: htmlToPlain(reply || '').slice(0, 4000) });
+                sentFinal = !!(plainEdit && plainEdit.ok);
+            }
+        }
+
+        // Memory and RTL must apply for both streamed and non-streamed replies.
+        if (memoryLimit > 0 && reply) {
             await saveAiMessage(env.DB, chatId, 'user', text);
             await saveAiMessage(env.DB, chatId, 'assistant', reply);
             await trimAiMessages(env.DB, chatId, memoryLimit);
         }
 
-        // Artificial delay before replying
-        const delay = parseInt(aiSettings.ai_response_delay) || 0;
-        if (delay > 0) await new Promise(r => setTimeout(r, Math.min(delay, 5000)));
-
         if (aiSettings.ai_rtl_support === '1' && reply) {
             reply = addRtlMarkToPersian(reply);
         }
 
-        await sendMessage(chatId, reply, BOT_TOKEN, 'HTML');
+        if (!sentFinal) {
+            if (streamMsgId !== null) {
+                // Both final edits failed: remove the stuck preview (still
+                // showing the ▌ cursor) so the chat is not left with an
+                // orphan partial message next to the fresh reply.
+                await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: streamMsgId });
+            }
+            // Artificial delay before replying
+            const delay = parseInt(aiSettings.ai_response_delay) || 0;
+            if (delay > 0) await new Promise(r => setTimeout(r, Math.min(delay, 5000)));
+            await sendMessage(chatId, reply, BOT_TOKEN, 'HTML');
+        }
 
         // Suggested quick replies as one-time reply keyboard
         if (aiSettings.ai_suggested_questions_enabled === '1') {
@@ -7101,14 +9418,13 @@ async function processAiReply(chatId, userId, text, aiSettings, env, BOT_TOKEN, 
                     }
                     const oneTime = aiSettings.ai_suggested_one_time !== '0';
                     const replyKeyboard = { keyboard: rows, resize_keyboard: true, one_time_keyboard: oneTime };
-                    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            chat_id: chatId,
-                            reply_markup: replyKeyboard,
-                            parse_mode: 'HTML'
-                        })
+                    // text is mandatory on sendMessage — omitting it made
+                    // Telegram reject the keyboard with a 400 so the quick
+                    // replies never appeared.
+                    await tgCall(BOT_TOKEN, 'sendMessage', {
+                        chat_id: chatId,
+                        text: ' ',
+                        reply_markup: replyKeyboard
                     });
                 }
             } catch (e) {}
@@ -7117,6 +9433,11 @@ async function processAiReply(chatId, userId, text, aiSettings, env, BOT_TOKEN, 
         console.error('AI reply error:', err);
         const fallback = aiSettings.ai_fallback || 'Sorry, I am currently unavailable. Please try again later.';
         try {
+            if (streamMsgId !== null) {
+                // The AI failed after streaming started: clear the partial
+                // preview before showing the fallback message.
+                await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: streamMsgId });
+            }
             await sendMessage(chatId, fallback, BOT_TOKEN, 'HTML');
         } catch (e) {
             console.error('Fallback send failed:', e);
