@@ -1,6 +1,6 @@
 {
-  "version": "3.1.0",
-  "released": "2026-08-25",
-  "notes": "✨ Broadcast, User Management Tab, Custom Backup, Skeleton Loaders, Keyboard Reordering, and more.",
+  "version": "3.2.0",
+  "released": "2026-09-21",
+  "notes": "🚀 Cron/Retention manager, Audit Logs, Streaming AI replies, Command Packs, shared Keyboard Builder, editable/deletable messages, photo broadcasts & delivery pacing. Plus a critical fix for the endless-reply bug and PBKDF2 password hashing.",
   "worker_url": "https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/worker.js"
 }
