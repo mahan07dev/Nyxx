@@ -6061,12 +6061,12 @@ const SCHEMA_VERSION = 3;
 const MIGRATIONS = {
     // 1 -> 2: bot conversation state now uses synthetic 'bot-<user_id>'
     // tokens so it never collides with dashboard session rows (#16).
-    2: [
-        `INSERT INTO sessions (token, user_id, command, created_at, updated_at)
-         SELECT 'bot-' || user_id, user_id, command, created_at, updated_at
-         FROM sessions WHERE user_id IS NOT NULL AND token NOT LIKE 'bot-%'`,
-        `DELETE FROM sessions WHERE user_id IS NOT NULL AND token NOT LIKE 'bot-%'`,
-    ],
+2: [
+    `INSERT OR REPLACE INTO sessions (token, user_id, command, created_at, updated_at)
+     SELECT 'bot-' || user_id, user_id, command, created_at, updated_at
+     FROM sessions WHERE user_id IS NOT NULL AND (token IS NULL OR token NOT LIKE 'bot-%')`,
+    `DELETE FROM sessions WHERE user_id IS NOT NULL AND (token IS NULL OR token NOT LIKE 'bot-%')`,
+],
     // 2 -> 3: sent-message tracking (edit/delete from the dashboard) and
     // broadcast photo/kind columns. ALTER TABLE statements are wrapped by the
     // runner so they are safe to re-run.
@@ -9103,10 +9103,13 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, languag
     const strings = botStrings(languageCode);
     // Bot conversation state lives in the sessions table under a synthetic
     // token so it is fully separated from dashboard login sessions (#16).
-    await env.DB.prepare(`
-        INSERT INTO sessions (token, user_id, command, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-        ON CONFLICT(token) DO UPDATE SET command = excluded.command, updated_at = CURRENT_TIMESTAMP
-    `).bind('bot-' + userId, userId, cmdRecord.command).run();
+await env.DB.prepare(`
+    INSERT INTO sessions (token, user_id, command, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(user_id) DO UPDATE SET
+        token = excluded.token,
+        command = excluded.command,
+        updated_at = CURRENT_TIMESTAMP
+`).bind('bot-' + userId, userId, cmdRecord.command).run();
 
     if (cmdRecord.is_admin_only) {
         const user = await env.DB.prepare('SELECT role FROM users WHERE id = ?').bind(userId).first();
