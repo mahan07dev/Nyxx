@@ -480,8 +480,8 @@ Cloudflare's free plan is sufficient for most personal projects.
 
 <p align="center">
 
-<a href="screenshots/dashboard.webp">
-  <img src="screenshots/dashboard.png" width="80%" alt="Dashboard">
+<a href="screenshots/screenshot.png">
+  <img src="screenshots/screenshot.png" width="80%" alt="Dashboard">
 </a>
 
 </p>
