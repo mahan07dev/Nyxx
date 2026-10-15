@@ -1,529 +1,1212 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="auto">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Nyxx – Installer</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="shortcut icon" href="https://raw.githubusercontent.com/Mahan07dev/Nyxx/refs/heads/main/logo.webp" type="image/x-icon">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <style>
 :root {
-  --bg: #05060a; --bg-alt: #090b12; --card: rgba(255,255,255,.04); --card2: rgba(255,255,255,.06);
-  --line: rgba(255,255,255,.09); --line2: rgba(255,255,255,.16); --tx: #eef1f7; --mu: #9aa4b8;
-  --cyan: #22d3ee; --violet: #a855f7;
-  --grad: linear-gradient(120deg, #22d3ee 0%, #818cf8 50%, #a855f7 100%);
-  --ok: #34d399; --bad: #f87171; --warn: #f59e0b;
-  --r: 16px; --code: #0b0e16; --font: 'Inter', system-ui, -apple-system, sans-serif;
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+    --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px;
+    --s6: 24px; --s7: 28px; --s8: 32px; --s10: 40px; --s12: 48px; --s16: 64px;
+
+    --r-xs: 6px; --r-sm: 10px; --r-md: 14px; --r-lg: 18px; --r-xl: 24px; --r-pill: 999px;
+
+    --fs-large: 34px; --fs-title1: 28px; --fs-title2: 22px; --fs-title3: 20px;
+    --fs-headline: 17px; --fs-body: 17px; --fs-callout: 16px; --fs-subhead: 15px;
+    --fs-footnote: 13px; --fs-caption: 12px; --fs-caption2: 11px;
+
+    --fill-1: rgba(120,120,128,0.12);
+    --fill-2: rgba(120,120,128,0.16);
+    --fill-3: rgba(120,120,128,0.24);
 }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
+
+html[data-theme="light"] {
+    --bg: #f2f2f7; --bg-elev: #ffffff;
+    --surface: #ffffff; --surface-2: #f2f2f7; --surface-3: #e5e5ea;
+    --text: #1c1c1e; --text-2: #3a3a3c; --text-3: #6e6e73; --text-4: #8e8e93;
+    --accent: #007aff; --accent-2: #0066cc; --accent-soft: rgba(0,122,255,0.10);
+    --green: #34c759; --green-soft: rgba(52,199,89,0.12);
+    --red: #ff3b30; --red-soft: rgba(255,59,48,0.10);
+    --orange: #ff9500; --orange-soft: rgba(255,149,0,0.12);
+    --yellow: #ffcc00; --purple: #5e5ce6; --purple-soft: rgba(94,92,230,0.12);
+    --teal: #30b0c7;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.06);
+    --shadow-lg: 0 18px 50px rgba(0,0,0,0.14);
+    --glass: rgba(255,255,255,0.72);
+    --hairline: rgba(60,60,67,0.13);
+    --hairline-2: rgba(60,60,67,0.08);
+}
+
+html[data-theme="dark"] {
+    --bg: #000000; --bg-elev: #1c1c1e;
+    --surface: #1c1c1e; --surface-2: #2c2c2e; --surface-3: #3a3a3c;
+    --text: #f2f2f7; --text-2: #d1d1d6; --text-3: #98989d; --text-4: #8e8e93;
+    --accent: #0a84ff; --accent-2: #409cff; --accent-soft: rgba(10,132,255,0.18);
+    --green: #30d158; --green-soft: rgba(48,209,88,0.16);
+    --red: #ff453a; --red-soft: rgba(255,69,58,0.16);
+    --orange: #ff9f0a; --orange-soft: rgba(255,159,10,0.16);
+    --yellow: #ffd60a; --purple: #bf5af2; --purple-soft: rgba(191,90,242,0.16);
+    --teal: #40c8e0;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
+    --shadow-md: 0 6px 20px rgba(0,0,0,0.5);
+    --shadow-lg: 0 24px 60px rgba(0,0,0,0.7);
+    --glass: rgba(28,28,30,0.72);
+    --hairline: rgba(120,120,128,0.32);
+    --hairline-2: rgba(120,120,128,0.20);
+    --fill-1: rgba(120,120,128,0.24);
+    --fill-2: rgba(120,120,128,0.32);
+    --fill-3: rgba(120,120,128,0.42);
+}
+
+@media (prefers-color-scheme: dark) {
+    html[data-theme="auto"] {
+        --bg: #000000; --bg-elev: #1c1c1e;
+        --surface: #1c1c1e; --surface-2: #2c2c2e; --surface-3: #3a3a3c;
+        --text: #f2f2f7; --text-2: #d1d1d6; --text-3: #98989d; --text-4: #8e8e93;
+        --accent: #0a84ff; --accent-2: #409cff; --accent-soft: rgba(10,132,255,0.18);
+        --green: #30d158; --green-soft: rgba(48,209,88,0.16);
+        --red: #ff453a; --red-soft: rgba(255,69,58,0.16);
+        --orange: #ff9f0a; --orange-soft: rgba(255,159,10,0.16);
+        --yellow: #ffd60a; --purple: #bf5af2; --purple-soft: rgba(191,90,242,0.16);
+        --teal: #40c8e0;
+        --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
+        --shadow-md: 0 6px 20px rgba(0,0,0,0.5);
+        --shadow-lg: 0 24px 60px rgba(0,0,0,0.7);
+        --glass: rgba(28,28,30,0.72);
+        --hairline: rgba(120,120,128,0.32);
+        --hairline-2: rgba(120,120,128,0.20);
+        --fill-1: rgba(120,120,128,0.24);
+        --fill-2: rgba(120,120,128,0.32);
+        --fill-3: rgba(120,120,128,0.42);
+    }
+}
+@media (prefers-color-scheme: light) {
+    html[data-theme="auto"] {
+        --bg: #f2f2f7; --bg-elev: #ffffff;
+        --surface: #ffffff; --surface-2: #f2f2f7; --surface-3: #e5e5ea;
+        --text: #1c1c1e; --text-2: #3a3a3c; --text-3: #6e6e73; --text-4: #8e8e93;
+        --accent: #007aff; --accent-2: #0066cc; --accent-soft: rgba(0,122,255,0.10);
+        --green: #34c759; --green-soft: rgba(52,199,89,0.12);
+        --red: #ff3b30; --red-soft: rgba(255,59,48,0.10);
+        --orange: #ff9500; --orange-soft: rgba(255,149,0,0.12);
+        --yellow: #ffcc00; --purple: #5e5ce6; --purple-soft: rgba(94,92,230,0.12);
+        --teal: #30b0c7;
+        --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+        --shadow-md: 0 4px 16px rgba(0,0,0,0.06);
+        --shadow-lg: 0 18px 50px rgba(0,0,0,0.14);
+        --glass: rgba(255,255,255,0.72);
+        --hairline: rgba(60,60,67,0.13);
+        --hairline-2: rgba(60,60,67,0.08);
+        --fill-1: rgba(120,120,128,0.12);
+        --fill-2: rgba(120,120,128,0.16);
+        --fill-3: rgba(120,120,128,0.24);
+    }
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html { -webkit-text-size-adjust: 100%; }
 body {
-  background: var(--bg); color: var(--tx); font-family: var(--font); line-height: 1.6;
-  min-height: 100vh; display: flex; justify-content: center; align-items: flex-start;
-  padding: 16px;
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: var(--font); font-size: var(--fs-body); line-height: 1.47;
+    letter-spacing: -0.011em; -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    display: flex; justify-content: center; align-items: flex-start;
 }
-.wrap { max-width: 600px; width: 100%; padding-top: 16px; padding-bottom: 40px; }
-@media (min-width: 768px) { .wrap { padding-top: 40px; padding-bottom: 60px; } }
-
-.card {
-  background: var(--card); border: 1px solid var(--line); border-radius: var(--r);
-  padding: 24px 20px; margin: 12px 0; backdrop-filter: blur(4px);
-  animation: fadeIn 0.35s ease-out;
-}
-@media (min-width: 768px) { .card { padding: 28px 24px; margin: 16px 0; } }
-
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+h1, h2, h3, h4 { margin: 0; letter-spacing: -0.024em; line-height: 1.15; font-weight: 700; color: var(--text); }
+h1 { font-size: var(--fs-large); }
+h2 { font-size: var(--fs-title2); }
+h3 { font-size: var(--fs-title3); }
+h4 { font-size: var(--fs-headline); }
+p { margin: 0 0 var(--s3); }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code, .mono { font-family: var(--mono); font-size: 0.88em; }
+code { background: var(--fill-1); padding: 2px 6px; border-radius: var(--r-xs); color: var(--text-2); }
+::selection { background: var(--accent-soft); }
+input, textarea, select, button { font-family: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-xs); outline-offset: 3px; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--fill-2); border-radius: 8px; border: 2px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background: var(--fill-3); background-clip: content-box; }
 .hidden { display: none !important; }
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
 
-/* Stepper */
-.stepper { display: flex; align-items: center; justify-content: center; gap: 4px; margin-bottom: 16px; }
-.step-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line); transition: all 0.3s; }
-.step-dot.active { background: var(--cyan); box-shadow: 0 0 8px rgba(34,211,238,0.35); transform: scale(1.3); }
-.step-dot.completed { background: var(--ok); }
-.step-line { flex: 1; height: 2px; background: var(--line); max-width: 24px; transition: all 0.3s; }
-.step-line.completed { background: var(--ok); }
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+.wrap {
+    max-width: 640px; width: 100%; position: relative;
+    padding: var(--s4) var(--s4) var(--s12);
+}
+@media (min-width: 768px) {
+    .wrap { padding: var(--s10) var(--s6) var(--s16); }
+}
 
-/* Buttons */
+/* Small floating theme button */
+.theme-toggle {
+    position: fixed;
+    top: calc(env(safe-area-inset-top) + 12px); right: 12px; z-index: 90;
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--glass);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border: 1px solid var(--hairline);
+    color: var(--text-2); cursor: pointer; font-size: 15px;
+    display: inline-flex; align-items: center; justify-content: center;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), background 0.16s, color 0.16s;
+}
+.theme-toggle:hover { background: var(--surface); color: var(--text); }
+.theme-toggle:active { transform: scale(0.92); }
+@media (min-width: 768px) {
+    .theme-toggle { top: calc(env(safe-area-inset-top) + 20px); right: 20px; }
+}
+
+/* ============================================================
+   CARD / SURFACES
+   ============================================================ */
+.card {
+    background: var(--surface);
+    border-radius: var(--r-lg);
+    padding: var(--s5);
+    margin-bottom: var(--s4);
+    box-shadow: var(--shadow-sm);
+    border: 0.5px solid var(--hairline-2);
+    animation: cardIn 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
+}
+@media (min-width: 768px) {
+    .card { padding: var(--s8) var(--s8); border-radius: var(--r-xl); margin-bottom: var(--s5); box-shadow: var(--shadow-md); }
+}
+@keyframes cardIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+}
+
+/* ============================================================
+   STEP HEADER (back link + title + desc)
+   ============================================================ */
+.step-card h2 {
+    display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap;
+    font-size: var(--fs-title1); letter-spacing: -0.028em;
+}
+@media (min-width: 768px) { .step-card h2 { font-size: var(--fs-large); } }
+.step-card h2 .grad {
+    background: linear-gradient(135deg, var(--accent), var(--purple));
+    -webkit-background-clip: text; background-clip: text;
+    color: transparent;
+}
+.step-card .desc {
+    color: var(--text-3); margin: var(--s2) 0 var(--s6);
+    font-size: var(--fs-subhead); line-height: 1.5; letter-spacing: -0.005em;
+}
+@media (min-width: 768px) { .step-card .desc { font-size: var(--fs-callout); } }
+
+.back-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: var(--accent); background: none; border: none; padding: 0;
+    font-size: var(--fs-subhead); font-weight: 500;
+    cursor: pointer; margin-bottom: var(--s4);
+    transition: opacity 0.16s;
+    min-height: 24px;
+}
+.back-link:hover { text-decoration: none; opacity: 0.7; }
+.back-link i { font-size: 12px; }
+
+/* ============================================================
+   STEPPER
+   ============================================================ */
+.stepper {
+    display: flex; align-items: center; justify-content: center;
+    gap: 0; margin: 0 auto var(--s6); max-width: 300px;
+}
+.step-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--fill-3);
+    transition: all 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+    flex-shrink: 0;
+}
+.step-dot.active {
+    background: var(--accent);
+    box-shadow: 0 0 0 5px var(--accent-soft);
+    transform: scale(1);
+}
+.step-dot.completed { background: var(--accent); }
+.step-line {
+    flex: 1; height: 1.5px; background: var(--fill-2);
+    max-width: 36px; border-radius: 1px;
+    transition: background 0.32s;
+}
+.step-line.completed { background: var(--accent); }
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
 .btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  background: var(--grad); color: #05060a; font-weight: 700; font-size: 0.95rem;
-  padding: 12px 24px; border-radius: 12px; border: none; cursor: pointer;
-  font-family: inherit; transition: transform .15s, opacity .15s, box-shadow .2s;
-  text-decoration: none; width: 100%; min-height: 46px;
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 8px;
+    min-height: 50px; padding: 0 22px;
+    border-radius: var(--r-md);
+    border: none; font-size: var(--fs-headline); font-weight: 600;
+    letter-spacing: -0.01em; cursor: pointer; user-select: none;
+    background: var(--accent); color: #fff;
+    width: 100%;
+    transition: transform 0.12s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.16s, background 0.16s, filter 0.16s;
+    text-decoration: none;
 }
-@media (min-width: 768px) { .btn { font-size: 1rem; padding: 14px 32px; } }
-.btn:hover { box-shadow: 0 4px 20px rgba(34,211,238,0.2); }
-.btn:active { transform: scale(.96); }
-.btn-ghost { background: var(--card2); border: 1px solid var(--line2); color: var(--tx); box-shadow: none; }
-.btn-ghost:hover { box-shadow: none; background: rgba(255,255,255,0.08); }
-.btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-sm { padding: 8px 16px; font-size: 0.85rem; width: auto; min-height: 36px; }
-.btn-danger { background: linear-gradient(120deg, #f87171, #ef4444); color: #fff; }
-.btn-danger:hover { box-shadow: 0 4px 20px rgba(248,113,113,0.2); }
-.btn-warn { background: linear-gradient(120deg, #f59e0b, #d97706); color: #05060a; }
+.btn:hover:not(:disabled) { filter: brightness(1.06); text-decoration: none; }
+.btn:active:not(:disabled) { transform: scale(0.97); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn i { font-size: 0.95em; opacity: 0.95; }
 
-/* Splash */
-#splash { text-align: center; padding: 20px 10px; }
-#splash .logo img { width: 64px; height: 64px; border-radius: 14px; }
-@media (min-width: 768px) { #splash .logo img { width: 80px; height: 80px; border-radius: 16px; } }
-#splash h1 { font-size: 2rem; font-weight: 800; margin: 12px 0 6px; }
-@media (min-width: 768px) { #splash h1 { font-size: 2.6rem; margin: 16px 0 8px; } }
-#splash .grad { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
-#splash .sub { color: var(--mu); font-size: 1rem; margin: 8px 0 20px; }
-@media (min-width: 768px) { #splash .sub { font-size: 1.1rem; margin: 10px 0 24px; } }
-#splash .creator { margin: 16px 0; font-size: 0.9rem; color: var(--mu); }
-@media (min-width: 768px) { #splash .creator { margin: 24px 0; font-size: 1rem; } }
-#splash .creator a { color: var(--cyan); text-decoration: none; font-weight: 600; }
-#splash .creator a:hover { text-decoration: underline; }
+.btn.btn-ghost {
+    background: var(--fill-1); color: var(--text);
+    box-shadow: none;
+}
+.btn.btn-ghost:hover:not(:disabled) { background: var(--fill-2); filter: none; }
+.btn.btn-danger { background: var(--red); color: #fff; }
+.btn.btn-warn { background: var(--orange); color: #fff; }
 
-/* Step cards */
-.step-card h2 { font-size: 1.3rem; font-weight: 800; margin: 0 0 6px; }
-@media (min-width: 768px) { .step-card h2 { font-size: 1.5rem; } }
-.step-card .desc { color: var(--mu); margin: 0 0 18px; font-size: 0.9rem; }
-@media (min-width: 768px) { .step-card .desc { margin: 0 0 20px; font-size: 0.95rem; } }
+.btn.btn-sm {
+    min-height: 38px; padding: 0 16px;
+    font-size: var(--fs-subhead); border-radius: var(--r-sm);
+    width: auto;
+}
+.btn.btn-lg { min-height: 54px; font-size: 17px; }
 
-/* Proxy options */
+/* ============================================================
+   SPLASH
+   ============================================================ */
+#splash { text-align: center; padding: var(--s4) 0 var(--s2); }
+#splash .logo img {
+    width: 80px; height: 80px; border-radius: 20px;
+    box-shadow: 0 12px 32px -10px rgba(0,122,255,0.35), 0 2px 6px rgba(0,0,0,0.06);
+}
+@media (min-width: 768px) {
+    #splash { padding: var(--s6) 0 var(--s2); }
+    #splash .logo img { width: 96px; height: 96px; border-radius: 24px; }
+}
+#splash h1 {
+    font-size: 36px; font-weight: 700;
+    letter-spacing: -0.035em;
+    margin: var(--s5) 0 var(--s2);
+    line-height: 1.1;
+}
+@media (min-width: 768px) { #splash h1 { font-size: 44px; } }
+#splash h1 .grad {
+    background: linear-gradient(135deg, var(--accent), var(--purple));
+    -webkit-background-clip: text; background-clip: text;
+    color: transparent;
+}
+#splash .sub {
+    color: var(--text-3); font-size: var(--fs-callout);
+    margin: var(--s2) auto var(--s6); max-width: 340px;
+    line-height: 1.45; letter-spacing: -0.005em;
+}
+#splash .creator {
+    margin: var(--s6) 0;
+    font-size: var(--fs-footnote);
+    color: var(--text-3); line-height: 1.7;
+}
+#splash .creator a { color: var(--accent); font-weight: 500; }
+#splash .creator i { font-size: 0.9em; }
+
+#version-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: var(--fs-caption); font-weight: 600;
+    color: var(--accent); background: var(--accent-soft);
+    border-radius: var(--r-pill); padding: 6px 12px;
+    margin-bottom: var(--s3); letter-spacing: 0.01em;
+}
+#version-chip i { font-size: 11px; opacity: 0.9; }
+
+/* ============================================================
+   iOS-STYLE GROUPED LIST (Account steps)
+   ============================================================ */
+.group {
+    background: var(--surface);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    margin-bottom: var(--s5);
+    border: 0.5px solid var(--hairline-2);
+}
+.group-row {
+    display: flex; align-items: flex-start; gap: var(--s3);
+    padding: var(--s4);
+    border-bottom: 0.5px solid var(--hairline);
+    position: relative;
+}
+.group-row:last-child { border-bottom: none; }
+.group-row .num {
+    flex: 0 0 28px; width: 28px; height: 28px;
+    border-radius: 50%; display: inline-flex;
+    align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700;
+    background: var(--accent); color: #fff;
+    margin-top: 1px;
+}
+.group-row .body { flex: 1; min-width: 0; }
+.group-row .body h3 {
+    font-size: var(--fs-headline); font-weight: 600;
+    letter-spacing: -0.015em; margin-bottom: 2px;
+    color: var(--text);
+}
+.group-row .body p {
+    font-size: var(--fs-subhead); color: var(--text-3);
+    margin: 0; line-height: 1.5; letter-spacing: -0.005em;
+}
+.group-row .body .actions {
+    margin-top: var(--s3);
+    display: flex; gap: var(--s2); flex-wrap: wrap;
+}
+.group-row .body .actions .btn { width: auto; }
+
+/* ============================================================
+   PROXY OPTIONS (iOS radio list)
+   ============================================================ */
 .proxy-option {
-  border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin: 10px 0;
-  cursor: pointer; transition: all 0.2s; position: relative;
+    position: relative;
+    background: var(--surface);
+    border-radius: var(--r-lg);
+    padding: var(--s4) var(--s4);
+    padding-right: 60px;
+    margin-bottom: var(--s3);
+    cursor: pointer;
+    border: 1.5px solid var(--hairline);
+    transition: border-color 0.2s, background 0.2s;
 }
-@media (min-width: 768px) { .proxy-option { padding: 18px; margin: 12px 0; } }
-.proxy-option:hover { border-color: var(--line2); background: rgba(255,255,255,0.02); }
-.proxy-option.selected { border-color: var(--cyan); background: rgba(34,211,238,0.04); }
+.proxy-option:hover { border-color: var(--fill-3); }
+.proxy-option.selected {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+}
+.proxy-option:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
 .proxy-option .radio {
-  position: absolute; top: 16px; right: 16px; width: 18px; height: 18px;
-  border: 2px solid var(--line2); border-radius: 50%; display: flex;
-  align-items: center; justify-content: center;
+    position: absolute; top: 50%; right: 20px;
+    transform: translateY(-50%);
+    width: 22px; height: 22px;
+    border: 2px solid var(--fill-3); border-radius: 50%;
+    background: var(--surface);
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color 0.2s, background 0.2s;
 }
-@media (min-width: 768px) { .proxy-option .radio { top: 18px; right: 18px; width: 20px; height: 20px; } }
-.proxy-option.selected .radio { border-color: var(--cyan); background: var(--cyan); }
-.proxy-option.selected .radio::after { content: ''; width: 7px; height: 7px; background: #05060a; border-radius: 50%; }
-.proxy-option h4 { font-size: 0.95rem; margin: 0 0 5px; padding-right: 28px; }
-@media (min-width: 768px) { .proxy-option h4 { font-size: 1rem; padding-right: 30px; } }
-.proxy-option p { color: var(--mu); font-size: 0.8rem; margin: 0; padding-right: 28px; }
-@media (min-width: 768px) { .proxy-option p { font-size: 0.85rem; padding-right: 30px; } }
+.proxy-option.selected .radio {
+    border-color: var(--accent); background: var(--accent);
+}
+.proxy-option.selected .radio::after {
+    content: ''; width: 8px; height: 8px;
+    background: #fff; border-radius: 50%;
+}
+
+.proxy-option h4 {
+    font-size: var(--fs-headline); font-weight: 600;
+    margin: 0 0 4px; letter-spacing: -0.015em;
+    display: flex; align-items: center; gap: 8px;
+    flex-wrap: wrap;
+    color: var(--text);
+}
+.proxy-option h4 i { font-size: 0.9em; }
+.proxy-option p {
+    color: var(--text-3); font-size: var(--fs-subhead);
+    margin: 0; line-height: 1.5; letter-spacing: -0.005em;
+}
 .proxy-option .tag {
-  display: inline-block; background: rgba(245,158,11,0.15); color: var(--warn);
-  font-size: 10px; padding: 2px 7px; border-radius: 4px; margin-top: 6px; font-weight: 600;
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: var(--fs-caption2); font-weight: 600;
+    padding: 3px 9px; border-radius: var(--r-pill);
+    background: var(--orange-soft); color: var(--orange);
+    margin-top: var(--s2); letter-spacing: 0.01em;
 }
-.proxy-option .tag.safe { background: rgba(52,211,153,0.15); color: var(--ok); }
+.proxy-option .tag.safe { background: var(--green-soft); color: var(--green); }
 
 .proxy-custom-section {
-  margin-top: 14px; padding: 14px; background: var(--code); border-radius: 10px; border: 1px solid var(--line);
+    margin-top: var(--s3);
+    padding: var(--s4);
+    background: var(--surface-2);
+    border-radius: var(--r-lg);
+    border: 0.5px solid var(--hairline-2);
 }
-@media (min-width: 768px) { .proxy-custom-section { margin-top: 16px; padding: 16px; } }
-.proxy-custom-section h4 { font-size: 0.9rem; margin: 0 0 10px; }
-.proxy-custom-section .step-list { list-style: none; padding: 0; margin: 0 0 14px; }
+.proxy-custom-section h4 {
+    font-size: var(--fs-subhead); font-weight: 600;
+    letter-spacing: -0.01em; margin: 0 0 var(--s3);
+    color: var(--text);
+}
+.proxy-custom-section .step-list {
+    list-style: none; padding: 0; margin: 0 0 var(--s4);
+}
 .proxy-custom-section .step-list li {
-  display: flex; align-items: flex-start; gap: 8px; padding: 7px 0;
-  font-size: 0.8rem; color: var(--mu); border-bottom: 1px solid var(--line);
+    display: flex; align-items: flex-start; gap: var(--s3);
+    padding: var(--s2) 0;
+    font-size: var(--fs-footnote); color: var(--text-3);
+    line-height: 1.55;
 }
-@media (min-width: 768px) { .proxy-custom-section .step-list li { gap: 10px; padding: 8px 0; font-size: 0.85rem; } }
-.proxy-custom-section .step-list li:last-child { border-bottom: none; }
 .proxy-custom-section .step-list .num {
-  flex: 0 0 20px; width: 20px; height: 20px; border-radius: 50%; background: var(--grad);
-  color: #05060a; font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+    flex: 0 0 22px; width: 22px; height: 22px;
+    border-radius: 50%; background: var(--accent-soft);
+    color: var(--accent); font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    margin-top: 1px;
 }
-@media (min-width: 768px) { .proxy-custom-section .step-list .num { flex: 0 0 22px; width: 22px; height: 22px; font-size: 11px; } }
-.proxy-custom-section .step-list a { color: var(--cyan); }
+.proxy-custom-section .step-list a { color: var(--accent); }
 
-/* Installer choice */
-.installer-choice { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 16px 0; }
-@media (max-width: 480px) { .installer-choice { grid-template-columns: 1fr; gap: 8px; } }
+/* ============================================================
+   CHOICE CARDS (Scan / Create)
+   ============================================================ */
+.installer-choice {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: var(--s3); margin: var(--s4) 0 var(--s5);
+}
+@media (max-width: 520px) {
+    .installer-choice { grid-template-columns: 1fr; }
+}
 .choice-card {
-  border: 1px solid var(--line); border-radius: 12px; padding: 20px 14px;
-  text-align: center; cursor: pointer; transition: all 0.25s; background: transparent;
+    padding: var(--s5) var(--s4);
+    border-radius: var(--r-lg);
+    background: var(--surface-2);
+    border: 1.5px solid transparent;
+    text-align: center; cursor: pointer;
+    transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.18s, background 0.18s;
 }
-@media (min-width: 768px) { .choice-card { padding: 24px 18px; border-radius: 14px; } }
-.choice-card:hover { border-color: var(--cyan); background: rgba(34,211,238,0.03); transform: translateY(-2px); }
-.choice-card:focus { outline: 2px solid var(--cyan); outline-offset: 2px; }
-.choice-card .icon { font-size: 2rem; margin-bottom: 8px; }
-@media (min-width: 768px) { .choice-card .icon { font-size: 2.5rem; margin-bottom: 12px; } }
-.choice-card h3 { font-size: 1rem; margin: 0 0 4px; }
-@media (min-width: 768px) { .choice-card h3 { font-size: 1.1rem; margin: 0 0 6px; } }
-.choice-card p { color: var(--mu); font-size: 0.8rem; margin: 0; }
-@media (min-width: 768px) { .choice-card p { font-size: 0.85rem; } }
+.choice-card:hover { transform: translateY(-2px); border-color: var(--hairline); }
+.choice-card:focus {
+    outline: none; border-color: var(--accent);
+    background: var(--accent-soft);
+}
+.choice-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.choice-card .icon {
+    width: 52px; height: 52px; margin: 0 auto var(--s4);
+    border-radius: 14px;
+    background: var(--surface); color: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    box-shadow: var(--shadow-sm);
+    border: 0.5px solid var(--hairline-2);
+}
+.choice-card h3 {
+    font-size: var(--fs-headline); font-weight: 600;
+    letter-spacing: -0.015em; margin: 0 0 4px;
+}
+.choice-card p {
+    color: var(--text-3); font-size: var(--fs-footnote);
+    margin: 0; line-height: 1.5; letter-spacing: -0.005em;
+}
 
-/* Scan results */
-.scan-results { margin: 14px 0; }
-.scan-results h4 { font-size: 0.9rem; margin: 0 0 10px; color: var(--cyan); }
-@media (min-width: 768px) { .scan-results h4 { font-size: 0.95rem; margin: 0 0 12px; } }
+/* ============================================================
+   SCAN RESULTS / TABLE
+   ============================================================ */
+.scan-results { margin-top: var(--s5); animation: cardIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+.scan-header {
+    display: flex; align-items: center; gap: var(--s2);
+    margin-bottom: var(--s3);
+}
+.scan-header h4 {
+    font-size: var(--fs-headline); font-weight: 600;
+    letter-spacing: -0.015em; display: flex;
+    align-items: center; gap: 8px;
+}
+.scan-header h4 i { color: var(--accent); font-size: 0.9em; }
+#scan-badge {
+    background: var(--fill-1); padding: 3px 10px;
+    border-radius: var(--r-pill);
+    font-size: var(--fs-caption2); font-weight: 600;
+    color: var(--text-3); letter-spacing: 0.01em;
+}
 
-/* RESPONSIVE TABLE */
-.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 10px; border: 1px solid var(--line); }
-.resource-table { width: 100%; min-width: 420px; border-collapse: collapse; font-size: 0.82rem; }
-@media (min-width: 768px) { .resource-table { font-size: 0.85rem; } }
-.resource-table th { text-align: left; padding: 8px 6px; color: var(--mu); font-weight: 600; border-bottom: 1px solid var(--line); white-space: nowrap; }
-@media (min-width: 768px) { .resource-table th { padding: 10px 8px; } }
-.resource-table td { padding: 8px 6px; border-bottom: 1px solid var(--line); color: var(--tx); }
-@media (min-width: 768px) { .resource-table td { padding: 10px 8px; } }
+.table-wrap {
+    border-radius: var(--r-lg);
+    border: 0.5px solid var(--hairline-2);
+    overflow: hidden;
+    background: var(--surface);
+}
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.resource-table {
+    width: 100%; min-width: 500px;
+    border-collapse: collapse;
+    font-size: var(--fs-footnote);
+}
+.resource-table th {
+    text-align: left; padding: 10px 14px;
+    color: var(--text-3); font-weight: 600;
+    font-size: var(--fs-caption2);
+    letter-spacing: 0.02em; text-transform: uppercase;
+    background: var(--surface-2);
+    border-bottom: 0.5px solid var(--hairline);
+    white-space: nowrap;
+}
+.resource-table td {
+    padding: 12px 14px;
+    border-bottom: 0.5px solid var(--hairline);
+    color: var(--text); vertical-align: middle;
+}
 .resource-table tr:last-child td { border-bottom: none; }
-.type-badge { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 600; white-space: nowrap; }
-.type-badge.worker { background: rgba(168,85,247,0.15); color: #c084fc; }
-.type-badge.database { background: rgba(34,211,238,0.15); color: var(--cyan); }
-.resource-table .actions { display: flex; gap: 5px; flex-wrap: wrap; }
-.resource-table .actions button {
-  background: var(--card2); border: 1px solid var(--line); color: var(--tx);
-  padding: 3px 8px; border-radius: 5px; font-size: 10px; cursor: pointer; font-family: inherit; white-space: nowrap;
+.resource-table tr:hover td { background: var(--surface-2); }
+.resource-table td b {
+    font-weight: 600; font-family: var(--mono);
+    font-size: 0.92em; letter-spacing: -0.01em;
 }
-@media (min-width: 768px) { .resource-table .actions button { padding: 4px 10px; font-size: 11px; border-radius: 6px; } }
-.resource-table .actions button:hover { border-color: var(--cyan); color: var(--cyan); }
-.resource-table .actions button.delete:hover { border-color: var(--bad); color: var(--bad); }
-.resource-table .actions button.update:hover { border-color: var(--warn); color: var(--warn); }
-.scan-empty { text-align: center; padding: 24px 16px; color: var(--mu); }
-@media (min-width: 768px) { .scan-empty { padding: 30px 20px; } }
-.scan-empty .icon { font-size: 2.5rem; margin-bottom: 8px; }
-@media (min-width: 768px) { .scan-empty .icon { font-size: 3rem; margin-bottom: 12px; } }
+.type-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 9px; border-radius: var(--r-pill);
+    font-size: var(--fs-caption2); font-weight: 600;
+    white-space: nowrap; letter-spacing: 0.01em;
+}
+.type-badge.worker { background: var(--purple-soft); color: var(--purple); }
+.type-badge.database { background: var(--accent-soft); color: var(--accent); }
+.type-badge i { font-size: 10px; }
 
-/* Progress */
-.progress { margin: 12px 0 0; }
-.prow { display: flex; align-items: center; gap: 10px; padding: 8px 0; font-size: 13.5px; color: var(--mu); }
-@media (min-width: 768px) { .prow { gap: 11px; padding: 10px 0; font-size: 14.5px; } }
+.resource-table .actions {
+    display: flex; gap: 4px; flex-wrap: wrap;
+}
+.resource-table .actions button {
+    background: var(--fill-1);
+    border: none; color: var(--text-2);
+    padding: 6px 11px; border-radius: var(--r-sm);
+    font-size: var(--fs-caption); font-weight: 600;
+    cursor: pointer; white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 5px;
+    transition: background 0.16s, color 0.16s;
+    min-height: 32px;
+}
+.resource-table .actions button:hover { background: var(--accent-soft); color: var(--accent); }
+.resource-table .actions button.delete:hover { background: var(--red-soft); color: var(--red); }
+.resource-table .actions button.update:hover { background: var(--orange-soft); color: var(--orange); }
+
+.scan-empty {
+    text-align: center; padding: var(--s8) var(--s4);
+    color: var(--text-3);
+}
+.scan-empty .icon {
+    width: 56px; height: 56px;
+    margin: 0 auto var(--s3);
+    border-radius: 50%;
+    background: var(--fill-1); color: var(--text-3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+}
+.scan-empty p {
+    margin: var(--s1) 0;
+    font-size: var(--fs-subhead); line-height: 1.5;
+}
+
+/* ============================================================
+   PROGRESS
+   ============================================================ */
+.progress-bar-wrap {
+    width: 100%; height: 4px;
+    background: var(--fill-1);
+    border-radius: 2px;
+    margin: var(--s4) 0 var(--s2);
+    overflow: hidden;
+}
+.progress-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    width: 0%;
+}
+#progress-text {
+    text-align: center;
+    font-size: var(--fs-caption); font-weight: 600;
+    color: var(--text-4); margin-bottom: var(--s3);
+    letter-spacing: 0.01em;
+}
+
+.progress {
+    background: var(--surface-2);
+    border-radius: var(--r-md);
+    padding: var(--s2) var(--s4);
+    border: 0.5px solid var(--hairline-2);
+}
+.prow {
+    display: flex; align-items: center; gap: var(--s3);
+    padding: var(--s3) 0;
+    font-size: var(--fs-subhead); color: var(--text-3);
+    border-bottom: 0.5px solid var(--hairline);
+}
+.prow:last-child { border-bottom: none; }
 .prow .dot {
-  flex: 0 0 20px; height: 20px; border-radius: 50%; border: 2px solid var(--line);
-  display: flex; align-items: center; justify-content: center; font-size: 11px; transition: all 0.3s;
+    flex: 0 0 22px; width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--fill-3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    color: transparent;
+    flex-shrink: 0;
 }
-@media (min-width: 768px) { .prow .dot { flex: 0 0 22px; height: 22px; font-size: 12px; } }
-.prow.done { color: var(--tx); }
-.prow.done .dot { border-color: transparent; background: var(--grad); color: #05060a; }
-.prow.run .dot { border-color: var(--cyan); border-top-color: transparent; animation: spin .8s linear infinite; }
-.prow.err { color: var(--bad); }
-.prow.err .dot { border-color: var(--bad); color: var(--bad); }
-.prow .retry-btn {
-  margin-left: auto; background: var(--card2); border: 1px solid var(--line2); color: var(--cyan);
-  padding: 3px 10px; border-radius: 5px; font-size: 11px; cursor: pointer; font-family: inherit; transition: all 0.2s;
+.prow.done { color: var(--text); }
+.prow.done .dot {
+    border-color: transparent;
+    background: var(--green); color: #fff;
 }
-@media (min-width: 768px) { .prow .retry-btn { padding: 4px 12px; border-radius: 6px; font-size: 12px; } }
-.prow .retry-btn:hover { background: rgba(34, 211, 238, 0.1); }
-.prow .step-num { font-size: 10px; color: var(--mu); margin-left: 4px; }
+.prow.run { color: var(--text); font-weight: 500; }
+.prow.run .dot {
+    border-color: var(--accent);
+    border-top-color: transparent;
+    animation: spin 0.8s linear infinite;
+}
+.prow.err { color: var(--red); }
+.prow.err .dot { border-color: var(--red); color: var(--red); }
+.prow .step-num {
+    font-size: var(--fs-caption2); color: var(--text-4);
+    margin-left: 6px; font-weight: 500;
+}
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* Progress bar */
-.progress-bar-wrap { width: 100%; height: 3px; background: var(--line); border-radius: 2px; margin: 12px 0 6px; overflow: hidden; }
-@media (min-width: 768px) { .progress-bar-wrap { height: 4px; margin: 16px 0 8px; } }
-.progress-bar-fill { height: 100%; background: var(--grad); border-radius: 2px; transition: width 0.4s ease; width: 0%; }
+.prow .retry-btn {
+    margin-left: auto;
+    background: var(--red-soft); border: none; color: var(--red);
+    padding: 6px 12px; border-radius: var(--r-sm);
+    font-size: var(--fs-caption); font-weight: 600;
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 5px;
+    min-height: 32px;
+    transition: opacity 0.16s;
+}
+.prow .retry-btn:hover { opacity: 0.8; }
+.prow .retry-btn i { font-size: 10px; }
 
-/* Result */
+/* ============================================================
+   RESULT
+   ============================================================ */
 .result-box {
-  background: linear-gradient(180deg, rgba(34,211,238,.08), var(--card));
-  border: 1px solid rgba(34,211,238,.3); border-radius: var(--r); padding: 20px; margin: 12px 0; text-align: center;
+    background: var(--surface);
+    border-radius: var(--r-xl);
+    padding: var(--s6) var(--s5);
+    text-align: center;
+    box-shadow: var(--shadow-md);
+    border: 0.5px solid var(--hairline-2);
+    animation: cardIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
-@media (min-width: 768px) { .result-box { padding: 24px; margin: 16px 0; } }
-.result-box .success-icon { font-size: 3rem; margin-bottom: 8px; }
-@media (min-width: 768px) { .result-box .success-icon { font-size: 3.5rem; margin-bottom: 12px; } }
-.result-box h3 { margin: 0 0 6px; font-size: 1.2rem; color: var(--cyan); }
-@media (min-width: 768px) { .result-box h3 { font-size: 1.4rem; margin: 0 0 8px; } }
+@media (min-width: 768px) { .result-box { padding: var(--s10) var(--s8); } }
+
+.result-box .success-icon {
+    width: 80px; height: 80px;
+    margin: 0 auto var(--s5);
+    border-radius: 50%;
+    background: var(--green-soft); color: var(--green);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px;
+    animation: popIn 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@media (min-width: 768px) { .result-box .success-icon { width: 96px; height: 96px; font-size: 44px; } }
+@keyframes popIn {
+    from { transform: scale(0.3); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+.result-box h3 {
+    margin: 0 0 var(--s2);
+    font-size: var(--fs-title1); letter-spacing: -0.028em;
+}
+@media (min-width: 768px) { .result-box h3 { font-size: var(--fs-large); } }
+.result-box > p {
+    color: var(--text-3); font-size: var(--fs-subhead);
+    margin: 0 0 var(--s5); line-height: 1.5;
+}
 .result-box .url-box {
-  background: var(--code); border: 1px solid var(--line); border-radius: 10px;
-  padding: 12px; margin: 14px 0; font-family: monospace; font-size: 0.85rem;
-  word-break: break-all; color: var(--cyan);
+    background: var(--surface-2);
+    border-radius: var(--r-md);
+    padding: var(--s4);
+    margin: var(--s4) 0;
+    font-family: var(--mono);
+    font-size: var(--fs-footnote);
+    word-break: break-all;
+    color: var(--accent);
+    line-height: 1.6;
+    border: 0.5px solid var(--hairline-2);
 }
-@media (min-width: 768px) { .result-box .url-box { padding: 14px; margin: 16px 0; font-size: 0.9rem; } }
 .result-box .url-box button {
-  background: transparent; border: 1px solid var(--line2); color: var(--mu);
-  padding: 3px 8px; border-radius: 5px; font-size: 10px; cursor: pointer; margin-top: 6px; font-family: inherit;
+    background: var(--accent-soft); border: none; color: var(--accent);
+    padding: 8px 14px; border-radius: var(--r-sm);
+    font-size: var(--fs-caption); font-weight: 600;
+    cursor: pointer; margin-top: var(--s3);
+    display: inline-flex; align-items: center; gap: 6px;
+    min-height: 34px;
+    transition: opacity 0.16s;
 }
-@media (min-width: 768px) { .result-box .url-box button { padding: 4px 10px; border-radius: 6px; font-size: 11px; margin-top: 8px; } }
-.result-box .url-box button:hover { border-color: var(--cyan); color: var(--cyan); }
+.result-box .url-box button:hover { opacity: 0.8; }
 
-.err-box {
-  background: rgba(248,113,113,.06); border: 1px solid rgba(248,113,113,.25);
-  border-radius: 12px; padding: 14px; margin: 12px 0; font-size: 13px; color: #fecaca;
+/* ============================================================
+   INPUTS
+   ============================================================ */
+input[type="text"], input[type="password"], input[type="url"], input[type="number"], textarea, select {
+    width: 100%; background: var(--surface-2); color: var(--text);
+    border: 1.5px solid transparent; border-radius: var(--r-md);
+    padding: 14px 16px; font-size: var(--fs-callout);
+    font-family: inherit;
+    transition: border-color 0.16s, background 0.16s, box-shadow 0.16s;
+    -webkit-appearance: none; appearance: none;
+    min-height: 50px;
+    letter-spacing: -0.005em;
 }
-@media (min-width: 768px) { .err-box { padding: 16px; font-size: 14px; } }
-.err-box .err-title { font-weight: 700; margin-bottom: 5px; display: flex; align-items: center; gap: 8px; }
-.err-box .err-actions { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
-
-input[type="text"] {
-  width: 100%; background: var(--code); border: 1px solid var(--line); border-radius: 10px;
-  color: var(--tx); font-size: 14px; padding: 11px 12px; font-family: inherit;
-  word-break: break-all; transition: border-color 0.2s;
+input[type="text"]:focus, input[type="password"]:focus, input[type="url"]:focus, input[type="number"]:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: var(--surface);
+    box-shadow: 0 0 0 4px var(--accent-soft);
 }
-@media (min-width: 768px) { input[type="text"] { font-size: 15px; padding: 13px 14px; } }
-input[type="text"]:focus { outline: none; border-color: var(--cyan); }
+input::placeholder, textarea::placeholder { color: var(--text-4); }
 
+/* ============================================================
+   CALLOUTS
+   ============================================================ */
 .callout {
-  display: flex; gap: 10px; border-radius: 12px; padding: 12px; margin: 10px 0;
-  font-size: 13px; border: 1px solid rgba(168,85,247,.3); background: rgba(168,85,247,.06);
+    display: flex; gap: var(--s3);
+    border-radius: var(--r-md);
+    padding: var(--s3) var(--s4);
+    margin: var(--s3) 0;
+    font-size: var(--fs-footnote);
+    line-height: 1.55;
+    border: 0.5px solid var(--hairline);
+    background: var(--surface-2);
+    color: var(--text-2);
+    letter-spacing: -0.005em;
 }
-@media (min-width: 768px) { .callout { gap: 11px; padding: 14px; margin: 12px 0; font-size: 13.5px; } }
-.callout .ic { flex: 0 0 20px; font-size: 17px; }
-.callout.ok { border-color: rgba(52,211,153,.3); background: rgba(52,211,153,.06); }
-.callout.warn { border-color: rgba(245,158,11,.3); background: rgba(245,158,11,.06); }
+.callout .ic {
+    flex: 0 0 auto; display: inline-flex; align-items: center;
+    color: var(--accent); font-size: 15px; margin-top: 2px;
+}
+.callout.ok {
+    border-color: rgba(52,199,89,0.22);
+    background: var(--green-soft);
+}
+.callout.ok .ic { color: var(--green); }
+.callout.warn {
+    border-color: rgba(255,149,0,0.22);
+    background: var(--orange-soft);
+}
+.callout.warn .ic { color: var(--orange); }
+.callout.danger {
+    border-color: rgba(255,59,48,0.22);
+    background: var(--red-soft);
+}
+.callout.danger .ic { color: var(--red); }
 
-.foot { text-align: center; color: var(--mu); font-size: 11px; margin-top: 16px; }
-@media (min-width: 768px) { .foot { font-size: 12px; margin-top: 20px; } }
-.foot a { color: var(--cyan); }
+/* ============================================================
+   FOOTER
+   ============================================================ */
+.foot {
+    text-align: center;
+    color: var(--text-4);
+    font-size: var(--fs-caption);
+    margin-top: var(--s8);
+    line-height: 1.9;
+    padding: 0 var(--s2);
+}
+.foot a { color: var(--accent); }
+.foot .kbd {
+    display: inline-block;
+    background: var(--fill-1);
+    border: 0.5px solid var(--hairline);
+    border-radius: 5px;
+    padding: 1px 6px;
+    font-size: 10px;
+    font-family: var(--mono);
+    color: var(--text-2);
+    line-height: 1.5;
+}
 
-.back-link { display: inline-flex; align-items: center; gap: 6px; color: var(--mu); font-size: 13px; text-decoration: none; margin-bottom: 10px; cursor: pointer; }
-@media (min-width: 768px) { .back-link { font-size: 14px; margin-bottom: 12px; } }
-.back-link:hover { color: var(--cyan); }
+/* ============================================================
+   TOAST
+   ============================================================ */
+#toast-container {
+    position: fixed; left: 50%; transform: translateX(-50%);
+    bottom: calc(env(safe-area-inset-bottom) + 20px);
+    z-index: 500;
+    display: flex; flex-direction: column; gap: var(--s2);
+    max-width: min(92vw, 400px);
+    width: max-content;
+    pointer-events: none;
+}
+.toast {
+    background: var(--glass);
+    backdrop-filter: saturate(180%) blur(24px);
+    -webkit-backdrop-filter: saturate(180%) blur(24px);
+    border: 0.5px solid var(--hairline);
+    border-radius: var(--r-md);
+    padding: 12px 18px;
+    font-size: var(--fs-subhead);
+    color: var(--text);
+    box-shadow: var(--shadow-lg);
+    text-align: center;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    animation: toastIn 0.34s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: auto;
+}
+@media (min-width: 768px) {
+    #toast-container {
+        left: auto; right: var(--s6);
+        transform: none;
+        bottom: var(--s6);
+    }
+}
+.toast.ok { border-left: 3px solid var(--green); }
+.toast.err { border-left: 3px solid var(--red); }
+.toast.warn { border-left: 3px solid var(--orange); }
+@keyframes toastIn {
+    from { opacity: 0; transform: translateY(20px) scale(0.95); }
+    to { opacity: 1; transform: none; }
+}
 
+/* ============================================================
+   MISC
+   ============================================================ */
 .loading-dots::after { content: ''; animation: dots 1.5s steps(4, end) infinite; }
 @keyframes dots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
 
-.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
-
-.toast {
-  position: fixed; bottom: 20px; right: 16px; background: var(--bg-alt); border: 1px solid var(--line);
-  border-radius: 10px; padding: 10px 16px; font-size: 13px; color: var(--tx); z-index: 2000;
-  animation: slideUp 0.3s ease; box-shadow: 0 8px 32px rgba(0,0,0,0.4); max-width: 280px;
+.sr-only {
+    position: absolute; width: 1px; height: 1px;
+    padding: 0; margin: -1px; overflow: hidden;
+    clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
 }
-@media (min-width: 768px) { .toast { bottom: 24px; right: 24px; padding: 12px 18px; font-size: 14px; max-width: 320px; } }
-.toast.ok { border-color: rgba(52,211,153,.4); }
-.toast.err { border-color: rgba(248,113,113,.4); }
-.toast.warn { border-color: rgba(245,158,11,.4); }
-@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-.kbd { display: inline-block; background: var(--code); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; font-size: 10px; font-family: monospace; }
-@media (min-width: 768px) { .kbd { padding: 1px 6px; font-size: 11px; } }
-
-/* Keyboard focus styles */
-*:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; border-radius: 4px; }
-
-/* Update banner */
 .update-banner {
-  background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25);
-  border-radius: 10px; padding: 12px; margin: 10px 0; font-size: 13px;
+    background: var(--orange-soft);
+    border: 0.5px solid rgba(255,149,0,0.22);
+    border-radius: var(--r-md);
+    padding: var(--s3) var(--s4);
+    margin: var(--s3) 0;
 }
-.update-banner h4 { margin: 0 0 6px; font-size: 14px; color: var(--warn); }
+.update-banner h4 {
+    margin: 0 0 4px; font-size: var(--fs-subhead); font-weight: 600;
+    color: var(--orange);
+    display: flex; align-items: center; gap: 8px;
+    letter-spacing: -0.01em;
+}
+.update-banner p {
+    color: var(--text-2); font-size: var(--fs-footnote);
+    margin: 0; line-height: 1.5;
+}
+
+.field { margin-bottom: var(--s5); }
+.field-label {
+    display: block; font-size: var(--fs-subhead); font-weight: 600;
+    margin-bottom: 8px; color: var(--text);
+    letter-spacing: -0.01em;
+}
+.field-hint {
+    display: block; font-size: var(--fs-footnote);
+    color: var(--text-4); margin-top: 8px;
+    line-height: 1.5; letter-spacing: -0.005em;
+}
+.field-hint i { margin-right: 4px; }
+
+.row-inline { display: flex; gap: var(--s2); align-items: stretch; }
+.row-inline input[type="text"] { flex: 1; min-width: 0; }
+.row-inline .btn { width: auto; min-width: 50px; flex-shrink: 0; }
+
+/* Error box */
+.err-box {
+    background: var(--red-soft);
+    border: 0.5px solid rgba(255,59,48,0.22);
+    border-radius: var(--r-md);
+    padding: var(--s4);
+    margin-top: var(--s4);
+    font-size: var(--fs-footnote);
+    color: var(--red);
+    line-height: 1.5;
+}
+.err-box .err-title {
+    font-weight: 600; margin-bottom: var(--s2);
+    display: flex; align-items: center; gap: 8px;
+    font-size: var(--fs-subhead);
+    letter-spacing: -0.01em;
+}
+.err-box .err-actions {
+    margin-top: var(--s3);
+    display: flex; gap: var(--s2); flex-wrap: wrap;
+}
+
+/* Sticky bottom actions on mobile for step cards with primary CTA */
+@media (max-width: 640px) {
+    .step-card .sticky-cta {
+        position: sticky;
+        bottom: calc(env(safe-area-inset-bottom) + 8px);
+        margin: var(--s5) calc(-1 * var(--s5)) calc(-1 * var(--s5));
+        padding: var(--s4) var(--s5);
+        background: linear-gradient(to bottom, transparent, var(--surface) 30%);
+        z-index: 5;
+    }
+    .step-card .sticky-cta .btn { box-shadow: 0 8px 24px -8px rgba(0,122,255,0.4); }
+}
 </style>
-<base target="_blank">
 </head>
 <body>
+
 <div class="wrap">
 
-<div id="aria-live" class="sr-only" aria-live="polite" aria-atomic="true"></div>
-<div id="toast-container"></div>
-<div id="proxy-health" class="callout warn hidden" style="max-width:600px;margin:0 auto;"></div>
+    <button class="theme-toggle" id="theme-btn" onclick="cycleTheme()" title="Switch appearance" aria-label="Switch appearance">
+        <i class="fa-solid fa-circle-half-stroke"></i>
+    </button>
 
-<!-- STEP 1: WELCOME -->
-<div id="step-welcome" class="card">
-  <div id="splash" style="text-align:center;padding:16px 8px;">
-    <div class="logo"><img src="https://raw.githubusercontent.com/Mahan07dev/Nyxx/refs/heads/main/logo.webp" alt="Nyxx Logo" width="64" height="64" style="border-radius:14px;"></div>
-    <h1 style="font-size:2rem;font-weight:800;margin:12px 0 6px;"><span class="grad">Nyxx</span> Installer</h1>
-    <p style="color:var(--mu);font-size:1rem;margin:8px 0 12px;">Deploy your Telegram Bot Panel in seconds</p>
-    <div id="version-chip" style="font-size:12.5px;color:var(--cyan);background:rgba(34,211,238,0.06);border:1px solid rgba(34,211,238,0.2);border-radius:20px;padding:5px 14px;display:inline-block;margin-bottom:12px;">📦 Checking latest version…</div>
-    <div style="margin:16px 0;font-size:0.9rem;color:var(--mu);">
-      Made with ❤️ by <a href="https://github.com/Mahan07dev" target="_blank" rel="noopener" style="color:var(--cyan);text-decoration:none;font-weight:600;">@Mahan07dev</a>
-      <br><br>
-      <a href="https://t.me/nyxx_official_channel" target="_blank" rel="noopener" style="color:var(--cyan);text-decoration:none;"><i>Telegram</i></a> &bull;
-      <a href="https://github.com/Mahan07dev/Nyxx" target="_blank" rel="noopener" style="color:var(--cyan);text-decoration:none;">Source Code</a>
+    <div id="aria-live" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+    <div id="toast-container"></div>
+    <div id="proxy-health" class="callout warn hidden" role="status"></div>
+
+    <!-- STEP 1: WELCOME -->
+    <div id="step-welcome" class="card">
+        <div id="splash">
+            <div class="logo">
+                <img src="https://raw.githubusercontent.com/Mahan07dev/Nyxx/refs/heads/main/logo.webp" alt="Nyxx Logo" width="80" height="80">
+            </div>
+            <h1><span class="grad">Nyxx</span> Installer</h1>
+            <p class="sub">Deploy your Telegram Bot Panel in seconds</p>
+            <div id="version-chip"><i class="fa-solid fa-box"></i> Checking latest version…</div>
+            <div class="creator">
+                Made with <i class="fa-solid fa-heart" style="color:var(--red);"></i> by <a href="https://github.com/Mahan07dev" target="_blank" rel="noopener">@Mahan07dev</a>
+                <br>
+                <a href="https://t.me/nyxx_official_channel" target="_blank" rel="noopener"><i class="fa-brands fa-telegram"></i> Telegram</a>
+                &nbsp;&middot;&nbsp;
+                <a href="https://github.com/Mahan07dev/Nyxx" target="_blank" rel="noopener"><i class="fa-brands fa-github"></i> Source</a>
+            </div>
+            <button class="btn btn-lg" onclick="goToStep('account')" id="btn-welcome-next" style="max-width:340px;margin:0 auto;">Get Started <i class="fa-solid fa-arrow-right"></i></button>
+        </div>
     </div>
-    <button class="btn" onclick="goToStep('account')" id="btn-welcome-next">Get Started →</button>
-  </div>
-</div>
 
-<!-- STEP 2: ACCOUNT & TOKEN -->
-<div id="step-account" class="card hidden step-card">
-  <div class="stepper">
-    <div class="step-dot completed"></div>
-    <div class="step-line completed"></div>
-    <div class="step-dot active"></div>
-    <div class="step-line"></div>
-    <div class="step-dot"></div>
-    <div class="step-line"></div>
-    <div class="step-dot"></div>
-  </div>
-  <a class="back-link" onclick="goToStep('welcome')">← Back</a>
-  <h2>🔑 <span class="grad" style="background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent">Account</span> & Token</h2>
-  <p class="desc">Connect your Cloudflare account to get started.</p>
+    <!-- STEP 2: ACCOUNT & TOKEN -->
+    <div id="step-account" class="card hidden step-card">
+        <div class="stepper">
+            <div class="step-dot completed"></div>
+            <div class="step-line completed"></div>
+            <div class="step-dot active"></div>
+            <div class="step-line"></div>
+            <div class="step-dot"></div>
+            <div class="step-line"></div>
+            <div class="step-dot"></div>
+        </div>
+        <button class="back-link" onclick="goToStep('welcome')"><i class="fa-solid fa-chevron-left"></i> Back</button>
+        <h2><span class="grad">Account</span> &amp; Token</h2>
+        <p class="desc">Connect your Cloudflare account to get started.</p>
 
-  <div style="margin-bottom:18px;border-bottom:1px solid var(--line);padding-bottom:18px;">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-      <span style="flex:0 0 26px;width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:.85rem;color:#05060a;background:var(--grad);">1</span>
-      <span style="font-weight:700;font-size:1rem;">Cloudflare account</span>
+        <div class="group">
+            <div class="group-row">
+                <span class="num">1</span>
+                <div class="body">
+                    <h3>Cloudflare account</h3>
+                    <p>If you do not have one, create a free account (takes about a minute).</p>
+                    <div class="actions">
+                        <a class="btn btn-ghost btn-sm" href="https://dash.cloudflare.com/sign-up" target="_blank" rel="noopener"><i class="fa-solid fa-user-plus"></i> Create free account</a>
+                    </div>
+                </div>
+            </div>
+            <div class="group-row">
+                <span class="num">2</span>
+                <div class="body">
+                    <h3>Get your API token</h3>
+                    <p>A Cloudflare page opens with the right permissions pre-selected.</p>
+                    <div class="actions">
+                        <button class="btn btn-ghost btn-sm" onclick="openTokenPage()"><i class="fa-solid fa-key"></i> Get my token</button>
+                    </div>
+                    <div class="callout warn" style="margin-top:12px;">
+                        <span class="ic"><i class="fa-solid fa-triangle-exclamation"></i></span>
+                        <div>Copy the whole token before leaving — Cloudflare shows it only once.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="group-row">
+                <span class="num">3</span>
+                <div class="body">
+                    <h3>Paste your token</h3>
+                    <p>We verify it instantly, right here in your browser.</p>
+                    <div style="margin-top:12px;">
+                        <input id="token" type="text" placeholder="Paste your Cloudflare token" aria-label="Cloudflare API Token" autocomplete="off" spellcheck="false" />
+                        <button class="btn btn-ghost btn-sm" style="margin-top:10px;" onclick="pasteToken()" id="btn-paste"><i class="fa-regular fa-clipboard"></i> Paste from Clipboard</button>
+                        <div id="token-status" class="field-hint" role="status" aria-live="polite" style="min-height:20px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sticky-cta">
+            <button class="btn btn-lg" onclick="goToStep('security')" id="btn-account-next" disabled>Continue <i class="fa-solid fa-arrow-right"></i></button>
+        </div>
     </div>
-    <p style="color:var(--mu);font-size:.9rem;margin:0 0 10px;padding-left:36px;">If you do not have one, create a free account (takes 1 min).</p>
-    <a class="btn btn-ghost btn-sm" href="https://dash.cloudflare.com/sign-up" target="_blank" rel="noopener" style="margin-left:36px;width:auto;min-height:40px;">Create free account</a>
-  </div>
 
-  <div style="margin-bottom:18px;border-bottom:1px solid var(--line);padding-bottom:18px;">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-      <span style="flex:0 0 26px;width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:.85rem;color:#05060a;background:var(--grad);">2</span>
-      <span style="font-weight:700;font-size:1rem;">Get your API token</span>
+    <!-- STEP 3: SECURITY / PROXY -->
+    <div id="step-security" class="card hidden step-card">
+        <div class="stepper">
+            <div class="step-dot completed"></div>
+            <div class="step-line completed"></div>
+            <div class="step-dot completed"></div>
+            <div class="step-line completed"></div>
+            <div class="step-dot active"></div>
+            <div class="step-line"></div>
+            <div class="step-dot"></div>
+        </div>
+        <button class="back-link" onclick="goToStep('account')"><i class="fa-solid fa-chevron-left"></i> Back</button>
+        <h2><span class="grad">Security</span> &amp; Proxy</h2>
+        <p class="desc">Choose how your browser talks to Cloudflare's API.</p>
+
+        <div class="proxy-option selected" id="opt-default" onclick="selectProxy('default')" tabindex="0" role="radio" aria-checked="true" aria-label="Use default proxy">
+            <div class="radio"></div>
+            <h4><i class="fa-solid fa-circle-check" style="color:var(--green);"></i> Default proxy</h4>
+            <p>Route calls through our hosted CORS proxy. Fast, zero setup. Your token is only forwarded to Cloudflare.</p>
+            <span class="tag"><i class="fa-solid fa-bolt"></i> Recommended</span>
+        </div>
+
+        <div class="proxy-option" id="opt-custom" onclick="selectProxy('custom')" tabindex="0" role="radio" aria-checked="false" aria-label="Self-host proxy">
+            <div class="radio"></div>
+            <h4><i class="fa-solid fa-shield-halved" style="color:var(--accent);"></i> Self-hosted proxy</h4>
+            <p>Deploy your own proxy worker for maximum privacy. Your token never touches a third-party server.</p>
+            <span class="tag safe"><i class="fa-solid fa-lock"></i> Maximum privacy</span>
+        </div>
+
+        <div id="custom-proxy-section" class="proxy-custom-section hidden">
+            <h4>Deploy your own proxy</h4>
+            <ol class="step-list">
+                <li><span class="num">1</span><div>Download <code>proxy.js</code> from <a href="https://github.com/Mahan07dev/Nyxx/blob/main/proxy.js" target="_blank" rel="noopener">GitHub</a></div></li>
+                <li><span class="num">2</span><div>Cloudflare Dashboard → Workers &amp; Pages → Create</div></li>
+                <li><span class="num">3</span><div>Paste the proxy code, deploy, and copy the worker URL</div></li>
+                <li><span class="num">4</span><div>Paste it below — we verify it works instantly</div></li>
+            </ol>
+            <input type="text" id="custom-proxy-url" placeholder="https://your-proxy.workers.dev/" oninput="verifyCustomProxy()" spellcheck="false" />
+            <div id="custom-proxy-status" class="field-hint" style="min-height:20px;"></div>
+        </div>
+
+        <div class="sticky-cta">
+            <button class="btn btn-lg" onclick="confirmProxyAndProceed()" id="btn-security-next">Continue <i class="fa-solid fa-arrow-right"></i></button>
+        </div>
     </div>
-    <p style="color:var(--mu);font-size:.9rem;margin:0 0 10px;padding-left:36px;">Tap the button — a Cloudflare page opens with permissions pre-selected.</p>
-    <button class="btn btn-ghost btn-sm" style="margin-left:36px;width:auto;min-height:40px;" onclick="openTokenPage()">🔑 Get my token</button>
-    <div class="callout" style="margin-left:36px;margin-top:10px;"><span class="ic">⚠️</span><div style="font-size:13px;"><b>Copy the whole token</b> before leaving — it is shown only once.</div></div>
-  </div>
 
-  <div>
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-      <span style="flex:0 0 26px;width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:.85rem;color:#05060a;background:var(--grad);">3</span>
-      <span style="font-weight:700;font-size:1rem;">Paste your token</span>
+    <!-- STEP 4: INSTALLER CHOICE -->
+    <div id="step-installer" class="card hidden step-card">
+        <div class="stepper">
+            <div class="step-dot completed"></div>
+            <div class="step-line completed"></div>
+            <div class="step-dot completed"></div>
+            <div class="step-line completed"></div>
+            <div class="step-dot completed"></div>
+            <div class="step-line completed"></div>
+            <div class="step-dot active"></div>
+        </div>
+        <button class="back-link" onclick="goToStep('security')"><i class="fa-solid fa-chevron-left"></i> Back</button>
+        <h2><span class="grad">Install</span> Nyxx</h2>
+        <p class="desc">What would you like to do?</p>
+
+        <div class="installer-choice" id="installer-choices">
+            <div class="choice-card" onclick="startScan()" tabindex="0" role="button" aria-label="Scan account for existing Nyxx resources">
+                <div class="icon"><i class="fa-solid fa-magnifying-glass"></i></div>
+                <h3>Scan Account</h3>
+                <p>Find existing Nyxx resources on your Cloudflare account</p>
+            </div>
+            <div class="choice-card" onclick="goToCreate()" tabindex="0" role="button" aria-label="Create new Nyxx panel">
+                <div class="icon"><i class="fa-solid fa-plus"></i></div>
+                <h3>Create New</h3>
+                <p>Deploy a brand new Nyxx panel from scratch</p>
+            </div>
+        </div>
+
+        <div id="scan-results" class="scan-results hidden">
+            <div class="scan-header">
+                <h4><i class="fa-solid fa-magnifying-glass"></i> Scan Results</h4>
+                <span id="scan-badge"></span>
+            </div>
+            <div id="scan-content"></div>
+            <div style="margin-top:var(--s4);display:flex;gap:var(--s2);flex-wrap:wrap;">
+                <button class="btn btn-ghost btn-sm" onclick="startScan()"><i class="fa-solid fa-rotate"></i> Rescan</button>
+                <button class="btn btn-sm" onclick="goToCreate()"><i class="fa-solid fa-plus"></i> Create New Panel</button>
+            </div>
+        </div>
     </div>
-    <p style="color:var(--mu);font-size:.9rem;margin:0 0 10px;padding-left:36px;">Paste your copied token below. We will verify it instantly.</p>
-    <input id="token" type="text" placeholder="Your Cloudflare token..." aria-label="Cloudflare API Token" autocomplete="off" style="margin-left:36px;width:calc(100% - 36px);" />
-    <button class="btn-ghost" style="margin-top:8px;margin-left:36px;width:calc(100% - 36px);padding:10px 20px;min-height:44px;cursor:pointer;border-radius:10px;font-family:inherit;font-size:14px;border:1px solid var(--line2);color:var(--tx);background:var(--card2);" onclick="pasteToken()" id="btn-paste">📋 Paste from Clipboard</button>
-    <div id="token-status" style="margin-top:6px;margin-left:36px;font-size:13px;color:var(--mu);min-height:20px;" role="status" aria-live="polite"></div>
-  </div>
 
-  <button class="btn" style="margin-top:20px;" onclick="goToStep('security')" id="btn-account-next" disabled>Continue →</button>
-</div>
+    <!-- STEP 5: CREATE / UPDATE -->
+    <div id="step-create" class="card hidden step-card">
+        <div class="stepper">
+            <div class="step-dot completed"></div>
+            <div class="step-line completed"></div>
+            <div class="step-dot completed"></div>
+            <div class="step-line completed"></div>
+            <div class="step-dot completed"></div>
+            <div class="step-line completed"></div>
+            <div class="step-dot completed"></div>
+        </div>
+        <button class="back-link" onclick="goToStep('installer')"><i class="fa-solid fa-chevron-left"></i> Back</button>
+        <h2 id="create-title"><span class="grad">Create</span> New Panel</h2>
+        <p class="desc" id="create-desc">Deploy a fresh Nyxx panel to your Cloudflare account.</p>
 
-<!-- STEP 3: SECURITY / PROXY -->
-<div id="step-security" class="card hidden step-card">
-  <div class="stepper">
-    <div class="step-dot completed"></div>
-    <div class="step-line completed"></div>
-    <div class="step-dot completed"></div>
-    <div class="step-line completed"></div>
-    <div class="step-dot active"></div>
-    <div class="step-line"></div>
-    <div class="step-dot"></div>
-  </div>
-  <a class="back-link" onclick="goToStep('account')">← Back</a>
-  <h2>🔒 <span class="grad" style="background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent">Security</span> & Proxy</h2>
-  <p class="desc">Choose how your browser communicates with Cloudflare's API.</p>
+        <div id="update-banner" class="update-banner hidden">
+            <h4><i class="fa-solid fa-rotate"></i> Update Mode</h4>
+            <p>This will replace the worker code for <b id="update-target-name"></b> while keeping the database intact.</p>
+        </div>
 
-  <div class="proxy-option selected" id="opt-default" onclick="selectProxy('default')" tabindex="0" role="radio" aria-checked="true" aria-label="Use default proxy">
-    <div class="radio"></div>
-    <h4>✅ Use Default Proxy (Recommended)</h4>
-    <p>We will route API calls through our hosted CORS proxy. Fast and zero setup. Your token is only forwarded to Cloudflare.</p>
-    <span class="tag">Zero Setup</span>
-  </div>
+        <div id="worker-name-section" class="field">
+            <label for="worker-name" class="field-label">Worker name <span style="color:var(--text-4);font-weight:500;">(optional)</span></label>
+            <div class="row-inline">
+                <input type="text" id="worker-name" placeholder="nyxx-sunny-panel-4f2a" autocomplete="off" spellcheck="false" aria-label="Worker name (optional)" />
+                <button type="button" id="btn-shuffle-name" class="btn btn-ghost" onclick="shuffleName()" title="Generate a random name" aria-label="Generate random name" style="min-width:50px;"><i class="fa-solid fa-dice"></i></button>
+            </div>
+            <div id="worker-name-status" class="field-hint" role="status" aria-live="polite">Leave empty for a random name. Names start with “nyxx-”.</div>
+        </div>
 
-  <div class="proxy-option" id="opt-custom" onclick="selectProxy('custom')" tabindex="0" role="radio" aria-checked="false" aria-label="Self-host proxy">
-    <div class="radio"></div>
-    <h4>🔐 Self-Host Your Own Proxy</h4>
-    <p>Deploy your own proxy worker for maximum privacy. Your token never touches third-party servers.</p>
-    <span class="tag safe">Maximum Privacy</span>
-  </div>
+        <div id="version-create" class="callout hidden"></div>
 
-  <div id="custom-proxy-section" class="proxy-custom-section hidden">
-    <h4>Deploy Your Own Proxy</h4>
-    <ol class="step-list">
-      <li><span class="num">1</span><div>Download <code style="background:var(--bg);padding:2px 6px;border-radius:4px;">proxy.js</code> from <a href="https://github.com/Mahan07dev/Nyxx/blob/main/proxy.js" target="_blank" rel="noopener">GitHub</a></div></li>
-      <li><span class="num">2</span><div>Go to <a href="https://dash.cloudflare.com" target="_blank" rel="noopener">Cloudflare Dashboard</a> → Workers & Pages → Create</div></li>
-      <li><span class="num">3</span><div>Paste the proxy code, deploy, and copy your worker URL</div></li>
-      <li><span class="num">4</span><div>Paste it below — we will verify it works instantly</div></li>
-    </ol>
-    <input type="text" id="custom-proxy-url" placeholder="https://your-proxy.your-subdomain.workers.dev/" oninput="verifyCustomProxy()" />
-    <div id="custom-proxy-status" style="margin-top:8px;font-size:13px;color:var(--mu);min-height:20px;"></div>
-  </div>
+        <div class="sticky-cta">
+            <button class="btn btn-lg" id="go" onclick="install()" disabled><i class="fa-solid fa-rocket"></i> Create my Nyxx panel</button>
+        </div>
 
-  <button class="btn" style="margin-top:20px;" onclick="confirmProxyAndProceed()" id="btn-security-next">Continue →</button>
-</div>
-
-<!-- STEP 4: INSTALLER CHOICE -->
-<div id="step-installer" class="card hidden step-card">
-  <div class="stepper">
-    <div class="step-dot completed"></div>
-    <div class="step-line completed"></div>
-    <div class="step-dot completed"></div>
-    <div class="step-line completed"></div>
-    <div class="step-dot completed"></div>
-    <div class="step-line completed"></div>
-    <div class="step-dot active"></div>
-  </div>
-  <a class="back-link" onclick="goToStep('security')">← Back</a>
-  <h2>🚀 <span class="grad" style="background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent">Install</span> Nyxx</h2>
-  <p class="desc">What would you like to do?</p>
-
-  <div class="installer-choice" id="installer-choices">
-    <div class="choice-card" onclick="startScan()" tabindex="0" role="button" aria-label="Scan account for existing Nyxx resources">
-      <div class="icon">🔍</div>
-      <h3>Scan Account</h3>
-      <p>Check for existing Nyxx resources on your Cloudflare account</p>
+        <div id="progress-card" class="hidden" style="margin-top:var(--s5);">
+            <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progress-bar"></div></div>
+            <div id="progress-text">Step 0 of 8</div>
+            <div class="progress" id="progress"></div>
+            <div class="err-box hidden" id="errbox">
+                <div class="err-title" id="err-title"><i class="fa-solid fa-circle-xmark"></i> Installation Failed</div>
+                <div id="err-text"></div>
+                <div class="err-actions">
+                    <button class="btn btn-ghost btn-sm" onclick="resetInstallation()"><i class="fa-solid fa-rotate-left"></i> Start Over</button>
+                    <button class="btn btn-sm" onclick="retryCurrentStep()" id="btn-retry-step"><i class="fa-solid fa-rotate"></i> Retry This Step</button>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="choice-card" onclick="goToCreate()" tabindex="0" role="button" aria-label="Create new Nyxx panel">
-      <div class="icon">🆕</div>
-      <h3>Create New</h3>
-      <p>Deploy a brand new Nyxx panel from scratch</p>
+
+    <!-- STEP 6: RESULT -->
+    <div id="step-result" class="hidden">
+        <div class="result-box">
+            <div class="success-icon"><i class="fa-solid fa-check"></i></div>
+            <h3 id="result-title">Your Nyxx panel is ready!</h3>
+            <p>Your panel has been successfully deployed.</p>
+            <div class="url-box" id="result-url-box">
+                <span id="result-url"></span><br>
+                <button onclick="copyUrl()"><i class="fa-regular fa-copy"></i> Copy URL</button>
+            </div>
+            <p id="result-database" style="color:var(--text-3);font-size:var(--fs-footnote);margin:0 0 var(--s5);"></p>
+            <a class="btn btn-lg" href="#" target="_blank" id="result-link" rel="noopener" style="max-width:340px;margin:0 auto;">Open your panel <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+            <button class="btn btn-ghost" onclick="startAnotherPanel()" style="max-width:340px;margin:10px auto 0;"><i class="fa-solid fa-plus"></i> Create another panel</button>
+            <div class="callout ok" style="margin-top:var(--s5);text-align:left;">
+                <span class="ic"><i class="fa-solid fa-lightbulb"></i></span>
+                <div>Set your admin password on first visit. If <code>workers.dev</code> is blocked in your region, add a custom domain in the Cloudflare Dashboard.</div>
+            </div>
+            <div class="callout warn" id="propagation-notice" style="text-align:left;">
+                <span class="ic"><i class="fa-solid fa-hourglass-half"></i></span>
+                <div><b>Not loading yet?</b> Cloudflare Workers can take 1–3 minutes to propagate globally. Wait a moment and refresh.</div>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <div id="scan-results" class="scan-results hidden">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-      <h4 style="margin:0;">🔍 Scan Results</h4>
-      <span id="scan-badge" style="background:var(--card2);padding:2px 10px;border-radius:20px;font-size:12px;color:var(--mu);"></span>
+    <div class="foot" id="main-foot">
+        <span id="foot-shortcuts">Press <span class="kbd">Enter</span> to select · <span class="kbd">←</span> <span class="kbd">→</span> to navigate</span>
+        <br>
+        Using proxy: <span id="foot-proxy" style="color:var(--accent);">default</span>
+        &middot;
+        <span id="foot-version"></span>
+        <br>
+        <a href="#" onclick="clearAllData();return false;">Clear all data</a>
     </div>
-    <div id="scan-content"></div>
-    <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
-      <button class="btn btn-ghost btn-sm" onclick="startScan()">🔄 Rescan</button>
-      <button class="btn btn-sm" onclick="goToCreate()">➕ Create New Panel</button>
-    </div>
-  </div>
-</div>
-
-<!-- STEP 5: CREATE / UPDATE -->
-<div id="step-create" class="card hidden step-card">
-  <div class="stepper">
-    <div class="step-dot completed"></div>
-    <div class="step-line completed"></div>
-    <div class="step-dot completed"></div>
-    <div class="step-line completed"></div>
-    <div class="step-dot completed"></div>
-    <div class="step-line completed"></div>
-    <div class="step-dot completed"></div>
-  </div>
-  <a class="back-link" onclick="goToStep('installer')">← Back</a>
-  <h2 id="create-title">🆕 <span class="grad" style="background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent">Create</span> New Panel</h2>
-  <p class="desc" id="create-desc">Deploy a fresh Nyxx panel to your Cloudflare account.</p>
-
-  <div id="update-banner" class="update-banner hidden">
-    <h4>🔄 Update Mode</h4>
-    <p style="color:var(--mu);font-size:13px;margin:0;">This will replace the worker code for <b id="update-target-name"></b> while keeping the database intact.</p>
-  </div>
-
-  <div id="worker-name-section" style="margin:16px 0 4px;">
-    <label for="worker-name" style="font-size:0.85rem;color:var(--mu);display:block;margin-bottom:8px;">Worker name <span style="color:var(--mu);">(optional)</span></label>
-    <div style="display:flex;gap:8px;">
-      <input type="text" id="worker-name" placeholder="nyxx-sunny-panel-4f2a" autocomplete="off" spellcheck="false" aria-label="Worker name (optional)" />
-      <button type="button" id="btn-shuffle-name" class="btn btn-ghost btn-sm" onclick="shuffleName()" title="Generate a random name" aria-label="Generate random name" style="min-width:44px;font-size:1rem;">🎲</button>
-    </div>
-    <div id="worker-name-status" style="margin-top:6px;font-size:12.5px;color:var(--mu);min-height:18px;" role="status" aria-live="polite">Leave empty for a random name. Names start with "nyxx-".</div>
-  </div>
-
-  <div id="version-create" class="callout hidden" style="margin:10px 0;"></div>
-
-  <div style="text-align:center;margin:20px 0;">
-    <button class="btn" id="go" onclick="install()" disabled style="max-width:320px;">🚀 Create my Nyxx panel</button>
-  </div>
-
-  <div id="progress-card" class="hidden" style="margin-top:20px;">
-    <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progress-bar"></div></div>
-    <div style="text-align:center;font-size:12px;color:var(--mu);margin-bottom:6px;" id="progress-text">Step 0 of 8</div>
-    <div class="progress" id="progress"></div>
-    <div class="err-box hidden" id="errbox">
-      <div class="err-title" id="err-title"></div>
-      <div id="err-text"></div>
-      <div class="err-actions">
-        <button class="btn btn-sm btn-ghost" onclick="resetInstallation()">Start Over</button>
-        <button class="btn btn-sm" onclick="retryCurrentStep()" id="btn-retry-step">Retry This Step</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- STEP 6: RESULT -->
-<div id="step-result" class="hidden">
-  <div class="result-box">
-    <div class="success-icon">🎉</div>
-    <h3 id="result-title">Your Nyxx panel is ready!</h3>
-    <p style="color:var(--mu);font-size:0.9rem;">Your panel has been successfully deployed.</p>
-    <div class="url-box" id="result-url-box">
-      <span id="result-url"></span><br>
-      <button onclick="copyUrl()">📋 Copy URL</button>
-    </div>
-    <p id="result-database" style="color:var(--mu);font-size:0.9rem;margin:0 0 14px;"></p>
-    <a class="btn" href="#" target="_blank" id="result-link" rel="noopener" style="max-width:280px;margin:0 auto;">Open your panel →</a>
-    <button class="btn btn-ghost" onclick="startAnotherPanel()" style="max-width:280px;margin:10px auto 0;">Create another panel</button>
-    <div class="callout ok" style="margin-top:14px;text-align:left;"><span class="ic">💡</span><div style="font-size:13px;">Set your admin password on first visit. If workers.dev is blocked in your region, add a custom domain in Cloudflare Dashboard.</div></div>
-    <div class="callout warn" id="propagation-notice" style="text-align:left;"><span class="ic">⏳</span><div style="font-size:13px;"><b>Not loading yet?</b> Cloudflare Workers can take 1–3 minutes to propagate globally. Wait a moment and refresh the page.</div></div>
-  </div>
-</div>
-
-<div class="foot" id="main-foot" style="text-align:center;color:var(--mu);font-size:11px;margin-top:16px;">
-  <span id="foot-shortcuts">Press <span class="kbd">Enter</span> to select · <span class="kbd">←</span> <span class="kbd">→</span> to navigate</span>
-  <br><br>
-  Using proxy: <span id="foot-proxy" style="color:var(--cyan);">default</span> ·
-  <span id="foot-version" style="color:var(--mu);"></span>
-  <a href="#" onclick="clearAllData();return false;" style="color:var(--cyan);">Clear all data</a>
-</div>
 </div>
 
 <script>
@@ -570,6 +1253,25 @@ let workerNameValid = false;
 const proxyHealth = { checking: false, ok: null, lastCheck: 0 };
 
 // ============================
+// THEME
+// ============================
+function applyTheme(mode) {
+  document.documentElement.setAttribute('data-theme', mode);
+  try { localStorage.setItem('nyxx-installer-theme', mode); } catch (e) {}
+}
+function cycleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme') || 'auto';
+  const next = cur === 'auto' ? 'light' : (cur === 'light' ? 'dark' : 'auto');
+  applyTheme(next);
+  showToast('Appearance: ' + next, 'ok');
+}
+(function initTheme() {
+  let saved = 'auto';
+  try { saved = localStorage.getItem('nyxx-installer-theme') || 'auto'; } catch (e) {}
+  applyTheme(saved);
+})();
+
+// ============================
 // DOM REFERENCES
 // ============================
 const tokenInput = document.getElementById('token');
@@ -591,11 +1293,9 @@ function init() {
   updateStepper('welcome');
   updateFooterShortcuts('welcome');
 
-  // Async, non-blocking: latest release info + proxy connectivity.
   fetchLatestVersion();
   checkProxyHealth(false);
 
-  // Autofill saved token
   if (config.token && tokenInput) {
     tokenInput.value = config.token;
     if (config.token.length >= 20) {
@@ -605,7 +1305,6 @@ function init() {
 
   document.addEventListener('keydown', handleKeydown);
 
-  // Proxy option keyboard
   document.querySelectorAll('.proxy-option').forEach((el, i) => {
     el.addEventListener('keydown', (e) => {
       if (e.key === ' ') {
@@ -615,7 +1314,6 @@ function init() {
     });
   });
 
-  // Worker name validation
   const workerNameInput = document.getElementById('worker-name');
   if (workerNameInput) {
     workerNameInput.addEventListener('input', debounce(onWorkerNameInput, 250));
@@ -640,7 +1338,6 @@ function goToStep(stepId) {
   const titles = { welcome: 'Welcome', account: 'Account and Token', security: 'Security and Proxy', installer: 'Install Nyxx', create: 'Create Panel', result: 'Installation Complete' };
   announce(titles[stepId] || '');
 
-  // Focus management
   if (stepId === 'account' && tokenInput && !tokenInput.value) {
     setTimeout(() => tokenInput.focus(), 100);
   }
@@ -731,7 +1428,6 @@ function handleKeydown(e) {
     return;
   }
 
-  // Let native controls and their dedicated handlers process Enter themselves.
   if (e.key !== 'Enter' || (active && ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON', 'A'].includes(active.tagName))) return;
 
   const primaryActions = {
@@ -823,13 +1519,13 @@ async function verifyCustomProxy() {
   const statusEl = document.getElementById('custom-proxy-status');
 
   if (!url) { statusEl.textContent = ''; customProxyVerified = false; return; }
-  if (!url.startsWith('https://')) { statusEl.textContent = '❌ URL must start with https://'; statusEl.style.color = 'var(--bad)'; customProxyVerified = false; return; }
+  if (!url.startsWith('https://')) { statusEl.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> URL must start with https://'; statusEl.style.color = 'var(--red)'; customProxyVerified = false; return; }
 
   let normalized = url;
   if (!normalized.endsWith('/')) normalized += '/';
 
-  statusEl.textContent = '⏳ Testing proxy...';
-  statusEl.style.color = 'var(--mu)';
+  statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Testing proxy...';
+  statusEl.style.color = 'var(--text-4)';
 
   try {
     await delay(300);
@@ -838,8 +1534,8 @@ async function verifyCustomProxy() {
     if (res.ok) {
       const data = await res.json();
       if (data && (data.result || data.success !== undefined)) {
-        statusEl.textContent = '✅ Proxy is working!';
-        statusEl.style.color = 'var(--ok)';
+        statusEl.innerHTML = '<i class="fa-solid fa-circle-check"></i> Proxy is working.';
+        statusEl.style.color = 'var(--green)';
         config.proxyUrl = normalized;
         customProxyVerified = true;
         saveConfig();
@@ -847,12 +1543,12 @@ async function verifyCustomProxy() {
         return;
       }
     }
-    statusEl.textContent = '❌ Proxy returned HTTP ' + res.status;
-    statusEl.style.color = 'var(--bad)';
+    statusEl.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> Proxy returned HTTP ' + res.status;
+    statusEl.style.color = 'var(--red)';
     customProxyVerified = false;
   } catch (e) {
-    statusEl.textContent = '❌ Cannot reach proxy';
-    statusEl.style.color = 'var(--bad)';
+    statusEl.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> Cannot reach proxy';
+    statusEl.style.color = 'var(--red)';
     customProxyVerified = false;
   }
 }
@@ -860,8 +1556,8 @@ async function verifyCustomProxy() {
 function confirmProxyAndProceed() {
   if (config.proxyMode === 'custom' && !customProxyVerified) {
     const statusEl = document.getElementById('custom-proxy-status');
-    statusEl.textContent = '❌ Please verify your proxy URL first, or switch to the default proxy.';
-    statusEl.style.color = 'var(--bad)';
+    statusEl.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> Please verify your proxy URL first, or switch to the default proxy.';
+    statusEl.style.color = 'var(--red)';
     return;
   }
   saveConfig();
@@ -894,20 +1590,20 @@ function renderVersionInfo() {
   const footVersion = document.getElementById('foot-version');
   if (chip) {
     chip.innerHTML = latestVersion
-      ? '📦 Latest: <b>v' + escapeHtml(latestVersion.version) + '</b>' +
-        (latestVersion.notes ? ' <span style="color:var(--mu);font-weight:400;">— ' + escapeHtml(latestVersion.notes) + '</span>' : '')
-      : '📦 Checking latest version…';
+      ? '<i class="fa-solid fa-box"></i> Latest: <b>v' + escapeHtml(latestVersion.version) + '</b>' +
+        (latestVersion.notes ? ' <span style="color:var(--text-3);font-weight:500;">— ' + escapeHtml(latestVersion.notes) + '</span>' : '')
+      : '<i class="fa-solid fa-box"></i> Checking latest version…';
   }
   if (createCallout) {
     if (latestVersion) {
       createCallout.classList.remove('hidden');
-      createCallout.innerHTML = '<span class="ic">🚀</span><div style="font-size:13px;">This will deploy <b>Nyxx v' + escapeHtml(latestVersion.version) + '</b> — the latest release' +
+      createCallout.innerHTML = '<span class="ic"><i class="fa-solid fa-rocket"></i></span><div>This will deploy <b>Nyxx v' + escapeHtml(latestVersion.version) + '</b> — the latest release' +
         (latestVersion.released ? ' (' + escapeHtml(latestVersion.released) + ')' : '') + '.</div>';
     } else {
       createCallout.classList.add('hidden');
     }
   }
-  if (footVersion) footVersion.textContent = latestVersion ? 'Installer · Nyxx v' + latestVersion.version : '';
+  if (footVersion) footVersion.textContent = latestVersion ? 'Nyxx v' + latestVersion.version : '';
 }
 
 // ============================
@@ -918,7 +1614,7 @@ async function checkProxyHealth(force) {
   const now = Date.now();
   if (!force && proxyHealth.ok !== null && now - proxyHealth.lastCheck < 30000) return;
   proxyHealth.checking = true;
-  renderProxyHealth('⏳ Checking proxy connectivity…', null);
+  renderProxyHealth('<i class="fa-solid fa-spinner fa-spin"></i> Checking proxy connectivity…', null);
   try {
     const proxy = config.proxyUrl || DEFAULT_PROXY;
     const probe = proxy + (proxy.endsWith('/') ? '' : '/') + '?url=' + encodeURIComponent('https://api.cloudflare.com/client/v4/ips');
@@ -938,7 +1634,7 @@ function renderProxyHealth(overrideText) {
   if (typeof overrideText === 'string' && overrideText.length > 0) {
     banner.classList.remove('hidden');
     banner.className = 'callout warn';
-    banner.innerHTML = '<span class="ic">📡</span><div style="font-size:13px;">' + overrideText + '</div>';
+    banner.innerHTML = '<span class="ic"><i class="fa-solid fa-satellite-dish"></i></span><div>' + overrideText + '</div>';
     return;
   }
   if (proxyHealth.ok === true) {
@@ -946,7 +1642,7 @@ function renderProxyHealth(overrideText) {
   } else if (proxyHealth.ok === false) {
     banner.classList.remove('hidden');
     banner.className = 'callout warn';
-    banner.innerHTML = '<span class="ic">📡</span><div style="font-size:13px;"><b>Proxy unreachable.</b> The selected proxy is not responding. Check your connection, or self-host the proxy on the Security step. <button class="btn btn-sm btn-ghost" onclick="checkProxyHealth(true)" style="margin-top:8px;">↻ Retry</button></div>';
+    banner.innerHTML = '<span class="ic"><i class="fa-solid fa-satellite-dish"></i></span><div><b>Proxy unreachable.</b> The selected proxy is not responding. Check your connection, or self-host the proxy on the Security step. <button class="btn btn-ghost btn-sm" onclick="checkProxyHealth(true)" style="margin-top:8px;"><i class="fa-solid fa-rotate"></i> Retry</button></div>';
   }
 }
 
@@ -976,13 +1672,13 @@ function onWorkerNameInput() {
   if (!status) return;
   if (!raw.trim()) {
     status.textContent = 'Leave empty for a random name. Names start with "nyxx-".';
-    status.style.color = 'var(--mu)';
+    status.style.color = 'var(--text-4)';
   } else if (!check.valid) {
-    status.textContent = '❌ Use lowercase letters, numbers and hyphens only (max 40 chars). It will be prefixed with nyxx-.';
-    status.style.color = 'var(--bad)';
+    status.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> Use lowercase letters, numbers and hyphens only (max 40 chars). It will be prefixed with nyxx-.';
+    status.style.color = 'var(--red)';
   } else {
-    status.textContent = '✅ Will deploy as: ' + check.name;
-    status.style.color = 'var(--ok)';
+    status.innerHTML = '<i class="fa-solid fa-circle-check"></i> Will deploy as: ' + check.name;
+    status.style.color = 'var(--green)';
   }
 }
 
@@ -991,7 +1687,10 @@ function shuffleName() {
   input.value = 'nyxx-' + rname();
   onWorkerNameInput();
   const status = document.getElementById('worker-name-status');
-  if (status) status.textContent = '✅ Name available — using: ' + input.value;
+  if (status) {
+    status.innerHTML = '<i class="fa-solid fa-circle-check"></i> Name available — using: ' + input.value;
+    status.style.color = 'var(--green)';
+  }
 }
 
 async function workerNameTaken(name, token) {
@@ -1001,7 +1700,7 @@ async function workerNameTaken(name, token) {
     if (!cfOk(res) || !Array.isArray(res.json.result)) return false;
     return res.json.result.some(w => w.id === name);
   } catch (e) {
-    return false; // never block the install because the check itself failed
+    return false;
   }
 }
 
@@ -1030,28 +1729,28 @@ async function verifyToken() {
     return;
   }
 
-  tokenStatus.textContent = '⏳ Verifying...';
-  tokenStatus.style.color = 'var(--mu)';
+  tokenStatus.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying...';
+  tokenStatus.style.color = 'var(--text-4)';
 
   try {
     await delay(200);
     const res = await api('GET', 'https://api.cloudflare.com/client/v4/user/tokens/verify', token);
     if (res.json && res.json.success === true) {
-      tokenStatus.textContent = '✅ Token valid';
-      tokenStatus.style.color = 'var(--ok)';
+      tokenStatus.innerHTML = '<i class="fa-solid fa-circle-check"></i> Token valid';
+      tokenStatus.style.color = 'var(--green)';
       config.tokenVerified = true;
       if (btnAccountNext) btnAccountNext.disabled = false;
       announce('Token verified successfully.');
     } else {
       const err = res.json?.errors?.[0]?.message || 'Invalid token';
-      tokenStatus.textContent = '❌ ' + err;
-      tokenStatus.style.color = 'var(--bad)';
+      tokenStatus.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> ' + err;
+      tokenStatus.style.color = 'var(--red)';
       config.tokenVerified = false;
       if (btnAccountNext) btnAccountNext.disabled = true;
     }
   } catch (e) {
-    tokenStatus.textContent = '❌ Error verifying token';
-    tokenStatus.style.color = 'var(--bad)';
+    tokenStatus.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> Error verifying token';
+    tokenStatus.style.color = 'var(--red)';
     config.tokenVerified = false;
     if (btnAccountNext) btnAccountNext.disabled = true;
   }
@@ -1072,7 +1771,6 @@ function debounce(fn, delay) { let timer; return function(...args) { clearTimeou
 // ============================
 // API HELPER
 // ============================
-// Fetch with an abort timeout so a dead proxy can never hang the wizard forever.
 async function fetchWithTimeout(url, init, timeoutMs) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs || API_TIMEOUT_MS);
@@ -1109,8 +1807,6 @@ function api(method, target, token, body, ctype) {
     try {
       return await sendRequest(upperMethod, {}, true);
     } catch (e) {
-      // Network failure or timeout. Retrying non-idempotent methods (POST) risks
-      // creating duplicate resources, so only auto-retry safe methods.
       if (['GET', 'HEAD', 'PUT', 'DELETE'].includes(upperMethod)) {
         await delay(800);
         try {
@@ -1182,14 +1878,14 @@ async function startScan() {
   const resultsDiv = document.getElementById('scan-results');
   const contentDiv = document.getElementById('scan-content');
   resultsDiv.classList.remove('hidden');
-  contentDiv.innerHTML = '<div class="scan-empty"><div class="icon">🔍</div><p class="loading-dots">Scanning your Cloudflare account</p></div>';
+  contentDiv.innerHTML = '<div class="scan-empty"><div class="icon"><i class="fa-solid fa-magnifying-glass"></i></div><p class="loading-dots">Scanning your Cloudflare account</p></div>';
   document.getElementById('scan-badge').textContent = 'scanning...';
 
   try {
     await delay(200);
     const acc = await api('GET', 'https://api.cloudflare.com/client/v4/accounts', token);
     if (!cfOk(acc) || !acc.json.result.length) {
-      contentDiv.innerHTML = '<div class="scan-empty"><div class="icon">❌</div><p>Could not access your account. Please check your token permissions.</p></div>';
+      contentDiv.innerHTML = '<div class="scan-empty"><div class="icon" style="background:var(--red-soft);color:var(--red);"><i class="fa-solid fa-circle-xmark"></i></div><p>Could not access your account. Please check your token permissions.</p></div>';
       document.getElementById('scan-badge').textContent = 'error';
       return;
     }
@@ -1218,39 +1914,38 @@ async function startScan() {
     document.getElementById('scan-badge').textContent = total + ' found';
 
     if (total === 0) {
-      contentDiv.innerHTML = '<div class="scan-empty"><div class="icon">🌱</div><p>No existing Nyxx resources found.</p><p style="font-size:0.85rem;margin-top:8px;">You are ready to create a new panel!</p></div>';
+      contentDiv.innerHTML = '<div class="scan-empty"><div class="icon" style="background:var(--green-soft);color:var(--green);"><i class="fa-solid fa-seedling"></i></div><p>No existing Nyxx resources found.</p><p style="font-size:var(--fs-footnote);margin-top:8px;color:var(--text-4);">You are ready to create a new panel.</p></div>';
     } else {
-      let html = '<div class="table-wrap"><table class="resource-table"><thead><tr><th>Name</th><th>Type</th><th>Created</th><th>Actions</th></tr></thead><tbody>';
+      let html = '<div class="table-wrap"><div class="table-scroll"><table class="resource-table"><thead><tr><th>Name</th><th>Type</th><th>Created</th><th>Actions</th></tr></thead><tbody>';
 
       nyxxWorkers.forEach(w => {
         const date = w.created_on ? new Date(w.created_on).toLocaleDateString() : 'Unknown';
         const url = installState.subName ? `https://${w.id}.${installState.subName}.workers.dev` : `https://${w.id}.workers.dev`;
         html += '<tr><td><b>' + escapeHtml(w.id) + '</b></td>' +
-          '<td><span class="type-badge worker">Worker</span></td>' +
+          '<td><span class="type-badge worker"><i class="fa-solid fa-bolt"></i> Worker</span></td>' +
           '<td>' + date + '</td>' +
           '<td class="actions">' +
-          '<button onclick="window.open(\'' + url + '\', \'_blank\')">Open</button>' +
-          '<button class="update" onclick="startUpdate(\'' + escapeHtml(w.id) + '\')">Update</button>' +
-
-          '<button class="delete" onclick="deleteResource(\'worker\', \'' + escapeHtml(w.id) + '\')">Delete</button>' +
+          '<button onclick="window.open(\'' + url + '\', \'_blank\')"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open</button>' +
+          '<button class="update" onclick="startUpdate(\'' + escapeHtml(w.id) + '\')"><i class="fa-solid fa-rotate"></i> Update</button>' +
+          '<button class="delete" onclick="deleteResource(\'worker\', \'' + escapeHtml(w.id) + '\')"><i class="fa-regular fa-trash-can"></i> Delete</button>' +
           '</td></tr>';
       });
 
       nyxxDbs.forEach(d => {
         const date = d.created_at ? new Date(d.created_at).toLocaleDateString() : 'Unknown';
         html += '<tr><td><b>' + escapeHtml(d.name) + '</b></td>' +
-          '<td><span class="type-badge database">D1 DB</span></td>' +
+          '<td><span class="type-badge database"><i class="fa-solid fa-database"></i> D1 DB</span></td>' +
           '<td>' + date + '</td>' +
           '<td class="actions">' +
-          '<button class="delete" onclick="deleteResource(\'database\', \'' + d.uuid + '\')">Delete</button>' +
+          '<button class="delete" onclick="deleteResource(\'database\', \'' + d.uuid + '\')"><i class="fa-regular fa-trash-can"></i> Delete</button>' +
           '</td></tr>';
       });
 
-      html += '</tbody></table></div>';
+      html += '</tbody></table></div></div>';
       contentDiv.innerHTML = html;
     }
   } catch (e) {
-    contentDiv.innerHTML = '<div class="scan-empty"><div class="icon">⚠️</div><p>Error scanning: ' + escapeHtml(e.message) + '</p></div>';
+    contentDiv.innerHTML = '<div class="scan-empty"><div class="icon" style="background:var(--orange-soft);color:var(--orange);"><i class="fa-solid fa-triangle-exclamation"></i></div><p>Error scanning: ' + escapeHtml(e.message) + '</p></div>';
     document.getElementById('scan-badge').textContent = 'error';
   }
 }
@@ -1290,7 +1985,6 @@ async function deleteResource(type, id) {
 function startUpdate(workerName) {
   installState.updateMode = true;
   installState.updateTarget = workerName;
-  // An update always discovers its own binding configuration; never reuse create-flow state.
   installState.workerName = workerName;
   installState.dbId = null;
   installState.dbName = '';
@@ -1300,11 +1994,11 @@ function startUpdate(workerName) {
   installState.errorMessage = null;
   saveState();
 
-  document.getElementById('create-title').innerHTML = '🔄 <span class="grad" style="background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent">Update</span> Panel';
+  document.getElementById('create-title').innerHTML = '<span class="grad">Update</span> Panel';
   document.getElementById('create-desc').textContent = 'Replace the worker code for ' + workerName + ' with the latest version.';
   document.getElementById('update-banner').classList.remove('hidden');
   document.getElementById('update-target-name').textContent = workerName;
-  document.getElementById('go').textContent = '🔄 Update ' + workerName;
+  document.getElementById('go').innerHTML = '<i class="fa-solid fa-rotate"></i> Update ' + workerName;
   document.getElementById('go').disabled = false;
   document.getElementById('worker-name-section').classList.add('hidden');
 
@@ -1316,10 +2010,10 @@ function goToCreate() {
   installState.updateTarget = null;
   saveState();
 
-  document.getElementById('create-title').innerHTML = '🆕 <span class="grad" style="background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent">Create</span> New Panel';
+  document.getElementById('create-title').innerHTML = '<span class="grad">Create</span> New Panel';
   document.getElementById('create-desc').textContent = 'Deploy a fresh Nyxx panel to your Cloudflare account.';
   document.getElementById('update-banner').classList.add('hidden');
-  document.getElementById('go').textContent = '🚀 Create my Nyxx panel';
+  document.getElementById('go').innerHTML = '<i class="fa-solid fa-rocket"></i> Create my Nyxx panel';
   document.getElementById('go').disabled = !config.tokenVerified;
   const nameInput = document.getElementById('worker-name');
   if (nameInput) { nameInput.value = ''; }
@@ -1372,7 +2066,6 @@ async function install() {
   const isUpdate = installState.updateMode && installState.updateTarget;
 
   if (!isUpdate) {
-    // Resolve the worker name: a validated custom name, or a random one.
     const nameInput = document.getElementById('worker-name');
     const rawName = nameInput ? nameInput.value : '';
     if (rawName && rawName.trim()) {
@@ -1383,7 +2076,7 @@ async function install() {
       }
       const taken = await workerNameTaken(check.name, token);
       if (taken) {
-        showToast('That worker name is already taken. Pick another or tap the 🎲 button.', 'warn');
+        showToast('That worker name is already taken. Pick another or tap the dice button.', 'warn');
         return;
       }
       installState.workerName = check.name;
@@ -1461,7 +2154,6 @@ async function install() {
         return true;
       });
     } else {
-      // Update mode preserves the selected Worker's existing D1 database; it never creates one.
       await runStep('verify', async () => true);
       await runStep('account', async () => Boolean(await resolveAccountId(token)));
       await runStep('sub', async () => {
@@ -1530,8 +2222,6 @@ async function install() {
       );
 
       if (!cfOk(dep)) throw new InstallError('Upload failed: ' + cfErr(dep), 'API');
-      if (!isUpdate) {
-      }
       saveState();
       return true;
     });
@@ -1773,15 +2463,15 @@ function setStep(s, state) {
   if (!d) return;
   d.className = 'prow ' + state;
   const dot = d.querySelector('.dot');
-  if (state === 'done') dot.textContent = '✓';
-  else if (state === 'err') dot.textContent = '!';
-  else dot.textContent = '';
+  if (state === 'done') dot.innerHTML = '✓';
+  else if (state === 'err') dot.innerHTML = '!';
+  else dot.innerHTML = '';
   const existingRetry = d.querySelector('.retry-btn');
   if (existingRetry) existingRetry.remove();
   if (state === 'err') {
     const retryBtn = document.createElement('button');
     retryBtn.className = 'retry-btn';
-    retryBtn.textContent = 'Retry';
+    retryBtn.innerHTML = '<i class="fa-solid fa-rotate"></i> Retry';
     retryBtn.onclick = () => retryStep(s);
     d.appendChild(retryBtn);
   }
@@ -1797,7 +2487,7 @@ function updateProgressBar(completed) {
 function showErr(msg, showRetry) {
   const b = document.getElementById('errbox');
   b.classList.remove('hidden');
-  document.getElementById('err-title').innerHTML = '❌ Installation Failed';
+  document.getElementById('err-title').innerHTML = '<i class="fa-solid fa-circle-xmark"></i> Installation Failed';
   document.getElementById('err-text').textContent = msg;
   document.getElementById('btn-retry-step').style.display = showRetry ? 'inline-flex' : 'none';
   announce('Error: ' + msg);
@@ -1817,7 +2507,7 @@ function showResult(panelUrl, isUpdate) {
   document.getElementById('result-title').textContent = isUpdate ? 'Your Nyxx panel has been updated!' : 'Your Nyxx panel is ready!';
 
   const notice = document.getElementById('propagation-notice');
-  if (notice) notice.style.display = 'block';
+  if (notice) notice.style.display = 'flex';
 
   const database = document.getElementById('result-database');
   const versionLine = installState.workerVersion ? 'Nyxx v' + installState.workerVersion : '';
@@ -1908,8 +2598,8 @@ function showToast(message, type) {
   container.appendChild(toast);
   setTimeout(() => {
     toast.style.opacity = '0';
-    toast.style.transform = 'translateY(20px)';
-    toast.style.transition = 'all 0.3s';
+    toast.style.transform = 'translateY(20px) scale(0.95)';
+    toast.style.transition = 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
     setTimeout(() => toast.remove(), 300);
   }, 4000);
 }
@@ -1949,7 +2639,6 @@ async function probePanelUrl(url) {
     const proxy = config.proxyUrl || DEFAULT_PROXY;
     const probeUrl = proxy + (proxy.endsWith('/') ? '' : '/') + '?url=' + encodeURIComponent(url);
     const response = await fetch(probeUrl, { cache: 'no-store', method: 'HEAD' });
-    // A protected panel can legitimately return an auth or redirect response while still being online.
     return [200, 204, 301, 302, 303, 307, 308, 401, 403].includes(response.status);
   } catch (e) {
     return false;
