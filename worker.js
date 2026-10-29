@@ -3759,7 +3759,7 @@ function autoCheckUpdate() { checkUpdate(true); }
 function openTokenGen() { window.open('https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22edit%22%7D%5D&accountId=*&zoneId=all&name=Nyxx%20Updater', '_blank'); }
 async function performUpdate() {
     var token = $('up-token').value.trim();
-    if (!token) { toast('Enter a Cloudflare API token.', 'error'); return; }
+    if (!token && !d.cf_token_set) { toast('Enter a Cloudflare API token.', 'error'); return; }
     $('up-result').innerHTML = '<span class="mini-spinner"></span> Validating token…';
     try {
         var v = await api('POST', '/api/update/validate', { token: token });
