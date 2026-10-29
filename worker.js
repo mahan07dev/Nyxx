@@ -1,8 +1,8 @@
 // ============================================================================
-// NYXX — v4.0.0
+// NYXX — v4.1.0
 // Telegram bot builder + management dashboard for Cloudflare Workers + D1.
 // ============================================================================
-const VERSION = '4.0.0';
+const VERSION = '4.1.0';
 
 const DASHBOARD_HTML = `<!DOCTYPE html>
 <html lang="en" data-theme="auto">
@@ -22,11 +22,12 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
     --s6: 24px; --s8: 32px; --s10: 40px; --s12: 48px; --s16: 64px;
     --r-xs: 6px; --r-sm: 10px; --r-md: 14px; --r-lg: 18px; --r-xl: 24px; --r-pill: 999px;
     --fs-large: 34px; --fs-title1: 28px; --fs-title2: 22px; --fs-title3: 20px;
-    --fs-headline: 17px; --fs-body: 17px; --fs-callout: 16px; --fs-subhead: 15px;
+    --fs-headline: 17px; --fs-body: 16px; --fs-callout: 15px; --fs-subhead: 14px;
     --fs-footnote: 13px; --fs-caption: 12px; --fs-caption2: 11px;
-    --fill-1: rgba(120,120,128,0.12);
+    --fill-1: rgba(120,120,128,0.10);
     --fill-2: rgba(120,120,128,0.16);
     --fill-3: rgba(120,120,128,0.24);
+    --h-control: 38px; --h-control-sm: 32px; --h-control-lg: 44px;
 }
 html[data-theme="light"] {
     --bg: #f5f5f7; --bg-elev: #ffffff;
@@ -106,7 +107,7 @@ html[data-theme="dark"] {
 html, body { height: 100%; }
 body {
     margin: 0; background: var(--bg); color: var(--text);
-    font-family: var(--font); font-size: var(--fs-body); line-height: 1.47;
+    font-family: var(--font); font-size: var(--fs-body); line-height: 1.5;
     letter-spacing: -0.01em; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
 }
 h1,h2,h3,h4 { margin: 0; letter-spacing: -0.022em; line-height: 1.18; font-weight: 700; }
@@ -127,7 +128,7 @@ input, textarea, select, button { font-family: inherit; }
 
 .app { display: flex; min-height: 100vh; }
 .sidebar {
-    position: fixed; left: 0; top: 0; bottom: 0; width: 272px;
+    position: fixed; left: 0; top: 0; bottom: 0; width: 276px;
     background: var(--surface); border-right: 1px solid var(--hairline);
     padding: var(--s4) var(--s3);
     display: flex; flex-direction: column; gap: var(--s2);
@@ -136,23 +137,28 @@ input, textarea, select, button { font-family: inherit; }
 }
 .app.sidebar-open .sidebar { transform: none; }
 .brand { display: flex; align-items: center; gap: var(--s3); padding: var(--s2) var(--s3) var(--s4); }
-.brand img { width: 34px; height: 34px; border-radius: 9px; }
+.brand img { width: 36px; height: 36px; border-radius: 9px; }
 .brand-name { font-size: var(--fs-title3); font-weight: 700; letter-spacing: -0.02em; }
 .brand-ver { font-size: var(--fs-caption2); color: var(--text-4); font-weight: 600; }
 .nav-group { display: flex; flex-direction: column; gap: 2px; margin-bottom: var(--s3); }
 .nav-label { font-size: var(--fs-caption2); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-4); padding: var(--s2) var(--s3); }
 .nav-item {
     display: flex; align-items: center; gap: var(--s3);
-    padding: 10px var(--s3); border-radius: var(--r-sm);
+    padding: 9px var(--s3); border-radius: var(--r-sm);
     color: var(--text-2); font-size: var(--fs-subhead); font-weight: 500;
     cursor: pointer; border: none; background: none; width: 100%; text-align: left;
-    transition: background 0.16s ease, color 0.16s ease; min-height: 40px;
+    transition: background 0.16s ease, color 0.16s ease; min-height: 42px;
+    position: relative;
 }
 .nav-item i { width: 20px; text-align: center; font-size: 15px; color: var(--text-3); transition: color 0.16s; }
 .nav-item:hover { background: var(--fill-1); color: var(--text); }
 .nav-item:hover i { color: var(--text-2); }
 .nav-item.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
 .nav-item.active i { color: var(--accent); }
+.nav-item.active::before {
+    content: ''; position: absolute; left: -12px; top: 8px; bottom: 8px;
+    width: 3px; border-radius: 3px; background: var(--accent);
+}
 .nav-spacer { flex: 1; }
 .nav-foot { display: flex; flex-direction: column; gap: var(--s2); padding-top: var(--s3); border-top: 1px solid var(--hairline); }
 .nav-foot-row { display: flex; gap: var(--s2); }
@@ -164,7 +170,7 @@ input, textarea, select, button { font-family: inherit; }
     display: flex; align-items: center; gap: var(--s3);
     padding: var(--s3) var(--s6);
     background: var(--glass); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px);
-    border-bottom: 1px solid var(--hairline); min-height: 60px;
+    border-bottom: 1px solid var(--hairline); min-height: 62px;
 }
 .topbar-title { font-size: var(--fs-title3); font-weight: 700; letter-spacing: -0.02em; }
 .topbar-spacer { flex: 1; }
@@ -173,7 +179,11 @@ input, textarea, select, button { font-family: inherit; }
     display: inline-flex; align-items: center; gap: 6px;
     font-size: var(--fs-caption); font-weight: 600; color: var(--text-3);
     background: var(--fill-1); padding: 5px 10px; border-radius: var(--r-pill); white-space: nowrap;
+    cursor: default; transition: opacity 0.2s;
 }
+.pill.stale { opacity: 0.55; }
+.pill.clickable { cursor: pointer; }
+.pill.clickable:hover { opacity: 0.8; }
 .pill.ok { color: var(--green); background: var(--green-soft); }
 .pill.warn { color: var(--orange); background: var(--orange-soft); }
 .pill.err { color: var(--red); background: var(--red-soft); }
@@ -185,14 +195,14 @@ input, textarea, select, button { font-family: inherit; }
 .page-head { display: flex; align-items: flex-start; gap: var(--s4); margin-bottom: var(--s6); flex-wrap: wrap; }
 .page-head .lead { flex: 1; min-width: 220px; }
 .page-head p { color: var(--text-3); font-size: var(--fs-subhead); margin: var(--s1) 0 0; }
-.page-actions { display: flex; gap: var(--s2); flex-wrap: wrap; }
+.page-actions { display: flex; gap: var(--s2); flex-wrap: wrap; align-self: flex-start; }
 .hamburger { display: inline-flex; }
 
 .btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 7px;
-    min-height: 38px; padding: 0 16px;
+    height: var(--h-control); padding: 0 16px;
     border-radius: var(--r-sm); border: 1px solid transparent;
-    font-size: var(--fs-subhead); font-weight: 600; font-family: var(--font);
+    font-size: var(--fs-callout); font-weight: 600; font-family: var(--font);
     cursor: pointer; white-space: nowrap; user-select: none;
     background: var(--fill-1); color: var(--text);
     transition: transform 0.12s ease, filter 0.16s ease, background 0.16s ease, opacity 0.16s;
@@ -209,10 +219,11 @@ html[data-theme="dark"] .btn:hover:not(:disabled) { filter: brightness(1.15); }
 .btn-bordered { background: transparent; border-color: var(--hairline); color: var(--text); }
 .btn-plain { background: transparent; color: var(--accent); padding: 0 8px; }
 .btn-plain.danger { color: var(--red); }
-.btn-sm { min-height: 32px; padding: 0 12px; font-size: var(--fs-footnote); border-radius: var(--r-xs); }
+.btn-sm { height: var(--h-control-sm); padding: 0 12px; font-size: var(--fs-footnote); border-radius: var(--r-xs); }
+.btn-lg { height: var(--h-control-lg); padding: 0 22px; font-size: var(--fs-body); }
 .btn-block { width: 100%; }
-.btn-icon { width: 38px; padding: 0; }
-.btn-icon.btn-sm { width: 32px; }
+.btn-icon { width: var(--h-control); padding: 0; }
+.btn-icon.btn-sm { width: var(--h-control-sm); }
 .icon-btn {
     display: inline-flex; align-items: center; justify-content: center;
     width: 36px; height: 36px; border-radius: var(--r-sm);
@@ -222,6 +233,7 @@ html[data-theme="dark"] .btn:hover:not(:disabled) { filter: brightness(1.15); }
 .icon-btn:hover { background: var(--fill-2); color: var(--text); }
 .icon-btn:active { transform: scale(0.94); }
 .icon-btn.danger { color: var(--red); }
+.icon-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 .btn.loading { position: relative; pointer-events: none; opacity: 0.7; }
 .btn.loading > :not(.btn-spinner) { visibility: hidden; }
 .btn .btn-spinner { display: none; position: absolute; inset: 0; align-items: center; justify-content: center; }
@@ -243,17 +255,18 @@ html[data-theme="dark"] .btn:hover:not(:disabled) { filter: brightness(1.15); }
 .input, .textarea, select.input {
     width: 100%; background: var(--surface); color: var(--text);
     border: 1px solid var(--hairline); border-radius: var(--r-sm);
-    padding: 10px 12px; font-size: var(--fs-callout); min-height: 40px;
+    padding: 0 12px; font-size: var(--fs-callout); height: var(--h-control);
     transition: border-color 0.16s, box-shadow 0.16s, background 0.16s;
 }
+.textarea { height: auto; min-height: 92px; padding: 10px 12px; resize: vertical; line-height: 1.5; }
 .input:focus, .textarea:focus, select.input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3.5px var(--accent-soft); }
 .input[readonly] { background: var(--surface-2); color: var(--text-3); }
-.textarea { resize: vertical; line-height: 1.5; min-height: 92px; }
 select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
     background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%2386868b' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
     background-repeat: no-repeat; background-position: right 12px center; }
 .input-with-btn { display: flex; gap: var(--s2); align-items: stretch; }
 .input-with-btn .input { flex: 1; min-width: 0; }
+.input-with-btn .btn { flex-shrink: 0; }
 .row { display: flex; gap: var(--s3); align-items: center; flex-wrap: wrap; }
 .row.nowrap { flex-wrap: nowrap; }
 .grid { display: grid; gap: var(--s4); }
@@ -265,25 +278,44 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
     border: none; cursor: pointer; transition: background 0.25s ease; padding: 0;
 }
 .switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.22); transition: transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.1); }
+.switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .switch.on { background: var(--green); }
 .switch.on::after { transform: translateX(20px); }
 .switch-row { display: flex; align-items: center; justify-content: space-between; gap: var(--s4); padding: var(--s3) var(--s4); background: var(--surface); border-radius: var(--r-md); border: 1px solid var(--hairline); margin-bottom: var(--s3); }
+.switch-row:last-child { margin-bottom: 0; }
 .switch-row .sw-label { font-size: var(--fs-callout); font-weight: 500; }
 .switch-row .sw-sub { font-size: var(--fs-caption); color: var(--text-4); margin-top: 2px; }
-.segmented { display: inline-flex; background: var(--fill-1); border-radius: var(--r-sm); padding: 2px; gap: 2px; }
-.segmented button { border: none; background: transparent; color: var(--text-2); font-size: var(--fs-footnote); font-weight: 600; padding: 7px 13px; border-radius: 8px; cursor: pointer; transition: background 0.16s, color 0.16s; white-space: nowrap; }
-.segmented button.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
+.segmented { display: inline-flex; background: var(--fill-1); border-radius: var(--r-sm); padding: 3px; gap: 2px; }
+.segmented button { border: none; background: transparent; color: var(--text-2); font-size: var(--fs-footnote); font-weight: 600; padding: 7px 14px; border-radius: 8px; cursor: pointer; transition: background 0.16s, color 0.16s, box-shadow 0.16s; white-space: nowrap; }
+.segmented button.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
 .check { display: flex; align-items: center; gap: var(--s2); font-size: var(--fs-subhead); cursor: pointer; }
 .check input { width: 18px; height: 18px; accent-color: var(--accent); }
+.pw-wrap { position: relative; }
+.pw-wrap .input { padding-right: 40px; }
+.pw-wrap .pw-toggle {
+    position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+    width: 32px; height: 32px; border: none; background: transparent;
+    color: var(--text-3); cursor: pointer; border-radius: var(--r-xs);
+}
+.pw-wrap .pw-toggle:hover { background: var(--fill-1); color: var(--text); }
 
 .card { background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--r-lg); padding: var(--s5); box-shadow: var(--shadow-sm); margin-bottom: var(--s5); }
 .card.plain { box-shadow: none; }
+.card.compact { padding: var(--s3) var(--s4); }
+.card.flush { padding: 0; overflow: hidden; }
 .card-head { display: flex; align-items: center; gap: var(--s3); margin-bottom: var(--s4); flex-wrap: wrap; }
+.card-head:last-child { margin-bottom: 0; }
 .card-title { font-size: var(--fs-headline); font-weight: 700; display: flex; align-items: center; gap: var(--s2); }
 .card-title i { color: var(--accent); }
+.card-title.c-purple i { color: var(--purple); }
+.card-title.c-green i { color: var(--green); }
+.card-title.c-orange i { color: var(--orange); }
+.card-title.c-red i { color: var(--red); }
 .card-sub { font-size: var(--fs-footnote); color: var(--text-4); margin-top: 2px; }
-.list { background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--r-lg); overflow: hidden; }
-.list-row { display: flex; align-items: center; gap: var(--s3); padding: var(--s3) var(--s4); border-bottom: 1px solid var(--hairline); min-height: 56px; transition: background 0.14s; }
+.list { background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--r-lg); overflow: visible; }
+.list > .list-row:first-child { border-top-left-radius: var(--r-lg); border-top-right-radius: var(--r-lg); }
+.list > .list-row:last-child { border-bottom-left-radius: var(--r-lg); border-bottom-right-radius: var(--r-lg); }
+.list-row { display: flex; align-items: center; gap: var(--s3); padding: var(--s3) var(--s4); border-bottom: 1px solid var(--hairline); min-height: 56px; transition: background 0.14s; position: relative; }
 .list-row:last-child { border-bottom: none; }
 .list-row:hover { background: var(--surface-2); }
 .list-row .lr-main { flex: 1; min-width: 0; }
@@ -298,6 +330,9 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
 .badge.purple { background: var(--purple-soft); color: var(--purple); }
 .empty { text-align: center; padding: var(--s10) var(--s4); color: var(--text-4); font-size: var(--fs-subhead); }
 .empty i { display: block; font-size: 30px; margin-bottom: var(--s3); opacity: 0.4; }
+.empty .empty-hint { font-size: var(--fs-caption); color: var(--text-4); margin-top: 6px; opacity: 0.85; }
+.empty.err { color: var(--red); }
+.empty.err i { color: var(--red); }
 .divider { height: 1px; background: var(--hairline); border: none; margin: var(--s5) 0; }
 .kv { display: flex; justify-content: space-between; gap: var(--s4); padding: var(--s2) 0; font-size: var(--fs-subhead); }
 .kv .k { color: var(--text-4); }
@@ -305,9 +340,9 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
 .muted { color: var(--text-4); }
 .small { font-size: var(--fs-footnote); }
 .tiny { font-size: var(--fs-caption); }
-.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: var(--s4); margin-bottom: var(--s6); }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--s4); margin-bottom: var(--s6); }
 .stat { background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--r-lg); padding: var(--s4); box-shadow: var(--shadow-sm); }
-.stat .st-ic { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 15px; margin-bottom: var(--s3); }
+.stat .st-ic { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 15px; margin-bottom: var(--s3); }
 .stat .st-ic.blue { background: var(--accent-soft); color: var(--accent); }
 .stat .st-ic.green { background: var(--green-soft); color: var(--green); }
 .stat .st-ic.orange { background: var(--orange-soft); color: var(--orange); }
@@ -318,20 +353,21 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
 .stat .st-extra { font-size: var(--fs-caption); color: var(--text-3); margin-top: 6px; }
 .toolbar { display: flex; gap: var(--s3); align-items: center; margin-bottom: var(--s4); flex-wrap: wrap; }
 .toolbar .grow { flex: 1; min-width: 160px; }
-.search { display: flex; align-items: center; gap: var(--s2); background: var(--fill-1); border-radius: var(--r-sm); padding: 0 12px; min-height: 40px; flex: 1; min-width: 160px; }
+.search { display: flex; align-items: center; gap: var(--s2); background: var(--fill-1); border-radius: var(--r-sm); padding: 0 12px; height: var(--h-control); flex: 1; min-width: 160px; border: 1px solid transparent; transition: border-color 0.16s, background 0.16s; }
+.search:focus-within { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3.5px var(--accent-soft); }
 .search i { color: var(--text-4); font-size: 14px; }
-.search input { border: none; background: none; outline: none; color: var(--text); font-size: var(--fs-callout); width: 100%; padding: 9px 0; }
+.search input { border: none; background: none; outline: none; color: var(--text); font-size: var(--fs-callout); width: 100%; }
 .chips { display: flex; gap: var(--s2); flex-wrap: wrap; margin-bottom: var(--s4); }
 .chip { border: 1px solid var(--hairline); background: var(--surface); color: var(--text-2); font-size: var(--fs-footnote); font-weight: 600; padding: 7px 14px; border-radius: var(--r-pill); cursor: pointer; transition: all 0.16s; }
 .chip:hover { background: var(--surface-2); }
 .chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 
-.chat { display: flex; flex-direction: column; gap: var(--s3); padding: var(--s4); background: var(--surface-2); border-radius: var(--r-lg); border: 1px solid var(--hairline); max-height: 480px; overflow-y: auto; overflow-anchor: auto; }
+.chat { display: flex; flex-direction: column; gap: var(--s3); padding: var(--s4); background: var(--surface-2); border-radius: var(--r-lg); border: 1px solid var(--hairline); max-height: 480px; overflow-y: auto; }
 .bubble { max-width: 82%; padding: 10px 14px; border-radius: 18px; font-size: var(--fs-subhead); line-height: 1.5; word-break: break-word; white-space: pre-wrap; position: relative; unicode-bidi: plaintext; text-align: start; }
 .bubble.in { align-self: flex-start; background: var(--surface); border: 1px solid var(--hairline); border-bottom-left-radius: 6px; }
 .bubble.out { align-self: flex-end; background: var(--accent); color: #fff; border-bottom-right-radius: 6px; }
 .bubble.out a { color: #fff; text-decoration: underline; }
-.bubble .b-meta { font-size: var(--fs-caption2); opacity: 0.65; margin-top: 5px; display: flex; gap: 8px; align-items: center; }
+.bubble .b-meta { font-size: var(--fs-caption2); opacity: 0.65; margin-top: 5px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .bubble.out .b-meta { color: rgba(255,255,255,0.85); }
 .bubble .b-actions { display: flex; gap: 6px; margin-top: 7px; justify-content: flex-end; }
 .bubble .b-actions button { border: none; background: rgba(255,255,255,0.2); color: inherit; font-size: var(--fs-caption2); font-weight: 600; padding: 3px 9px; border-radius: var(--r-pill); cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
@@ -342,14 +378,22 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
 .chat-compose { display: flex; gap: var(--s2); align-items: flex-end; margin-top: var(--s3); }
 .chat-compose .textarea { min-height: 44px; max-height: 160px; resize: none; border-radius: var(--r-md); }
 
+.tabbar { display: flex; gap: 2px; border-bottom: 1px solid var(--hairline); margin-bottom: var(--s4); overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; -webkit-overflow-scrolling: touch; }
+.tabbar::-webkit-scrollbar { display: none; }
+.tabbar button { border: none; background: none; color: var(--text-3); font-size: var(--fs-subhead); font-weight: 600; padding: 10px 16px; cursor: pointer; position: relative; white-space: nowrap; flex-shrink: 0; }
+.tabbar button.active { color: var(--text); }
+.tabbar button.active::after { content: ''; position: absolute; left: 12px; right: 12px; bottom: -1px; height: 2px; background: var(--accent); border-radius: 2px; }
+.tabpane { display: none; }
+.tabpane.active { display: block; }
+
 .modal { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; padding: var(--s4); }
 .modal.hidden { display: none; }
 .modal-bg { position: absolute; inset: 0; background: rgba(0,0,0,0.42); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
 .sheet { position: relative; width: 100%; max-width: 640px; max-height: 92vh; background: var(--bg-elev); border-radius: var(--r-xl); box-shadow: var(--shadow-lg); display: flex; flex-direction: column; overflow: hidden; animation: sheetIn 0.28s cubic-bezier(0.16, 1, 0.3, 1); border: 1px solid var(--hairline); }
 @keyframes sheetIn { from { opacity: 0; transform: translateY(18px) scale(0.98); } to { opacity: 1; transform: none; } }
-.sheet-head { display: flex; align-items: center; gap: var(--s3); padding: var(--s3) var(--s4); border-bottom: 1px solid var(--hairline); background: var(--glass); backdrop-filter: blur(20px); min-height: 54px; flex-shrink: 0; }
+.sheet-head { display: flex; align-items: center; gap: var(--s3); padding: var(--s3) var(--s4); border-bottom: 1px solid var(--hairline); background: var(--glass); backdrop-filter: blur(20px); min-height: 56px; flex-shrink: 0; }
 .sheet-title { flex: 1; text-align: center; font-size: var(--fs-headline); font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sheet-body { padding: var(--s5); overflow-y: auto; flex: 1; }
+.sheet-body { padding: var(--s5); overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; flex: 1; min-height: 0; }
 .sheet-foot { padding: var(--s3) var(--s4); border-top: 1px solid var(--hairline); display: flex; gap: var(--s2); justify-content: flex-end; background: var(--bg-elev); flex-shrink: 0; }
 .sheet.small { max-width: 440px; }
 .sheet-close { border: none; background: none; color: var(--text-3); cursor: pointer; font-size: 17px; width: 32px; height: 32px; border-radius: var(--r-sm); }
@@ -375,12 +419,16 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
 .kb-preview .pvrow { display: flex; gap: 4px; }
 .kb-preview .pvbtn { flex: 1; text-align: center; font-size: var(--fs-caption); padding: 5px 4px; border-radius: 6px; background: var(--surface); border: 1px solid var(--hairline); color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.toasts { position: fixed; bottom: var(--s6); right: var(--s6); z-index: 500; display: flex; flex-direction: column; gap: var(--s2); max-width: min(92vw, 380px); }
-.toast { background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--hairline); border-radius: var(--r-md); padding: 12px 16px; font-size: var(--fs-subhead); box-shadow: var(--shadow-lg); animation: toastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); word-break: break-word; }
+.toasts { position: fixed; bottom: var(--s6); right: var(--s6); z-index: 500; display: flex; flex-direction: column; gap: var(--s2); max-width: min(92vw, 400px); pointer-events: none; }
+.toast { background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--hairline); border-radius: var(--r-md); padding: 12px 14px 12px 16px; font-size: var(--fs-subhead); box-shadow: var(--shadow-lg); animation: toastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); word-break: break-word; pointer-events: auto; display: flex; align-items: flex-start; gap: 10px; }
+.toast-body { flex: 1; }
+.toast-close { border: none; background: none; color: var(--text-4); cursor: pointer; font-size: 16px; line-height: 1; padding: 0; width: 20px; height: 20px; flex-shrink: 0; }
+.toast-close:hover { color: var(--text); }
 .toast.success { border-left: 4px solid var(--green); }
 .toast.error { border-left: 4px solid var(--red); }
 .toast.info { border-left: 4px solid var(--accent); }
 @keyframes toastIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@media (max-width: 900px) { .toasts { right: var(--s4); bottom: var(--s4); left: var(--s4); max-width: none; } }
 
 @keyframes shimmer { 0% { background-position: -320px 0; } 100% { background-position: 320px 0; } }
 .skl { background: linear-gradient(90deg, var(--fill-1) 0%, var(--fill-2) 50%, var(--fill-1) 100%); background-size: 320px 100%; animation: shimmer 1.5s ease-in-out infinite; border-radius: var(--r-xs); color: transparent !important; }
@@ -394,6 +442,7 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
 
 .overlay-sidebar { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 55; }
 .footer-note { text-align: center; color: var(--text-4); font-size: var(--fs-caption); padding: var(--s8) 0 var(--s4); }
+
 .playground { display: flex; flex-direction: column; gap: var(--s3); padding: var(--s4); background: var(--surface-2); border-radius: var(--r-lg); border: 1px solid var(--hairline); min-height: 180px; height: 320px; overflow-y: auto; resize: vertical; margin-bottom: var(--s3); }
 .pg-msg { max-width: 86%; padding: 10px 14px; border-radius: 16px; font-size: var(--fs-subhead); white-space: pre-wrap; word-break: break-word; unicode-bidi: plaintext; text-align: start; }
 .pg-msg.user { align-self: flex-end; background: var(--accent); color: #fff; border-bottom-right-radius: 5px; }
@@ -429,11 +478,14 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
     padding: var(--s3) var(--s4); margin-bottom: var(--s2); background: var(--surface);
 }
 .featured-reply.disabled { opacity: 0.55; }
-.featured-reply .fr-head { display: flex; align-items: center; gap: var(--s2); margin-bottom: 6px; }
+.featured-reply .fr-head { display: flex; align-items: center; gap: var(--s2); margin-bottom: 6px; flex-wrap: wrap; }
 .featured-reply .fr-cmd { font-family: var(--mono); font-weight: 700; color: var(--accent); }
-.featured-reply .fr-content { white-space: pre-wrap; word-break: break-word; font-size: var(--fs-subhead); }
 .featured-reply .fr-block { font-size: var(--fs-footnote); color: var(--text-3); margin-top: 6px; padding-left: 10px; border-left: 2px solid var(--hairline); white-space: pre-wrap; word-break: break-word; }
-.featured-reply .fr-actions { display: flex; gap: 4px; margin-top: 8px; }
+.featured-reply .fr-block.hint { border-color: var(--accent); }
+.featured-reply .fr-block.success { border-color: var(--green); }
+.featured-reply .fr-block.failure { border-color: var(--red); }
+.featured-reply .fr-block b { font-weight: 700; }
+.featured-reply .fr-actions { display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap; }
 
 .hint-banner {
     display: flex; gap: 10px; align-items: flex-start;
@@ -441,11 +493,18 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
     border-radius: var(--r-md); padding: 12px 16px; margin-bottom: var(--s4);
     font-size: var(--fs-footnote); line-height: 1.55;
 }
-.hint-banner i { color: var(--accent); margin-top: 2px; }
+.hint-banner i { color: var(--accent); margin-top: 2px; flex-shrink: 0; }
 .hint-banner.warn { background: var(--orange-soft); }
 .hint-banner.warn i { color: var(--orange); }
 .hint-banner.danger { background: var(--red-soft); }
 .hint-banner.danger i { color: var(--red); }
+.hint-banner > div { flex: 1; }
+details.help { background: var(--accent-soft); border-radius: var(--r-md); margin-bottom: var(--s4); overflow: hidden; }
+details.help > summary { cursor: pointer; padding: 12px 16px; font-size: var(--fs-footnote); font-weight: 600; color: var(--accent); list-style: none; display: flex; align-items: center; gap: 8px; user-select: none; }
+details.help > summary::-webkit-details-marker { display: none; }
+details.help > summary::after { content: '\\f078'; font-family: 'Font Awesome 6 Free'; font-weight: 900; margin-left: auto; transition: transform 0.2s; font-size: 11px; }
+details.help[open] > summary::after { transform: rotate(180deg); }
+details.help > div { padding: 0 16px 14px; font-size: var(--fs-footnote); line-height: 1.55; }
 
 .backup-item {
     display: flex; align-items: center; gap: 10px;
@@ -457,24 +516,93 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
 .backup-item .bi-title { font-weight: 600; font-size: var(--fs-subhead); }
 .backup-item .bi-sub { font-size: var(--fs-caption); color: var(--text-4); }
 
-.mem-bar { display: flex; gap: 6px; align-items: center; }
-.mem-bar .mem-fill { height: 6px; border-radius: 3px; background: var(--accent-soft); overflow: hidden; flex: 1; min-width: 60px; }
-.mem-bar .mem-fill > div { height: 100%; background: var(--accent); }
-.mem-bar .mem-ai { background: var(--purple); }
+/* ===== NEW: DROPDOWN MENU ===== */
+.dropdown { position: relative; display: inline-block; }
+.dropdown-menu {
+    position: absolute; right: 0; top: calc(100% + 4px);
+    background: var(--bg-elev); border: 1px solid var(--hairline);
+    border-radius: var(--r-md); box-shadow: var(--shadow-md);
+    padding: 4px; min-width: 180px; z-index: 100;
+}
+.dropdown-menu button {
+    display: flex; align-items: center; gap: 10px;
+    width: 100%; padding: 9px 12px; border: none; background: none;
+    color: var(--text); font-size: var(--fs-subhead); text-align: left;
+    border-radius: var(--r-xs); cursor: pointer; font-family: inherit;
+    white-space: nowrap;
+}
+.dropdown-menu button:hover { background: var(--fill-1); }
+.dropdown-menu button.danger { color: var(--red); }
+.dropdown-menu button i { width: 16px; text-align: center; font-size: 13px; flex-shrink: 0; }
+.dropdown-menu button:disabled { opacity: 0.35; cursor: not-allowed; }
+.lr-actions-mobile { display: none; }
+
+/* ===== NEW: USER CIRCLE ===== */
+.user-circle {
+    width: 38px; height: 38px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; flex-shrink: 0;
+}
+.user-circle.green { background: var(--green-soft); color: var(--green); }
+.user-circle.yellow { background: var(--orange-soft); color: var(--orange); }
+
+/* ===== NEW: MENU ENTRY ===== */
+.menu-entry { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.menu-entry .menu-cmd { width: 150px; flex-shrink: 0; }
+.menu-entry .menu-desc { flex: 1 1 200px; min-width: 0; }
+
+/* ===== AUTH GATEWAY ===== */
+.auth-shell { min-height: calc(100vh - 200px); display: flex; align-items: center; justify-content: center; padding: var(--s6) 0; }
+.auth-card {
+    background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--r-xl);
+    padding: var(--s8) var(--s6); width: 100%; max-width: 460px;
+    box-shadow: var(--shadow-md);
+}
+.auth-brand { display: flex; align-items: center; gap: 12px; justify-content: center; margin-bottom: var(--s6); }
+.auth-brand img { width: 40px; height: 40px; border-radius: 10px; }
+.auth-brand .ab-name { font-size: var(--fs-title3); font-weight: 700; letter-spacing: -0.02em; }
+.auth-icon { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; margin: 0 auto var(--s4); }
+.auth-icon.loading { background: var(--accent-soft); color: var(--accent); }
+.auth-icon.success { background: var(--green-soft); color: var(--green); }
+.auth-icon.warn { background: var(--orange-soft); color: var(--orange); }
+.auth-icon.error { background: var(--red-soft); color: var(--red); }
+.auth-title { text-align: center; font-size: var(--fs-title3); font-weight: 700; margin-bottom: 6px; }
+.auth-msg { text-align: center; color: var(--text-3); font-size: var(--fs-subhead); margin-bottom: var(--s5); line-height: 1.55; }
+.auth-actions { display: flex; gap: var(--s2); justify-content: center; flex-wrap: wrap; }
+.auth-actions .btn { flex: 0 0 auto; }
+.auth-help { text-align: center; font-size: var(--fs-caption); color: var(--text-4); margin-top: var(--s4); }
 
 @media (min-width: 901px) {
-    .app.sidebar-open .main { margin-left: 272px; }
+    .app.sidebar-open .main { margin-left: 276px; }
     .app.sidebar-open .overlay-sidebar { display: none !important; }
+    .hamburger { display: none; }
 }
 @media (max-width: 900px) {
     .app.sidebar-open .overlay-sidebar.show { display: block; }
     .app.sidebar-open .main { margin-left: 0; }
     .content { padding: var(--s4) var(--s4) var(--s12); }
-    .topbar { padding: var(--s2) var(--s4); }
-    .toasts { right: var(--s4); bottom: var(--s4); left: var(--s4); max-width: none; }
+    .topbar { padding: 6px var(--s3); min-height: 50px; gap: 6px; }
+    .topbar-title { font-size: 17px; }
+    .page-head { margin-bottom: var(--s4); }
+    .page-head h1 { font-size: var(--fs-title1); }
+    .auth-card { padding: var(--s6) var(--s4); }
+    .pill { padding: 6px 8px; }
+    .pill .txt { display: none; }
+    .pill i { font-size: 13px; }
+    .lr-actions-desktop { display: none !important; }
+    .lr-actions-mobile { display: inline-block; }
+    .mem-badge { display: none !important; }
 }
 @media (max-width: 640px) {
     .topbar:has(#update-pill:not(.hidden)) #status-pills { display: none !important; }
+    .sticky-actions { margin: var(--s4) calc(-1 * var(--s4)) 0; }
+    .stats { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+    .menu-entry .menu-cmd { width: auto; flex: 1 1 auto; }
+    .menu-entry .menu-desc { flex-basis: 100%; }
+    .sheet-body .row.nowrap { flex-wrap: wrap; }
+    .sheet-body .row.nowrap > .input,
+    .sheet-body .row.nowrap > select.input { flex: 1 1 140px; min-width: 0; }
+    .sheet-body .row.nowrap > .btn { flex: 0 0 auto; }
 }
 </style>
 </head>
@@ -517,9 +645,9 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
         <div class="nav-spacer"></div>
         <div class="nav-foot">
             <div class="nav-foot-row">
-                <button class="icon-btn" id="theme-btn" onclick="cycleTheme()" title="Switch appearance"><i class="fa-solid fa-circle-half-stroke"></i></button>
-                <button class="icon-btn" onclick="showInfo()" title="About Nyxx"><i class="fa-regular fa-circle-question"></i></button>
-                <button class="icon-btn danger" id="logout-btn" onclick="logout()" title="Sign out"><i class="fa-solid fa-arrow-right-from-bracket"></i></button>
+                <button class="icon-btn" id="theme-btn" onclick="cycleTheme()" title="Switch appearance" aria-label="Switch appearance"><i class="fa-solid fa-circle-half-stroke"></i></button>
+                <button class="icon-btn" onclick="showInfo()" title="About Nyxx" aria-label="About Nyxx"><i class="fa-regular fa-circle-question"></i></button>
+                <button class="icon-btn danger" id="logout-btn" onclick="logout()" title="Sign out" aria-label="Sign out"><i class="fa-solid fa-arrow-right-from-bracket"></i></button>
             </div>
         </div>
     </aside>
@@ -527,61 +655,92 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
 
     <div class="main">
         <header class="topbar">
-            <button class="icon-btn hamburger" id="hamburger" onclick="toggleSidebar()" title="Toggle menu"><i class="fa-solid fa-bars"></i></button>
+            <button class="icon-btn hamburger" id="hamburger" onclick="toggleSidebar()" title="Toggle menu" aria-label="Toggle menu"><i class="fa-solid fa-bars"></i></button>
             <div class="topbar-title" id="page-title">Overview</div>
             <div class="topbar-spacer"></div>
             <div class="status-pills" id="status-pills">
-                <span class="pill" id="pill-d1"><i class="fa-solid fa-database"></i><span class="txt">D1</span></span>
-                <span class="pill" id="pill-bot"><i class="fa-brands fa-telegram"></i><span class="txt">Bot</span></span>
+                <span class="pill clickable" id="pill-d1" onclick="refreshStatusPill()" title="Database status — tap to recheck"><i class="fa-solid fa-database"></i><span class="txt">D1</span></span>
+                <span class="pill clickable" id="pill-bot" onclick="refreshStatusPill()" title="Bot status — tap to recheck"><i class="fa-brands fa-telegram"></i><span class="txt">Bot</span></span>
             </div>
             <button class="update-pill hidden" id="update-pill" onclick="go('update')"><span class="dot"></span> Update available</button>
         </header>
 
         <div id="step-status" class="content">
-            <div class="card" style="max-width:520px;margin:80px auto;text-align:center;">
-                <div style="font-size:40px;color:var(--accent);margin-bottom:12px;"><i class="fa-solid fa-database"></i></div>
-                <h2>Checking database…</h2>
-                <p class="muted" id="status-message"></p>
-                <div id="status-actions" class="hidden" style="margin-top:20px;">
-                    <button class="btn btn-primary" onclick="location.reload()"><i class="fa-solid fa-rotate"></i> Retry</button>
-                    <button class="btn btn-success" onclick="showStep('step-setup')"><i class="fa-solid fa-lock"></i> Set up</button>
+            <div class="auth-shell">
+                <div class="auth-card">
+                    <div class="auth-brand">
+                        <img src="https://raw.githubusercontent.com/Mahan07dev/Nyxx/refs/heads/main/logo.webp" alt="Nyxx">
+                        <div class="ab-name">Nyxx</div>
+                    </div>
+                    <div class="auth-icon loading" id="status-icon"><i class="fa-solid fa-circle-notch fa-spin"></i></div>
+                    <div class="auth-title" id="status-title">Connecting…</div>
+                    <div class="auth-msg" id="status-message">Checking your database connection.</div>
+                    <div class="auth-actions" id="status-actions"></div>
+                    <div class="auth-help" id="status-help"></div>
                 </div>
             </div>
         </div>
 
         <div id="step-setup" class="content hidden">
-            <div class="card" style="max-width:520px;margin:60px auto;">
-                <h2><i class="fa-solid fa-lock" style="color:var(--accent);"></i> Initial Setup</h2>
-                <p class="muted small">Create your admin password. You can connect a bot token now or later.</p>
-                <div class="field">
-                    <label class="field-label">Bot token <span class="muted">(optional)</span></label>
-                    <input type="password" id="setup-bot-token" class="input" placeholder="123456:ABC…" autocomplete="off">
-                    <span class="field-hint"><i class="fa-solid fa-circle-info"></i> Get this from <b>@BotFather</b> on Telegram. Send <code>/newbot</code> and copy the token.</span>
-                    <label class="check" style="margin-top:8px;"><input type="checkbox" id="setup-skip-bot"> <span>Skip for now — I'll add it later</span></label>
+            <div class="auth-shell">
+                <div class="auth-card">
+                    <div class="auth-brand">
+                        <img src="https://raw.githubusercontent.com/Mahan07dev/Nyxx/refs/heads/main/logo.webp" alt="Nyxx">
+                        <div class="ab-name">Nyxx</div>
+                    </div>
+                    <div class="auth-title"><i class="fa-solid fa-lock" style="color:var(--accent);margin-right:6px;"></i> Initial Setup</div>
+                    <div class="auth-msg">Create your admin password. You can connect a bot token now or later.</div>
+                    <div class="field">
+                        <label class="field-label">Bot token <span class="muted">(optional)</span></label>
+                        <div class="pw-wrap">
+                            <input type="password" id="setup-bot-token" class="input" placeholder="123456:ABC…" autocomplete="off">
+                            <button type="button" class="pw-toggle" onclick="togglePw('setup-bot-token',this)" aria-label="Show or hide token"><i class="fa-regular fa-eye"></i></button>
+                        </div>
+                        <span class="field-hint"><i class="fa-solid fa-circle-info"></i> Get this from <b>@BotFather</b> on Telegram. Send <code>/newbot</code> and copy the token.</span>
+                        <label class="check" style="margin-top:8px;"><input type="checkbox" id="setup-skip-bot"> <span>Skip for now — I'll add it later</span></label>
+                    </div>
+                    <div class="field">
+                        <label class="field-label">Admin password</label>
+                        <div class="pw-wrap">
+                            <input type="password" id="setup-password" class="input" placeholder="At least 6 characters" autocomplete="new-password" oninput="updatePwStrength()">
+                            <button type="button" class="pw-toggle" onclick="togglePw('setup-password',this)" aria-label="Show or hide password"><i class="fa-regular fa-eye"></i></button>
+                        </div>
+                        <div id="pw-strength" class="field-hint" style="margin-top:6px;"></div>
+                    </div>
+                    <div class="field">
+                        <label class="field-label">Confirm password</label>
+                        <div class="pw-wrap">
+                            <input type="password" id="setup-password-confirm" class="input" autocomplete="new-password">
+                            <button type="button" class="pw-toggle" onclick="togglePw('setup-password-confirm',this)" aria-label="Show or hide password"><i class="fa-regular fa-eye"></i></button>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary btn-block btn-lg" onclick="submitSetup()"><i class="fa-solid fa-check"></i> Save &amp; continue</button>
+                    <div class="err-box" id="setup-error"></div>
                 </div>
-                <div class="field">
-                    <label class="field-label">Admin password</label>
-                    <input type="password" id="setup-password" class="input" placeholder="At least 6 characters" autocomplete="new-password">
-                    <span class="field-hint"><i class="fa-solid fa-shield"></i> Protects your dashboard. Use a strong, unique password.</span>
-                </div>
-                <div class="field">
-                    <label class="field-label">Confirm password</label>
-                    <input type="password" id="setup-password-confirm" class="input" autocomplete="new-password">
-                </div>
-                <button class="btn btn-success btn-block" onclick="submitSetup()"><i class="fa-solid fa-check"></i> Save &amp; continue</button>
-                <div class="err-box" id="setup-error"></div>
             </div>
         </div>
 
         <div id="step-login" class="content hidden">
-            <div class="card" style="max-width:460px;margin:80px auto;">
-                <h2><i class="fa-solid fa-lock" style="color:var(--accent);"></i> Sign In</h2>
-                <p class="muted small">Enter your admin password to continue.</p>
-                <form onsubmit="event.preventDefault();submitLogin();">
-                    <div class="field"><label class="field-label">Password</label><input type="password" id="login-password" class="input" autocomplete="current-password" autofocus></div>
-                    <button type="submit" class="btn btn-primary btn-block"><i class="fa-solid fa-arrow-right-to-bracket"></i> Sign in</button>
-                    <div class="err-box" id="login-error"></div>
-                </form>
+            <div class="auth-shell">
+                <div class="auth-card">
+                    <div class="auth-brand">
+                        <img src="https://raw.githubusercontent.com/Mahan07dev/Nyxx/refs/heads/main/logo.webp" alt="Nyxx">
+                        <div class="ab-name">Nyxx</div>
+                    </div>
+                    <div class="auth-title"><i class="fa-solid fa-lock" style="color:var(--accent);margin-right:6px;"></i> Sign in</div>
+                    <div class="auth-msg">Enter your admin password to continue.</div>
+                    <form onsubmit="event.preventDefault();submitLogin();">
+                        <div class="field">
+                            <label class="field-label">Password</label>
+                            <div class="pw-wrap">
+                                <input type="password" id="login-password" class="input" autocomplete="current-password" autofocus>
+                                <button type="button" class="pw-toggle" onclick="togglePw('login-password',this)" aria-label="Show or hide password"><i class="fa-regular fa-eye"></i></button>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block btn-lg"><i class="fa-solid fa-arrow-right-to-bracket"></i> Sign in</button>
+                        <div class="err-box" id="login-error"></div>
+                    </form>
+                </div>
             </div>
         </div>
 
@@ -592,15 +751,6 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
                     <div class="page-actions"><button class="btn btn-gray btn-sm" onclick="loadOverview(true)"><i class="fa-solid fa-rotate"></i> Refresh</button></div>
                 </div>
                 <div class="stats" id="ov-stats"></div>
-                <div class="card">
-                    <div class="card-head"><div class="card-title"><i class="fa-solid fa-bolt"></i> Quick actions</div></div>
-                    <div class="row">
-                        <button class="btn btn-primary btn-sm" onclick="openCommandModal()"><i class="fa-solid fa-plus"></i> New command</button>
-                        <button class="btn btn-gray btn-sm" onclick="go('users')"><i class="fa-solid fa-user-group"></i> Users</button>
-                        <button class="btn btn-gray btn-sm" onclick="go('groups')"><i class="fa-solid fa-comments"></i> Groups</button>
-                        <button class="btn btn-gray btn-sm" onclick="go('ai')"><i class="fa-solid fa-wand-magic-sparkles"></i> AI</button>
-                    </div>
-                </div>
                 <div class="card">
                     <div class="card-head"><div class="card-title"><i class="fa-solid fa-flag-checkered"></i> Getting started</div></div>
                     <ul id="ov-checklist" style="list-style:none;padding:0;margin:0;"></ul>
@@ -627,7 +777,7 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
 
             <section class="page" id="page-menu">
                 <div class="page-head">
-                    <div class="lead"><h1>Menu &amp; Featured commands</h1><p>The Telegram menu button, plus commands your users can trigger with their own arguments.</p></div>
+                    <div class="lead"><h1>Menu &amp; Featured</h1><p>The Telegram menu button, plus commands your users can trigger with their own arguments.</p></div>
                 </div>
 
                 <div class="card">
@@ -651,14 +801,14 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
                         <button class="btn btn-gray btn-sm" onclick="openFeaturedModal('text')"><i class="fa-solid fa-plus"></i> DM command</button>
                         <button class="btn btn-gray btn-sm" onclick="openFeaturedModal('buttons')"><i class="fa-solid fa-plus"></i> Buttons command</button>
                     </div>
-                    <div class="hint-banner">
-                        <i class="fa-solid fa-lightbulb"></i>
+                    <details class="help">
+                        <summary><i class="fa-solid fa-circle-question"></i> How featured commands work</summary>
                         <div>
                             <b>DM commands</b> quietly deliver a note from a user to you. When a user types <code>/contact hello boss</code>, the text <code>hello boss</code> lands in <b>Users → Direct messages</b> under that user. The bot deletes the trigger message and does not reply to the note itself — it just confirms with the success message you set.<br><br>
                             <b>Buttons commands</b> let users build their own inline keyboards. Example: <code>/menu "Hi there!" {Google}(https://google.com){Say hi}(Hi!){Menu}(/start)</code> — the bot sends "Hi there!" with those three buttons, three per row. Values starting with <b>http</b> open a link, values starting with <b>/</b> run a command, anything else is posted back as a new message.<br><br>
                             Each featured command has <b>three separate messages</b>: the <b>hint</b> (sent when the command is typed alone, with no arguments), the <b>success message</b> (sent after the action completes) and the <b>failure message</b> (sent if the action fails). Leave a field blank to stay silent in that case.
                         </div>
-                    </div>
+                    </details>
                     <div id="featured-list"></div>
                 </div>
             </section>
@@ -674,7 +824,7 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
                 </div>
                 <div class="hint-banner">
                     <i class="fa-solid fa-circle-info"></i>
-                    <div><b>Started bot</b> means the user has opened a private chat with your bot at least once. You can only DM these users. <b>Group only</b> means they appear because they messaged in a group you track — you can't DM them until they press Start in private.</div>
+                    <div><span class="badge green" style="margin-right:4px;"><i class="fa-solid fa-circle" style="font-size:8px;"></i></span> <b>Green</b> users started the bot — you can DM them. <span class="badge orange" style="margin-left:8px;margin-right:4px;"><i class="fa-solid fa-circle" style="font-size:8px;"></i></span> <b>Yellow</b> users only exist because of a group — they haven't pressed Start yet.</div>
                 </div>
                 <div class="toolbar"><div class="search"><i class="fa-solid fa-magnifying-glass"></i><input id="user-search" placeholder="Search by name or username" oninput="debouncedUsers()"></div></div>
                 <div class="chips" id="user-filters">
@@ -697,39 +847,45 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
                 </div>
                 <div class="grid grid-3" id="um-cards" style="margin-bottom:16px;"></div>
                 <div class="row" style="margin-bottom:16px;" id="um-actions"></div>
+
                 <div class="card">
-                    <div class="card-head">
-                        <div class="card-title"><i class="fa-solid fa-comment-dots"></i> Direct messages</div>
-                        <div style="flex:1"></div>
-                        <span class="badge" id="um-dm-count">0</span>
+                    <div class="tabbar" id="um-tabs">
+                        <button class="active" onclick="umSetTab('dm')" data-tab="dm"><i class="fa-solid fa-comment-dots"></i> Direct messages</button>
+                        <button onclick="umSetTab('ai')" data-tab="ai"><i class="fa-solid fa-brain"></i> AI memory</button>
                     </div>
-                    <div class="hint-banner">
-                        <i class="fa-solid fa-circle-info"></i>
-                        <div>This is the private chat between you and the user, plus any messages sent through a <b>DM command</b>. It does <b>not</b> include AI conversations — those live in the AI memory section below.</div>
+
+                    <div class="tabpane active" id="um-pane-dm">
+                        <div class="hint-banner">
+                            <i class="fa-solid fa-circle-info"></i>
+                            <div>This is the private chat between you and the user, plus any messages sent through a <b>DM command</b>. It does <b>not</b> include AI conversations — those live in the AI memory tab.</div>
+                        </div>
+                        <div class="row" style="margin-bottom:8px;">
+                            <span class="badge" id="um-dm-count">0</span>
+                        </div>
+                        <div class="chat" id="um-chat"></div>
+                        <div class="chat-compose">
+                            <textarea id="um-input" class="textarea" rows="2" placeholder="Write a message…  (Enter to send)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendUserMessage();}"></textarea>
+                            <button class="btn btn-primary btn-icon" onclick="sendUserMessage()" id="um-send" aria-label="Send message"><i class="fa-solid fa-paper-plane"></i></button>
+                        </div>
+                        <div class="row" style="margin-top:8px;">
+                            <input id="um-photo" class="input" placeholder="Photo URL (optional — text becomes the caption)" style="flex:1;">
+                            <button class="btn btn-gray btn-sm" onclick="openMsgEditor('dm-new')"><i class="fa-solid fa-keyboard"></i> Buttons</button>
+                        </div>
+                        <div class="field-hint">Attach an inline/reply keyboard with the Buttons button. It is saved with the message and can be edited later.</div>
                     </div>
-                    <div class="chat" id="um-chat"></div>
-                    <div class="chat-compose">
-                        <textarea id="um-input" class="textarea" rows="2" placeholder="Write a message…  (Enter to send)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendUserMessage();}"></textarea>
-                        <button class="btn btn-primary btn-icon" onclick="sendUserMessage()" id="um-send"><i class="fa-solid fa-paper-plane"></i></button>
+
+                    <div class="tabpane" id="um-pane-ai">
+                        <div class="hint-banner">
+                            <i class="fa-solid fa-circle-info"></i>
+                            <div>This is what the AI remembers about the user across conversations. You can edit or delete individual messages here — the AI will immediately use the updated context on the next reply.</div>
+                        </div>
+                        <div class="row" style="margin-bottom:8px;">
+                            <div style="flex:1"></div>
+                            <button class="btn btn-gray btn-sm" onclick="loadAiMemory()"><i class="fa-solid fa-rotate"></i></button>
+                            <button class="btn btn-danger btn-sm" onclick="clearAiMemoryUser()"><i class="fa-solid fa-eraser"></i> Clear all</button>
+                        </div>
+                        <div class="chat" id="um-ai" style="background:var(--surface-2);"></div>
                     </div>
-                    <div class="row" style="margin-top:8px;">
-                        <input id="um-photo" class="input" placeholder="Photo URL (optional — text becomes the caption)" style="flex:1;">
-                        <button class="btn btn-gray btn-sm" onclick="openMsgEditor('dm-new')"><i class="fa-solid fa-keyboard"></i> Buttons</button>
-                    </div>
-                    <div class="field-hint">Attach an inline/reply keyboard with the Buttons button. It is saved with the message and can be edited later.</div>
-                </div>
-                <div class="card">
-                    <div class="card-head">
-                        <div class="card-title"><i class="fa-solid fa-brain"></i> AI memory</div>
-                        <div style="flex:1"></div>
-                        <button class="btn btn-gray btn-sm" onclick="loadAiMemory()"><i class="fa-solid fa-rotate"></i></button>
-                        <button class="btn btn-danger btn-sm" onclick="clearAiMemoryUser()"><i class="fa-solid fa-eraser"></i> Clear all</button>
-                    </div>
-                    <div class="hint-banner">
-                        <i class="fa-solid fa-circle-info"></i>
-                        <div>This is what the AI remembers about the user across conversations. You can edit or delete individual messages here — the AI will immediately use the updated context on the next reply.</div>
-                    </div>
-                    <div class="chat" id="um-ai" style="background:var(--surface-2);"></div>
                 </div>
             </section>
 
@@ -755,14 +911,15 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
                     </div>
                 </div>
                 <div class="grid grid-3" id="gm-cards" style="margin-bottom:16px;"></div>
+
                 <div class="card">
-                    <div class="card-head"><div class="card-title"><i class="fa-solid fa-wand-magic-sparkles"></i> AI behaviour</div></div>
+                    <div class="card-head"><div class="card-title c-purple"><i class="fa-solid fa-wand-magic-sparkles"></i> AI behaviour</div></div>
                     <div class="field">
                         <label class="field-label">Reply in this group</label>
                         <div class="segmented" id="gm-ai-mode">
-                            <button data-v="inherit" onclick="gmSet('ai', 'inherit')">Inherit</button>
-                            <button data-v="on" onclick="gmSet('ai', 'on')">On</button>
-                            <button data-v="off" onclick="gmSet('ai', 'off')">Off</button>
+                            <button data-v="inherit" onclick="gmSet('ai','inherit')">Inherit</button>
+                            <button data-v="on" onclick="gmSet('ai','on')">On</button>
+                            <button data-v="off" onclick="gmSet('ai','off')">Off</button>
                         </div>
                         <span class="field-hint">Inherit uses the global setting from the AI tab.</span>
                     </div>
@@ -789,8 +946,9 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
                         </div>
                     </div>
                 </div>
+
                 <div class="card">
-                    <div class="card-head"><div class="card-title"><i class="fa-solid fa-hand-sparkles"></i> Welcome &amp; rules</div></div>
+                    <div class="card-head"><div class="card-title c-green"><i class="fa-solid fa-hand-sparkles"></i> Welcome &amp; rules</div></div>
                     <div class="switch-row"><div><div class="sw-label">Welcome new members</div><div class="sw-sub">Send a greeting when someone joins this group.</div></div><button class="switch" id="gm-welcome-toggle" onclick="gmToggle('welcome')"></button></div>
                     <div class="field">
                         <label class="field-label">Welcome message</label>
@@ -803,16 +961,18 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
                         <span class="field-hint">Anyone typing <code>/rules</code> in this group gets this text. Leave blank to disable.</span>
                     </div>
                 </div>
+
                 <div class="card">
-                    <div class="card-head"><div class="card-title"><i class="fa-solid fa-shield-halved"></i> Moderation</div></div>
+                    <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-shield-halved"></i> Moderation</div></div>
                     <div class="switch-row"><div><div class="sw-label">Anti-flood</div><div class="sw-sub">Delete a member's messages after too many in a minute.</div></div><button class="switch" id="gm-flood-toggle" onclick="gmToggle('flood')"></button></div>
                     <div class="field" id="gm-flood-limit-wrap"><label class="field-label">Messages per minute before deletion</label><input type="number" class="input" id="gm-flood-limit" min="2" max="60" value="6"><span class="field-hint">Bot must be an admin in the group for this to work.</span></div>
                     <div class="switch-row"><div><div class="sw-label">Block links</div><div class="sw-sub">Delete messages containing URLs from non-admins.</div></div><button class="switch" id="gm-link-toggle" onclick="gmToggle('link')"></button></div>
                     <div class="switch-row"><div><div class="sw-label">Clean up service messages</div><div class="sw-sub">Delete "X joined", pinned notices and similar.</div></div><button class="switch" id="gm-service-toggle" onclick="gmToggle('service')"></button></div>
                     <div class="switch-row" style="margin-bottom:0;"><div><div class="sw-label">Track members in Users tab</div><div class="sw-sub">Off by default. When off, only members who DM the bot appear in Users.</div></div><button class="switch" id="gm-track-toggle" onclick="gmToggle('track')"></button></div>
                 </div>
+
                 <div class="card">
-                    <div class="card-head"><div class="card-title"><i class="fa-solid fa-bullhorn"></i> Send announcement</div></div>
+                    <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-bullhorn"></i> Send announcement</div></div>
                     <textarea class="textarea" id="gm-announce" rows="3" placeholder="Message to post in this group…"></textarea>
                     <input class="input" id="gm-announce-photo" placeholder="Photo URL (optional)" style="margin-top:8px;">
                     <div class="row" style="margin-top:10px;">
@@ -820,9 +980,12 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
                         <button class="btn btn-primary" onclick="sendGroupAnnouncement()"><i class="fa-solid fa-paper-plane"></i> Send</button>
                     </div>
                 </div>
+
                 <div class="card">
-                    <button class="btn btn-primary" onclick="saveGroupSettings()"><i class="fa-solid fa-check"></i> Save settings</button>
-                    <button class="btn btn-danger" onclick="removeGroup()"><i class="fa-solid fa-trash-can"></i> Remove from dashboard</button>
+                    <div class="row">
+                        <button class="btn btn-primary" onclick="saveGroupSettings()"><i class="fa-solid fa-check"></i> Save settings</button>
+                        <button class="btn btn-danger" onclick="removeGroup()"><i class="fa-solid fa-trash-can"></i> Remove from dashboard</button>
+                    </div>
                 </div>
             </section>
 
@@ -862,24 +1025,25 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
                     <div class="muted small" id="bc-count"></div>
                 </div>
                 <div class="card">
-                    <div class="card-head"><div class="card-title"><i class="fa-solid fa-gauge-high"></i> Delivery pacing</div></div>
-                    <div class="hint-banner">
-                        <i class="fa-solid fa-circle-info"></i>
-                        <div>Telegram limits bots to roughly <b>30 messages per second</b>. The defaults below are safe for most cases. Increase only if you know what you're doing.</div>
-                    </div>
-                    <div class="grid grid-3">
-                        <div class="field"><label class="field-label">Batch size</label><input type="number" class="input" id="bc-batch" value="25" min="1" max="100"><span class="field-hint">How many messages sent at once per wave.</span></div>
-                        <div class="field"><label class="field-label">Delay between batches (ms)</label><input type="number" class="input" id="bc-delay" value="1000" min="0" max="60000"><span class="field-hint">Pause between waves. 1000ms is safe.</span></div>
-                        <div class="field"><label class="field-label">Timeout (ms)</label><input type="number" class="input" id="bc-timeout" value="10000" min="2000" max="60000"><span class="field-hint">Give up on a single send after this many ms.</span></div>
-                    </div>
-                    <button class="btn btn-gray btn-sm" onclick="saveBroadcastPacing()"><i class="fa-solid fa-check"></i> Save pacing</button>
+                    <details class="help" open>
+                        <summary><i class="fa-solid fa-gauge-high"></i> Delivery pacing</summary>
+                        <div>
+                            Telegram limits bots to roughly <b>30 messages per second</b>. The defaults below are safe for most cases. Increase only if you know what you're doing.
+                            <div class="grid grid-3" style="margin-top:12px;">
+                                <div class="field"><label class="field-label">Batch size</label><input type="number" class="input" id="bc-batch" value="25" min="1" max="100"><span class="field-hint">How many messages sent at once per wave.</span></div>
+                                <div class="field"><label class="field-label">Delay between batches (ms)</label><input type="number" class="input" id="bc-delay" value="1000" min="0" max="60000"><span class="field-hint">Pause between waves. 1000ms is safe.</span></div>
+                                <div class="field"><label class="field-label">Timeout (ms)</label><input type="number" class="input" id="bc-timeout" value="10000" min="2000" max="60000"><span class="field-hint">Give up on a single send after this many ms.</span></div>
+                            </div>
+                            <button class="btn btn-gray btn-sm" onclick="saveBroadcastPacing()"><i class="fa-solid fa-check"></i> Save pacing</button>
+                        </div>
+                    </details>
                 </div>
                 <div class="card">
                     <div class="card-head"><div class="card-title"><i class="fa-solid fa-paper-plane"></i> Compose</div></div>
                     <div class="chat" id="bc-chat"></div>
                     <div class="chat-compose">
                         <textarea class="textarea" id="bc-text" rows="2" placeholder="Write a broadcast…  (Enter to send)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendBroadcast();}"></textarea>
-                        <button class="btn btn-primary btn-icon" onclick="sendBroadcast()" id="bc-send"><i class="fa-solid fa-paper-plane"></i></button>
+                        <button class="btn btn-primary btn-icon" onclick="sendBroadcast()" id="bc-send" aria-label="Send broadcast"><i class="fa-solid fa-paper-plane"></i></button>
                     </div>
                     <div class="row" style="margin-top:8px;">
                         <input class="input" id="bc-photo" placeholder="Photo URL (optional)" style="flex:1;">
@@ -902,54 +1066,52 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
                 <div class="stats" id="mem-stats"></div>
 
                 <div class="card">
-                    <div class="card-head"><div class="card-title" style="color:var(--red);"><i class="fa-solid fa-triangle-exclamation"></i> Bulk delete</div></div>
-                    <div class="hint-banner danger">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
-                        <div>These actions affect <b>every user</b>. There is no undo.</div>
+                    <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-clock-rotate-left"></i> Auto-remove memory</div></div>
+                    <div class="hint-banner">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <div>When enabled, the scheduled cleanup will prune old memory automatically. <b>AI memory</b> is governed by the value you set in the <a href="#" onclick="go('ai');return false;">AI</a> tab — it is kept in sync here. <b>Direct messages</b> are pruned by age using the unit you pick below. Off by default.</div>
                     </div>
-                    <div class="row">
-                        <button class="btn btn-danger btn-sm" onclick="bulkClear('ai')"><i class="fa-solid fa-brain"></i> Clear all AI memory</button>
-                        <button class="btn btn-danger btn-sm" onclick="bulkClear('dm')"><i class="fa-solid fa-comment-dots"></i> Clear all direct messages</button>
-                        <button class="btn btn-danger btn-sm" onclick="bulkClear('all')"><i class="fa-solid fa-bomb"></i> Clear everything</button>
+                    <div class="switch-row" style="margin-bottom:0;">
+                        <div><div class="sw-label">Enable auto-remove</div><div class="sw-sub">Requires a Cron trigger in wrangler.toml, or use "Run now" in the Cleanup tab.</div></div>
+                        <button class="switch" id="arm-enable" onclick="toggleAutoRemove()"></button>
+                    </div>
+                    <div id="arm-settings" class="hidden" style="margin-top:16px;">
+                        <div class="grid grid-2">
+                            <div class="field">
+                                <label class="field-label">AI memory retention</label>
+                                <input class="input" id="arm-ai-value" readonly>
+                                <span class="field-hint">Synced with the AI tab. Change it there to update.</span>
+                            </div>
+                            <div class="field">
+                                <label class="field-label">Direct messages retention</label>
+                                <div class="row nowrap">
+                                    <input type="number" class="input" id="arm-dm-value" min="1" max="10000" style="flex:1;">
+                                    <select class="input" id="arm-dm-unit" style="width:auto;">
+                                        <option value="seconds">Seconds</option>
+                                        <option value="minutes">Minutes</option>
+                                        <option value="hours">Hours</option>
+                                        <option value="days">Days</option>
+                                        <option value="weeks">Weeks</option>
+                                        <option value="months">Months</option>
+                                    </select>
+                                </div>
+                                <span class="field-hint">Delete direct messages older than this. Runs with the scheduled cleanup.</span>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary btn-sm" onclick="saveAutoRemove()"><i class="fa-solid fa-check"></i> Save</button>
                     </div>
                 </div>
 
-                <div class="card">
-    <div class="card-head"><div class="card-title"><i class="fa-solid fa-clock-rotate-left"></i> Auto-remove memory</div></div>
-    <div class="hint-banner">
-        <i class="fa-solid fa-circle-info"></i>
-        <div>When enabled, the scheduled cleanup will prune old memory automatically. <b>AI memory</b> is governed by the value you set in the <a href="#" onclick="go('ai');return false;">AI</a> tab — it is kept in sync here. <b>Direct messages</b> are pruned by age using the unit you pick below. Off by default.</div>
-    </div>
-    <div class="switch-row" style="margin-bottom:0;">
-        <div><div class="sw-label">Enable auto-remove</div><div class="sw-sub">Requires a Cron trigger in wrangler.toml, or use “Run now” in the Cleanup tab.</div></div>
-        <button class="switch" id="arm-enable" onclick="toggleAutoRemove()"></button>
-    </div>
-    <div id="arm-settings" class="hidden" style="margin-top:16px;">
-        <div class="grid grid-2">
-            <div class="field">
-                <label class="field-label">AI memory retention</label>
-                <input class="input" id="arm-ai-value" readonly>
-                <span class="field-hint">Synced with the AI tab. Change it there to update.</span>
-            </div>
-            <div class="field">
-                <label class="field-label">Direct messages retention</label>
-                <div class="row nowrap">
-                    <input type="number" class="input" id="arm-dm-value" min="1" max="10000" style="flex:1;">
-                    <select class="input" id="arm-dm-unit" style="width:auto;">
-                        <option value="seconds">Seconds</option>
-                        <option value="minutes">Minutes</option>
-                        <option value="hours">Hours</option>
-                        <option value="days">Days</option>
-                        <option value="weeks">Weeks</option>
-                        <option value="months">Months</option>
-                    </select>
-                </div>
-                <span class="field-hint">Delete direct messages older than this. Runs with the scheduled cleanup.</span>
-            </div>
-        </div>
-        <button class="btn btn-primary btn-sm" onclick="saveAutoRemove()"><i class="fa-solid fa-check"></i> Save</button>
-    </div>
-</div>
+                <details class="help">
+                    <summary><i class="fa-solid fa-triangle-exclamation" style="color:var(--red);"></i> Bulk delete — affects every user, no undo</summary>
+                    <div>
+                        <div class="row" style="margin-top:8px;">
+                            <button class="btn btn-danger btn-sm" onclick="bulkClear('ai')"><i class="fa-solid fa-brain"></i> Clear all AI memory</button>
+                            <button class="btn btn-danger btn-sm" onclick="bulkClear('dm')"><i class="fa-solid fa-comment-dots"></i> Clear all direct messages</button>
+                            <button class="btn btn-danger btn-sm" onclick="bulkClear('all')"><i class="fa-solid fa-bomb"></i> Clear everything</button>
+                        </div>
+                    </div>
+                </details>
 
                 <div class="chips" id="mem-filters">
                     <button class="chip active" data-mf="all" onclick="setMemFilter('all')">All users with memory</button>
@@ -964,14 +1126,16 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
 
             <section class="page" id="page-ai">
                 <div class="page-head"><div class="lead"><h1>AI</h1><p>Connect an AI provider and shape how your bot replies.</p></div></div>
+
                 <div class="card">
                     <div class="switch-row" style="margin-bottom:0;">
                         <div><div class="sw-label">Enable AI replies</div><div class="sw-sub">Turn automatic AI responses on or off for the whole bot.</div></div>
                         <button class="switch" id="ai-enable" onclick="toggleAiEnabled()"></button>
                     </div>
                 </div>
+
                 <div class="card">
-                    <div class="card-head"><div class="card-title"><i class="fa-solid fa-key"></i> Provider</div></div>
+                    <div class="card-head"><div class="card-title c-purple"><i class="fa-solid fa-key"></i> Provider &amp; connection</div></div>
                     <div class="hint-banner">
                         <i class="fa-solid fa-circle-info"></i>
                         <div>
@@ -991,7 +1155,10 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
                             <span class="field-hint" id="ai-provider-hint"></span>
                         </div>
                         <div class="field"><label class="field-label">API key</label>
-                            <input type="password" class="input" id="ai-key" autocomplete="off" placeholder="Paste your key here (e.g. sk-…)">
+                            <div class="pw-wrap">
+                                <input type="password" class="input" id="ai-key" autocomplete="off" placeholder="Paste your key here (e.g. sk-…)">
+                                <button type="button" class="pw-toggle" onclick="togglePw('ai-key',this)" aria-label="Show or hide API key"><i class="fa-regular fa-eye"></i></button>
+                            </div>
                             <span class="field-hint" id="ai-key-hint"><i class="fa-solid fa-circle-info"></i> Not sure what this is? Click "Get API key" below or check the provider's documentation.</span>
                         </div>
                         <div class="field"><label class="field-label">Model</label><input class="input" id="ai-model" placeholder="gpt-4o-mini">
@@ -1011,8 +1178,9 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
                     </div>
                     <div id="ai-test-result" class="small" style="margin-top:10px;"></div>
                 </div>
+
                 <div class="card">
-                    <div class="card-head"><div class="card-title"><i class="fa-solid fa-sliders"></i> Response</div></div>
+                    <div class="card-head"><div class="card-title c-green"><i class="fa-solid fa-sliders"></i> Response shaping</div></div>
                     <div class="grid grid-2">
                         <div class="field"><label class="field-label">Display name</label><input class="input" id="ai-name" placeholder="Assistant">
                             <span class="field-hint">Used in the prompt as <code>{{bot_name}}</code>.</span>
@@ -1048,8 +1216,9 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
                         <div class="field"><label class="field-label">Fallback message</label><textarea class="textarea" id="ai-fallback" rows="2">Sorry, I am currently unavailable. Please try again later.</textarea><span class="field-hint">Sent when every provider fails.</span></div>
                     </div>
                 </div>
+
                 <div class="card">
-                    <div class="card-head"><div class="card-title"><i class="fa-solid fa-brain"></i> Instructions</div></div>
+                    <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-brain"></i> Instructions &amp; knowledge</div></div>
                     <div class="switch-row"><div><div class="sw-label">Strict knowledge mode</div><div class="sw-sub">Answer only from your instructions and knowledge bases.</div></div><button class="switch" id="ai-strict" onclick="toggleSwitch('ai-strict')"></button></div>
                     <div class="switch-row"><div><div class="sw-label">RTL support (Farsi / Arabic)</div><div class="sw-sub">Insert right-to-left marks on Persian paragraphs.</div></div><button class="switch" id="ai-rtl" onclick="toggleSwitch('ai-rtl')"></button></div>
                     <div class="field">
@@ -1078,8 +1247,9 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
                         <span class="field-hint">One <code>key=value</code> per line. Use in the prompt as <code>{{key}}</code>.</span>
                     </div>
                 </div>
+
                 <div class="card">
-                    <div class="card-head"><div class="card-title"><i class="fa-solid fa-filter"></i> Triggers</div></div>
+                    <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-filter"></i> Triggers</div></div>
                     <div class="grid grid-2">
                         <div class="field"><label class="field-label">When should the AI reply?</label>
                             <select class="input" id="ai-trigger">
@@ -1095,8 +1265,9 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
                         <div class="field"><label class="field-label">Ignore forwarded messages</label><select class="input" id="ai-ignore-fwd"><option value="1">Yes</option><option value="0">No</option></select><span class="field-hint">Prevents the AI from replying to forwards from other chats.</span></div>
                     </div>
                 </div>
+
                 <div class="card">
-                    <div class="card-head"><div class="card-title"><i class="fa-solid fa-user"></i> Private chats</div></div>
+                    <div class="card-head"><div class="card-title c-green"><i class="fa-solid fa-user"></i> Private chats</div></div>
                     <div class="grid grid-2">
                         <div class="field"><label class="field-label">Reply in private chats</label><select class="input" id="ai-private"><option value="1">Yes</option><option value="0">No</option></select><span class="field-hint">Users who opened a DM with your bot.</span></div>
                         <div class="field"><label class="field-label">Memory</label>
@@ -1108,8 +1279,9 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
                         </div>
                     </div>
                 </div>
+
                 <div class="card">
-                    <div class="card-head"><div class="card-title"><i class="fa-solid fa-users"></i> Groups — global defaults</div></div>
+                    <div class="card-head"><div class="card-title c-purple"><i class="fa-solid fa-users"></i> Groups — global defaults</div></div>
                     <div class="hint-banner">
                         <i class="fa-solid fa-circle-info"></i>
                         <div>Per-group overrides live in the <a href="#" onclick="go('groups');return false;">Groups</a> tab.</div>
@@ -1125,8 +1297,9 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
                         </div>
                     </div>
                 </div>
+
                 <div class="card">
-                    <div class="card-head"><div class="card-title"><i class="fa-solid fa-gauge-high"></i> Performance</div></div>
+                    <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-gauge-high"></i> Performance</div></div>
                     <div class="grid grid-2">
                         <div class="field"><label class="field-label">Per-user limit / minute</label><input type="number" class="input" id="ai-rate" value="10" min="0"><span class="field-hint">0 = no limit. 10 is reasonable.</span></div>
                         <div class="field"><label class="field-label">Global limit</label>
@@ -1139,23 +1312,23 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
                     </div>
                     <div class="switch-row"><div><div class="sw-label">Typing indicator</div><div class="sw-sub">Shows "typing…" while the AI is generating.</div></div><button class="switch" id="ai-typing" onclick="toggleSwitch('ai-typing')"></button></div>
                     <div class="switch-row"><div><div class="sw-label">Retry on failure</div><div class="sw-sub">Retry once, then use fallback providers.</div></div><button class="switch" id="ai-retry" onclick="toggleSwitch('ai-retry')"></button></div>
-                    <div class="switch-row" style="margin-bottom:0;"><div><div class="sw-label">Streaming replies</div><div class="sw-sub">Edit the message live as the AI writes.</div></div><button class="switch" id="ai-stream" onclick="toggleSwitch('ai-stream')"></button></div>
+                    <div class="switch-row"><div><div class="sw-label">Streaming replies</div><div class="sw-sub">Edit the message live as the AI writes.</div></div><button class="switch" id="ai-stream" onclick="toggleSwitch('ai-stream')"></button></div>
+                    <div class="switch-row" style="margin-bottom:0;"><div><div class="sw-label">Show reply keyboard after AI replies</div><div class="sw-sub">Buttons users can tap instead of typing.</div></div><button class="switch" id="ai-suggest" onclick="toggleSwitch('ai-suggest')"></button></div>
                 </div>
+
                 <div class="card">
-                    <div class="card-head"><div class="card-title"><i class="fa-solid fa-keyboard"></i> Quick replies</div></div>
-                    <div class="switch-row"><div><div class="sw-label">Show reply keyboard after AI replies</div><div class="sw-sub">Buttons users can tap instead of typing.</div></div><button class="switch" id="ai-suggest" onclick="toggleSwitch('ai-suggest')"></button></div>
-                    <div id="sq-editor">
-                        <div class="switch-row"><div><div class="sw-label">One-time keyboard</div><div class="sw-sub">Hide after the first tap.</div></div><button class="switch on" id="ai-sq-once" onclick="toggleSwitch('ai-sq-once')"></button></div>
-                        <div class="row" style="margin-bottom:10px;">
-                            <input class="input" id="sq-label" placeholder="Button label" style="flex:1;">
-                            <input class="input" id="sq-value" placeholder="Text to send when tapped" style="flex:1;">
-                            <button class="btn btn-primary btn-sm" onclick="addSq()"><i class="fa-solid fa-plus"></i></button>
-                        </div>
-                        <div id="sq-list"></div>
+                    <div class="card-head"><div class="card-title c-purple"><i class="fa-solid fa-keyboard"></i> Quick replies</div></div>
+                    <div class="switch-row"><div><div class="sw-label">One-time keyboard</div><div class="sw-sub">Hide after the first tap.</div></div><button class="switch on" id="ai-sq-once" onclick="toggleSwitch('ai-sq-once')"></button></div>
+                    <div class="row" style="margin-bottom:10px;">
+                        <input class="input" id="sq-label" placeholder="Button label" style="flex:1;">
+                        <input class="input" id="sq-value" placeholder="Text to send when tapped" style="flex:1;">
+                        <button class="btn btn-primary btn-sm" onclick="addSq()"><i class="fa-solid fa-plus"></i></button>
                     </div>
+                    <div id="sq-list"></div>
                 </div>
+
                 <div class="card">
-                    <div class="card-head"><div class="card-title"><i class="fa-solid fa-flask"></i> Playground</div><div style="flex:1"></div><button class="btn btn-gray btn-sm" onclick="clearPlayground()"><i class="fa-solid fa-trash-can"></i></button></div>
+                    <div class="card-head"><div class="card-title c-green"><i class="fa-solid fa-flask"></i> Playground</div><div style="flex:1"></div><button class="btn btn-gray btn-sm" onclick="clearPlayground()" aria-label="Clear playground"><i class="fa-solid fa-trash-can"></i></button></div>
                     <div class="hint-banner">
                         <i class="fa-solid fa-lightbulb"></i>
                         <div>Test your AI without messaging the bot. Drag the bottom-right corner to resize. Supports <b>HTML</b> tags (<code>&lt;b&gt;</code>, <code>&lt;i&gt;</code>, <code>&lt;code&gt;</code>) and markdown-style <code>\`code\`</code>.</div>
@@ -1163,21 +1336,23 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
                     <div class="playground" id="pg"></div>
                     <div class="row nowrap">
                         <input class="input" id="pg-input" placeholder="Type a test message…  (Enter to send)" onkeydown="if(event.key==='Enter')sendPlayground()" style="flex:1;">
-                        <button class="btn btn-primary btn-icon" onclick="sendPlayground()"><i class="fa-solid fa-paper-plane"></i></button>
+                        <button class="btn btn-primary btn-icon" onclick="sendPlayground()" aria-label="Send test message"><i class="fa-solid fa-paper-plane"></i></button>
                     </div>
                 </div>
+
                 <div class="card">
                     <div class="row" style="justify-content:space-between;">
                         <span class="memory-pill"><i class="fa-solid fa-memory"></i> <span id="mem-count">…</span></span>
                         <div class="row">
-                            <button class="btn btn-gray btn-sm" onclick="exportAi()" title="Export AI settings"><i class="fa-solid fa-download"></i></button>
-                            <button class="btn btn-gray btn-sm" onclick="document.getElementById('ai-import').click()" title="Import AI settings"><i class="fa-solid fa-upload"></i></button>
+                            <button class="btn btn-gray btn-sm" onclick="exportAi()" title="Export AI settings" aria-label="Export AI settings"><i class="fa-solid fa-download"></i></button>
+                            <button class="btn btn-gray btn-sm" onclick="document.getElementById('ai-import').click()" title="Import AI settings" aria-label="Import AI settings"><i class="fa-solid fa-upload"></i></button>
                             <input type="file" id="ai-import" class="hidden" accept=".json" onchange="importAi(event)">
-                            <button class="btn btn-danger btn-sm" onclick="clearAllAiMemory()" title="Clear every AI conversation"><i class="fa-solid fa-eraser"></i></button>
-                            <button class="btn btn-gray btn-sm" onclick="resetAi()" title="Reset AI settings to defaults"><i class="fa-solid fa-rotate-left"></i></button>
+                            <button class="btn btn-danger btn-sm" onclick="clearAllAiMemory()" title="Clear every AI conversation" aria-label="Clear every AI conversation"><i class="fa-solid fa-eraser"></i></button>
+                            <button class="btn btn-gray btn-sm" onclick="resetAi()" title="Reset AI settings to defaults" aria-label="Reset AI settings"><i class="fa-solid fa-rotate-left"></i></button>
                         </div>
                     </div>
                 </div>
+
                 <div class="sticky-actions">
                     <button class="btn btn-primary" onclick="saveAi()"><i class="fa-solid fa-check"></i> Save AI settings</button>
                 </div>
@@ -1186,20 +1361,20 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
             <section class="page" id="page-settings">
                 <div class="page-head"><div class="lead"><h1>Settings</h1><p>Bot connection and admin credentials.</p></div></div>
                 <div class="card">
-                    <div class="card-head"><div class="card-title"><i class="fa-solid fa-robot"></i> Bot token</div></div>
+                    <div class="card-head"><div class="card-title c-green"><i class="fa-solid fa-robot"></i> Bot token</div></div>
                     <div class="input-with-btn">
                         <input type="password" class="input" id="set-token" readonly style="font-family:var(--mono);font-size:12px;">
-                        <button class="btn btn-gray btn-sm" onclick="revealToken()" title="Reveal"><i class="fa-regular fa-eye"></i></button>
-                        <button class="btn btn-gray btn-sm" onclick="copyVal('set-token')" title="Copy"><i class="fa-regular fa-copy"></i></button>
+                        <button class="btn btn-gray btn-sm" onclick="revealToken()" title="Reveal" aria-label="Reveal token"><i class="fa-regular fa-eye"></i></button>
+                        <button class="btn btn-gray btn-sm" onclick="copyVal('set-token')" title="Copy" aria-label="Copy token"><i class="fa-regular fa-copy"></i></button>
                     </div>
                     <div class="field-hint">Secrets are masked for safety. Click the eye to reveal once — this action is logged in the activity feed.</div>
                     <button class="btn btn-primary btn-sm" style="margin-top:12px;" onclick="changeToken()"><i class="fa-solid fa-key"></i> Change token</button>
                 </div>
                 <div class="card">
-                    <div class="card-head"><div class="card-title"><i class="fa-solid fa-link"></i> Webhook</div></div>
+                    <div class="card-head"><div class="card-title c-purple"><i class="fa-solid fa-link"></i> Webhook</div></div>
                     <div class="input-with-btn">
                         <input class="input" id="set-hook" readonly style="font-size:12px;">
-                        <button class="btn btn-gray btn-sm" onclick="copyVal('set-hook')"><i class="fa-regular fa-copy"></i></button>
+                        <button class="btn btn-gray btn-sm" onclick="copyVal('set-hook')" aria-label="Copy webhook URL"><i class="fa-regular fa-copy"></i></button>
                     </div>
                     <div class="field-hint">Telegram delivers updates to this URL. If it's ever broken, click <b>Health check</b> to repair it automatically.</div>
                     <div class="row" style="margin-top:12px;">
@@ -1209,16 +1384,27 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
                     <div id="hook-result" class="small" style="margin-top:10px;"></div>
                 </div>
                 <div class="card">
-                    <div class="card-head"><div class="card-title"><i class="fa-solid fa-lock"></i> Admin password</div></div>
+                    <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-lock"></i> Admin password</div></div>
                     <div class="grid grid-2" style="max-width:460px;">
-                        <div class="field"><label class="field-label">New password</label><input type="password" class="input" id="pw1" autocomplete="new-password"><span class="field-hint">At least 6 characters.</span></div>
-                        <div class="field"><label class="field-label">Confirm</label><input type="password" class="input" id="pw2" autocomplete="new-password"></div>
+                        <div class="field" style="margin-bottom:0;"><label class="field-label">New password</label>
+                            <div class="pw-wrap">
+                                <input type="password" class="input" id="pw1" autocomplete="new-password">
+                                <button type="button" class="pw-toggle" onclick="togglePw('pw1',this)" aria-label="Show or hide password"><i class="fa-regular fa-eye"></i></button>
+                            </div>
+                            <span class="field-hint">At least 6 characters.</span>
+                        </div>
+                        <div class="field"><label class="field-label">Confirm</label>
+                            <div class="pw-wrap">
+                                <input type="password" class="input" id="pw2" autocomplete="new-password">
+                                <button type="button" class="pw-toggle" onclick="togglePw('pw2',this)" aria-label="Show or hide password"><i class="fa-regular fa-eye"></i></button>
+                            </div>
+                        </div>
                     </div>
                     <button class="btn btn-primary btn-sm" onclick="changePassword()"><i class="fa-solid fa-check"></i> Update password</button>
                     <div id="pw-result" class="small" style="margin-top:8px;"></div>
                 </div>
                 <div class="card">
-                    <div class="card-head"><div class="card-title" style="color:var(--red);"><i class="fa-solid fa-triangle-exclamation"></i> Danger zone</div></div>
+                    <div class="card-head"><div class="card-title c-red"><i class="fa-solid fa-triangle-exclamation"></i> Danger zone</div></div>
                     <div class="hint-banner danger">
                         <i class="fa-solid fa-triangle-exclamation"></i>
                         <div>Factory reset erases <b>everything</b> — commands, users, groups, messages, settings. The bot is disconnected. There is no undo.</div>
@@ -1256,6 +1442,14 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
                     </div>
                     <div id="cron-last" class="muted small" style="margin-top:10px;"></div>
                 </div>
+
+                <div class="card">
+                    <div class="card-head"><div class="card-title c-purple"><i class="fa-solid fa-code"></i> Enabling Cron in wrangler.toml</div></div>
+                    <p class="muted small" style="line-height:1.6;">To let Cloudflare run cleanup automatically, add a <code>[triggers]</code> block to your <code>wrangler.toml</code> and redeploy:</p>
+                    <pre style="background:var(--surface-2);padding:14px;border-radius:8px;overflow-x:auto;font-family:var(--mono);font-size:13px;line-height:1.6;margin:0;"><code>[triggers]
+crons = ["0 3 * * *"]</code></pre>
+                    <p class="muted small" style="margin-top:12px;line-height:1.6;">The example above runs every day at <b>03:00 UTC</b>. Any <a href="https://crontab.guru/" target="_blank" rel="noopener">standard cron expression</a> works. Without a trigger you can still use <b>Run now</b> above, or add a Cron Trigger from the Cloudflare dashboard (Workers → your Worker → Settings → Triggers).</p>
+                </div>
             </section>
 
             <section class="page" id="page-backup">
@@ -1265,7 +1459,7 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
                     <div>Backups include commands, users, groups, direct messages, AI memory, settings and history. <b>Secrets are never included</b> for your safety.</div>
                 </div>
                 <div class="card">
-                    <div class="card-head"><div class="card-title"><i class="fa-solid fa-download"></i> Export</div></div>
+                    <div class="card-head"><div class="card-title c-green"><i class="fa-solid fa-download"></i> Export</div></div>
                     <div class="row">
                         <button class="btn btn-primary" onclick="exportBackup()"><i class="fa-solid fa-box-archive"></i> Full backup</button>
                         <button class="btn btn-gray" onclick="openCustomBackup()"><i class="fa-solid fa-sliders"></i> Custom backup…</button>
@@ -1273,7 +1467,7 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
                     <div id="backup-result" class="small" style="margin-top:10px;"></div>
                 </div>
                 <div class="card">
-                    <div class="card-head"><div class="card-title"><i class="fa-solid fa-upload"></i> Restore</div></div>
+                    <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-upload"></i> Restore</div></div>
                     <div class="hint-banner warn">
                         <i class="fa-solid fa-triangle-exclamation"></i>
                         <div>Restoring <b>overwrites</b> the data in the sections contained in the file. Restore early, restore often.</div>
@@ -1289,7 +1483,7 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
                 <div class="page-head">
                     <div class="lead"><h1>Activity Log</h1><p>Recent admin actions.</p></div>
                     <div class="page-actions">
-                        <button class="btn btn-gray btn-sm" onclick="loadLogs()"><i class="fa-solid fa-rotate"></i></button>
+                        <button class="btn btn-gray btn-sm" onclick="loadLogs()" aria-label="Refresh logs"><i class="fa-solid fa-rotate"></i></button>
                         <button class="btn btn-danger btn-sm" onclick="clearLogs()"><i class="fa-solid fa-trash-can"></i> Clear all</button>
                     </div>
                 </div>
@@ -1315,13 +1509,16 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
                     <div class="grid grid-2">
                         <div class="field"><label class="field-label">Current version</label><input class="input" id="up-current" readonly value="${VERSION}"></div>
                         <div class="field"><label class="field-label">Latest version</label>
-                            <div class="input-with-btn"><input class="input" id="up-latest" readonly placeholder="Click to check…"><button class="btn btn-gray btn-sm" onclick="checkUpdate(true)"><i class="fa-solid fa-rotate"></i></button></div>
+                            <div class="input-with-btn"><input class="input" id="up-latest" readonly placeholder="Click to check…"><button class="btn btn-gray btn-sm" onclick="checkUpdate(true)" aria-label="Check for updates"><i class="fa-solid fa-rotate"></i></button></div>
                             <span class="field-hint" id="up-notes"></span>
                         </div>
                     </div>
                     <div class="field"><label class="field-label">Cloudflare API token</label>
                         <div class="input-with-btn">
-                            <input type="password" class="input" id="up-token" placeholder="Workers Scripts:Edit" autocomplete="off">
+                            <div class="pw-wrap" style="flex:1;">
+                                <input type="password" class="input" id="up-token" placeholder="Workers Scripts:Edit" autocomplete="off">
+                                <button type="button" class="pw-toggle" onclick="togglePw('up-token',this)" aria-label="Show or hide token"><i class="fa-regular fa-eye"></i></button>
+                            </div>
                             <button class="btn btn-gray btn-sm" onclick="openTokenGen()"><i class="fa-solid fa-key"></i> Get token</button>
                         </div>
                         <span class="field-hint">Needs the <b>Workers Scripts:Edit</b> permission. Only used for this update, never shared.</span>
@@ -1334,7 +1531,7 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
     </div>
 </div>
 
-<div class="modal hidden" id="cmd-modal">
+<div class="modal hidden" id="cmd-modal" role="dialog" aria-modal="true" aria-labelledby="cmd-modal-title">
     <div class="modal-bg" onclick="closeCommandModal()"></div>
     <div class="sheet">
         <div class="sheet-head">
@@ -1387,7 +1584,7 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
     </div>
 </div>
 
-<div class="modal hidden" id="msg-modal">
+<div class="modal hidden" id="msg-modal" role="dialog" aria-modal="true" aria-labelledby="msg-title">
     <div class="modal-bg" onclick="closeMsgEditor()"></div>
     <div class="sheet">
         <div class="sheet-head">
@@ -1436,7 +1633,7 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
     </div>
 </div>
 
-<div class="modal hidden" id="featured-modal">
+<div class="modal hidden" id="featured-modal" role="dialog" aria-modal="true" aria-labelledby="featured-modal-title">
     <div class="modal-bg" onclick="closeFeaturedModal()"></div>
     <div class="sheet">
         <div class="sheet-head">
@@ -1474,7 +1671,7 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
     </div>
 </div>
 
-<div class="modal hidden" id="confirm-modal">
+<div class="modal hidden" id="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
     <div class="modal-bg" onclick="closeConfirm(false)"></div>
     <div class="sheet small">
         <div class="sheet-head"><div class="sheet-title" id="confirm-title">Are you sure?</div></div>
@@ -1486,7 +1683,7 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
     </div>
 </div>
 
-<div class="modal hidden" id="backup-modal">
+<div class="modal hidden" id="backup-modal" role="dialog" aria-modal="true">
     <div class="modal-bg" onclick="closeCustomBackup()"></div>
     <div class="sheet">
         <div class="sheet-head">
@@ -1501,7 +1698,7 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
     </div>
 </div>
 
-<div class="modal hidden" id="about-modal">
+<div class="modal hidden" id="about-modal" role="dialog" aria-modal="true">
     <div class="modal-bg" onclick="document.getElementById('about-modal').classList.add('hidden')"></div>
     <div class="sheet small">
         <div class="sheet-head"><div class="sheet-title">About Nyxx</div></div>
@@ -1515,7 +1712,7 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
     </div>
 </div>
 
-<div class="modal hidden" id="token-modal">
+<div class="modal hidden" id="token-modal" role="dialog" aria-modal="true">
     <div class="modal-bg" onclick="document.getElementById('token-modal').classList.add('hidden')"></div>
     <div class="sheet small">
         <div class="sheet-head"><div class="sheet-title">Change bot token</div></div>
@@ -1543,14 +1740,57 @@ function esc(s) {
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 function show(el, yes) { if (el) el.classList.toggle('hidden', !yes); }
+function togglePw(inputId, btn) {
+    var el = $(inputId); if (!el) return;
+    var isPw = el.type === 'password';
+    el.type = isPw ? 'text' : 'password';
+    if (btn) btn.innerHTML = isPw ? '<i class="fa-regular fa-eye-slash"></i>' : '<i class="fa-regular fa-eye"></i>';
+}
+function updatePwStrength() {
+    var el = $('setup-password'), out = $('pw-strength'); if (!el || !out) return;
+    var v = el.value, s = 0;
+    if (v.length >= 6) s++;
+    if (v.length >= 10) s++;
+    if (/[A-Z]/.test(v) && /[a-z]/.test(v)) s++;
+    if (/[0-9]/.test(v)) s++;
+    if (/[^A-Za-z0-9]/.test(v)) s++;
+    var label = s <= 1 ? 'Weak' : (s <= 3 ? 'Okay' : 'Strong');
+    var color = s <= 1 ? 'var(--red)' : (s <= 3 ? 'var(--orange)' : 'var(--green)');
+    out.innerHTML = v ? '<span style="color:' + color + '">' + label + '</span>' : '';
+}
+
+var activeToasts = [];
 function toast(msg, type) {
+    var host = $('toasts'); if (!host) return;
+    while (activeToasts.length >= 3) {
+        var old = activeToasts.shift();
+        try { old.remove(); } catch (e) {}
+    }
     var t = document.createElement('div');
     t.className = 'toast ' + (type || 'success');
-    t.textContent = msg;
-    $('toasts').appendChild(t);
-    setTimeout(function () { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; }, 3600);
-    setTimeout(function () { t.remove(); }, 4000);
+    var body = document.createElement('div'); body.className = 'toast-body'; body.textContent = msg;
+    var x = document.createElement('button'); x.className = 'toast-close'; x.innerHTML = '×'; x.setAttribute('aria-label', 'Dismiss');
+    x.onclick = function () { dismissToast(t); };
+    t.appendChild(body); t.appendChild(x);
+    host.appendChild(t);
+    activeToasts.push(t);
+    setTimeout(function () { dismissToast(t); }, 4000);
 }
+function dismissToast(t) {
+    var idx = activeToasts.indexOf(t);
+    if (idx >= 0) activeToasts.splice(idx, 1);
+    if (t && t.parentNode) {
+        t.style.opacity = '0'; t.style.transition = 'opacity .25s';
+        setTimeout(function () { try { t.remove(); } catch (e) {} }, 260);
+    }
+}
+
+var PUBLIC_ENDPOINTS = ['/api/status', '/api/setup', '/api/login', '/api/check_session', '/api/version'];
+function isPublicEndpoint(path) {
+    for (var i = 0; i < PUBLIC_ENDPOINTS.length; i++) if (path === PUBLIC_ENDPOINTS[i]) return true;
+    return false;
+}
+
 async function api(method, path, body) {
     var opts = { method: method, headers: {} };
     if (body !== undefined) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
@@ -1572,6 +1812,14 @@ async function api(method, path, body) {
         throw new Error(err && err.message ? err.message : 'Network error. Please try again.');
     }
     if (timer) clearTimeout(timer);
+
+    if (res.status === 401 && !isPublicEndpoint(path)) {
+        showStep('step-login');
+        var le = $('login-error'); if (le) le.classList.remove('show');
+        toast('Session expired. Please sign in again.', 'info');
+        throw new Error('__SESSION_EXPIRED__');
+    }
+
     var data = null;
     try { data = await res.json(); } catch (e) { data = null; }
     if (!res.ok) {
@@ -1600,6 +1848,52 @@ function fmtTime(ts) { return ts ? String(ts).replace('T', ' ').slice(0, 16) : '
 function scrollBottom(el) { if (el) requestAnimationFrame(function () { el.scrollTop = el.scrollHeight; }); }
 function sameId(a, b) { return String(a) === String(b); }
 
+function emptyState(icon, msg, hint, isErr) {
+    return '<div class="empty' + (isErr ? ' err' : '') + '"><i class="' + icon + '"></i>' + esc(msg) + (hint ? '<div class="empty-hint">' + esc(hint) + '</div>' : '') + '</div>';
+}
+function errorState(msg, retryFn) {
+    var html = '<div class="empty err"><i class="fa-solid fa-triangle-exclamation"></i>' + esc(msg || 'Something went wrong.');
+    if (retryFn) html += '<div style="margin-top:14px;"><button class="btn btn-gray btn-sm" onclick="' + retryFn + '"><i class="fa-solid fa-rotate"></i> Retry</button></div>';
+    return html + '</div>';
+}
+function skeletonRows(n) {
+    var s = '<div class="list">';
+    for (var i = 0; i < (n || 3); i++) s += '<div class="skl-row"><div class="skl skl-avatar"></div><div style="flex:1"><div class="skl skl-line w60"></div><div class="skl skl-line w40"></div></div></div>';
+    return s + '</div>';
+}
+
+var openModals = [];
+function trackModal(id) {
+    var el = $(id); if (!el) return;
+    openModals.push(id);
+    document.body.style.overflow = 'hidden';
+    setTimeout(function () {
+        var first = el.querySelector('input, textarea, select, button');
+        if (first) try { first.focus(); } catch (e) {}
+    }, 60);
+}
+function untrackModal(id) {
+    var idx = openModals.indexOf(id);
+    if (idx >= 0) openModals.splice(idx, 1);
+    if (!openModals.length) document.body.style.overflow = '';
+}
+
+/* ===== Dropdown (mobile action menus) ===== */
+function toggleDropdown(btn) {
+    var dd = btn.closest('.dropdown'); if (!dd) return;
+    var menu = dd.querySelector('.dropdown-menu'); if (!menu) return;
+    var isOpen = !menu.classList.contains('hidden');
+    closeAllDropdowns();
+    if (!isOpen) menu.classList.remove('hidden');
+}
+function closeAllDropdowns() {
+    document.querySelectorAll('.dropdown-menu').forEach(function (m) { m.classList.add('hidden'); });
+}
+document.addEventListener('click', function (e) {
+    if (!e.target.closest('.dropdown')) { closeAllDropdowns(); return; }
+    if (e.target.closest('.dropdown-menu button')) setTimeout(closeAllDropdowns, 0);
+});
+
 /* ============================================================
    CONFIRM
    ============================================================ */
@@ -1610,10 +1904,12 @@ function confirmDialog(text, title, danger, extraHtml) {
     $('confirm-extra').innerHTML = extraHtml || '';
     $('confirm-ok').className = 'btn ' + (danger === false ? 'btn-primary' : 'btn-danger');
     $('confirm-modal').classList.remove('hidden');
+    trackModal('confirm-modal');
     return new Promise(function (resolve) { confirmResolve = resolve; });
 }
 function closeConfirm(v) {
     $('confirm-modal').classList.add('hidden');
+    untrackModal('confirm-modal');
     if (confirmResolve) { confirmResolve(v); confirmResolve = null; }
 }
 
@@ -1671,7 +1967,7 @@ function toggleSidebar(force) {
     var overlay = document.getElementById('sidebar-overlay');
     if (overlay) overlay.classList.toggle('show', open);
 }
-function showInfo() { $('about-modal').classList.remove('hidden'); }
+function showInfo() { $('about-modal').classList.remove('hidden'); trackModal('about-modal'); }
 function showStep(id) {
     ['step-status', 'step-setup', 'step-login', 'step-dashboard'].forEach(function (s) {
         var el = $(s); if (el) el.classList.toggle('hidden', s !== id);
@@ -1679,40 +1975,96 @@ function showStep(id) {
 }
 
 /* ============================================================
-   STATUS / AUTH
+   AUTH STATE MACHINE
    ============================================================ */
+function showAuthStatus(kind, title, msg, actions, help) {
+    showStep('step-status');
+    var icon = $('status-icon');
+    if (icon) {
+        icon.className = 'auth-icon ' + kind;
+        var inner = {
+            loading: '<i class="fa-solid fa-circle-notch fa-spin"></i>',
+            success: '<i class="fa-solid fa-circle-check"></i>',
+            warn: '<i class="fa-solid fa-triangle-exclamation"></i>',
+            error: '<i class="fa-solid fa-circle-xmark"></i>'
+        }[kind] || '<i class="fa-solid fa-circle-notch fa-spin"></i>';
+        icon.innerHTML = inner;
+    }
+    var t = $('status-title'); if (t) t.textContent = title;
+    var m = $('status-message'); if (m) m.textContent = msg;
+    var a = $('status-actions'); if (a) a.innerHTML = actions || '';
+    var h = $('status-help'); if (h) h.innerHTML = help || '';
+}
+
 function updateStatusPills(data) {
     var d1 = $('pill-d1'), bot = $('pill-bot');
     if (d1) {
-        d1.className = 'pill ' + (data.d1_bound ? 'ok' : 'err');
+        d1.className = 'pill clickable ' + (data.d1_bound ? 'ok' : 'err');
         var t1 = d1.querySelector('.txt');
         if (t1) t1.textContent = data.d1_bound ? 'D1' : 'D1 missing';
+        d1.title = data.d1_bound ? 'Database connected — tap to recheck' : 'Database missing — tap to recheck';
     }
     if (bot) {
-        bot.className = 'pill ' + (data.tg_configured ? 'bot' : 'err');
+        bot.className = 'pill clickable ' + (data.tg_configured ? 'bot' : 'err');
         var t2 = bot.querySelector('.txt');
         if (t2) t2.textContent = data.tg_configured ? (data.bot_username ? '@' + data.bot_username : 'Bot') : 'No bot';
+        bot.title = data.tg_configured ? ('Bot connected' + (data.bot_username ? ' (@' + data.bot_username + ')' : '') + ' — tap to recheck') : 'No bot token — tap to recheck';
     }
 }
-async function checkStatus() {
+
+async function refreshStatusPill() {
     try {
         var data = await api('GET', '/api/status');
         updateStatusPills(data);
-        if (!data.d1_bound) {
-            showStep('step-status');
-            $('status-message').textContent = 'D1 database is not bound. Re-run the installer.';
-            show($('status-actions'), true);
-            return;
-        }
-        if (!data.admin_password_set) { showStep('step-setup'); return; }
-        var s = await api('GET', '/api/check_session');
-        if (s.logged_in) enterDashboard(); else showStep('step-login');
-    } catch (e) {
-        showStep('step-status');
-        $('status-message').textContent = e.message;
-        show($('status-actions'), true);
-    }
+        toast('Status refreshed.', 'info');
+    } catch (e) { toast('Could not refresh status.', 'error'); }
 }
+
+async function tryFetchStatus() { return await api('GET', '/api/status'); }
+async function checkStatus() {
+    showAuthStatus('loading', 'Connecting…', 'Checking your database connection.');
+    var attempt = 0, lastErr = null;
+    while (attempt < 3) {
+        try {
+            var data = await tryFetchStatus();
+            updateStatusPills(data);
+            if (!data.d1_bound) {
+                showAuthStatus(
+                    'error', 'Database not bound',
+                    'The D1 database binding is missing. Re-run the installer or check your wrangler.toml.',
+                    '<button class="btn btn-primary" onclick="checkStatus()"><i class="fa-solid fa-rotate"></i> Retry</button>'
+                );
+                return;
+            }
+            if (!data.admin_password_set) { showStep('step-setup'); return; }
+            try {
+                var s = await api('GET', '/api/check_session');
+                if (s.logged_in) enterDashboard(); else showStep('step-login');
+            } catch (e) { showStep('step-login'); }
+            return;
+        } catch (e) {
+            lastErr = e; attempt++;
+            if (attempt < 3) {
+                showAuthStatus('loading', 'Connecting…', 'Retrying (' + attempt + '/3)…');
+                await new Promise(function (r) { setTimeout(r, 600 * attempt); });
+            }
+        }
+    }
+    var isTimeout = lastErr && /timed out/i.test(lastErr.message);
+    var isNetwork = lastErr && /network|failed to fetch/i.test(lastErr.message);
+    var title = isTimeout ? 'Request timed out' : (isNetwork ? 'Cannot reach the server' : 'Could not load status');
+    var msg = isTimeout
+        ? 'The server is taking longer than expected to respond. This does not mean your setup is broken.'
+        : (isNetwork
+            ? 'The dashboard could not reach the Worker. Check your internet connection and reload.'
+            : 'Something went wrong while checking the dashboard. This does not mean your setup is broken.');
+    showAuthStatus(
+        'warn', title, msg,
+        '<button class="btn btn-primary" onclick="checkStatus()"><i class="fa-solid fa-rotate"></i> Retry</button>',
+        'Setup and sign-in are only shown when the server confirms the database state.'
+    );
+}
+
 function enterDashboard() {
     showStep('step-dashboard');
     go('overview');
@@ -1740,7 +2092,7 @@ async function submitLogin() {
     var err = $('login-error'); err.classList.remove('show');
     try {
         await api('POST', '/api/login', { password: $('login-password').value });
-        await checkStatus();
+        enterDashboard();
     } catch (e) { err.textContent = e.message; err.classList.add('show'); }
 }
 async function logout() {
@@ -1753,7 +2105,7 @@ async function logout() {
    ============================================================ */
 async function loadOverview(force) {
     var st = $('ov-stats');
-    st.innerHTML = '<div class="stat skl" style="height:118px"></div><div class="stat skl" style="height:118px"></div><div class="stat skl" style="height:118px"></div><div class="stat skl" style="height:118px"></div>';
+    st.innerHTML = '<div class="stat skl" style="height:120px"></div>'.repeat(5);
     try {
         var s = await api('GET', '/api/stats');
         function card(cls, icon, val, lbl, extra) {
@@ -1780,7 +2132,9 @@ async function loadOverview(force) {
                 (x.done ? '' : '<button class="btn btn-gray btn-sm" onclick="go(\\'' + x.page + '\\')">Open</button>') +
                 '</li>';
         }).join('');
-    } catch (e) { st.innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; }
+    } catch (e) {
+        st.innerHTML = '<div style="grid-column:1/-1">' + errorState(e.message, 'loadOverview(true)') + '</div>';
+    }
 }
 
 /* ============================================================
@@ -1795,11 +2149,11 @@ var editingCmd = null;
 async function loadCommands(force) {
     var box = $('cmd-list');
     if (!commands.length || force) {
-        box.innerHTML = '<div class="list"><div class="skl-row"><div class="skl skl-avatar"></div><div style="flex:1"><div class="skl skl-line w60"></div><div class="skl skl-line w40"></div></div></div></div>';
+        box.innerHTML = skeletonRows(3);
         try {
             var d = await api('GET', '/api/commands');
             commands = d.commands || [];
-        } catch (e) { box.innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; return; }
+        } catch (e) { box.innerHTML = errorState(e.message, 'loadCommands(true)'); return; }
     }
     buildTree(); renderCommands(); kbCmd.populateCommands();
 }
@@ -1820,24 +2174,37 @@ function renderCommands() {
     if (q) list = list.filter(function (c) { return c.command.toLowerCase().indexOf(q) >= 0; });
     $('crumb').textContent = crumbPath.length ? crumbPath.join(' / ') : 'Root';
     $('btn-up').disabled = !currentParent;
-    if (!list.length) { box.innerHTML = '<div class="empty"><i class="fa-regular fa-folder-open"></i>Nothing here yet.</div>'; return; }
+    if (!list.length) { box.innerHTML = emptyState('fa-regular fa-folder-open', 'Nothing here yet.', 'Create your first command with the button above.'); return; }
     var html = '<div class="list">';
     list.forEach(function (c, i) {
         var kids = (children[c.command] || []).length;
+        var cmdEsc = esc(c.command).replace(/'/g, "\\\\'");
         html += '<div class="list-row">' +
             '<i class="fa-regular ' + (kids ? 'fa-folder tag-folder' : 'fa-file') + '"></i>' +
-            '<div class="lr-main" onclick="' + (kids ? 'enterFolder(\\'' + esc(c.command).replace(/'/g, "\\\\'") + '\\')' : 'editCommand(\\'' + esc(c.command).replace(/'/g, "\\\\'") + '\\')') + '" style="cursor:pointer;">' +
+            '<div class="lr-main" onclick="' + (kids ? 'enterFolder(\\'' + cmdEsc + '\\')' : 'editCommand(\\'' + cmdEsc + '\\')') + '" style="cursor:pointer;">' +
                 '<div class="lr-title mono">' + esc(c.command) + '</div>' +
                 '<div class="lr-sub">' + (c.response_type === 'photo' ? 'Photo' : 'Text') + (kids ? ' · ' + kids + ' sub-command' + (kids > 1 ? 's' : '') : '') + '</div>' +
             '</div>' +
             '<span class="badge ' + (c.enabled == 1 ? 'green' : 'red') + '">' + (c.enabled == 1 ? 'On' : 'Off') + '</span>' +
             (c.is_admin_only == 1 ? '<span class="badge purple">Admin</span>' : '') +
             '<div class="lr-actions">' +
-                '<button class="icon-btn" onclick="moveCmd(' + i + ',-1)" ' + (i === 0 ? 'disabled' : '') + '><i class="fa-solid fa-arrow-up"></i></button>' +
-                '<button class="icon-btn" onclick="moveCmd(' + i + ',1)" ' + (i === list.length - 1 ? 'disabled' : '') + '><i class="fa-solid fa-arrow-down"></i></button>' +
-                '<button class="icon-btn" onclick="openCommandModal(null, \\'' + esc(c.command).replace(/'/g, "\\\\'") + '\\')"><i class="fa-solid fa-plus"></i></button>' +
-                '<button class="icon-btn" onclick="editCommand(\\'' + esc(c.command).replace(/'/g, "\\\\'") + '\\')"><i class="fa-regular fa-pen-to-square"></i></button>' +
-                '<button class="icon-btn danger" onclick="deleteCommand(\\'' + esc(c.command).replace(/'/g, "\\\\'") + '\\')"><i class="fa-regular fa-trash-can"></i></button>' +
+                '<div class="lr-actions-desktop" style="display:flex;gap:4px;">' +
+                    '<button class="icon-btn" onclick="moveCmd(' + i + ',-1)" ' + (i === 0 ? 'disabled' : '') + ' aria-label="Move up"><i class="fa-solid fa-arrow-up"></i></button>' +
+                    '<button class="icon-btn" onclick="moveCmd(' + i + ',1)" ' + (i === list.length - 1 ? 'disabled' : '') + ' aria-label="Move down"><i class="fa-solid fa-arrow-down"></i></button>' +
+                    '<button class="icon-btn" onclick="openCommandModal(null, \\'' + cmdEsc + '\\')" aria-label="Add sub-command"><i class="fa-solid fa-plus"></i></button>' +
+                    '<button class="icon-btn" onclick="editCommand(\\'' + cmdEsc + '\\')" aria-label="Edit"><i class="fa-regular fa-pen-to-square"></i></button>' +
+                    '<button class="icon-btn danger" onclick="deleteCommand(\\'' + cmdEsc + '\\')" aria-label="Delete"><i class="fa-regular fa-trash-can"></i></button>' +
+                '</div>' +
+                '<div class="lr-actions-mobile dropdown">' +
+                    '<button class="icon-btn" onclick="toggleDropdown(this)" aria-label="More actions"><i class="fa-solid fa-ellipsis-vertical"></i></button>' +
+                    '<div class="dropdown-menu hidden">' +
+                        '<button onclick="moveCmd(' + i + ',-1)" ' + (i === 0 ? 'disabled' : '') + '><i class="fa-solid fa-arrow-up"></i> Move up</button>' +
+                        '<button onclick="moveCmd(' + i + ',1)" ' + (i === list.length - 1 ? 'disabled' : '') + '><i class="fa-solid fa-arrow-down"></i> Move down</button>' +
+                        '<button onclick="openCommandModal(null, \\'' + cmdEsc + '\\')"><i class="fa-solid fa-plus"></i> Add sub-command</button>' +
+                        '<button onclick="editCommand(\\'' + cmdEsc + '\\')"><i class="fa-regular fa-pen-to-square"></i> Edit</button>' +
+                        '<button class="danger" onclick="deleteCommand(\\'' + cmdEsc + '\\')"><i class="fa-regular fa-trash-can"></i> Delete</button>' +
+                    '</div>' +
+                '</div>' +
             '</div></div>';
     });
     box.innerHTML = html + '</div>';
@@ -1900,8 +2267,9 @@ async function openCommandModal(cmd, parent) {
     }
     toggleMedia();
     $('cmd-modal').classList.remove('hidden');
+    trackModal('cmd-modal');
 }
-function closeCommandModal() { $('cmd-modal').classList.add('hidden'); }
+function closeCommandModal() { $('cmd-modal').classList.add('hidden'); untrackModal('cmd-modal'); }
 function editCommand(name) {
     var c = commands.find(function (x) { return x.command === name; });
     if (c) openCommandModal(c, null);
@@ -1966,7 +2334,7 @@ function downloadJson(name, obj) {
 }
 
 /* ============================================================
-   MENU (Telegram commands) + FEATURED COMMANDS
+   MENU + FEATURED
    ============================================================ */
 var menuEntries = [];
 async function loadMenu(force) {
@@ -1977,19 +2345,19 @@ async function loadMenu(force) {
         menuEntries = d.menu || [];
         if (!menuEntries.some(function (e) { return e.command === 'start'; })) menuEntries.unshift({ command: 'start', description: 'Start the bot' });
         renderMenu();
-    } catch (e) { $('menu-rows').innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; }
+    } catch (e) { $('menu-rows').innerHTML = errorState(e.message, 'loadMenu(true)'); }
 }
 function renderMenu() {
     var box = $('menu-rows');
-    if (!menuEntries.length) { box.innerHTML = '<div class="empty">No entries yet.</div>'; return; }
+    if (!menuEntries.length) { box.innerHTML = emptyState('fa-solid fa-list', 'No entries yet.'); return; }
     box.innerHTML = menuEntries.map(function (e, i) {
         var fixed = e.command === 'start';
-        return '<div class="row nowrap" style="gap:8px;">' +
-            '<button class="icon-btn" onclick="moveMenu(' + i + ',-1)" ' + (i === 0 ? 'disabled' : '') + '><i class="fa-solid fa-arrow-up"></i></button>' +
-            '<button class="icon-btn" onclick="moveMenu(' + i + ',1)" ' + (i === menuEntries.length - 1 ? 'disabled' : '') + '><i class="fa-solid fa-arrow-down"></i></button>' +
-            '<input class="input mono" value="' + esc(e.command) + '" ' + (fixed ? 'readonly' : '') + ' oninput="menuEntries[' + i + '].command=this.value" style="max-width:150px;">' +
-            '<input class="input" value="' + esc(e.description) + '" placeholder="Description" oninput="menuEntries[' + i + '].description=this.value" style="flex:1;">' +
-            (fixed ? '<span class="badge"><i class="fa-solid fa-lock"></i></span>' : '<button class="icon-btn danger" onclick="removeMenu(' + i + ')"><i class="fa-regular fa-trash-can"></i></button>') +
+        return '<div class="menu-entry">' +
+            '<button class="icon-btn" onclick="moveMenu(' + i + ',-1)" ' + (i === 0 ? 'disabled' : '') + ' aria-label="Move up" style="flex-shrink:0;"><i class="fa-solid fa-arrow-up"></i></button>' +
+            '<button class="icon-btn" onclick="moveMenu(' + i + ',1)" ' + (i === menuEntries.length - 1 ? 'disabled' : '') + ' aria-label="Move down" style="flex-shrink:0;"><i class="fa-solid fa-arrow-down"></i></button>' +
+            '<input class="input mono menu-cmd" value="' + esc(e.command) + '" ' + (fixed ? 'readonly' : '') + ' oninput="menuEntries[' + i + '].command=this.value">' +
+            '<input class="input menu-desc" value="' + esc(e.description) + '" placeholder="Description" oninput="menuEntries[' + i + '].description=this.value">' +
+            (fixed ? '<span class="badge" title="Fixed" style="flex-shrink:0;"><i class="fa-solid fa-lock"></i></span>' : '<button class="icon-btn danger" onclick="removeMenu(' + i + ')" aria-label="Remove" style="flex-shrink:0;"><i class="fa-regular fa-trash-can"></i></button>') +
             '</div>';
     }).join('');
 }
@@ -2015,22 +2383,22 @@ var featuredEditing = null;
 var featuredKind = 'text';
 async function loadFeatured(force) {
     try { var d = await api('GET', '/api/featured'); featured = d.items || []; renderFeatured(); }
-    catch (e) { $('featured-list').innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; }
+    catch (e) { $('featured-list').innerHTML = errorState(e.message, 'loadFeatured(true)'); }
 }
 function renderFeatured() {
     var box = $('featured-list');
-    if (!featured.length) { box.innerHTML = '<div class="empty"><i class="fa-solid fa-wand-magic-sparkles"></i>No featured commands yet. Create one to get started.</div>'; return; }
+    if (!featured.length) { box.innerHTML = emptyState('fa-solid fa-wand-magic-sparkles', 'No featured commands yet.', 'Create one to get started.'); return; }
     box.innerHTML = featured.map(function (f) {
         var kindLabel = f.kind === 'buttons' ? '<span class="badge purple">Buttons</span>' : '<span class="badge blue">DM</span>';
         var blocks = '';
-        if (f.content) blocks += '<div class="fr-block"><b>Hint:</b> ' + esc(f.content) + '</div>';
-        if (f.success_text) blocks += '<div class="fr-block" style="border-color:var(--green)"><b style="color:var(--green)">Success:</b> ' + esc(f.success_text) + '</div>';
-        if (f.failure_text) blocks += '<div class="fr-block" style="border-color:var(--red)"><b style="color:var(--red)">Failure:</b> ' + esc(f.failure_text) + '</div>';
+        if (f.content) blocks += '<div class="fr-block hint"><b>Hint:</b> ' + esc(f.content) + '</div>';
+        if (f.success_text) blocks += '<div class="fr-block success"><b style="color:var(--green)">Success:</b> ' + esc(f.success_text) + '</div>';
+        if (f.failure_text) blocks += '<div class="fr-block failure"><b style="color:var(--red)">Failure:</b> ' + esc(f.failure_text) + '</div>';
         return '<div class="featured-reply ' + (f.enabled ? '' : 'disabled') + '">' +
             '<div class="fr-head">' +
                 '<span class="fr-cmd">' + esc(f.command) + '</span>' + kindLabel +
                 '<div style="flex:1"></div>' +
-                '<button class="switch ' + (f.enabled ? 'on' : '') + '" onclick="toggleFeatured(' + f.id + ')" title="Enable or disable"></button>' +
+                '<button class="switch ' + (f.enabled ? 'on' : '') + '" onclick="toggleFeatured(' + f.id + ')" title="Enable or disable" aria-label="Toggle"></button>' +
             '</div>' +
             blocks +
             '<div class="fr-actions">' +
@@ -2056,15 +2424,15 @@ function openFeaturedModal(kind, item) {
         if (hintDesc) hintDesc.innerHTML = 'Shown when the command is sent alone. Example: <code>Use /contact your message here</code>';
     }
     $('featured-modal').classList.remove('hidden');
+    trackModal('featured-modal');
 }
-function closeFeaturedModal() { $('featured-modal').classList.add('hidden'); }
+function closeFeaturedModal() { $('featured-modal').classList.add('hidden'); untrackModal('featured-modal'); }
 async function saveFeatured() {
     var err = $('featured-error'); err.classList.remove('show');
     var command = $('featured-command').value.trim();
     if (!command || command === '/') { err.textContent = 'Command is required.'; err.classList.add('show'); return; }
     var payload = {
-        command: command,
-        kind: featuredKind,
+        command: command, kind: featuredKind,
         content: $('featured-hint').value.trim(),
         success_text: $('featured-success').value.trim(),
         failure_text: $('featured-failure').value.trim(),
@@ -2104,40 +2472,63 @@ var users = [];
 var userFilter = 'all';
 var manageUser = null;
 var userTimer = null;
+var umCurrentTab = 'dm';
+function umSetTab(tab) {
+    umCurrentTab = tab;
+    document.querySelectorAll('#um-tabs button').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === tab); });
+    document.querySelectorAll('.tabpane').forEach(function (p) { p.classList.remove('active'); });
+    var pane = $('um-pane-' + tab); if (pane) pane.classList.add('active');
+}
 function debouncedUsers() { clearTimeout(userTimer); userTimer = setTimeout(function () { loadUsers(); }, 280); }
 function setUserFilter(f) {
     userFilter = f;
     document.querySelectorAll('#user-filters .chip').forEach(function (c) { c.classList.toggle('active', c.dataset.filter === f); });
     loadUsers();
 }
+function userCircle(u) {
+    var cls = u.private_started == 1 ? 'green' : 'yellow';
+    var initial = (u.first_name || '?').charAt(0).toUpperCase();
+    var title = u.private_started == 1 ? 'Started the bot — you can DM them' : 'Group only — has not pressed Start';
+    return '<div class="user-circle ' + cls + '" title="' + title + '">' + esc(initial) + '</div>';
+}
 async function loadUsers(force) {
     var box = $('users-list');
-    box.innerHTML = '<div class="list"><div class="skl-row"><div class="skl skl-avatar"></div><div style="flex:1"><div class="skl skl-line w60"></div><div class="skl skl-line w40"></div></div></div></div>';
+    box.innerHTML = skeletonRows(3);
     try {
         var q = $('user-search').value.trim();
         var d = await api('GET', '/api/users?filter=' + userFilter + (q ? '&search=' + encodeURIComponent(q) : ''));
         users = d.users || []; renderUsers();
-    } catch (e) { box.innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; }
+    } catch (e) { box.innerHTML = errorState(e.message, 'loadUsers(true)'); }
 }
 function renderUsers() {
     var box = $('users-list');
-    if (!users.length) { box.innerHTML = '<div class="empty"><i class="fa-regular fa-user"></i>No users match this filter.</div>'; return; }
+    if (!users.length) { box.innerHTML = emptyState('fa-regular fa-user', 'No users match this filter.'); return; }
     var html = '<div class="list">';
     users.forEach(function (u) {
-        var src = u.private_started == 1 ? '<span class="badge green"><i class="fa-solid fa-check"></i> Started</span>' : '<span class="badge orange">Group only</span>';
         var status = u.block_type === 'full' ? '<span class="badge red">Blocked</span>' :
             (u.block_type === 'ai_only' ? '<span class="badge orange">AI off</span>' : '');
         var role = u.role === 'admin' ? '<span class="badge purple">Admin</span>' : '';
+        var nameEsc = esc(u.first_name || '').replace(/'/g, '');
         html += '<div class="list-row">' +
-            '<div style="width:38px;height:38px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;">' + esc((u.first_name || '?').charAt(0).toUpperCase()) + '</div>' +
+            userCircle(u) +
             '<div class="lr-main">' +
                 '<div class="lr-title">' + esc(u.first_name || 'Unknown') + (u.username ? ' <span class="muted">@' + esc(u.username) + '</span>' : '') + '</div>' +
                 '<div class="lr-sub">ID ' + esc(u.id) + ' · ' + fmtTime(u.last_active) + '</div>' +
-            '</div>' + src + role + status +
+            '</div>' + role + status +
             '<div class="lr-actions">' +
-                '<button class="icon-btn" onclick="checkUser(' + u.id + ')" title="Check if user started the bot"><i class="fa-solid fa-stethoscope"></i></button>' +
-                '<button class="icon-btn" onclick="openUser(' + u.id + ')"><i class="fa-solid fa-chevron-right"></i></button>' +
-                '<button class="icon-btn danger" onclick="deleteUser(' + u.id + ',\\'' + esc(u.first_name || '').replace(/'/g, '') + '\\')"><i class="fa-regular fa-trash-can"></i></button>' +
+                '<div class="lr-actions-desktop" style="display:flex;gap:4px;">' +
+                    '<button class="icon-btn" onclick="checkUser(' + u.id + ')" aria-label="Check reachability"><i class="fa-solid fa-stethoscope"></i></button>' +
+                    '<button class="icon-btn" onclick="openUser(' + u.id + ')" aria-label="Open user"><i class="fa-solid fa-chevron-right"></i></button>' +
+                    '<button class="icon-btn danger" onclick="deleteUser(' + u.id + ',\\'' + nameEsc + '\\')" aria-label="Delete user"><i class="fa-regular fa-trash-can"></i></button>' +
+                '</div>' +
+                '<div class="lr-actions-mobile dropdown">' +
+                    '<button class="icon-btn" onclick="toggleDropdown(this)" aria-label="More actions"><i class="fa-solid fa-ellipsis-vertical"></i></button>' +
+                    '<div class="dropdown-menu hidden">' +
+                        '<button onclick="checkUser(' + u.id + ')"><i class="fa-solid fa-stethoscope"></i> Check reachable</button>' +
+                        '<button onclick="openUser(' + u.id + ')"><i class="fa-solid fa-chevron-right"></i> Open</button>' +
+                        '<button class="danger" onclick="deleteUser(' + u.id + ',\\'' + nameEsc + '\\')"><i class="fa-regular fa-trash-can"></i> Delete</button>' +
+                    '</div>' +
+                '</div>' +
             '</div></div>';
     });
     box.innerHTML = html + '</div>';
@@ -2171,6 +2562,7 @@ async function openUser(id) {
     manageUser = users.find(function (u) { return sameId(u.id, id); });
     if (!manageUser) { toast('User not found in the current list. Try refreshing.', 'error'); return; }
     go('user-manage');
+    umSetTab('dm');
     $('um-title').textContent = manageUser.first_name || 'User';
     $('um-sub').textContent = (manageUser.username ? '@' + manageUser.username + ' · ' : '') + 'ID ' + manageUser.id;
     $('um-cards').innerHTML =
@@ -2186,7 +2578,7 @@ async function openUser(id) {
     $('um-input').value = ''; $('um-photo').value = '';
     loadDmMessages(manageUser.id); loadAiMemory();
 }
-function kvCard(k, v) { return '<div class="card" style="padding:14px;margin:0;"><div class="tiny muted">' + esc(k) + '</div><div style="font-weight:600;margin-top:4px;word-break:break-word;">' + esc(v) + '</div></div>'; }
+function kvCard(k, v) { return '<div class="card compact" style="margin:0;"><div class="tiny muted">' + esc(k) + '</div><div style="font-weight:600;margin-top:4px;word-break:break-word;">' + esc(v) + '</div></div>'; }
 async function toggleRole() {
     var role = manageUser.role === 'admin' ? 'user' : 'admin';
     try { await api('PUT', '/api/users/role', { userId: manageUser.id, role: role }); toast('Role updated.'); manageUser.role = role; openUser(manageUser.id); }
@@ -2206,24 +2598,17 @@ async function loadDmMessages(id) {
     var box = $('um-chat');
     if (!box) return;
     box.innerHTML = '<div class="spinner-page"><span class="mini-spinner"></span></div>';
-    var timeoutId = setTimeout(function () {
-        if (box.querySelector('.mini-spinner')) box.innerHTML = '<div class="empty"><i class="fa-solid fa-triangle-exclamation"></i> Loading took too long. Please try again.</div>';
-    }, 15000);
     try {
         var d = await api('GET', '/api/users/' + id + '/dm_messages');
-        clearTimeout(timeoutId);
         window.__dmCache = (d && Array.isArray(d.messages)) ? d.messages : [];
         renderDm(window.__dmCache);
-    } catch (e) {
-        clearTimeout(timeoutId);
-        box.innerHTML = '<div class="empty"><i class="fa-solid fa-triangle-exclamation"></i> ' + esc((e && e.message) || 'Failed to load messages.') + '</div>';
-    }
+    } catch (e) { box.innerHTML = errorState(e.message, 'loadDmMessages(' + id + ')'); }
 }
 function renderDm(msgs) {
     var box = $('um-chat');
     msgs = msgs || [];
     $('um-dm-count').textContent = msgs.length;
-    if (!msgs.length) { box.innerHTML = '<div class="empty"><i class="fa-regular fa-comment"></i>No direct messages yet.</div>'; return; }
+    if (!msgs.length) { box.innerHTML = emptyState('fa-regular fa-comment', 'No direct messages yet.'); return; }
     box.innerHTML = msgs.map(function (m) {
         var out = m.direction === 'out';
         var actions = '';
@@ -2268,48 +2653,21 @@ async function deleteDm(chatId, messageId) {
 async function loadAiMemory() {
     var box = $('um-ai');
     if (!box) return;
-    if (!manageUser || !manageUser.id) {
-        box.innerHTML = '<div class="empty">No user selected.</div>';
-        return;
-    }
+    if (!manageUser || !manageUser.id) { box.innerHTML = emptyState('fa-solid fa-brain', 'No user selected.'); return; }
     var uid = String(manageUser.id);
-
     box.innerHTML = '<div class="spinner-page"><span class="mini-spinner"></span></div>';
-
-    var settled = false;
-    var timeoutToken = { __timeout: true };
-    var timeoutPromise = new Promise(function (resolve) {
-        setTimeout(function () { if (!settled) resolve(timeoutToken); }, 10000);
-    });
-
     try {
-        var d = await Promise.race([
-            api('GET', '/api/users/' + uid + '/chat_history'),
-            timeoutPromise
-        ]);
-        settled = true;
-
-        if (d === timeoutToken) {
-            box.innerHTML = '<div class="empty"><i class="fa-solid fa-triangle-exclamation"></i> Loading took too long. Please refresh the page and try again.</div>';
-            return;
-        }
-
+        var d = await api('GET', '/api/users/' + uid + '/chat_history');
         var msgs = (d && Array.isArray(d.messages)) ? d.messages : [];
         window.__aiCache = msgs;
-        try {
-            renderAiMemory(msgs);
-        } catch (renderErr) {
-            box.innerHTML = '<div class="empty"><i class="fa-solid fa-triangle-exclamation"></i> Could not render memory: ' + esc(renderErr.message) + '</div>';
-        }
-    } catch (e) {
-        settled = true;
-        box.innerHTML = '<div class="empty"><i class="fa-solid fa-triangle-exclamation"></i> ' + esc((e && e.message) || 'Failed to load AI memory.') + '</div>';
-    }
+        try { renderAiMemory(msgs); }
+        catch (renderErr) { box.innerHTML = errorState('Could not render memory: ' + renderErr.message, 'loadAiMemory()'); }
+    } catch (e) { box.innerHTML = errorState(e.message || 'Failed to load AI memory.', 'loadAiMemory()'); }
 }
 function renderAiMemory(msgs) {
     var box = $('um-ai');
     msgs = msgs || [];
-    if (!msgs.length) { box.innerHTML = '<div class="empty"><i class="fa-solid fa-brain"></i>No AI memory stored.</div>'; return; }
+    if (!msgs.length) { box.innerHTML = emptyState('fa-solid fa-brain', 'No AI memory stored.'); return; }
     box.innerHTML = msgs.map(function (m, i) {
         return '<div class="bubble ' + (m.role === 'user' ? 'in' : 'out') + '" dir="auto">' +
             esc(m.content) +
@@ -2321,24 +2679,18 @@ function renderAiMemory(msgs) {
     scrollBottom(box);
 }
 async function editAiMsg(idx) {
-    var m = window.__aiCache[idx];
-    if (!m) return;
+    var m = window.__aiCache[idx]; if (!m) return;
     var newText = prompt('Edit this message:', m.content);
     if (newText === null || newText === m.content) return;
-    try {
-        await api('PUT', '/api/users/' + manageUser.id + '/ai_messages/' + m.id, { content: newText });
-        toast('Updated.'); loadAiMemory();
-    } catch (e) { toast(e.message, 'error'); }
+    try { await api('PUT', '/api/users/' + manageUser.id + '/ai_messages/' + m.id, { content: newText }); toast('Updated.'); loadAiMemory(); }
+    catch (e) { toast(e.message, 'error'); }
 }
 async function deleteAiMsg(idx) {
-    var m = window.__aiCache[idx];
-    if (!m) return;
+    var m = window.__aiCache[idx]; if (!m) return;
     var ok = await confirmDialog('Delete this memory entry?', 'Delete memory');
     if (!ok) return;
-    try {
-        await api('DELETE', '/api/users/' + manageUser.id + '/ai_messages/' + m.id);
-        toast('Deleted.'); loadAiMemory();
-    } catch (e) { toast(e.message, 'error'); }
+    try { await api('DELETE', '/api/users/' + manageUser.id + '/ai_messages/' + m.id); toast('Deleted.'); loadAiMemory(); }
+    catch (e) { toast(e.message, 'error'); }
 }
 async function clearAiMemoryUser() {
     var ok = await confirmDialog('Clear the AI conversation memory for this user?', 'Clear AI memory');
@@ -2348,7 +2700,7 @@ async function clearAiMemoryUser() {
 }
 
 /* ============================================================
-   MEMORY (Audience)
+   MEMORY
    ============================================================ */
 var memoryUsers = [];
 var memoryTotals = { ai: 0, dm: 0, users: 0 };
@@ -2361,7 +2713,7 @@ function setMemFilter(f) {
 async function loadMemory(force) {
     loadAutoRemove();
     var box = $('mem-list');
-    box.innerHTML = '<div class="list"><div class="skl-row"><div class="skl skl-avatar"></div><div style="flex:1"><div class="skl skl-line w60"></div><div class="skl skl-line w40"></div></div></div></div>';
+    box.innerHTML = skeletonRows(3);
     try {
         var d = await api('GET', '/api/memory/overview');
         memoryUsers = (d && d.users) || [];
@@ -2372,7 +2724,7 @@ async function loadMemory(force) {
             '<div class="stat"><div class="st-ic blue"><i class="fa-solid fa-comment-dots"></i></div><div class="st-val">' + memoryTotals.dm + '</div><div class="st-lbl">Direct messages</div></div>' +
             '<div class="stat"><div class="st-ic green"><i class="fa-solid fa-user-group"></i></div><div class="st-val">' + memoryTotals.users + '</div><div class="st-lbl">Users with memory</div></div>';
         renderMemory();
-    } catch (e) { box.innerHTML = '<div class="empty"><i class="fa-solid fa-triangle-exclamation"></i> ' + esc(e.message) + '</div>'; }
+    } catch (e) { box.innerHTML = errorState(e.message, 'loadMemory(true)'); }
 }
 function renderMemory() {
     var box = $('mem-list');
@@ -2383,22 +2735,33 @@ function renderMemory() {
     if (q) list = list.filter(function (u) {
         return (String(u.first_name || '') + ' ' + String(u.username || '') + ' ' + String(u.id)).toLowerCase().indexOf(q) >= 0;
     });
-    if (!list.length) { box.innerHTML = '<div class="empty"><i class="fa-solid fa-database"></i>Nothing stored yet.</div>'; return; }
+    if (!list.length) { box.innerHTML = emptyState('fa-solid fa-database', 'Nothing stored yet.'); return; }
     var html = '<div class="list">';
     list.forEach(function (u) {
         html += '<div class="list-row">' +
-            '<div style="width:38px;height:38px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;">' + esc((u.first_name || '?').charAt(0).toUpperCase()) + '</div>' +
+            userCircle(u) +
             '<div class="lr-main" onclick="openUser(' + u.id + ')" style="cursor:pointer;">' +
                 '<div class="lr-title">' + esc(u.first_name || 'Unknown') + (u.username ? ' <span class="muted">@' + esc(u.username) + '</span>' : '') + '</div>' +
                 '<div class="lr-sub">ID ' + esc(u.id) + ' · ' + u.ai_count + ' AI · ' + u.dm_count + ' DM</div>' +
             '</div>' +
-            (u.ai_count > 0 ? '<span class="badge purple">' + u.ai_count + ' AI</span>' : '') +
-            (u.dm_count > 0 ? '<span class="badge blue">' + u.dm_count + ' DM</span>' : '') +
+            (u.ai_count > 0 ? '<span class="badge purple mem-badge">' + u.ai_count + ' AI</span>' : '') +
+            (u.dm_count > 0 ? '<span class="badge blue mem-badge">' + u.dm_count + ' DM</span>' : '') +
             '<div class="lr-actions">' +
-                '<button class="icon-btn" onclick="openUser(' + u.id + ')" title="Open user"><i class="fa-solid fa-chevron-right"></i></button>' +
-                (u.ai_count > 0 ? '<button class="icon-btn" onclick="clearMemForUser(' + u.id + ',\\'ai\\')" title="Clear AI memory"><i class="fa-solid fa-brain"></i></button>' : '') +
-                (u.dm_count > 0 ? '<button class="icon-btn" onclick="clearMemForUser(' + u.id + ',\\'dm\\')" title="Clear direct messages"><i class="fa-solid fa-comment-dots"></i></button>' : '') +
-                '<button class="icon-btn danger" onclick="clearMemForUser(' + u.id + ',\\'all\\')" title="Clear all memory"><i class="fa-regular fa-trash-can"></i></button>' +
+                '<div class="lr-actions-desktop" style="display:flex;gap:4px;">' +
+                    '<button class="icon-btn" onclick="openUser(' + u.id + ')" title="Open user" aria-label="Open user"><i class="fa-solid fa-chevron-right"></i></button>' +
+                    (u.ai_count > 0 ? '<button class="icon-btn" onclick="clearMemForUser(' + u.id + ',\\'ai\\')" title="Clear AI memory" aria-label="Clear AI memory"><i class="fa-solid fa-brain"></i></button>' : '') +
+                    (u.dm_count > 0 ? '<button class="icon-btn" onclick="clearMemForUser(' + u.id + ',\\'dm\\')" title="Clear direct messages" aria-label="Clear direct messages"><i class="fa-solid fa-comment-dots"></i></button>' : '') +
+                    '<button class="icon-btn danger" onclick="clearMemForUser(' + u.id + ',\\'all\\')" title="Clear all memory" aria-label="Clear all memory"><i class="fa-regular fa-trash-can"></i></button>' +
+                '</div>' +
+                '<div class="lr-actions-mobile dropdown">' +
+                    '<button class="icon-btn" onclick="toggleDropdown(this)" aria-label="More actions"><i class="fa-solid fa-ellipsis-vertical"></i></button>' +
+                    '<div class="dropdown-menu hidden">' +
+                        '<button onclick="openUser(' + u.id + ')"><i class="fa-solid fa-chevron-right"></i> Open</button>' +
+                        (u.ai_count > 0 ? '<button class="danger" onclick="clearMemForUser(' + u.id + ',\\'ai\\')"><i class="fa-solid fa-brain"></i> Clear AI memory</button>' : '') +
+                        (u.dm_count > 0 ? '<button class="danger" onclick="clearMemForUser(' + u.id + ',\\'dm\\')"><i class="fa-solid fa-comment-dots"></i> Clear direct messages</button>' : '') +
+                        '<button class="danger" onclick="clearMemForUser(' + u.id + ',\\'all\\')"><i class="fa-regular fa-trash-can"></i> Clear all memory</button>' +
+                    '</div>' +
+                '</div>' +
             '</div></div>';
     });
     box.innerHTML = html + '</div>';
@@ -2407,22 +2770,16 @@ async function clearMemForUser(id, scope) {
     var label = scope === 'ai' ? 'AI memory' : (scope === 'dm' ? 'direct messages' : 'all memory');
     var ok = await confirmDialog('Clear ' + label + ' for this user? This cannot be undone.', 'Clear ' + label);
     if (!ok) return;
-    try {
-        await api('POST', '/api/memory/clear', { userId: id, scope: scope });
-        toast('Cleared.');
-        loadMemory();
-    } catch (e) { toast(e.message, 'error'); }
+    try { await api('POST', '/api/memory/clear', { userId: id, scope: scope }); toast('Cleared.'); loadMemory(); }
+    catch (e) { toast(e.message, 'error'); }
 }
 async function bulkClear(scope) {
     var label = scope === 'ai' ? 'ALL AI memory' : (scope === 'dm' ? 'ALL direct messages' : 'ALL memory (AI + DM) for every user');
     var ok = await confirmDialog('Clear ' + label + '? This affects every user and cannot be undone.', 'Bulk delete', true);
     if (!ok) return;
-    try {
-        await api('POST', '/api/memory/clear', { scope: scope });
-        toast('Cleared.'); loadMemory();
-    } catch (e) { toast(e.message, 'error'); }
+    try { await api('POST', '/api/memory/clear', { scope: scope }); toast('Cleared.'); loadMemory(); }
+    catch (e) { toast(e.message, 'error'); }
 }
-
 function toggleAutoRemove() {
     var on = toggleSwitch('arm-enable');
     show($('arm-settings'), on);
@@ -2442,11 +2799,7 @@ async function saveAutoRemove() {
     var value = parseInt($('arm-dm-value').value);
     if (isNaN(value) || value < 1) { toast('Enter a positive number.', 'error'); return; }
     try {
-        await api('POST', '/api/memory/auto_remove', {
-            enabled: sw('arm-enable') ? '1' : '0',
-            dm_value: value,
-            dm_unit: $('arm-dm-unit').value
-        });
+        await api('POST', '/api/memory/auto_remove', { enabled: sw('arm-enable') ? '1' : '0', dm_value: value, dm_unit: $('arm-dm-unit').value });
         toast('Auto-remove saved.');
     } catch (e) { toast(e.message, 'error'); }
 }
@@ -2465,9 +2818,9 @@ function setGroupFilter(f) {
 }
 async function loadGroups(force) {
     var box = $('groups-list');
-    box.innerHTML = '<div class="list"><div class="skl-row"><div class="skl skl-avatar"></div><div style="flex:1"><div class="skl skl-line w60"></div><div class="skl skl-line w40"></div></div></div></div>';
+    box.innerHTML = skeletonRows(3);
     try { var d = await api('GET', '/api/groups'); groups = d.groups || []; renderGroups(); }
-    catch (e) { box.innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; }
+    catch (e) { box.innerHTML = errorState(e.message, 'loadGroups(true)'); }
 }
 function renderGroups() {
     var box = $('groups-list');
@@ -2476,7 +2829,7 @@ function renderGroups() {
         if (groupFilter === 'inactive') return g.is_active != 1;
         return true;
     });
-    if (!list.length) { box.innerHTML = '<div class="empty"><i class="fa-regular fa-comments"></i>No groups yet. Add the bot to a group and send a message.</div>'; return; }
+    if (!list.length) { box.innerHTML = emptyState('fa-regular fa-comments', 'No groups yet.', 'Add the bot to a group and send a message.'); return; }
     box.innerHTML = '<div class="list">' + list.map(function (g) {
         var ai = g.ai_state === 'off' ? '<span class="badge red">AI off</span>' : (g.ai_state === 'on' ? '<span class="badge green">AI on</span>' : '<span class="badge">AI inherit</span>');
         return '<div class="list-row">' +
@@ -2485,7 +2838,7 @@ function renderGroups() {
                 '<div class="lr-title">' + esc(g.title || 'Group ' + g.id) + '</div>' +
                 '<div class="lr-sub">' + esc(g.type) + ' · ' + (g.member_count ? g.member_count + ' members · ' : '') + 'last active ' + fmtTime(g.last_active) + '</div>' +
             '</div>' + ai + (g.is_active == 1 ? '' : '<span class="badge red">Removed</span>') +
-            '<div class="lr-actions"><button class="icon-btn" onclick="openGroup(' + g.id + ')"><i class="fa-solid fa-chevron-right"></i></button></div>' +
+            '<div class="lr-actions"><button class="icon-btn" onclick="openGroup(' + g.id + ')" aria-label="Open group"><i class="fa-solid fa-chevron-right"></i></button></div>' +
             '</div>';
     }).join('') + '</div>';
 }
@@ -2627,7 +2980,7 @@ async function loadBroadcastHistory() {
     try {
         var d = await api('GET', '/api/broadcast/history');
         bcHistory = d.history || [];
-        if (!bcHistory.length) { box.innerHTML = '<div class="empty"><i class="fa-regular fa-paper-plane"></i>Nothing broadcast yet.</div>'; return; }
+        if (!bcHistory.length) { box.innerHTML = emptyState('fa-regular fa-paper-plane', 'Nothing broadcast yet.'); return; }
         box.innerHTML = bcHistory.map(function (h) {
             return '<div class="bubble out" style="max-width:100%;" dir="auto">' +
                 '<div class="tiny" style="opacity:.8;margin-bottom:4px;">#' + h.id + ' · ' + fmtTime(h.sent_at) + ' · ' + (h.sent_count || 0) + '/' + (h.recipient_count || 0) + ' delivered' + (h.kind === 'photo' ? ' · photo' : '') + '</div>' +
@@ -2638,7 +2991,7 @@ async function loadBroadcastHistory() {
                 '</div></div>';
         }).join('');
         scrollBottom(box);
-    } catch (e) { box.innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; }
+    } catch (e) { box.innerHTML = errorState(e.message, 'loadBroadcastHistory()'); }
 }
 async function deleteBroadcast(id) {
     var ok = await confirmDialog('Delete broadcast #' + id + ' from every recipient?', 'Delete broadcast');
@@ -2693,8 +3046,9 @@ function openMsgEditor(mode, id) {
     }
     kbMe.populateCommands();
     $('msg-modal').classList.remove('hidden');
+    trackModal('msg-modal');
 }
-function closeMsgEditor() { $('msg-modal').classList.add('hidden'); }
+function closeMsgEditor() { $('msg-modal').classList.add('hidden'); untrackModal('msg-modal'); }
 function collectButtons() {
     var inline = kbMe.inlineJSON();
     var reply = kbMe.replyJSON();
@@ -2747,11 +3101,11 @@ function createKeyboardBuilder(prefix, opts) {
                 html += '<span class="kb-chip">' +
                     '<span class="lbl">' + esc(b.text) + '</span>' +
                     '<span class="typ">' + esc(b.type) + (b.value ? ' · ' + esc(b.value.slice(0, 16)) : '') + '</span>' +
-                    '<button class="arw" onclick="' + prefix + 'MoveI(' + ri + ',' + bi + ',-1)" ' + (bi === 0 ? 'disabled' : '') + '>&#171;</button>' +
-                    '<button class="arw" onclick="' + prefix + 'MoveI(' + ri + ',' + bi + ',1)" ' + (bi === row.length - 1 ? 'disabled' : '') + '>&#187;</button>' +
-                    '<button class="arw" onclick="' + prefix + 'MoveIR(' + ri + ',-1)" ' + (ri === 0 ? 'disabled' : '') + '>&#8593;</button>' +
-                    '<button class="arw" onclick="' + prefix + 'MoveIR(' + ri + ',1)" ' + (ri === inline.length - 1 ? 'disabled' : '') + '>&#8595;</button>' +
-                    '<button class="arw del" onclick="' + prefix + 'DelI(' + ri + ',' + bi + ')">&#10005;</button>' +
+                    '<button class="arw" onclick="' + prefix + 'MoveI(' + ri + ',' + bi + ',-1)" ' + (bi === 0 ? 'disabled' : '') + ' aria-label="Move left">&#171;</button>' +
+                    '<button class="arw" onclick="' + prefix + 'MoveI(' + ri + ',' + bi + ',1)" ' + (bi === row.length - 1 ? 'disabled' : '') + ' aria-label="Move right">&#187;</button>' +
+                    '<button class="arw" onclick="' + prefix + 'MoveIR(' + ri + ',-1)" ' + (ri === 0 ? 'disabled' : '') + ' aria-label="Move up">&#8593;</button>' +
+                    '<button class="arw" onclick="' + prefix + 'MoveIR(' + ri + ',1)" ' + (ri === inline.length - 1 ? 'disabled' : '') + ' aria-label="Move down">&#8595;</button>' +
+                    '<button class="arw del" onclick="' + prefix + 'DelI(' + ri + ',' + bi + ')" aria-label="Remove">&#10005;</button>' +
                     '</span>';
             });
             html += '</div>';
@@ -2770,11 +3124,11 @@ function createKeyboardBuilder(prefix, opts) {
                     html += '<span class="kb-chip">' +
                         '<span class="lbl">' + esc(b.text) + '</span>' +
                         '<span class="typ" style="cursor:pointer;" onclick="' + prefix + 'SetAct(' + ri + ',' + bi + ')">' + esc(act || 'no action') + '</span>' +
-                        '<button class="arw" onclick="' + prefix + 'MoveR(' + ri + ',' + bi + ',-1)" ' + (bi === 0 ? 'disabled' : '') + '>&#171;</button>' +
-                        '<button class="arw" onclick="' + prefix + 'MoveR(' + ri + ',' + bi + ',1)" ' + (bi === row.length - 1 ? 'disabled' : '') + '>&#187;</button>' +
-                        '<button class="arw" onclick="' + prefix + 'MoveRR(' + ri + ',-1)" ' + (ri === 0 ? 'disabled' : '') + '>&#8593;</button>' +
-                        '<button class="arw" onclick="' + prefix + 'MoveRR(' + ri + ',1)" ' + (ri === reply.rows.length - 1 ? 'disabled' : '') + '>&#8595;</button>' +
-                        '<button class="arw del" onclick="' + prefix + 'DelR(' + ri + ',' + bi + ')">&#10005;</button>' +
+                        '<button class="arw" onclick="' + prefix + 'MoveR(' + ri + ',' + bi + ',-1)" ' + (bi === 0 ? 'disabled' : '') + ' aria-label="Move left">&#171;</button>' +
+                        '<button class="arw" onclick="' + prefix + 'MoveR(' + ri + ',' + bi + ',1)" ' + (bi === row.length - 1 ? 'disabled' : '') + ' aria-label="Move right">&#187;</button>' +
+                        '<button class="arw" onclick="' + prefix + 'MoveRR(' + ri + ',-1)" ' + (ri === 0 ? 'disabled' : '') + ' aria-label="Move up">&#8593;</button>' +
+                        '<button class="arw" onclick="' + prefix + 'MoveRR(' + ri + ',1)" ' + (ri === reply.rows.length - 1 ? 'disabled' : '') + ' aria-label="Move down">&#8595;</button>' +
+                        '<button class="arw del" onclick="' + prefix + 'DelR(' + ri + ',' + bi + ')" aria-label="Remove">&#10005;</button>' +
                         '</span>';
                 });
                 html += '</div>';
@@ -2989,11 +3343,11 @@ function renderKbs() {
     var box = $('kb-list');
     if (!kbs.length) { box.innerHTML = '<div class="empty" style="padding:14px;">No knowledge bases yet.</div>'; return; }
     box.innerHTML = kbs.map(function (kb, i) {
-        return '<div class="card" style="padding:14px;margin-bottom:10px;box-shadow:none;">' +
+        return '<div class="card compact" style="margin-bottom:10px;box-shadow:none;">' +
             '<div class="row" style="margin-bottom:8px;">' +
-            '<button class="switch ' + (kb.enabled !== false ? 'on' : '') + '" onclick="toggleKb(' + i + ')" title="Enable"></button>' +
+            '<button class="switch ' + (kb.enabled !== false ? 'on' : '') + '" onclick="toggleKb(' + i + ')" title="Enable" aria-label="Toggle"></button>' +
             '<input class="input" value="' + esc(kb.label || '') + '" placeholder="Label (e.g. FAQ)" oninput="kbs[' + i + '].label=this.value" style="flex:1;">' +
-            '<button class="icon-btn danger" onclick="delKb(' + i + ')"><i class="fa-regular fa-trash-can"></i></button></div>' +
+            '<button class="icon-btn danger" onclick="delKb(' + i + ')" aria-label="Remove"><i class="fa-regular fa-trash-can"></i></button></div>' +
             '<textarea class="textarea" rows="4" placeholder="Paste your facts, documentation, FAQ…" oninput="kbs[' + i + '].content=this.value">' + esc(kb.content || '') + '</textarea></div>';
     }).join('');
 }
@@ -3006,9 +3360,9 @@ function renderAlts() {
     box.innerHTML = alts.map(function (a, i) {
         var keyPlaceholder = a.apiKeyMasked ? (a.apiKeyMasked + '  (unchanged)') : 'API key';
         var keyVal = a.apiKey && a.apiKey !== KEEP_SENTINEL ? a.apiKey : '';
-        return '<div class="card" style="padding:14px;box-shadow:none;">' +
+        return '<div class="card compact" style="margin-bottom:10px;box-shadow:none;">' +
             '<div class="row" style="margin-bottom:8px;"><strong class="small">Fallback ' + (i + 1) + '</strong>' +
-            '<div style="flex:1"></div><button class="icon-btn danger" onclick="delAlt(' + i + ')"><i class="fa-regular fa-trash-can"></i></button></div>' +
+            '<div style="flex:1"></div><button class="icon-btn danger" onclick="delAlt(' + i + ')" aria-label="Remove"><i class="fa-regular fa-trash-can"></i></button></div>' +
             '<div class="grid grid-2">' +
             '<select class="input" onchange="alts[' + i + '].provider=this.value">' + ['openai', 'gemini', 'deepseek', 'groq', 'openrouter', 'ollama'].map(function (p) { return '<option value="' + p + '"' + (a.provider === p ? ' selected' : '') + '>' + p + '</option>'; }).join('') + '</select>' +
             '<input class="input" type="password" value="' + esc(keyVal) + '" placeholder="' + esc(keyPlaceholder) + '" oninput="alts[' + i + '].apiKey=this.value">' +
@@ -3030,7 +3384,7 @@ function renderSqs() {
     box.innerHTML = sqs.map(function (q, i) {
         return '<div class="kb-chip" style="width:100%;justify-content:space-between;margin-bottom:6px;">' +
             '<span>' + esc(q.label) + ' <span class="muted">→ ' + esc(q.value) + '</span></span>' +
-            '<button class="arw del" onclick="sqs.splice(' + i + ',1);renderSqs();">&#10005;</button></div>';
+            '<button class="arw del" onclick="sqs.splice(' + i + ',1);renderSqs();" aria-label="Remove">&#10005;</button></div>';
     }).join('');
 }
 function addSq() {
@@ -3074,14 +3428,9 @@ async function testAi() {
     $('ai-test-result').innerHTML = '<span class="mini-spinner"></span> Testing connection…';
     try {
         var d = await api('POST', '/api/ai/test', { settings: collectAi(), provider: 'main' });
-        if (d.success) {
-            $('ai-test-result').innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Connected successfully — your API key works.</span>';
-        } else {
-            $('ai-test-result').innerHTML = '<span style="color:var(--red)"><i class="fa-solid fa-circle-xmark"></i> ' + esc(d.error || 'Test failed') + '</span>';
-        }
-    } catch (e) {
-        $('ai-test-result').innerHTML = '<span style="color:var(--red)"><i class="fa-solid fa-circle-xmark"></i> ' + esc(e.message) + '</span>';
-    }
+        if (d.success) $('ai-test-result').innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Connected successfully — your API key works.</span>';
+        else $('ai-test-result').innerHTML = '<span style="color:var(--red)"><i class="fa-solid fa-circle-xmark"></i> ' + esc(d.error || 'Test failed') + '</span>';
+    } catch (e) { $('ai-test-result').innerHTML = '<span style="color:var(--red)"><i class="fa-solid fa-circle-xmark"></i> ' + esc(e.message) + '</span>'; }
 }
 async function refreshMemoryCount() {
     try { var d = await api('GET', '/api/ai/memory_count'); $('mem-count').textContent = d.count + ' messages'; }
@@ -3169,7 +3518,7 @@ async function revealToken() {
     } catch (e) { toast(e.message, 'error'); }
 }
 function copyVal(id) { navigator.clipboard.writeText($(id).value); toast('Copied.'); }
-function changeToken() { $('token-modal').classList.remove('hidden'); $('token-input').value = ''; $('token-result').innerHTML = ''; }
+function changeToken() { $('token-modal').classList.remove('hidden'); $('token-input').value = ''; $('token-result').innerHTML = ''; trackModal('token-modal'); }
 async function saveToken() {
     var newTok = $('token-input').value.trim();
     if (!newTok) { $('token-result').innerHTML = '<span style="color:var(--red)">Please paste a token first.</span>'; return; }
@@ -3177,7 +3526,7 @@ async function saveToken() {
     try {
         var d = await api('POST', '/api/settings/token', { botToken: newTok });
         toast(d.warning ? d.warning : 'Token updated.', d.warning ? 'error' : 'success');
-        $('token-modal').classList.add('hidden'); loadSettings(true);
+        $('token-modal').classList.add('hidden'); untrackModal('token-modal'); loadSettings(true);
     } catch (e) { $('token-result').innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
 }
 async function testHook() {
@@ -3295,8 +3644,9 @@ function openCustomBackup() {
         return '<label class="backup-item"><input type="checkbox" class="backup-cb" value="' + it.id + '" checked><div><div class="bi-title">' + it.title + '</div><div class="bi-sub">' + it.sub + '</div></div></label>';
     }).join('');
     $('backup-modal').classList.remove('hidden');
+    trackModal('backup-modal');
 }
-function closeCustomBackup() { $('backup-modal').classList.add('hidden'); }
+function closeCustomBackup() { $('backup-modal').classList.add('hidden'); untrackModal('backup-modal'); }
 async function runCustomBackup() {
     var checked = Array.from(document.querySelectorAll('.backup-cb:checked')).map(function (c) { return c.value; });
     if (!checked.length) { toast('Select at least one section.', 'error'); return; }
@@ -3348,16 +3698,16 @@ function restoreBackup(ev) {
 }
 async function loadLogs() {
     var box = $('logs-list');
-    box.innerHTML = '<div class="skl-row"><div class="skl skl-avatar"></div><div style="flex:1"><div class="skl skl-line w80"></div></div></div>';
+    box.innerHTML = skeletonRows(4);
     try {
         var d = await api('GET', '/api/logs?limit=200');
         var logs = d.logs || [];
-        if (!logs.length) { box.innerHTML = '<div class="empty">No activity yet.</div>'; return; }
+        if (!logs.length) { box.innerHTML = emptyState('fa-solid fa-clipboard-list', 'No activity yet.'); return; }
         box.innerHTML = logs.map(function (l) {
             return '<div class="list-row"><div class="lr-main"><div class="lr-title" style="font-weight:500;">' + esc(l.action) + '</div>' +
                 '<div class="lr-sub">' + fmtTime(l.timestamp) + (l.user_id ? ' · user ' + l.user_id : '') + '</div></div></div>';
         }).join('');
-    } catch (e) { box.innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; }
+    } catch (e) { box.innerHTML = errorState(e.message, 'loadLogs()'); }
 }
 async function loadLogClean() {
     try {
@@ -3438,6 +3788,20 @@ window.addEventListener('resize', function () {
         var ov = document.getElementById('sidebar-overlay');
         if (ov) ov.classList.remove('show');
     }
+});
+
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && openModals.length) {
+        var top = openModals[openModals.length - 1];
+        if (top === 'cmd-modal') closeCommandModal();
+        else if (top === 'msg-modal') closeMsgEditor();
+        else if (top === 'featured-modal') closeFeaturedModal();
+        else if (top === 'confirm-modal') closeConfirm(false);
+        else if (top === 'backup-modal') closeCustomBackup();
+        else if (top === 'about-modal') { $('about-modal').classList.add('hidden'); untrackModal('about-modal'); }
+        else if (top === 'token-modal') { $('token-modal').classList.add('hidden'); untrackModal('token-modal'); }
+    }
+    if (e.key === 'Escape') closeAllDropdowns();
 });
 
 checkStatus();
