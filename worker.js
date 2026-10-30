@@ -1940,12 +1940,15 @@ async function api(method, path, body) {
     }
     if (timer) clearTimeout(timer);
 
-    if (res.status === 401 && !isPublicEndpoint(path)) {
+if (res.status === 401 && !isPublicEndpoint(path)) {
+    // Only treat 401 as session expiry if the server didn't supply a specific error
+    var isSessionIssue = !(data && (data.valid === false || data.success === false));
+    if (isSessionIssue) {
         showStep('step-login');
-        var le = $('login-error'); if (le) le.classList.remove('show');
         toast('Session expired. Please sign in again.', 'info');
         throw new Error('__SESSION_EXPIRED__');
     }
+}
 
     var data = null;
     try { data = await res.json(); } catch (e) { data = null; }
@@ -4193,16 +4196,37 @@ async function performUpdate() {
     $('set-token').type = 'password';
     $('set-hook').value = d.webhook_url || '';
     window.__botTokenSet = d.bot_token_set;
+
     if (!token && !d.cf_token_set) { toast('Enter a Cloudflare API token.', 'error'); return; }
+
     $('up-result').innerHTML = '<span class="mini-spinner"></span> Validating token…';
+
     try {
         var v = await api('POST', '/api/update/validate', { token: token });
         if (!v.valid) throw new Error(v.error || 'Invalid token');
+
         $('up-result').innerHTML = '<span class="mini-spinner"></span> Deploying to ' + esc(v.scriptName || 'your Worker') + '…';
-        var r = await api('POST', '/api/update', { token: token, accountId: v.accountId, scriptName: v.scriptName, workerUrl: workerUrl });
-        $('up-result').innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Updated to ' + esc(r.version || 'latest') + '.</span>';
-        toast('Update complete.'); checkUpdate(true);
-    } catch (e) { $('up-result').innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
+
+        var r = await api('POST', '/api/update', {
+            token: token,
+            accountId: v.accountId,
+            scriptName: v.scriptName,
+            workerUrl: workerUrl
+        });
+
+        // NEW: don't claim success when the server said it failed
+        if (!r || !r.success) throw new Error((r && r.error) || 'Update failed.');
+
+        $('up-result').innerHTML =
+            '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Updated to ' +
+            esc(r.version || 'latest') + '.</span>';
+        toast('Update complete.');
+        checkUpdate(true);
+    } catch (e) {
+        $('up-result').innerHTML =
+            '<span style="color:var(--red)"><i class="fa-solid fa-circle-xmark"></i> ' +
+            esc(e.message) + '</span>';
+    }
 }
 
 /* ============================================================
@@ -4376,7 +4400,11 @@ export default {
             if (request.method === 'GET' && url.pathname === '/api/status') return await getStatus(env);
             if (request.method === 'POST' && url.pathname === '/api/setup') return await handleSetup(request, env);
             if (request.method === 'POST' && url.pathname === '/api/login') return await handleLogin(request, env);
-            if (request.method === 'GET' && url.pathname === '/api/version') return await getVersionInfo(env);
+            if (request.method === 'GET' && url.pathname === '/api/version') {
+    // skip the cache when the client explicitly asks for freshness
+    const fresh = url.searchParams.get('force') === '1';
+    return await getVersionInfo(env, fresh);
+}
             if (request.method === 'GET' && url.pathname === '/api/check_session') {
                 const s = await getSession(request, env);
                 return apiJson({ logged_in: !!s });
@@ -6771,70 +6799,123 @@ async function factoryReset(request, env) {
 async function validateCloudflareToken(request, env) {
     try {
         const body = await request.json();
-        const token = body.token;
-        // if (!token) return apiJson({ valid: false, error: 'Please paste your Cloudflare API token.' }, 400);
-        const verifyRes = await fetch('https://api.cloudflare.com/client/v4/user/tokens/verify', { headers: { 'Authorization': 'Bearer ' + token } });
+        let token = body.token;
+
+        // NEW: fall back to the stored token so an empty box still works
+        if (!token && env.DB) {
+            await initializeDatabase(env.DB);
+            token = (await getSetting(env.DB, 'cf_api_token')) || '';
+        }
+        if (!token) return apiJson({ valid: false, error: 'Please paste your Cloudflare API token.' }, 400);
+
+        const verifyRes  = await fetch('https://api.cloudflare.com/client/v4/user/tokens/verify', { headers: { 'Authorization': 'Bearer ' + token } });
         const verifyData = await verifyRes.json();
-        if (!verifyRes.ok || !verifyData.success) return apiJson({ valid: false, error: 'This token looks invalid or has expired.' }, 401);
-        const accountsRes = await fetch('https://api.cloudflare.com/client/v4/accounts', { headers: { 'Authorization': 'Bearer ' + token } });
+
+        // CHANGED: 400, not 401 — this is not a session error
+        if (!verifyRes.ok || !verifyData.success) {
+            return apiJson({ valid: false, error: 'This token looks invalid or lacks the required permissions (Workers Scripts:Edit).' }, 400);
+        }
+
+        const accountsRes  = await fetch('https://api.cloudflare.com/client/v4/accounts', { headers: { 'Authorization': 'Bearer ' + token } });
         const accountsData = await accountsRes.json();
-        if (!accountsData.success || !Array.isArray(accountsData.result) || !accountsData.result.length) return apiJson({ valid: false, error: 'No Cloudflare accounts are attached to this token.' }, 403);
+        if (!accountsData.success || !Array.isArray(accountsData.result) || !accountsData.result.length) {
+            return apiJson({ valid: false, error: 'No Cloudflare accounts are attached to this token.' }, 400);
+        }
+
         const accountId = accountsData.result[0].id;
+
         let scriptName = null;
         const host = new URL(request.url).hostname;
-        if (host.endsWith('.workers.dev')) { const parts = host.split('.'); if (parts.length >= 3) scriptName = parts[0]; }
+        if (host.endsWith('.workers.dev')) {
+            const parts = host.split('.');
+            if (parts.length >= 3) scriptName = parts[0];
+        }
         if (!scriptName) {
-            const scriptsRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts`, { headers: { 'Authorization': 'Bearer ' + token } });
+            const scriptsRes  = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts`, { headers: { 'Authorization': 'Bearer ' + token } });
             const scriptsData = await scriptsRes.json();
             if (scriptsData.success && Array.isArray(scriptsData.result) && scriptsData.result.length) scriptName = scriptsData.result[0].id;
         }
+
         if (env.DB) {
             await initializeDatabase(env.DB);
             await setSetting(env.DB, 'cf_api_token', token);
             await setSetting(env.DB, 'cf_account_id', accountId);
             if (scriptName) await setSetting(env.DB, 'cf_script_name', scriptName);
         }
+
         return apiJson({ valid: true, accountId, scriptName: scriptName || null });
-    } catch (e) { console.error('Token validation failed:', e); return apiJson({ valid: false, error: 'Could not reach Cloudflare. Please try again.' }, 500); }
+    } catch (e) {
+        console.error('Token validation failed:', e);
+        return apiJson({ valid: false, error: 'Could not reach Cloudflare. Please try again.' }, 400); // CHANGED: was 500
+    }
 }
 async function performUpdate(request, env) {
     try {
-        const { token, accountId, scriptName, workerUrl } = await request.json();
-        if (!token || !accountId || !scriptName) return apiJson({ success: false, error: 'Missing token, account or script name.' }, 400);
-        const verifyRes = await fetch('https://api.cloudflare.com/client/v4/user/tokens/verify', { headers: { 'Authorization': 'Bearer ' + token } });
+        const body = await request.json();
+        let { token, accountId, scriptName, workerUrl } = body;
+
+        // NEW: fall back to stored credentials
+        if (env.DB && (!token || !accountId || !scriptName)) {
+            await initializeDatabase(env.DB);
+            token      = token      || (await getSetting(env.DB, 'cf_api_token'))  || '';
+            accountId  = accountId  || (await getSetting(env.DB, 'cf_account_id'))  || '';
+            scriptName = scriptName || (await getSetting(env.DB, 'cf_script_name')) || '';
+        }
+        if (!token || !accountId || !scriptName) {
+            return apiJson({ success: false, error: 'Missing token, account or script name.' }, 400);
+        }
+
+        const verifyRes  = await fetch('https://api.cloudflare.com/client/v4/user/tokens/verify', { headers: { 'Authorization': 'Bearer ' + token } });
         const verifyData = await verifyRes.json();
-        if (!verifyRes.ok || !verifyData.success) return apiJson({ success: false, error: 'Cloudflare rejected the token.' }, 401);
-        const settingsRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${scriptName}/settings`, { headers: { 'Authorization': 'Bearer ' + token } });
+
+        // CHANGED: 400, not 401
+        if (!verifyRes.ok || !verifyData.success) {
+            return apiJson({ success: false, error: 'Cloudflare rejected the token. It may be invalid or lack the Workers Scripts:Edit permission.' }, 400);
+        }
+
+        const settingsRes  = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${scriptName}/settings`, { headers: { 'Authorization': 'Bearer ' + token } });
         const settingsData = await settingsRes.json();
         let bindings = [];
         if (settingsData.success && settingsData.result && settingsData.result.bindings) bindings = settingsData.result.bindings;
+
         const DEFAULT_UPDATE_URL = 'https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/worker.js';
         let scriptUrl = workerUrl || DEFAULT_UPDATE_URL;
         try {
             const u = new URL(scriptUrl);
-            if (u.protocol !== 'https:' || u.hostname !== 'raw.githubusercontent.com') return apiJson({ success: false, error: 'Update URL is not allowed.' }, 400);
-        } catch (e) { return apiJson({ success: false, error: 'Invalid update URL.' }, 400); }
+            if (u.protocol !== 'https:' || u.hostname !== 'raw.githubusercontent.com') {
+                return apiJson({ success: false, error: 'Update URL is not allowed.' }, 400);
+            }
+        } catch (e) {
+            return apiJson({ success: false, error: 'Invalid update URL.' }, 400);
+        }
+
         const scriptRes = await fetch(scriptUrl);
-        if (!scriptRes.ok) return apiJson({ success: false, error: 'Could not download the update file.' }, 500);
+        if (!scriptRes.ok) return apiJson({ success: false, error: 'Could not download the update file.' }, 400);
         const scriptText = await scriptRes.text();
+
         let newVersion = null;
         const match = scriptText.match(/const\s+VERSION\s*=\s*['"]([^'"]+)['"]/);
         if (match) newVersion = match[1];
+
         const metadata = { main_module: 'worker.js', bindings };
         const formData = new FormData();
         formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
         formData.append('worker.js', new Blob([scriptText], { type: 'application/javascript+module' }), 'worker.js');
-        const uploadRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${scriptName}/content`, { method: 'PUT', headers: { 'Authorization': 'Bearer ' + token }, body: formData });
+
+        const uploadRes  = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${scriptName}/content`, { method: 'PUT', headers: { 'Authorization': 'Bearer ' + token }, body: formData });
         const uploadData = await uploadRes.json();
+
         if (!uploadRes.ok || !uploadData.success) {
             const errMsg = (uploadData.errors && uploadData.errors[0] && uploadData.errors[0].message) || 'Upload to Cloudflare failed.';
-            return apiJson({ success: false, error: errMsg }, uploadRes.status);
+            // CHANGED: 400, not uploadRes.status (Cloudflare can return 401 here)
+            return apiJson({ success: false, error: errMsg }, 400);
         }
+
         if (env.DB) {
             await initializeDatabase(env.DB);
             if (newVersion) await setSetting(env.DB, 'last_update_version', newVersion);
             try {
-                const tokenRecord = await getSetting(env.DB, 'bot_token');
+                const tokenRecord   = await getSetting(env.DB, 'bot_token');
                 const webhookRecord = await getSetting(env.DB, 'webhook_url');
                 if (tokenRecord && webhookRecord) {
                     const secret = crypto.randomUUID();
@@ -6843,8 +6924,12 @@ async function performUpdate(request, env) {
                 }
             } catch (e) { console.error('Secret rotation failed:', e); }
         }
+
         return apiJson({ success: true, version: newVersion || 'unknown' });
-    } catch (e) { console.error('Update failed:', e); return apiJson({ success: false, error: 'Update failed unexpectedly. Please try again.' }, 500); }
+    } catch (e) {
+        console.error('Update failed:', e);
+        return apiJson({ success: false, error: 'Update failed unexpectedly. Please try again.' }, 500);
+    }
 }
 
 // ============================================================================
