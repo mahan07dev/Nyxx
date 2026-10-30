@@ -1,8 +1,8 @@
 // ============================================================================
-// NYXX — v4.1.0
+// NYXX — v4.2.0
 // Telegram bot builder + management dashboard for Cloudflare Workers + D1.
 // ============================================================================
-const VERSION = '4.1.0';
+const VERSION = '4.2.0';
 
 const DASHBOARD_HTML = `<!DOCTYPE html>
 <html lang="en" data-theme="auto">
@@ -633,6 +633,7 @@ details.help > div { padding: 0 16px 14px; font-size: var(--fs-footnote); line-h
         <nav class="nav-group">
             <div class="nav-label">Intelligence</div>
             <button class="nav-item" data-page="ai" onclick="go('ai')"><i class="fa-solid fa-wand-magic-sparkles"></i><span>AI</span></button>
+            <button class="nav-item" data-page="mcp" onclick="go('mcp')"><i class="fa-solid fa-plug"></i><span>MCP</span></button>
         </nav>
         <nav class="nav-group">
             <div class="nav-label">System</div>
@@ -800,6 +801,7 @@ details.help > div { padding: 0 16px 14px; font-size: var(--fs-footnote); line-h
                         <div style="flex:1"></div>
                         <button class="btn btn-gray btn-sm" onclick="openFeaturedModal('text')"><i class="fa-solid fa-plus"></i> DM command</button>
                         <button class="btn btn-gray btn-sm" onclick="openFeaturedModal('buttons')"><i class="fa-solid fa-plus"></i> Buttons command</button>
+                        <button class="btn btn-gray btn-sm" onclick="openFeaturedModal('mcp')"><i class="fa-solid fa-plug"></i> MCP command</button>
                     </div>
                     <details class="help">
                         <summary><i class="fa-solid fa-circle-question"></i> How featured commands work</summary>
@@ -1358,6 +1360,127 @@ details.help > div { padding: 0 16px 14px; font-size: var(--fs-footnote); line-h
                 </div>
             </section>
 
+                        <section class="page" id="page-mcp">
+                <div class="page-head">
+                    <div class="lead"><h1>MCP</h1><p>Model Context Protocol — let AI (Claude Desktop, Cursor, Cline, or the built-in chat below) manage your bot with the tools you enable here.</p></div>
+                    <div class="page-actions"><button class="btn btn-gray btn-sm" onclick="loadMcp(true)"><i class="fa-solid fa-rotate"></i> Refresh</button></div>
+                </div>
+
+                <div class="hint-banner warn">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <div>The <b>Bearer token</b> is a full credential — treat it like your admin password. Anyone who has it can call the tools you enable.</div>
+                </div>
+
+                <div class="card">
+                    <div class="switch-row" style="margin-bottom:0;">
+                        <div><div class="sw-label">Enable MCP endpoint</div><div class="sw-sub">Serves <code>/mcp</code> for external clients and enables the Telegram <code>/mcp</code> command.</div></div>
+                        <button class="switch" id="mcp-enabled" onclick="toggleMcpEnabled()"></button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head"><div class="card-title"><i class="fa-solid fa-link"></i> Endpoint</div></div>
+                    <div class="input-with-btn">
+                        <input class="input mono" id="mcp-endpoint" readonly placeholder="https://your-worker.workers.dev/mcp">
+                        <button class="btn btn-gray btn-sm" onclick="copyVal('mcp-endpoint')" aria-label="Copy"><i class="fa-regular fa-copy"></i></button>
+                    </div>
+                    <div class="field-hint">POST JSON-RPC here. Streamable HTTP transport, protocol version <code>2025-03-26</code>.</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head"><div class="card-title"><i class="fa-solid fa-key"></i> Bearer tokens</div></div>
+                    <div class="row">
+                        <button class="btn btn-primary btn-sm" onclick="generateMcpToken()"><i class="fa-solid fa-plus"></i> Generate token</button>
+                        <button class="btn btn-danger btn-sm" onclick="revokeMcpTokens()"><i class="fa-solid fa-trash-can"></i> Revoke all</button>
+                    </div>
+                    <div id="mcp-token-once" class="hidden" style="margin-top:12px;">
+                        <div class="hint-banner danger">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            <div>Copy this token now — it is shown <b>once</b>. Only its hash is stored.</div>
+                        </div>
+                        <div class="input-with-btn">
+                            <input class="input mono" id="mcp-token-value" readonly>
+                            <button class="btn btn-primary btn-sm" onclick="copyVal('mcp-token-value')" aria-label="Copy"><i class="fa-regular fa-copy"></i></button>
+                        </div>
+                    </div>
+                    <div id="mcp-tokens-list" style="margin-top:14px;"></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head"><div class="card-title c-purple"><i class="fa-solid fa-wand-magic-sparkles"></i> MCP AI provider</div></div>
+                    <div class="hint-banner">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <div>This provider powers the built-in chat below and the Telegram <code>/mcp</code> command. It is <b>separate</b> from the main AI tab.</div>
+                    </div>
+                    <div class="grid grid-2">
+                        <div class="field"><label class="field-label">Provider</label>
+                            <select class="input" id="mcp-provider" onchange="onMcpProviderChange()">
+                                <option value="openai">OpenAI</option><option value="gemini">Google Gemini</option>
+                                <option value="deepseek">DeepSeek</option><option value="groq">Groq</option>
+                                <option value="openrouter">OpenRouter</option><option value="custom">Custom (OpenAI-compatible)</option>
+                            </select>
+                        </div>
+                        <div class="field"><label class="field-label">API key</label>
+                            <div class="pw-wrap">
+                                <input type="password" class="input" id="mcp-api-key" autocomplete="off" placeholder="sk-…">
+                                <button type="button" class="pw-toggle" onclick="togglePw('mcp-api-key',this)" aria-label="Show/hide"><i class="fa-regular fa-eye"></i></button>
+                            </div>
+                            <span class="field-hint" id="mcp-key-hint">Leave empty to keep the stored key.</span>
+                        </div>
+                        <div class="field"><label class="field-label">Model</label><input class="input" id="mcp-model" placeholder="gpt-4o-mini"></div>
+                        <div class="field" id="mcp-base-wrap"><label class="field-label">Base URL</label><input class="input" id="mcp-base" placeholder="https://api.example.com/v1"></div>
+                    </div>
+                    <div class="row">
+                        <button class="btn btn-primary btn-sm" onclick="saveMcpAiSettings()"><i class="fa-solid fa-check"></i> Save provider</button>
+                        <button class="btn btn-gray btn-sm" onclick="testMcpAi()"><i class="fa-solid fa-plug"></i> Test connection</button>
+                    </div>
+                    <div id="mcp-test-result" class="small" style="margin-top:10px;"></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-shield-halved"></i> Tool permissions</div></div>
+                    <div class="switch-row"><div><div class="sw-label">Read tools</div><div class="sw-sub">Stats, users, commands, groups, webhook, bot info.</div></div><button class="switch" id="mcp-cat-read" onclick="toggleMcpCategory('read')"></button></div>
+                    <div class="switch-row"><div><div class="sw-label">Write tools</div><div class="sw-sub">Create/update/delete commands, set menu, update AI settings.</div></div><button class="switch" id="mcp-cat-write" onclick="toggleMcpCategory('write')"></button></div>
+                    <div class="switch-row"><div><div class="sw-label">Outbound messages</div><div class="sw-sub">Send DM or broadcast. Off by default.</div></div><button class="switch" id="mcp-cat-outbound" onclick="toggleMcpCategory('outbound')"></button></div>
+                    <div class="switch-row" style="margin-bottom:0;"><div><div class="sw-label">Destructive actions</div><div class="sw-sub">Delete users, clear memory. Off by default, always require <code>confirm:true</code>.</div></div><button class="switch" id="mcp-cat-dangerous" onclick="toggleMcpCategory('dangerous')"></button></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head">
+                        <div class="card-title c-green"><i class="fa-solid fa-comments"></i> Chat with MCP</div>
+                        <div style="flex:1"></div>
+                        <button class="btn btn-gray btn-sm" onclick="clearMcpChat()" title="Clear chat" aria-label="Clear chat"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>
+                    <div class="hint-banner">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <div>Type natural language. Example: <i>"List all users who started the bot"</i>, <i>"Create a /help command that replies with a welcome message"</i>, <i>"Show me the current AI prompt"</i>. Tool calls are logged below.</div>
+                    </div>
+                    <div class="playground" id="mcp-chat" style="height:320px;resize:vertical;"></div>
+                    <div class="row nowrap">
+                        <textarea class="textarea" id="mcp-input" rows="2" placeholder="Ask MCP…  (Enter to send, Shift+Enter for newline)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMcpChat();}" style="flex:1;"></textarea>
+                        <button class="btn btn-primary btn-icon btn-lg" id="mcp-send" onclick="sendMcpChat()" aria-label="Send"><i class="fa-solid fa-paper-plane"></i></button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head"><div class="card-title"><i class="fa-solid fa-clock-rotate-left"></i> Recent calls</div><div style="flex:1"></div><button class="btn btn-gray btn-sm" onclick="loadMcpCalls()"><i class="fa-solid fa-rotate"></i></button></div>
+                    <div id="mcp-calls-list"></div>
+                </div>
+
+                <details class="help">
+                    <summary><i class="fa-solid fa-code"></i> Client setup (Claude Desktop, Cursor, Cline)</summary>
+                    <div>
+                        <p class="small">Paste into <code>claude_desktop_config.json</code> (Claude Desktop bridges HTTP via <code>mcp-remote</code>):</p>
+                        <pre id="mcp-snippet-claude" style="background:var(--surface-2);padding:12px;border-radius:8px;font-size:12px;overflow-x:auto;white-space:pre-wrap;"></pre>
+                        <p class="small">Cursor (<code>~/.cursor/mcp.json</code>) — native Streamable HTTP:</p>
+                        <pre id="mcp-snippet-cursor" style="background:var(--surface-2);padding:12px;border-radius:8px;font-size:12px;overflow-x:auto;white-space:pre-wrap;"></pre>
+                        <p class="small">Curl smoke test:</p>
+                        <pre id="mcp-snippet-curl" style="background:var(--surface-2);padding:12px;border-radius:8px;font-size:12px;overflow-x:auto;white-space:pre-wrap;"></pre>
+                        <p class="small">Debug with the official inspector: <code>npx @modelcontextprotocol/inspector</code></p>
+                    </div>
+                </details>
+            </section>
+
             <section class="page" id="page-settings">
                 <div class="page-head"><div class="lead"><h1>Settings</h1><p>Bot connection and admin credentials.</p></div></div>
                 <div class="card">
@@ -1661,6 +1784,10 @@ crons = ["0 3 * * *"]</code></pre>
                 <label class="field-label">Failure message</label>
                 <textarea class="textarea" id="featured-failure" rows="2" placeholder="Shown if the action fails."></textarea>
                 <span class="field-hint">Leave empty to stay silent on failure.</span>
+            </div>
+            <div class="switch-row">
+                <div><div class="sw-label">Admin only</div><div class="sw-sub">Only users with the admin role can run this command.</div></div>
+                <button class="switch" id="featured-admin" onclick="toggleSwitch('featured-admin')"></button>
             </div>
             <div class="switch-row" style="margin-bottom:0;">
                 <div><div class="sw-label">Enabled</div><div class="sw-sub">Disabled entries stay here but the bot won't respond to them.</div></div>
@@ -2021,6 +2148,308 @@ async function refreshStatusPill() {
 }
 
 async function tryFetchStatus() { return await api('GET', '/api/status'); }
+
+/* ============================================================
+   MCP TAB
+   ============================================================ */
+var mcpHistory = [];
+var mcpSettings = {};
+
+async function loadMcp(force) {
+    try {
+        var d = await api('GET', '/api/mcp/settings');
+        mcpSettings = (d && d.settings) || {};
+        renderMcp();
+        loadMcpTokens();
+        loadMcpCalls();
+    } catch (e) { toast(e.message, 'error'); }
+}
+
+function renderMcp() {
+    var s = mcpSettings;
+    toggleSwitch('mcp-enabled', s.mcp_enabled === '1');
+    // Endpoint
+    var ep = window.location.origin + '/mcp';
+    if ($('mcp-endpoint')) $('mcp-endpoint').value = ep;
+    // AI provider
+    $('mcp-provider').value = s.mcp_ai_provider || 'openai';
+    $('mcp-api-key').value = '';
+    $('mcp-api-key').placeholder = s.mcp_ai_api_key_set ? (s.mcp_ai_api_key_masked + '  (unchanged — type to replace)') : 'sk-…';
+    $('mcp-model').value = s.mcp_ai_model || '';
+    $('mcp-base').value = s.mcp_ai_base_url || '';
+    onMcpProviderChange();
+    if (s.mcp_ai_api_key_set) $('mcp-key-hint').innerHTML = '<i class="fa-solid fa-circle-check" style="color:var(--green)"></i> Key saved. Leave empty to keep it.';
+    // Categories
+    var cats = Array.isArray(s.mcp_categories) ? s.mcp_categories : ['read', 'write'];
+    toggleSwitch('mcp-cat-read', cats.indexOf('read') >= 0);
+    toggleSwitch('mcp-cat-write', cats.indexOf('write') >= 0);
+    toggleSwitch('mcp-cat-outbound', cats.indexOf('outbound') >= 0);
+    toggleSwitch('mcp-cat-dangerous', cats.indexOf('dangerous') >= 0);
+    // Snippets
+    renderMcpSnippets();
+}
+
+function renderMcpSnippets() {
+    var endpoint = window.location.origin + '/mcp';
+    var tok = 'nyxx_YOUR_TOKEN_HERE';
+    if ($('mcp-snippet-claude')) $('mcp-snippet-claude').textContent =
+        '{\\n  "mcpServers": {\\n    "nyxx": {\\n      "command": "npx",\\n      "args": ["-y", "mcp-remote", "' + endpoint + '",\\n               "--header", "Authorization: Bearer ' + tok + '"]\\n    }\\n  }\\n}';
+    if ($('mcp-snippet-cursor')) $('mcp-snippet-cursor').textContent =
+        '{\\n  "mcpServers": {\\n    "nyxx": {\\n      "url": "' + endpoint + '",\\n      "headers": { "Authorization": "Bearer ' + tok + '" }\\n    }\\n  }\\n}';
+    if ($('mcp-snippet-curl')) $('mcp-snippet-curl').textContent =
+        'curl -X POST ' + endpoint + ' \\\\n  -H "Authorization: Bearer ' + tok + '" \\\\n  -H "Content-Type: application/json" \\\\n  -d \\'{"jsonrpc":"2.0","id":1,"method":"tools/list"}\\'';
+}
+
+function onMcpProviderChange() {
+    var p = $('mcp-provider').value;
+    show($('mcp-base-wrap'), p === 'custom');
+    var defaults = { openai: 'gpt-4o-mini', gemini: 'gemini-2.0-flash', deepseek: 'deepseek-chat', groq: 'llama-3.3-70b-versatile', openrouter: 'openai/gpt-4o-mini' };
+    if (defaults[p] && !$('mcp-model').value) $('mcp-model').value = defaults[p];
+}
+
+async function toggleMcpEnabled() {
+    var on = !sw('mcp-enabled');
+    toggleSwitch('mcp-enabled', on);
+    try { await api('POST', '/api/mcp/settings', { mcp_enabled: on ? '1' : '0' }); toast(on ? 'MCP enabled.' : 'MCP disabled.'); }
+    catch (e) { toast(e.message, 'error'); toggleSwitch('mcp-enabled', !on); }
+}
+
+async function toggleMcpCategory(cat) {
+    var id = 'mcp-cat-' + cat;
+    var on = !sw(id);
+    toggleSwitch(id, on);
+    var cats = [];
+    if (sw('mcp-cat-read')) cats.push('read');
+    if (sw('mcp-cat-write')) cats.push('write');
+    if (sw('mcp-cat-outbound')) cats.push('outbound');
+    if (sw('mcp-cat-dangerous')) cats.push('dangerous');
+    try { await api('POST', '/api/mcp/settings', { mcp_categories: cats }); }
+    catch (e) { toast(e.message, 'error'); }
+}
+
+async function saveMcpAiSettings() {
+    var body = {
+        mcp_ai_provider: $('mcp-provider').value,
+        mcp_ai_model: $('mcp-model').value.trim(),
+        mcp_ai_base_url: $('mcp-base').value.trim(),
+    };
+    var key = $('mcp-api-key').value.trim();
+    if (key) body.mcp_ai_api_key = key;
+    try { await api('POST', '/api/mcp/settings', body); toast('MCP AI provider saved.'); loadMcp(); }
+    catch (e) { toast(e.message, 'error'); }
+}
+
+async function testMcpAi() {
+    $('mcp-test-result').innerHTML = '<span class="mini-spinner"></span> Testing…';
+    try {
+        var body = {
+            settings: {
+                mcp_ai_provider: $('mcp-provider').value,
+                mcp_ai_model: $('mcp-model').value.trim(),
+                mcp_ai_base_url: $('mcp-base').value.trim(),
+                mcp_ai_api_key: $('mcp-api-key').value.trim() || KEEP_SENTINEL,
+            }
+        };
+        var d = await api('POST', '/api/mcp/ai/test', body);
+        if (d.success) $('mcp-test-result').innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Connected — reply: <code>' + esc(d.message || '') + '</code></span>';
+        else $('mcp-test-result').innerHTML = '<span style="color:var(--red)"><i class="fa-solid fa-circle-xmark"></i> ' + esc(d.error || 'Failed') + '</span>';
+    } catch (e) { $('mcp-test-result').innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
+}
+
+async function loadMcpTokens() {
+    try {
+        var d = await api('GET', '/api/mcp/tokens');
+        var list = d.tokens || [];
+        var box = $('mcp-tokens-list');
+        if (!list.length) { box.innerHTML = '<div class="muted small">No tokens yet.</div>'; return; }
+        box.innerHTML = list.map(function (t) {
+            return '<div class="list-row" style="border-radius:10px;border:1px solid var(--hairline);margin-bottom:6px;padding:8px 12px;">' +
+                '<i class="fa-solid fa-key" style="color:var(--text-3);"></i>' +
+                '<div class="lr-main"><div class="lr-title mono" style="font-size:13px;">' + esc(t.token_prefix) + '••••••••</div>' +
+                '<div class="lr-sub">Created ' + fmtTime(t.created_at) + ' · Last used ' + (t.last_used_at ? fmtTime(t.last_used_at) : 'never') + '</div></div>' +
+                '</div>';
+        }).join('');
+    } catch (e) { /* silent */ }
+}
+
+async function generateMcpToken() {
+    try {
+        var d = await api('POST', '/api/mcp/token/generate', { label: 'dashboard' });
+        $('mcp-token-value').value = d.token;
+        show($('mcp-token-once'), true);
+        loadMcpTokens();
+        toast('Token generated — copy it now.', 'info');
+    } catch (e) { toast(e.message, 'error'); }
+}
+
+async function revokeMcpTokens() {
+    var ok = await confirmDialog('Revoke ALL MCP tokens? Every connected client will be disconnected immediately.', 'Revoke tokens');
+    if (!ok) return;
+    try { await api('POST', '/api/mcp/token/revoke'); toast('All tokens revoked.'); show($('mcp-token-once'), false); loadMcpTokens(); }
+    catch (e) { toast(e.message, 'error'); }
+}
+
+function renderMcpChatMessage(role, text, toolCalls) {
+    var box = $('mcp-chat');
+    if (box.querySelector('.empty')) box.innerHTML = '';
+    var html = '';
+    if (role === 'user') {
+        html = '<div class="pg-msg user" dir="auto">' + esc(text) + '</div>';
+    } else {
+        html = '<div class="pg-msg bot" dir="auto">' + esc(text).replace(/\\n/g, '<br>');
+        if (toolCalls && toolCalls.length) {
+            html += '<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--hairline);font-size:12px;">';
+            for (var i = 0; i < toolCalls.length; i++) {
+                var tc = toolCalls[i];
+                var mark = tc.error ? '<span style="color:var(--red)">✗</span>' : '<span style="color:var(--green)">✓</span>';
+                html += '<div style="margin-bottom:4px;">' + mark + ' <code>' + esc(tc.name) + '</code>';
+                if (tc.error) html += ' — <span style="color:var(--red)">' + esc(tc.error) + '</span>';
+                html += '</div>';
+            }
+            html += '</div>';
+        }
+        html += '</div>';
+    }
+    box.insertAdjacentHTML('beforeend', html);
+    scrollBottom(box);
+}
+
+async function sendMcpChat() {
+    var input = $('mcp-input');
+    var text = input.value.trim();
+    if (!text) return;
+    renderMcpChatMessage('user', text);
+    input.value = '';
+    var history = mcpHistory.slice(-20);
+    var tempId = 'mcp-pending-' + Date.now();
+    var box = $('mcp-chat');
+    box.insertAdjacentHTML('beforeend', '<div class="pg-msg bot" id="' + tempId + '"><span class="mini-spinner"></span> <span class="muted small">Thinking…</span></div>');
+    scrollBottom(box);
+    withBusy($('mcp-send'), async function () {
+        try {
+            var d = await api('POST', '/api/mcp/chat', { message: text, history: history });
+            var pending = $(tempId); if (pending) pending.remove();
+            if (d && d.success) {
+                renderMcpChatMessage('assistant', d.response || '', d.toolCalls);
+                mcpHistory.push({ role: 'user', content: text });
+                mcpHistory.push({ role: 'assistant', content: d.response || '' });
+                if (d.toolCalls && d.toolCalls.length) loadMcpCalls();
+            } else {
+                renderMcpChatMessage('assistant', '⚠️ ' + (d.error || 'Request failed.'));
+            }
+        } catch (e) {
+            var pending2 = $(tempId); if (pending2) pending2.remove();
+            renderMcpChatMessage('assistant', '⚠️ ' + e.message);
+        }
+    });
+}
+
+function clearMcpChat() {
+    mcpHistory = [];
+    var box = $('mcp-chat');
+    if (box) box.innerHTML = emptyState('fa-solid fa-comments', 'Chat cleared. Ask a question to get started.');
+}
+
+async function loadMcpCalls() {
+    try {
+        var d = await api('GET', '/api/mcp/calls');
+        var list = d.calls || [];
+        var box = $('mcp-calls-list');
+        if (!list.length) { box.innerHTML = '<div class="muted small">No MCP calls yet.</div>'; return; }
+        box.innerHTML = '<div class="list">' + list.map(function (c) {
+            return '<div class="list-row" style="padding:8px 12px;"><div class="lr-main"><div class="lr-title mono" style="font-size:13px;">' + esc(c.action) + '</div><div class="lr-sub">' + fmtTime(c.timestamp) + '</div></div></div>';
+        }).join('') + '</div>';
+    } catch (e) { /* silent */ }
+}
+
+/* ============================================================
+   FEATURED MODAL — MCP kind support
+   ============================================================ */
+// Patch openFeaturedModal to accept 'mcp' and toggle admin switch default.
+var __origOpenFeaturedModal = openFeaturedModal;
+openFeaturedModal = function (kind, item) {
+    var isMcp = kind === 'mcp';
+    __origOpenFeaturedModal(isMcp ? 'mcp' : kind, item);
+    var title = $('featured-modal-title');
+    if (isMcp) title.textContent = (item ? 'Edit' : 'New') + ' MCP command';
+    var hintDesc = $('featured-hint-desc');
+    if (isMcp && hintDesc) hintDesc.innerHTML = 'Shown when <code>/mcp</code> is sent alone. Example: <code>Send a message or instruction for the MCP agent.</code>';
+    // Default admin_only ON for new MCP commands, off otherwise.
+    toggleSwitch('featured-admin', item ? !!item.admin_only : isMcp);
+};
+
+// Patch saveFeatured to send kind + admin_only.
+var __origSaveFeatured = saveFeatured;
+saveFeatured = async function () {
+    var err = $('featured-error'); err.classList.remove('show');
+    var command = $('featured-command').value.trim();
+    if (!command || command === '/') { err.textContent = 'Command is required.'; err.classList.add('show'); return; }
+    var payload = {
+        command: command,
+        kind: featuredKind,
+        content: $('featured-hint').value.trim(),
+        success_text: $('featured-success').value.trim(),
+        failure_text: $('featured-failure').value.trim(),
+        admin_only: sw('featured-admin') ? 1 : 0,
+        enabled: sw('featured-enabled') ? 1 : 0
+    };
+    var btn = $('featured-save');
+    await withBusy(btn, async function () {
+        try {
+            if (featuredEditing) await api('PUT', '/api/featured/' + featuredEditing.id, payload);
+            else await api('POST', '/api/featured', payload);
+            closeFeaturedModal(); toast('Featured command saved.'); loadFeatured();
+        } catch (e) { err.textContent = e.message; err.classList.add('show'); }
+    });
+};
+
+// Patch renderFeatured to show MCP badge + admin badge.
+var __origRenderFeatured = renderFeatured;
+renderFeatured = function () {
+    var box = $('featured-list');
+    if (!featured.length) { box.innerHTML = emptyState('fa-solid fa-wand-magic-sparkles', 'No featured commands yet.', 'Create one to get started.'); return; }
+    box.innerHTML = featured.map(function (f) {
+        var kindLabel =
+            f.kind === 'buttons' ? '<span class="badge purple">Buttons</span>' :
+            f.kind === 'mcp' ? '<span class="badge orange">MCP</span>' :
+            '<span class="badge blue">DM</span>';
+        var adminBadge = f.admin_only ? '<span class="badge red"><i class="fa-solid fa-lock"></i> Admin</span>' : '';
+        var blocks = '';
+        if (f.content) blocks += '<div class="fr-block hint"><b>Hint:</b> ' + esc(f.content) + '</div>';
+        if (f.success_text) blocks += '<div class="fr-block success"><b style="color:var(--green)">Success:</b> ' + esc(f.success_text) + '</div>';
+        if (f.failure_text) blocks += '<div class="fr-block failure"><b style="color:var(--red)">Failure:</b> ' + esc(f.failure_text) + '</div>';
+        return '<div class="featured-reply ' + (f.enabled ? '' : 'disabled') + '">' +
+            '<div class="fr-head">' +
+                '<span class="fr-cmd">' + esc(f.command) + '</span>' + kindLabel + adminBadge +
+                '<div style="flex:1"></div>' +
+                '<button class="switch ' + (f.enabled ? 'on' : '') + '" onclick="toggleFeatured(' + f.id + ')" title="Enable or disable" aria-label="Toggle"></button>' +
+            '</div>' +
+            blocks +
+            '<div class="fr-actions">' +
+                '<button class="btn btn-gray btn-sm" onclick="editFeatured(' + f.id + ')"><i class="fa-regular fa-pen-to-square"></i> Edit</button>' +
+                '<button class="btn btn-danger btn-sm" onclick="deleteFeatured(' + f.id + ')"><i class="fa-regular fa-trash-can"></i> Delete</button>' +
+            '</div></div>';
+    }).join('');
+};
+
+// Patch editFeatured to accept mcp kind.
+var __origEditFeatured = editFeatured;
+editFeatured = async function (id) {
+    var item = featured.find(function (f) { return f.id === id; });
+    if (!item) return;
+    var kind = item.kind === 'buttons' ? 'buttons' : (item.kind === 'mcp' ? 'mcp' : 'text');
+    openFeaturedModal(kind, item);
+    // Pre-fill admin switch from saved value.
+    setTimeout(function () { toggleSwitch('featured-admin', !!item.admin_only); }, 0);
+};
+
+// Route to correct page when go('mcp') is called.
+var __origGo = go;
+go = function (page) {
+    __origGo(page);
+    if (page === 'mcp') loadMcp(true);
+};
+
 async function checkStatus() {
     showAuthStatus('loading', 'Connecting…', 'Checking your database connection.');
     var attempt = 0, lastErr = null;
@@ -2129,7 +2558,7 @@ async function loadOverview(force) {
             return '<li class="list-row" style="border-radius:12px;border:1px solid var(--hairline);margin-bottom:8px;">' +
                 '<span class="badge ' + (x.done ? 'green' : '') + '"><i class="fa-solid ' + (x.done ? 'fa-check' : 'fa-circle') + '"></i></span>' +
                 '<div class="lr-main"><div class="lr-title">' + esc(x.label) + '</div></div>' +
-                (x.done ? '' : '<button class="btn btn-gray btn-sm" onclick="go(\\'' + x.page + '\\')">Open</button>') +
+                (x.done ? '' : '<button class="btn btn-gray btn-sm" onclick="go(\\\'' + x.page + '\\\')">Open</button>') +
                 '</li>';
         }).join('');
     } catch (e) {
@@ -3929,6 +4358,7 @@ function simpleHashStr(str) {
 export default {
     async fetch(request, env, ctx) {
         const url = new URL(request.url);
+        env.__requestUrl = url.toString();
         try {
             if (request.method === 'GET' && url.pathname === '/') return new Response(DASHBOARD_HTML, { headers: HTML_HEADERS });
 
@@ -3952,6 +4382,8 @@ export default {
                 return apiJson({ logged_in: !!s });
             }
             if (request.method === 'POST' && url.pathname === '/webhook') return await handleTelegramWebhook(request, env, ctx);
+            // MCP — bearer-token auth, no session cookie required.
+            if (url.pathname === '/mcp') return await handleMcp(request, env);
 
             const session = await getSession(request, env);
             if (!session) return apiJson({ error: 'Please sign in again.' }, 401);
@@ -4041,6 +4473,15 @@ export default {
             if (request.method === 'POST' && url.pathname === '/api/bot_info') return await setBotInfo(request, env);
 
             if (request.method === 'GET' && url.pathname === '/api/stats') return await getStats(env);
+            // ---- MCP dashboard API ----
+            if (request.method === 'GET'  && url.pathname === '/api/mcp/settings') return await getMcpSettings(env);
+            if (request.method === 'POST' && url.pathname === '/api/mcp/settings') return await saveMcpSettings(request, env);
+            if (request.method === 'POST' && url.pathname === '/api/mcp/ai/test') return await handleMcpAiTest(request, env);
+            if (request.method === 'POST' && url.pathname === '/api/mcp/chat') return await handleMcpDashboardChat(request, env);
+            if (request.method === 'GET'  && url.pathname === '/api/mcp/tokens') return await listMcpTokens(env);
+            if (request.method === 'POST' && url.pathname === '/api/mcp/token/generate') return await generateMcpTokenHandler(request, env);
+            if (request.method === 'POST' && url.pathname === '/api/mcp/token/revoke') return await revokeMcpTokens(env);
+            if (request.method === 'GET'  && url.pathname === '/api/mcp/calls') return await getMcpCalls(env);
 
             if (request.method === 'GET' && url.pathname === '/api/backup') return await exportBackup(env);
             if (request.method === 'POST' && url.pathname === '/api/backup/restore') return await restoreBackup(request, env);
@@ -4215,7 +4656,7 @@ async function saveLogCleanSettings(request, env) {
 // DATABASE
 // ============================================================================
 const dbInitCache = new WeakMap();
-const SCHEMA_VERSION = 6;
+const SCHEMA_VERSION = 7;
 
 const MIGRATIONS = {
     2: [
@@ -4249,6 +4690,17 @@ const MIGRATIONS = {
     6: [
         `ALTER TABLE featured_replies ADD COLUMN success_text TEXT DEFAULT ''`,
         `ALTER TABLE featured_replies ADD COLUMN failure_text TEXT DEFAULT ''`,
+    ],
+    7: [
+        `CREATE TABLE IF NOT EXISTS mcp_tokens (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            label TEXT DEFAULT 'default',
+            token_hash TEXT UNIQUE NOT NULL,
+            token_prefix TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            last_used_at DATETIME
+        )`,
+        `ALTER TABLE featured_replies ADD COLUMN admin_only INTEGER DEFAULT 0`,
     ],
 };
 
@@ -5007,12 +5459,13 @@ async function createFeatured(request, env) {
         const content = String(body.content || '').trim();
         const successText = String(body.success_text || '').trim();
         const failureText = String(body.failure_text || '').trim();
-        const kind = body.kind === 'buttons' ? 'buttons' : 'text';
+        const kind = (body.kind === 'buttons' || body.kind === 'mcp') ? body.kind : 'text';
         const enabled = body.enabled ? 1 : 0;
+        const adminOnly = body.admin_only ? 1 : 0;
         await initializeDatabase(env.DB);
         try {
-            await env.DB.prepare('INSERT INTO featured_replies (command, kind, content, buttons_json, success_text, failure_text, enabled) VALUES (?, ?, ?, ?, ?, ?, ?)')
-                .bind(command, kind, content, null, successText, failureText, enabled).run();
+            await env.DB.prepare('INSERT INTO featured_replies (command, kind, content, buttons_json, success_text, failure_text, admin_only, enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+                .bind(command, kind, content, null, successText, failureText, adminOnly, enabled).run();
         } catch (e) {
             if (String(e.message || '').includes('UNIQUE')) return apiJson({ error: `A featured command with the command "${command}" already exists.` }, 400);
             throw e;
@@ -5032,10 +5485,11 @@ async function updateFeatured(request, env, url) {
         const content = body.content !== undefined ? String(body.content).trim() : (existing.content || '');
         const successText = body.success_text !== undefined ? String(body.success_text).trim() : (existing.success_text || '');
         const failureText = body.failure_text !== undefined ? String(body.failure_text).trim() : (existing.failure_text || '');
-        const kind = body.kind !== undefined ? (body.kind === 'buttons' ? 'buttons' : 'text') : existing.kind;
+        const kind = body.kind !== undefined ? ((body.kind === 'buttons' || body.kind === 'mcp') ? body.kind : 'text') : existing.kind;
         const enabled = body.enabled !== undefined ? (body.enabled ? 1 : 0) : existing.enabled;
-        await env.DB.prepare('UPDATE featured_replies SET command = ?, kind = ?, content = ?, buttons_json = NULL, success_text = ?, failure_text = ?, enabled = ? WHERE id = ?')
-            .bind(command, kind, content, successText, failureText, enabled, id).run();
+        const adminOnly = body.admin_only !== undefined ? (body.admin_only ? 1 : 0) : (existing.admin_only || 0);
+        await env.DB.prepare('UPDATE featured_replies SET command = ?, kind = ?, content = ?, buttons_json = NULL, success_text = ?, failure_text = ?, admin_only = ?, enabled = ? WHERE id = ?')
+            .bind(command, kind, content, successText, failureText, adminOnly, enabled, id).run();
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
 }
@@ -6196,7 +6650,7 @@ async function exportBackup(env) {
         await initializeDatabase(env.DB);
         const [commands, featured, users, messages, settingsRows, broadcastRows, groupsRows, dmRows] = await Promise.all([
             env.DB.prepare('SELECT * FROM commands').all(),
-            env.DB.prepare('SELECT command, kind, content, buttons_json, success_text, failure_text, enabled FROM featured_replies').all(),
+            env.DB.prepare('SELECT command, kind, content, buttons_json, success_text, failure_text, admin_only, enabled FROM featured_replies').all(),
             env.DB.prepare('SELECT * FROM users').all(),
             env.DB.prepare('SELECT chat_id, role, content, timestamp FROM ai_messages ORDER BY id').all(),
             env.DB.prepare('SELECT key, value FROM settings').all(),
@@ -6244,8 +6698,8 @@ async function restoreBackup(request, env) {
                 .bind(c.command, c.parent || null, c.response_type || 'text', c.content || '', c.media_url || '', c.buttons_json || '', c.is_admin_only ? 1 : 0, c.enabled !== undefined ? c.enabled : 1, c.show_reply_keyboard ? 1 : 0, c.reply_keyboard_json || '', c.order_idx || 0)));
         }
         if (wants('featured') && Array.isArray(data.featured)) {
-            await runBatchChunks(env.DB, data.featured.filter(f => f && f.command).map(f => env.DB.prepare('INSERT INTO featured_replies (command, kind, content, buttons_json, success_text, failure_text, enabled) VALUES (?, ?, ?, ?, ?, ?, ?)')
-                .bind(f.command, f.kind || 'text', f.content || '', null, f.success_text || '', f.failure_text || '', f.enabled ? 1 : 0)));
+            await runBatchChunks(env.DB, data.featured.filter(f => f && f.command).map(f => env.DB.prepare('INSERT INTO featured_replies (command, kind, content, buttons_json, success_text, failure_text, admin_only, enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+                .bind(f.command, f.kind || 'text', f.content || '', null, f.success_text || '', f.failure_text || '', f.admin_only ? 1 : 0, f.enabled ? 1 : 0)));
         }
         if (wants('users') && Array.isArray(data.users)) {
             await runBatchChunks(env.DB, data.users.filter(u => u && u.id).map(u => env.DB.prepare(`INSERT INTO users (id, username, first_name, role, is_premium, private_started, last_group_id, last_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
@@ -6391,6 +6845,1162 @@ async function performUpdate(request, env) {
         }
         return apiJson({ success: true, version: newVersion || 'unknown' });
     } catch (e) { console.error('Update failed:', e); return apiJson({ success: false, error: 'Update failed unexpectedly. Please try again.' }, 500); }
+}
+
+// ============================================================================
+// MCP — Model Context Protocol + built-in chat + Telegram /mcp command
+// ============================================================================
+const MCP_DEFAULT_SETTINGS = {
+    mcp_enabled: '0',
+    mcp_ai_provider: 'openai',
+    mcp_ai_model: 'gpt-4o-mini',
+    mcp_ai_base_url: '',
+    mcp_categories: '["read","write"]',
+};
+const MCP_CATEGORY_KEYS = ['read', 'write', 'outbound', 'dangerous'];
+const mcpTokenCache = new Map();
+const MCP_TOKEN_CACHE_TTL = 30000;
+
+async function getMcpSettingsFromDb(env) {
+    const keys = Object.keys(MCP_DEFAULT_SETTINGS).concat(['mcp_ai_api_key']);
+    const placeholders = keys.map(() => '?').join(', ');
+    const rows = await env.DB.prepare(`SELECT key, value FROM settings WHERE key IN (${placeholders})`).bind(...keys).all();
+    const out = Object.assign({}, MCP_DEFAULT_SETTINGS);
+    for (const row of (rows.results || [])) out[row.key] = row.value;
+    return out;
+}
+
+async function getMcpSettings(env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        const s = await getMcpSettingsFromDb(env);
+        const safe = Object.assign({}, s);
+        safe.mcp_ai_api_key_set = !!s.mcp_ai_api_key;
+        safe.mcp_ai_api_key_masked = maskSecret(s.mcp_ai_api_key || '');
+        safe.mcp_ai_api_key = s.mcp_ai_api_key ? KEEP_SENTINEL : '';
+        safe.mcp_enabled = s.mcp_enabled === '1' ? '1' : '0';
+        let cats = ['read', 'write'];
+        try { const parsed = JSON.parse(s.mcp_categories || '[]'); if (Array.isArray(parsed)) cats = parsed.filter(c => MCP_CATEGORY_KEYS.includes(c)); } catch (e) {}
+        safe.mcp_categories = cats;
+        safe.mcp_endpoint = (new URL(env.__requestUrl || 'https://worker.local/')).origin + '/mcp';
+        return apiJson({ success: true, settings: safe });
+    } catch (err) { return internalError(err); }
+}
+
+async function saveMcpSettings(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const body = await request.json();
+        await initializeDatabase(env.DB);
+        const writes = [];
+        if (body.mcp_enabled !== undefined) writes.push(['mcp_enabled', body.mcp_enabled === '1' || body.mcp_enabled === 1 || body.mcp_enabled === true ? '1' : '0']);
+        if (body.mcp_ai_provider !== undefined) writes.push(['mcp_ai_provider', String(body.mcp_ai_provider)]);
+        if (body.mcp_ai_model !== undefined) writes.push(['mcp_ai_model', String(body.mcp_ai_model)]);
+        if (body.mcp_ai_base_url !== undefined) writes.push(['mcp_ai_base_url', String(body.mcp_ai_base_url)]);
+        if (body.mcp_ai_api_key !== undefined && body.mcp_ai_api_key !== KEEP_SENTINEL) writes.push(['mcp_ai_api_key', String(body.mcp_ai_api_key)]);
+        if (Array.isArray(body.mcp_categories)) {
+            const cats = body.mcp_categories.filter(c => MCP_CATEGORY_KEYS.includes(c));
+            writes.push(['mcp_categories', JSON.stringify(cats)]);
+        }
+        for (const [k, v] of writes) await setSetting(env.DB, k, v);
+        await logAction(env.DB, null, 'MCP settings updated');
+        return apiJson({ success: true });
+    } catch (err) { return internalError(err); }
+}
+
+// ---- Tokens -----------------------------------------------------------------
+async function listMcpTokens(env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        const rows = await env.DB.prepare('SELECT id, label, token_prefix, created_at, last_used_at FROM mcp_tokens ORDER BY id DESC').all();
+        return apiJson({ tokens: rows.results || [] });
+    } catch (err) { return internalError(err); }
+}
+
+async function generateMcpTokenHandler(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const body = await request.json().catch(() => ({}));
+        const label = String(body.label || 'default').slice(0, 40);
+        const raw = 'nyxx_' + Array.from(crypto.getRandomValues(new Uint8Array(24))).map(b => b.toString(16).padStart(2, '0')).join('');
+        const hashBuf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw));
+        const hashHex = toHex(hashBuf);
+        const prefix = raw.slice(0, 12);
+        await env.DB.prepare('INSERT INTO mcp_tokens (label, token_hash, token_prefix) VALUES (?, ?, ?)').bind(label, hashHex, prefix).run();
+        await logAction(env.DB, null, 'MCP token generated');
+        return apiJson({ success: true, token: raw, prefix, label });
+    } catch (err) { return internalError(err); }
+}
+
+async function revokeMcpTokens(env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await env.DB.prepare('DELETE FROM mcp_tokens').run();
+        mcpTokenCache.clear();
+        await logAction(env.DB, null, 'All MCP tokens revoked');
+        return apiJson({ success: true });
+    } catch (err) { return internalError(err); }
+}
+
+// D1 returns DATETIME columns as 'YYYY-MM-DD HH:MM:SS' (UTC, no timezone marker).
+// new Date() treats that as LOCAL time in some runtimes — this handles both forms safely.
+function parseDbTimestamp(s) {
+    if (!s) return 0;
+    if (s instanceof Date) { const t = s.getTime(); return isNaN(t) ? 0 : t; }
+    const str = String(s);
+    // Already ISO-8601 with Z or ±hh:mm → let the engine handle it.
+    if (/T.*[Zz]|[+-]\d{2}:?\d{2}$/.test(str)) {
+        const t = new Date(str).getTime();
+        return isNaN(t) ? 0 : t;
+    }
+    // SQLite format: 'YYYY-MM-DD HH:MM:SS' → force UTC.
+    if (/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}/.test(str)) {
+        const t = new Date(str.replace(' ', 'T') + 'Z').getTime();
+        return isNaN(t) ? 0 : t;
+    }
+    const t = new Date(str).getTime();
+    return isNaN(t) ? 0 : t;
+}
+
+async function verifyMcpToken(env, rawToken) {
+    if (!rawToken) return null;
+    const hashBuf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(rawToken));
+    const hashHex = toHex(hashBuf);
+    const cached = mcpTokenCache.get(hashHex);
+    if (cached && (Date.now() - cached.at) < MCP_TOKEN_CACHE_TTL) return cached.row;
+    const row = await env.DB.prepare('SELECT id, token_prefix, last_used_at FROM mcp_tokens WHERE token_hash = ?').bind(hashHex).first();
+    if (!row) return null;
+    mcpTokenCache.set(hashHex, { row, at: Date.now() });
+    // Update last_used_at at most once per minute.
+    // D1/SQLite returns 'YYYY-MM-DD HH:MM:SS' (UTC, no Z). Some rows may be ISO.
+    const last = parseDbTimestamp(row.last_used_at);
+    if (Date.now() - last > 60000) {
+        try { await env.DB.prepare('UPDATE mcp_tokens SET last_used_at = CURRENT_TIMESTAMP WHERE id = ?').bind(row.id).run(); } catch (e) {}
+    }
+    return row;
+}
+
+// ---- Button input normalization ---------------------------------------------
+// Accepts an ergonomic { inline: [...], reply: {...} } object OR raw JSON
+// strings/objects, and produces the exact 3 fields the backend expects:
+//   - buttons_json       (inline keyboard, {v:2, inline: [[...]]})
+//   - reply_keyboard_json ({v:2, reply: {rows, actions, ...}})
+//   - show_reply_keyboard (0/1)
+// plus a merged `combined_json` for message-editor endpoints (send_dm/broadcast).
+function normalizeInlineBtn(item) {
+    if (!item) return null;
+    if (typeof item === 'string') item = { text: item, value: item };
+    if (typeof item !== 'object') return null;
+    const text = String(item.text || item.label || '').trim();
+    if (!text) return null;
+    const rawValue = item.value !== undefined ? item.value
+        : (item.callback_data !== undefined ? item.callback_data
+        : (item.url !== undefined ? item.url
+        : (item.command !== undefined ? item.command : '')));
+    const value = String(rawValue).trim();
+    if (!value) return null;
+    let type = item.type;
+    if (!type) {
+        if (/^https?:\/\//i.test(value)) type = 'url';
+        else if (value.startsWith('/')) type = 'command';
+        else type = 'callback';
+    }
+    if (type !== 'url' && type !== 'command' && type !== 'callback') type = 'callback';
+    if (type === 'command' && value.charAt(0) !== '/') return { text, type, value: '/' + value };
+    return { text, type, value };
+}
+function normalizeInlineRows(input) {
+    if (!Array.isArray(input)) return [];
+    const rows = [];
+    let current = [];
+    for (const item of input) {
+        if (Array.isArray(item)) {
+            const row = item.map(normalizeInlineBtn).filter(Boolean);
+            if (row.length) { if (current.length) { rows.push(current); current = []; } rows.push(row); }
+        } else {
+            const btn = normalizeInlineBtn(item);
+            if (!btn) continue;
+            current.push(btn);
+            if (current.length >= 3) { rows.push(current); current = []; }
+        }
+    }
+    if (current.length) rows.push(current);
+    return rows;
+}
+function normalizeReplyInput(rep) {
+    if (!rep || typeof rep !== 'object') return null;
+    const rows = [];
+    const actions = {};
+    const readBtn = (x) => {
+        if (typeof x === 'string') return { text: x, command: '' };
+        if (!x || typeof x !== 'object') return null;
+        const text = String(x.text || '');
+        const cmd = String(x.command || x.value || '').trim();
+        return text ? { text, command: cmd } : null;
+    };
+    if (Array.isArray(rep.rows)) {
+        for (const r of rep.rows) {
+            if (Array.isArray(r)) {
+                const row = r.map(readBtn).filter(Boolean);
+                if (row.length) rows.push(row);
+            } else if (r && typeof r === 'object') {
+                const b = readBtn(r);
+                if (b) rows.push([b]);
+            }
+        }
+    } else if (Array.isArray(rep)) {
+        for (const r of rep) {
+            const row = (Array.isArray(r) ? r : [r]).map(readBtn).filter(Boolean);
+            if (row.length) rows.push(row);
+        }
+    }
+    if (!rows.length) return null;
+    // Explicit actions map from the caller.
+    if (rep.actions && typeof rep.actions === 'object') {
+        for (const [k, v] of Object.entries(rep.actions)) {
+            if (k && v) {
+                const s = String(v).trim();
+                actions[k] = s.startsWith('/') ? s : '/' + s;
+            }
+        }
+    }
+    // Per-button `command` fields also become actions (backend merge handles both).
+    for (const row of rows) for (const b of row) if (b.command) {
+        actions[b.text] = b.command.startsWith('/') ? b.command : '/' + b.command;
+    }
+    return {
+        rows: rows.map(row => row.map(b => ({ text: b.text }))),
+        actions,
+        resize: rep.resize !== false,
+        one_time: rep.one_time === true,
+        persistent: rep.persistent !== false,
+        placeholder: String(rep.placeholder || '').slice(0, 64)
+    };
+}
+function buildButtonPayloads(args) {
+    const hasStructured = args && args.buttons && typeof args.buttons === 'object';
+    const hasRawButtons = args && args.buttons_json !== undefined;
+    const hasRawReply = args && args.reply_keyboard_json !== undefined;
+    const hasFlag = args && args.show_reply_keyboard !== undefined;
+    if (!hasStructured && !hasRawButtons && !hasRawReply && !hasFlag) return {};
+
+    const out = {};
+
+    if (hasStructured) {
+        const b = args.buttons;
+        if (b.inline !== undefined) {
+            if (b.inline === null || b.inline === false) {
+                out.buttons_json = '';
+            } else {
+                out.buttons_json = JSON.stringify({ v: 2, inline: normalizeInlineRows(b.inline) });
+            }
+        }
+        if (b.reply !== undefined) {
+            if (b.reply === null || b.reply === false) {
+                out.reply_keyboard_json = '';
+                out.show_reply_keyboard = 0;
+            } else {
+                const rep = normalizeReplyInput(b.reply);
+                if (rep) {
+                    out.reply_keyboard_json = JSON.stringify({ v: 2, reply: rep });
+                    out.show_reply_keyboard = 1;
+                } else {
+                    out.reply_keyboard_json = '';
+                    out.show_reply_keyboard = 0;
+                }
+            }
+        }
+    }
+    if (hasRawButtons) {
+        if (args.buttons_json === null || args.buttons_json === '') out.buttons_json = '';
+        else out.buttons_json = typeof args.buttons_json === 'string' ? args.buttons_json : JSON.stringify(args.buttons_json);
+    }
+    if (hasRawReply) {
+        if (args.reply_keyboard_json === null || args.reply_keyboard_json === '') {
+            out.reply_keyboard_json = '';
+            if (out.show_reply_keyboard === undefined) out.show_reply_keyboard = 0;
+        } else {
+            out.reply_keyboard_json = typeof args.reply_keyboard_json === 'string' ? args.reply_keyboard_json : JSON.stringify(args.reply_keyboard_json);
+            if (out.show_reply_keyboard === undefined) out.show_reply_keyboard = 1;
+        }
+    }
+    if (hasFlag) out.show_reply_keyboard = args.show_reply_keyboard ? 1 : 0;
+
+    // Build a merged combined_json for message-editor endpoints.
+    if (out.buttons_json !== undefined || out.reply_keyboard_json !== undefined) {
+        const combined = { v: 2 };
+        if (out.buttons_json) {
+            try {
+                const p = JSON.parse(out.buttons_json);
+                if (p && Array.isArray(p.inline)) combined.inline = p.inline;
+                else if (p && Array.isArray(p.inline_keyboard)) combined.inline = p.inline_keyboard;
+            } catch (e) {}
+        }
+        if (out.reply_keyboard_json) {
+            try {
+                const p = JSON.parse(out.reply_keyboard_json);
+                if (p && p.reply) combined.reply = p.reply;
+                else if (p && Array.isArray(p.keyboard)) combined.reply = { rows: p.keyboard, actions: {} };
+            } catch (e) {}
+        }
+        out.combined_json = (combined.inline || combined.reply) ? JSON.stringify(combined) : '';
+    }
+    return out;
+}
+
+// ---- Tool registry ----------------------------------------------------------
+function getMcpToolDefinitions(categories) {
+    const enabled = new Set(categories || ['read', 'write']);
+    const tools = [];
+    const push = (def, cat) => { if (enabled.has(cat)) tools.push(def); };
+
+    // ---- READ -----------------------------------------------------------------
+    push({ type: 'function', function: {
+        name: 'get_stats',
+        description: 'Return dashboard overview numbers: total commands, users, groups, AI memory, bot linkage.',
+        parameters: { type: 'object', properties: {} }
+    }}, 'read');
+
+    push({ type: 'function', function: {
+        name: 'list_users',
+        description: 'List users. filter: all | private (started bot) | group (group-only, never started) | admin | blocked. Optional search.',
+        parameters: { type: 'object', properties: {
+            filter: { type: 'string', enum: ['all','private','group','admin','blocked'] },
+            search: { type: 'string' }
+        }}
+    }}, 'read');
+
+    push({ type: 'function', function: {
+        name: 'get_user',
+        description: 'Get a single user by ID (profile, role, private_started, block status, DM count, AI memory count).',
+        parameters: { type: 'object', properties: { userId: { type: 'number' } }, required: ['userId'] }
+    }}, 'read');
+
+    push({ type: 'function', function: {
+        name: 'list_commands',
+        description: 'List all commands (summary). Includes parent, response_type, enabled, is_admin_only, has_buttons, has_reply_keyboard, and a 120-char content preview. Use get_command for full details.',
+        parameters: { type: 'object', properties: {} }
+    }}, 'read');
+
+    push({ type: 'function', function: {
+        name: 'get_command',
+        description: 'Get a single command with full details: content, media_url, response_type, is_admin_only, enabled, and its inline/reply keyboard objects.',
+        parameters: { type: 'object', properties: { command: { type: 'string', description: 'Command name including slash, e.g. /help' } }, required: ['command'] }
+    }}, 'read');
+
+    push({ type: 'function', function: {
+        name: 'list_groups',
+        description: 'List groups the bot is in. filter: "active" (default) | "all". Returns id, title, type, is_active, member_count, last_active, ai_mode, track_members.',
+        parameters: { type: 'object', properties: { filter: { type: 'string', enum: ['active','all'] } } }
+    }}, 'read');
+
+    push({ type: 'function', function: {
+        name: 'get_menu',
+        description: 'Return the current Telegram menu-button entries. Call this BEFORE set_menu so you can preserve existing entries.',
+        parameters: { type: 'object', properties: {} }
+    }}, 'read');
+
+    push({ type: 'function', function: {
+        name: 'get_settings',
+        description: 'Return bot settings: bot_token_masked, bot_token_set, webhook_url, cf_token_masked.',
+        parameters: { type: 'object', properties: {} }
+    }}, 'read');
+
+    push({ type: 'function', function: {
+        name: 'test_webhook',
+        description: 'Check Telegram webhook health: registered URL, whether it matches, pending update count, last error.',
+        parameters: { type: 'object', properties: {} }
+    }}, 'read');
+
+    push({ type: 'function', function: {
+        name: 'get_memory_overview',
+        description: 'Summarize memory usage per user (AI messages and DM counts).',
+        parameters: { type: 'object', properties: {} }
+    }}, 'read');
+
+    push({ type: 'function', function: {
+        name: 'get_bot_info',
+        description: 'Get the bot name, description and short description as shown in Telegram.',
+        parameters: { type: 'object', properties: {} }
+    }}, 'read');
+
+    // ---- WRITE ----------------------------------------------------------------
+    push({ type: 'function', function: {
+        name: 'create_command',
+        description: 'Create a new bot command. Attach keyboards with the `buttons` object: { inline: [{text,type,value}, ...] or [[...rows]], reply: { rows:[[{text}],...], actions:{"Label":"/cmd"}, resize, one_time, persistent, placeholder } }. For backwards compat you may also pass raw strings via buttons_json / reply_keyboard_json.',
+        parameters: { type: 'object', properties: {
+            command: { type: 'string', description: 'Command name including slash, e.g. /help' },
+            parent: { type: 'string', description: 'Optional parent command name; leave empty for root.' },
+            response_type: { type: 'string', enum: ['text','photo'] },
+            content: { type: 'string', description: 'Message content (Telegram HTML allowed).' },
+            media_url: { type: 'string', description: 'Photo URL when response_type is photo.' },
+            is_admin_only: { type: 'boolean' },
+            enabled: { type: 'boolean', description: 'Default true.' },
+            buttons: {
+                type: 'object',
+                description: 'Structured keyboard: inline buttons and/or reply keyboard.',
+                properties: {
+                    inline: { type: 'array', description: 'Inline buttons. Each: {text, type:"callback"|"url"|"command", value}. May be flat (auto-wrapped 3/row) or array-of-arrays for exact rows.' },
+                    reply: { type: 'object', description: 'Reply keyboard: { rows: [[{text},...]], actions: {"Label":"/cmd"}, resize, one_time, persistent, placeholder }.' }
+                }
+            },
+            buttons_json: { type: 'string', description: 'Advanced: raw JSON for inline buttons column.' },
+            reply_keyboard_json: { type: 'string', description: 'Advanced: raw JSON for reply keyboard column.' },
+            show_reply_keyboard: { type: 'boolean', description: 'Force enable/disable reply keyboard (auto-set from buttons.reply).' }
+        }, required: ['command','content'] }
+    }}, 'write');
+
+    push({ type: 'function', function: {
+        name: 'update_command',
+        description: 'Update an existing command. `command` is the CURRENT name. To rename, pass `new_command`. All other fields are optional and merge with existing values — send only what you want to change. Use buttons.inline=[] or buttons.reply=null to clear keyboards.',
+        parameters: { type: 'object', properties: {
+            command: { type: 'string', description: 'Current command name (with slash).' },
+            new_command: { type: 'string', description: 'New name if renaming (with slash).' },
+            parent: { type: 'string', description: 'Set to "" or null to move to root; omit to keep current parent.' },
+            response_type: { type: 'string', enum: ['text','photo'] },
+            content: { type: 'string' },
+            media_url: { type: 'string' },
+            is_admin_only: { type: 'boolean' },
+            enabled: { type: 'boolean' },
+            buttons: {
+                type: 'object',
+                description: 'Structured keyboard (same shape as create_command). Omit to keep existing. Pass {inline:[]} to clear inline, {reply:null} to clear reply.'
+            },
+            buttons_json: { type: 'string' },
+            reply_keyboard_json: { type: 'string' },
+            show_reply_keyboard: { type: 'boolean' }
+        }, required: ['command'] }
+    }}, 'write');
+
+    push({ type: 'function', function: {
+        name: 'delete_command',
+        description: 'Delete a command and all its sub-commands.',
+        parameters: { type: 'object', properties: { command: { type: 'string' } }, required: ['command'] }
+    }}, 'write');
+
+    push({ type: 'function', function: {
+        name: 'set_menu',
+        description: 'Publish the Telegram menu-button entries (replaces the entire menu). Each entry: {command:"help", description:"Show help"} — command WITHOUT slash. `/start` is auto-added if missing. Use get_menu first to preserve existing entries.',
+        parameters: { type: 'object', properties: {
+            menu: { type: 'array', items: { type: 'object', properties: {
+                command: { type: 'string' }, description: { type: 'string' }
+            }, required: ['command','description'] } }
+        }, required: ['menu'] }
+    }}, 'write');
+
+    push({ type: 'function', function: {
+        name: 'update_ai_settings',
+        description: 'Update safe AI settings (everything EXCEPT the API keys). Cannot change: ai_api_key, or any apiKey inside ai_alt_providers. To add a fallback provider, pass ai_alt_providers as an array of {provider, model} — existing stored keys are preserved by index.',
+        parameters: { type: 'object', properties: { settings: { type: 'object' } }, required: ['settings'] }
+    }}, 'write');
+
+    push({ type: 'function', function: {
+        name: 'set_bot_info',
+        description: 'Set the bot name (max 64), description (max 512) and short_description (max 120) in Telegram. Send only the fields you want to change.',
+        parameters: { type: 'object', properties: {
+            name: { type: 'string' },
+            description: { type: 'string' },
+            short_description: { type: 'string' }
+        } }
+    }}, 'write');
+
+    // ---- OUTBOUND -------------------------------------------------------------
+    push({ type: 'function', function: {
+        name: 'send_dm',
+        description: 'Send a direct message to a user. Only works if they have started the bot. Provide text and/or photo_url. Optional `buttons` object for keyboards (same shape as create_command).',
+        parameters: { type: 'object', properties: {
+            userId: { type: 'number' },
+            text: { type: 'string', description: 'Message text or photo caption (optional if photo_url is provided).' },
+            photo_url: { type: 'string' },
+            buttons: { type: 'object', description: 'Optional keyboard.' },
+            buttons_json: { type: 'string' }
+        }, required: ['userId'] }
+    }}, 'outbound');
+
+    push({ type: 'function', function: {
+        name: 'send_broadcast',
+        description: 'Broadcast a message to a list of user IDs. Provide message and/or photo_url. Optional `buttons` for keyboards.',
+        parameters: { type: 'object', properties: {
+            userIds: { type: 'array', items: { type: 'number' }, description: 'Non-empty list of user IDs.' },
+            message: { type: 'string' },
+            photo_url: { type: 'string' },
+            buttons: { type: 'object', description: 'Optional keyboard.' },
+            buttons_json: { type: 'string' }
+        }, required: ['userIds'] }
+    }}, 'outbound');
+
+    // ---- DANGEROUS ------------------------------------------------------------
+    push({ type: 'function', function: {
+        name: 'delete_user',
+        description: 'Delete a user and all their memory and DM history. You MUST ask the user for explicit confirmation before calling this. Set confirm=true only after the user says yes.',
+        parameters: { type: 'object', properties: {
+            userId: { type: 'number' },
+            confirm: { type: 'boolean', description: 'Must be true. Only set after user confirms.' }
+        }, required: ['userId','confirm'] }
+    }}, 'dangerous');
+
+    push({ type: 'function', function: {
+        name: 'clear_ai_memory',
+        description: 'Delete ALL AI conversation memory for every user. You MUST ask for explicit confirmation. Set confirm=true only after the user confirms.',
+        parameters: { type: 'object', properties: {
+            confirm: { type: 'boolean', description: 'Must be true.' }
+        }, required: ['confirm'] }
+    }}, 'dangerous');
+
+    return tools;
+}
+
+async function executeMcpTool(name, args, env, categories) {
+    args = args || {};
+    const enabled = new Set(categories || ['read', 'write']);
+    const allowed = (cat) => enabled.has(cat);
+    const requireRead = () => { if (!allowed('read')) throw new Error('Read tools are disabled.'); };
+    const requireWrite = () => { if (!allowed('write')) throw new Error('Write tools are disabled.'); };
+    const requireOutbound = () => { if (!allowed('outbound')) throw new Error('Outbound tools are disabled. Enable them in the MCP tab.'); };
+    const requireDangerous = () => { if (!allowed('dangerous')) throw new Error('Destructive tools are disabled.'); };
+    const getBody = (body) => new Request('http://localhost' + (body.path || '/api'), {
+        method: body.method || 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: body.payload !== undefined ? JSON.stringify(body.payload) : undefined
+    });
+    const callApi = async (body) => {
+        const req = getBody(body);
+        const res = await body.handler(req, env);
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+        return data;
+    };
+
+    switch (name) {
+
+        // ---- READ --------------------------------------------------------------
+        case 'get_stats':
+            requireRead();
+            return await callApi({ path: '/api/stats', method: 'GET', handler: async (r, e) => await getStats(e) });
+
+        case 'list_users': {
+            requireRead();
+            const q = new URLSearchParams();
+            if (args.filter) q.set('filter', String(args.filter));
+            if (args.search) q.set('search', String(args.search));
+            const url = new URL('http://localhost/api/users?' + q.toString());
+            return await callApi({ path: url.pathname + url.search, method: 'GET', handler: async (r, e) => await getUsers(e, url) });
+        }
+
+        case 'get_user': {
+            requireRead();
+            const uid = parseInt(args.userId);
+            if (!uid) throw new Error('userId is required.');
+            const user = await env.DB.prepare(
+                'SELECT id, username, first_name, role, is_premium, private_started, last_active, last_group_id FROM users WHERE id = ?'
+            ).bind(uid).first();
+            if (!user) throw new Error(`User ${uid} not found.`);
+            const [block, dmCount, aiCount] = await Promise.all([
+                env.DB.prepare('SELECT block_type FROM blocked_users WHERE user_id = ?').bind(uid).first(),
+                env.DB.prepare('SELECT COUNT(*) as n FROM dm_messages WHERE chat_id = ?').bind(uid).first(),
+                env.DB.prepare('SELECT COUNT(*) as n FROM ai_messages WHERE chat_id = ?').bind(uid).first(),
+            ]);
+            return {
+                id: user.id, username: user.username || '', first_name: user.first_name || '',
+                role: user.role || 'user', is_premium: !!user.is_premium,
+                private_started: !!user.private_started,
+                last_active: user.last_active || null, last_group_id: user.last_group_id || null,
+                block_type: block ? block.block_type : null, blocked: !!block,
+                dm_count: dmCount ? dmCount.n : 0, ai_count: aiCount ? aiCount.n : 0,
+            };
+        }
+
+        case 'list_commands': {
+            requireRead();
+            const rows = await env.DB.prepare(
+                'SELECT command, parent, response_type, content, enabled, is_admin_only, buttons_json, show_reply_keyboard FROM commands ORDER BY order_idx, command'
+            ).all();
+            const commands = (rows.results || []).map(r => ({
+                command: r.command, parent: r.parent || null,
+                response_type: r.response_type || 'text',
+                enabled: r.enabled !== 0, is_admin_only: !!r.is_admin_only,
+                has_buttons: !!r.buttons_json, has_reply_keyboard: !!r.show_reply_keyboard,
+                content_preview: (r.content || '').slice(0, 120),
+            }));
+            return { count: commands.length, commands };
+        }
+
+        case 'get_command': {
+            requireRead();
+            const cmdName = String(args.command || '').trim();
+            if (!cmdName) throw new Error('command is required.');
+            const row = await env.DB.prepare('SELECT * FROM commands WHERE command = ?').bind(cmdName).first();
+            if (!row) throw new Error(`Command "${cmdName}" not found.`);
+            let buttons = null, replyKb = null;
+            if (row.buttons_json) { try { buttons = JSON.parse(row.buttons_json); } catch (e) { buttons = row.buttons_json; } }
+            if (row.reply_keyboard_json) { try { replyKb = JSON.parse(row.reply_keyboard_json); } catch (e) { replyKb = row.reply_keyboard_json; } }
+            return {
+                command: row.command, parent: row.parent || null,
+                response_type: row.response_type || 'text',
+                content: row.content || '', media_url: row.media_url || '',
+                is_admin_only: !!row.is_admin_only, enabled: row.enabled !== 0,
+                show_reply_keyboard: !!row.show_reply_keyboard,
+                buttons, reply_keyboard: replyKb,
+            };
+        }
+
+        case 'list_groups': {
+            requireRead();
+            const filter = args.filter === 'all' ? 'all' : 'active';
+            const rows = await env.DB.prepare(
+                'SELECT id, title, type, username, is_active, member_count, last_active, settings_json FROM groups ORDER BY last_active DESC LIMIT 300'
+            ).all();
+            let groups = rows.results || [];
+            if (filter === 'active') groups = groups.filter(g => g.is_active == 1);
+            return {
+                count: groups.length, filter,
+                groups: groups.map(g => {
+                    let settings = {};
+                    try { settings = JSON.parse(g.settings_json || '{}'); } catch (e) {}
+                    return {
+                        id: g.id, title: g.title || '', type: g.type || '', username: g.username || '',
+                        is_active: g.is_active == 1, member_count: g.member_count || 0,
+                        last_active: g.last_active, ai_mode: settings.ai || 'inherit',
+                        track_members: !!settings.track_members,
+                    };
+                }),
+            };
+        }
+
+        case 'get_menu': {
+            requireRead();
+            const raw = await getSetting(env.DB, 'menu_commands');
+            let menu = [];
+            if (raw) { try { menu = JSON.parse(raw); } catch (e) {} }
+            return { menu, count: menu.length };
+        }
+
+        case 'get_settings': {
+            requireRead();
+            let origin = 'https://worker.local';
+            try { origin = new URL(env.__requestUrl || 'https://worker.local').origin; } catch (e) {}
+            return await callApi({ method: 'GET', handler: async (r, e) => await getSettings(e, origin) });
+        }
+
+        case 'test_webhook':
+            requireRead();
+            return await callApi({ path: '/api/settings/webhook-test', method: 'POST', handler: async (r, e) => await handleWebhookTest(e) });
+
+        case 'get_memory_overview':
+            requireRead();
+            return await callApi({ path: '/api/memory/overview', method: 'GET', handler: async (r, e) => await getMemoryOverview(e) });
+
+        case 'get_bot_info':
+            requireRead();
+            return await callApi({ path: '/api/bot_info', method: 'GET', handler: async (r, e) => await getBotInfo(e) });
+
+        // ---- WRITE -------------------------------------------------------------
+        case 'create_command': {
+            requireWrite();
+            const cmdName = String(args.command || '').trim();
+            if (!cmdName) throw new Error('command is required.');
+            const content = String(args.content || '');
+            if (!content) throw new Error('content is required.');
+            const payload = {
+                command: cmdName,
+                parent: args.parent || null,
+                response_type: args.response_type || 'text',
+                content,
+                media_url: args.media_url || '',
+                is_admin_only: args.is_admin_only ? 1 : 0,
+                enabled: args.enabled !== undefined ? (args.enabled ? 1 : 0) : 1,
+            };
+            const bp = buildButtonPayloads(args);
+            if (bp.buttons_json !== undefined) payload.buttons_json = bp.buttons_json;
+            if (bp.reply_keyboard_json !== undefined) payload.reply_keyboard_json = bp.reply_keyboard_json;
+            if (bp.show_reply_keyboard !== undefined) payload.show_reply_keyboard = bp.show_reply_keyboard;
+            return await callApi({ path: '/api/commands', method: 'POST', payload, handler: async (r, e) => await createCommand(r, e) });
+        }
+
+        case 'update_command': {
+            requireWrite();
+            const oldCommand = String(args.command || '').trim();
+            if (!oldCommand) throw new Error('command (current name) is required.');
+            const existing = await env.DB.prepare('SELECT * FROM commands WHERE command = ?').bind(oldCommand).first();
+            if (!existing) throw new Error(`Command "${oldCommand}" not found.`);
+            const newCommand = args.new_command ? String(args.new_command).trim() : oldCommand;
+            const payload = {
+                command: newCommand,
+                parent: args.parent !== undefined ? (args.parent || null) : existing.parent,
+                response_type: args.response_type !== undefined ? args.response_type : (existing.response_type || 'text'),
+                content: args.content !== undefined ? String(args.content) : (existing.content || ''),
+                media_url: args.media_url !== undefined ? String(args.media_url) : (existing.media_url || ''),
+                is_admin_only: args.is_admin_only !== undefined ? (args.is_admin_only ? 1 : 0) : (existing.is_admin_only ? 1 : 0),
+                enabled: args.enabled !== undefined ? (args.enabled ? 1 : 0) : (existing.enabled !== 0 ? 1 : 0),
+                buttons_json: existing.buttons_json || '',
+                reply_keyboard_json: existing.reply_keyboard_json || '',
+                show_reply_keyboard: existing.show_reply_keyboard ? 1 : 0,
+            };
+            const bp = buildButtonPayloads(args);
+            if (bp.buttons_json !== undefined) payload.buttons_json = bp.buttons_json;
+            if (bp.reply_keyboard_json !== undefined) payload.reply_keyboard_json = bp.reply_keyboard_json;
+            if (bp.show_reply_keyboard !== undefined) payload.show_reply_keyboard = bp.show_reply_keyboard;
+
+            // No-op short-circuit: nothing changed → don't write, don't log.
+            const eq = (a, b) => String(a == null ? '' : a) === String(b == null ? '' : b);
+            const anyChange = Object.keys(payload).some(k => !eq(payload[k], existing[k]));
+            if (!anyChange) return { success: true, command: oldCommand, changes: 0, note: 'No changes needed.' };
+
+            const url = new URL(`http://localhost/api/commands/${encodeURIComponent(oldCommand)}`);
+            return await callApi({ path: url.pathname, method: 'PUT', payload, handler: async (r, e) => await updateCommand(r, e) });
+        }
+
+        case 'delete_command': {
+            requireWrite();
+            const cmdName = String(args.command || '').trim();
+            if (!cmdName) throw new Error('command is required.');
+            const url = new URL(`http://localhost/api/commands/${encodeURIComponent(cmdName)}`);
+            return await callApi({ path: url.pathname, method: 'DELETE', handler: async (r, e) => await deleteCommand(r, e) });
+        }
+
+        case 'set_menu': {
+            requireWrite();
+            if (!Array.isArray(args.menu)) throw new Error('menu must be an array of {command, description}.');
+            const menu = args.menu.map(e => ({
+                command: String((e && (e.command || e.name || e.cmd)) || '').replace(/^\//, '').trim(),
+                description: String((e && (e.description || e.desc)) || '').trim(),
+            })).filter(e => e.command && e.description);
+            if (!menu.length) throw new Error('menu must contain at least one {command, description} entry.');
+            if (menu.length > 100) throw new Error('Telegram allows at most 100 menu entries.');
+            for (const e of menu) {
+                if (e.command.length > 32) throw new Error(`Menu command "${e.command}" is too long (max 32 chars).`);
+                if (e.description.length < 3) throw new Error(`Menu description for "${e.command}" is too short (min 3 chars).`);
+                if (e.description.length > 256) throw new Error(`Menu description for "${e.command}" is too long (max 256 chars).`);
+            }
+            if (!menu.some(e => e.command === 'start')) menu.unshift({ command: 'start', description: 'Start the bot' });
+            return await callApi({ path: '/api/menu_commands', method: 'POST', payload: { menu }, handler: async (r, e) => await setMenuCommands(r, e) });
+        }
+
+        case 'update_ai_settings': {
+            requireWrite();
+            const incoming = Object.assign({}, args.settings || {});
+            delete incoming.ai_api_key; // never allow AI to touch the main key
+
+            if (incoming.ai_alt_providers !== undefined) {
+                try {
+                    const incomingAlts = typeof incoming.ai_alt_providers === 'string'
+                        ? JSON.parse(incoming.ai_alt_providers)
+                        : incoming.ai_alt_providers;
+                    if (Array.isArray(incomingAlts)) {
+                        let storedAlts = [];
+                        try { const raw = await getSetting(env.DB, 'ai_alt_providers'); storedAlts = raw ? JSON.parse(raw) : []; } catch (e) {}
+                        // Preserve existing API keys keyed by provider NAME, not index —
+                        // reordering or inserting a new provider can't steal another's key.
+                        const storedByProvider = {};
+                        for (const a of storedAlts) if (a && a.provider) storedByProvider[String(a.provider)] = a.apiKey || '';
+                        const cleaned = incomingAlts.map(a => {
+                            const prov = String((a && a.provider) || '').trim();
+                            return {
+                                provider: prov,
+                                model: String((a && a.model) || '').trim(),
+                                apiKey: storedByProvider[prov] || '',
+                            };
+                        }).filter(a => a.provider);
+                        incoming.ai_alt_providers = JSON.stringify(cleaned);
+                    } else {
+                        delete incoming.ai_alt_providers;
+                    }
+                } catch (e) { delete incoming.ai_alt_providers; }
+            }
+
+            // Also strip secrets hidden in custom headers.
+            if (typeof incoming.ai_custom_headers === 'string' && incoming.ai_custom_headers.trim()) {
+                try {
+                    const parsed = JSON.parse(incoming.ai_custom_headers);
+                    if (parsed && typeof parsed === 'object') {
+                        delete parsed.Authorization;
+                        delete parsed.authorization;
+                        incoming.ai_custom_headers = JSON.stringify(parsed);
+                    }
+                } catch (e) { /* leave as-is */ }
+            }
+
+            return await callApi({ path: '/api/ai_settings', method: 'POST', payload: { settings: incoming }, handler: async (r, e) => await saveAiSettings(r, e) });
+        }
+
+        case 'set_bot_info': {
+            requireWrite();
+            const payload = {};
+            if (args.name !== undefined) {
+                const n = String(args.name).trim();
+                if (!n) throw new Error('name cannot be empty.');
+                if (n.length > 64) throw new Error('Bot name must be ≤ 64 characters.');
+                payload.name = n;
+            }
+            if (args.description !== undefined) {
+                const d = String(args.description);
+                if (d.length > 512) throw new Error('Bot description must be ≤ 512 characters.');
+                payload.description = d;
+            }
+            if (args.short_description !== undefined) {
+                const s = String(args.short_description);
+                if (s.length > 120) throw new Error('Bot short_description must be ≤ 120 characters.');
+                payload.short_description = s;
+            }
+            if (!Object.keys(payload).length) throw new Error('Provide at least one of: name, description, short_description.');
+            return await callApi({ path: '/api/bot_info', method: 'POST', payload, handler: async (r, e) => await setBotInfo(r, e) });
+        }
+
+        // ---- OUTBOUND ----------------------------------------------------------
+        case 'send_dm': {
+            requireOutbound();
+            const uid = parseInt(args.userId);
+            if (!uid) throw new Error('userId is required.');
+            const text = String(args.text || '').trim();
+            const photoUrl = String(args.photo_url || '').trim();
+            if (!text && !photoUrl) throw new Error('Provide text and/or photo_url.');
+            const bp = buildButtonPayloads(args);
+            const payload = { userId: uid, message: text };
+            if (photoUrl) payload.photo_url = photoUrl;
+            const buttonsToSend = bp.combined_json !== undefined ? bp.combined_json
+                                 : (bp.buttons_json !== undefined ? bp.buttons_json : undefined);
+            if (buttonsToSend) payload.buttons_json = buttonsToSend;
+            return await callApi({ path: '/api/users/send_message', method: 'POST', payload, handler: async (r, e) => await sendUserPrivateMessage(r, e) });
+        }
+
+        case 'send_broadcast': {
+            requireOutbound();
+            if (!Array.isArray(args.userIds) || !args.userIds.length) throw new Error('userIds must be a non-empty array of user IDs.');
+            const userIds = args.userIds.map(x => parseInt(x)).filter(x => Number.isFinite(x) && x > 0);
+            if (!userIds.length) throw new Error('userIds contained no valid numeric IDs.');
+            const message = String(args.message || '').trim();
+            const photoUrl = String(args.photo_url || '').trim();
+            if (!message && !photoUrl) throw new Error('Provide message and/or photo_url.');
+            const bp = buildButtonPayloads(args);
+            const payload = { userIds, message };
+            if (photoUrl) payload.photo_url = photoUrl;
+            const buttonsToSend = bp.combined_json !== undefined ? bp.combined_json
+                                 : (bp.buttons_json !== undefined ? bp.buttons_json : undefined);
+            if (buttonsToSend) payload.buttons_json = buttonsToSend;
+            return await callApi({ path: '/api/broadcast', method: 'POST', payload, handler: async (r, e) => await handleBroadcast(r, e) });
+        }
+
+        // ---- DANGEROUS ---------------------------------------------------------
+        case 'delete_user': {
+            requireDangerous();
+            if (!args.confirm) throw new Error('You must set confirm=true after the user explicitly confirms.');
+            const uid = parseInt(args.userId);
+            if (!uid) throw new Error('userId is required.');
+            const url = new URL(`http://localhost/api/users/${uid}`);
+            return await callApi({ path: url.pathname, method: 'DELETE', handler: async (r, e) => await deleteUser(r, e, url) });
+        }
+
+        case 'clear_ai_memory': {
+            requireDangerous();
+            if (!args.confirm) throw new Error('You must set confirm=true after the user explicitly confirms.');
+            return await callApi({ path: '/api/ai/clear_memory', method: 'POST', handler: async (r, e) => await clearAiMemory(e) });
+        }
+
+        default:
+            throw new Error(`Unknown tool: ${name}`);
+    }
+}
+
+// ---- JSON-RPC handler (stateless Streamable HTTP) ---------------------------
+const MCP_CORS_HEADERS = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, GET, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Authorization, Content-Type, Mcp-Session-Id, Mcp-Protocol-Version',
+    'Access-Control-Max-Age': '86400',
+    'Access-Control-Expose-Headers': 'WWW-Authenticate, Content-Type',
+};
+function mcpJsonHeaders(extra) {
+    return Object.assign({}, JSON_HEADERS, MCP_CORS_HEADERS, extra || {});
+}
+async function handleMcp(request, env) {
+    if (!env.DB) return new Response(JSON.stringify({ jsonrpc: '2.0', error: { code: -32603, message: 'DB not available' }, id: null }), { status: 500, headers: mcpJsonHeaders() });
+    try {
+        await initializeDatabase(env.DB);
+
+        // CORS preflight — always 204, no auth required.
+        if (request.method === 'OPTIONS') {
+            return new Response(null, { status: 204, headers: mcpJsonHeaders() });
+        }
+
+        const enabled = await getSetting(env.DB, 'mcp_enabled');
+        if (enabled !== '1') {
+            return new Response(JSON.stringify({ jsonrpc: '2.0', error: { code: -32000, message: 'MCP disabled' }, id: null }), { status: 403, headers: mcpJsonHeaders() });
+        }
+
+        // GET = no SSE stream (spec: return 405 for clients that try).
+        if (request.method === 'GET') {
+            return new Response(null, { status: 405, headers: mcpJsonHeaders({ 'Allow': 'POST, DELETE, OPTIONS' }) });
+        }
+        // DELETE = no-op (stateless transport has no session to terminate).
+        if (request.method === 'DELETE') {
+            return new Response(null, { status: 200, headers: mcpJsonHeaders() });
+        }
+        if (request.method !== 'POST') {
+            return new Response(null, { status: 405, headers: mcpJsonHeaders({ 'Allow': 'POST, DELETE, OPTIONS' }) });
+        }
+
+        const auth = request.headers.get('Authorization') || '';
+        const bearer = auth.startsWith('Bearer ') ? auth.slice(7).trim() : '';
+        const tokenRow = await verifyMcpToken(env, bearer);
+        if (!tokenRow) {
+            return new Response(
+                JSON.stringify({ jsonrpc: '2.0', error: { code: -32001, message: 'Unauthorized' }, id: null }),
+                { status: 401, headers: mcpJsonHeaders({ 'WWW-Authenticate': 'Bearer realm="nyxx-mcp"' }) }
+            );
+        }
+
+        let body = null;
+        try { body = await request.json(); } catch (e) {
+            return new Response(JSON.stringify({ jsonrpc: '2.0', error: { code: -32700, message: 'Parse error' }, id: null }), { status: 200, headers: mcpJsonHeaders() });
+        }
+        if (!body || typeof body !== 'object' || Array.isArray(body)) {
+            return new Response(JSON.stringify({ jsonrpc: '2.0', error: { code: -32600, message: 'Invalid request' }, id: null }), { status: 200, headers: mcpJsonHeaders() });
+        }
+
+        const method = body.method;
+        const id = body.id !== undefined ? body.id : null;
+
+        // Any notification (no id, method starting with 'notifications/') → 202, no body.
+        // This is per spec — the client never expects a reply.
+        if (typeof method === 'string' && method.startsWith('notifications/')) {
+            return new Response(null, { status: 202, headers: mcpJsonHeaders() });
+        }
+        // A method with no id that isn't a notification — this is a client bug, but don't hang.
+        if (id === null && method !== 'initialize') {
+            return new Response(null, { status: 202, headers: mcpJsonHeaders() });
+        }
+        if (typeof method !== 'string' || !method) {
+            return new Response(JSON.stringify({ jsonrpc: '2.0', error: { code: -32600, message: 'Missing or invalid method' }, id: null }), { status: 200, headers: mcpJsonHeaders() });
+        }
+
+        const settings = await getMcpSettingsFromDb(env);
+        let categories = ['read', 'write'];
+        try {
+            const parsed = JSON.parse(settings.mcp_categories || '[]');
+            if (Array.isArray(parsed)) categories = parsed.filter(c => MCP_CATEGORY_KEYS.includes(c));
+        } catch (e) { /* keep default */ }
+
+        if (method === 'initialize') {
+            const requestedVersion = body.params && body.params.protocolVersion;
+            const supported = '2025-03-26';
+            return new Response(JSON.stringify({
+                jsonrpc: '2.0',
+                id,
+                result: {
+                    protocolVersion: requestedVersion === supported ? supported : supported,
+                    capabilities: { tools: { listChanged: false } },
+                    serverInfo: { name: 'nyxx', version: VERSION }
+                }
+            }), { status: 200, headers: mcpJsonHeaders() });
+        }
+        if (method === 'ping') {
+            return new Response(JSON.stringify({ jsonrpc: '2.0', id, result: {} }), { status: 200, headers: mcpJsonHeaders() });
+        }
+        if (method === 'tools/list') {
+            return new Response(JSON.stringify({
+                jsonrpc: '2.0',
+                id,
+                result: { tools: getMcpToolDefinitions(categories).map(t => t.function) }
+            }), { status: 200, headers: mcpJsonHeaders() });
+        }
+        if (method === 'tools/call') {
+            const toolName = body.params && body.params.name;
+            const toolArgs = (body.params && body.params.arguments) || {};
+            if (!toolName || typeof toolName !== 'string') {
+                return new Response(JSON.stringify({ jsonrpc: '2.0', error: { code: -32602, message: 'Missing tool name' }, id }), { status: 200, headers: mcpJsonHeaders() });
+            }
+            try {
+                const result = await executeMcpTool(toolName, toolArgs, env, categories);
+                try { await logAction(env.DB, null, 'MCP: ' + toolName + ' ' + JSON.stringify(toolArgs).slice(0, 200)); } catch (e) {}
+                return new Response(JSON.stringify({
+                    jsonrpc: '2.0',
+                    id,
+                    result: {
+                        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+                        structuredContent: result,
+                        isError: false
+                    }
+                }), { status: 200, headers: mcpJsonHeaders() });
+            } catch (toolErr) {
+                try { await logAction(env.DB, null, 'MCP (error): ' + toolName + ' — ' + String(toolErr.message || '').slice(0, 200)); } catch (e) {}
+                return new Response(JSON.stringify({
+                    jsonrpc: '2.0',
+                    id,
+                    result: {
+                        content: [{ type: 'text', text: 'Tool error: ' + String(toolErr.message || toolErr) }],
+                        isError: true
+                    }
+                }), { status: 200, headers: mcpJsonHeaders() });
+            }
+        }
+        return new Response(JSON.stringify({
+            jsonrpc: '2.0',
+            error: { code: -32601, message: 'Method not found: ' + method },
+            id
+        }), { status: 200, headers: mcpJsonHeaders() });
+    } catch (err) {
+        console.error('MCP error:', err);
+        return new Response(JSON.stringify({ jsonrpc: '2.0', error: { code: -32603, message: 'Internal error' }, id: null }), { status: 500, headers: mcpJsonHeaders() });
+    }
+}
+function jsonRpcResult(id, result) {
+    return new Response(JSON.stringify({ jsonrpc: '2.0', result, id }), { status: 200, headers: JSON_HEADERS });
+}
+function jsonRpcError(id, code, message) {
+    return new Response(JSON.stringify({ jsonrpc: '2.0', error: { code, message }, id: id === undefined ? null : id }), { status: 200, headers: JSON_HEADERS });
+}
+
+// ---- MCP AI (provider test, agent loop, dashboard chat) ---------------------
+async function resolveMcpAiSettings(env, incoming) {
+    const s = Object.assign({}, incoming || {});
+    if (!s.mcp_ai_api_key || s.mcp_ai_api_key === KEEP_SENTINEL) {
+        s.mcp_ai_api_key = (await getSetting(env.DB, 'mcp_ai_api_key')) || '';
+    }
+    return s;
+}
+
+async function callMcpAiCompletion(settings, systemPrompt, messages, tools) {
+    const provider = settings.mcp_ai_provider || 'openai';
+    const apiKey = settings.mcp_ai_api_key;
+    if (!apiKey) throw new Error('MCP AI API key is not set.');
+    const defaults = getProviderDefaults(provider, settings.mcp_ai_base_url);
+    const baseUrl = (provider === 'custom' ? settings.mcp_ai_base_url : defaults.baseUrl) || defaults.baseUrl;
+    const model = settings.mcp_ai_model || defaults.defaultModel;
+    if (!baseUrl) throw new Error('Base URL is required for this provider.');
+    const endpoint = baseUrl.replace(/\/+$/, '') + '/chat/completions';
+    const payload = {
+        model,
+        messages: [{ role: 'system', content: systemPrompt }, ...messages],
+        temperature: 0.3,
+        max_tokens: 2048
+    };
+    if (tools && tools.length) { payload.tools = tools; payload.tool_choice = 'auto'; }
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 60000);
+    let res;
+    try {
+        res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey }, body: JSON.stringify(payload), signal: ctrl.signal });
+    } finally { clearTimeout(timer); }
+    if (!res.ok) { const t = await res.text(); throw new Error(`AI error ${res.status}: ${t.slice(0, 300)}`); }
+    const data = await res.json();
+    const choice = data.choices && data.choices[0];
+    if (!choice || !choice.message) throw new Error('Empty response from AI.');
+    return choice.message;
+}
+
+const MCP_SYSTEM_PROMPT = `You are the admin assistant for a Telegram bot management dashboard called Nyxx.
+
+You have access to tools that let you read and modify the bot: users, commands, groups, settings, AI config, broadcasts.
+
+Guidelines:
+- For destructive actions (delete_user, clear_ai_memory), you MUST ask the user for explicit confirmation before setting confirm=true. Say what will happen and wait for a clear "yes".
+- For send_dm and send_broadcast, double-check the target before sending.
+- Summarize what you did at the end, in plain language the user can understand.
+- If a tool returns an error, explain it briefly and suggest a fix.
+- Do not reveal API keys, bot tokens, or other secrets, even if asked. They are masked on the server side anyway.
+- Be concise but complete. Format lists with bullets. Use plain text, no markdown.`;
+
+async function runMcpAgent(userMessage, env, opts) {
+    opts = opts || {};
+    // Always read categories from the DB — the dashboard passes only the AI provider
+    // fields, and categories are server-side config that must not be client-spoofable.
+    const dbSettings = await getMcpSettingsFromDb(env);
+    const aiSettings = await resolveMcpAiSettings(env, opts.settings || dbSettings);
+    let categories = ['read', 'write'];
+    try {
+        const parsed = JSON.parse(dbSettings.mcp_categories || '[]');
+        if (Array.isArray(parsed)) categories = parsed.filter(c => MCP_CATEGORY_KEYS.includes(c));
+    } catch (e) { /* keep default */ }
+    const tools = getMcpToolDefinitions(categories);
+    const trimmedHistory = Array.isArray(opts.history)
+        ? opts.history.filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string').slice(-20)
+        : [];
+    const messages = trimmedHistory.concat([{ role: 'user', content: userMessage }]);
+    const toolCallsLog = [];
+    const maxIter = opts.maxIterations || 8;
+    let iteration = 0;
+
+    while (iteration < maxIter) {
+        iteration++;
+        const response = await callMcpAiCompletion(aiSettings, MCP_SYSTEM_PROMPT, messages, tools);
+        const toolCalls = response.tool_calls || [];
+        if (!toolCalls.length) {
+            return {
+                finalMessage: response.content || '(no response)',
+                toolCalls: toolCallsLog,
+                messages: messages.concat([{ role: 'assistant', content: response.content || '' }]),
+                iterations: iteration,
+            };
+        }
+        messages.push({ role: 'assistant', content: response.content || null, tool_calls: toolCalls });
+        for (const call of toolCalls) {
+            const fnName = call.function && call.function.name;
+            let parsedArgs = {};
+            try { parsedArgs = JSON.parse(call.function.arguments || '{}'); } catch (e) {}
+            let toolResult = null, toolError = null;
+            try {
+                toolResult = await executeMcpTool(fnName, parsedArgs, env, categories);
+                try { await logAction(env.DB, null, 'MCP chat: ' + fnName + ' ' + JSON.stringify(parsedArgs).slice(0, 200)); } catch (e) {}
+            } catch (err) {
+                toolError = String(err.message || err);
+            }
+            toolCallsLog.push({ name: fnName, args: parsedArgs, result: toolResult, error: toolError });
+            messages.push({
+                role: 'tool',
+                tool_call_id: call.id,
+                content: JSON.stringify(toolError ? { error: toolError } : toolResult),
+            });
+        }
+    }
+    return {
+        finalMessage: '(Reached maximum iterations without a final answer.)',
+        toolCalls: toolCallsLog, messages, iterations: iteration,
+    };
+}
+
+async function handleMcpDashboardChat(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        const body = await request.json().catch(() => null);
+        if (!body || typeof body !== 'object') return apiJson({ error: 'Invalid request body.' }, 400);
+        const msg = body.message;
+        if (typeof msg !== 'string' || !msg.trim()) return apiJson({ error: 'Message must be a non-empty string.' }, 400);
+        if (msg.length > 4000) return apiJson({ error: 'Message is too long (max 4000 chars).' }, 400);
+        const history = Array.isArray(body.history)
+            ? body.history
+                .filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
+                .slice(-20)
+                .map(m => ({ role: m.role, content: String(m.content).slice(0, 4000) }))
+            : [];
+        const result = await runMcpAgent(msg.trim(), env, { history });
+        return apiJson({ success: true, response: result.finalMessage, toolCalls: result.toolCalls, iterations: result.iterations });
+    } catch (err) {
+        return apiJson({ success: false, error: String(err.message || err) }, 200);
+    }
+}
+
+async function handleMcpAiTest(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        const body = await request.json().catch(() => ({}));
+        const settings = await resolveMcpAiSettings(env, body.settings || {});
+        if (!settings.mcp_ai_api_key) return apiJson({ success: false, error: 'No API key saved yet. Paste one and press Save provider first.' }, 200);
+        const reply = await callMcpAiCompletion(settings, 'You are a test endpoint. Reply with "OK" and nothing else.', [{ role: 'user', content: 'Reply with OK.' }], null);
+        return apiJson({ success: true, message: (reply && reply.content) || '(empty)' });
+    } catch (err) { return apiJson({ success: false, error: String(err.message || err) }, 200); }
+}
+
+async function getMcpCalls(env) {
+    if (!env.DB) return apiJson({ calls: [] });
+    try {
+        await initializeDatabase(env.DB);
+        const rows = await env.DB.prepare("SELECT id, action, timestamp FROM logs WHERE action LIKE 'MCP%' ORDER BY id DESC LIMIT 50").all();
+        return apiJson({ calls: rows.results || [] });
+    } catch (err) { return internalError(err); }
 }
 
 // ============================================================================
@@ -6668,15 +8278,60 @@ async function processTelegramUpdate(update, env) {
                             const argsTrimmed = args.trim();
                             // Always delete the user's trigger message so the chat stays clean.
                             await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id });
+
+                            // --- Admin-only guard (applies to all kinds) ---
+                            if (feat.admin_only) {
+                                const u = await env.DB.prepare('SELECT role FROM users WHERE id = ?').bind(userId).first();
+                                if (!u || u.role !== 'admin') {
+                                    await sendMessage(chatId, botStrings().unauthorized, BOT_TOKEN, 'HTML');
+                                    return;
+                                }
+                            }
+
+                            // --- MCP kind ---
+                            if (feat.kind === 'mcp') {
+                                const mcpOn = await getSetting(env.DB, 'mcp_enabled');
+                                if (mcpOn !== '1') {
+                                    await sendRichText(BOT_TOKEN, chatId, '⚠️ MCP is not enabled. Turn it on in the dashboard (System → MCP).');
+                                    return;
+                                }
+                                if (!argsTrimmed) {
+                                    if (feat.content) await sendRichText(BOT_TOKEN, chatId, feat.content);
+                                    else await sendRichText(BOT_TOKEN, chatId, 'Usage: <code>/mcp your question or instruction</code>');
+                                    return;
+                                }
+                                // Show typing while the agent runs.
+                                await tgCall(BOT_TOKEN, 'sendChatAction', { chat_id: chatId, action: 'typing' });
+                                try {
+                                    const result = await runMcpAgent(argsTrimmed, env, {});
+                                    const lines = [result.finalMessage || '(no response)'];
+                                    if (result.toolCalls && result.toolCalls.length) {
+                                        lines.push('');
+                                        lines.push('_Tools used:_');
+                                        for (const tc of result.toolCalls) {
+                                            const mark = tc.error ? '✗' : '✓';
+                                            lines.push(`• ${mark} ${tc.name}`);
+                                        }
+                                    }
+                                    let finalText = lines.join('\n');
+                                    // Send in Telegram-safe chunks (plain text — the AI may emit markdown).
+                                    for (const chunk of splitTelegramMessage(finalText, 3800)) {
+                                        await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: chunk });
+                                    }
+                                } catch (err) {
+                                    await sendRichText(BOT_TOKEN, chatId, '⚠️ MCP error: ' + String(err.message || err).slice(0, 400));
+                                }
+                                return;
+                            }
+
+                            // --- Buttons kind (unchanged) ---
                             if (feat.kind === 'buttons') {
                                 if (!argsTrimmed) {
-                                    // Command sent alone: only show the hint, do NOT save anything.
                                     if (feat.content) await sendRichText(BOT_TOKEN, chatId, feat.content);
                                     return;
                                 }
                                 const parsed = parseButtonsCommandArgs(argsTrimmed);
                                 if (!parsed.buttons.length) {
-                                    // Syntax error — show failure (or fall back to hint).
                                     const msgText = feat.failure_text || feat.content;
                                     if (msgText) await sendRichText(BOT_TOKEN, chatId, msgText);
                                     return;
@@ -6703,9 +8358,8 @@ async function processTelegramUpdate(update, env) {
                                 }
                                 return;
                             }
-                            // kind === 'text' — DM command. Route the argument text
-                            // into dm_messages as an incoming note, even when AI is
-                            // enabled. Never run the AI on it.
+
+                            // --- DM kind (unchanged) ---
                             if (!argsTrimmed) {
                                 if (feat.content) await sendRichText(BOT_TOKEN, chatId, feat.content);
                                 return;
