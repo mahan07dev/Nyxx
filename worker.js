@@ -6772,7 +6772,7 @@ async function validateCloudflareToken(request, env) {
     try {
         const body = await request.json();
         const token = body.token;
-        if (!token) return apiJson({ valid: false, error: 'Please paste your Cloudflare API token.' }, 400);
+        // if (!token) return apiJson({ valid: false, error: 'Please paste your Cloudflare API token.' }, 400);
         const verifyRes = await fetch('https://api.cloudflare.com/client/v4/user/tokens/verify', { headers: { 'Authorization': 'Bearer ' + token } });
         const verifyData = await verifyRes.json();
         if (!verifyRes.ok || !verifyData.success) return apiJson({ valid: false, error: 'This token looks invalid or has expired.' }, 401);
