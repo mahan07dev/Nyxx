@@ -1,8 +1,8 @@
 // ============================================================================
-// NYXX — v4.2.0
+// NYXX — v4.3.0
 // Telegram bot builder + management dashboard for Cloudflare Workers + D1.
 // ============================================================================
-const VERSION = '4.2.0';
+const VERSION = '4.3.0';
 
 const DASHBOARD_HTML = `<!DOCTYPE html>
 <html lang="en" data-theme="auto">
@@ -634,6 +634,10 @@ details.help > div { padding: 0 16px 14px; font-size: var(--fs-footnote); line-h
             <div class="nav-label">Intelligence</div>
             <button class="nav-item" data-page="ai" onclick="go('ai')"><i class="fa-solid fa-wand-magic-sparkles"></i><span>AI</span></button>
             <button class="nav-item" data-page="mcp" onclick="go('mcp')"><i class="fa-solid fa-plug"></i><span>MCP</span></button>
+        </nav>
+        <nav class="nav-group">
+            <div class="nav-label">Admin</div>
+            <button class="nav-item" data-page="permissions" onclick="go('permissions')"><i class="fa-solid fa-shield-halved"></i><span>Permissions</span></button>
         </nav>
         <nav class="nav-group">
             <div class="nav-label">System</div>
@@ -1269,6 +1273,38 @@ details.help > div { padding: 0 16px 14px; font-size: var(--fs-footnote); line-h
                 </div>
 
                 <div class="card">
+                    <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-plug"></i> MCP tools integration</div></div>
+                    <div class="hint-banner warn">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <div>Tool calls let the AI <b>create commands, send messages, and (if enabled in MCP) delete users</b>. Only enable if you trust your prompt. Streaming is auto-disabled when tools are on.</div>
+                    </div>
+                    <div class="switch-row">
+                        <div><div class="sw-label">Allow the AI to call MCP tools</div><div class="sw-sub">The AI can act on your bot, not just talk about it.</div></div>
+                        <button class="switch" id="ai-use-mcp-tools" onclick="toggleAiUseMcp()"></button>
+                    </div>
+                    <div class="switch-row">
+                        <div>
+                            <div class="sw-label">Prompt mode during tool use</div>
+                            <div class="sw-sub"><b>Auto</b>: local keyword/context detection (no extra API call). Clear bot-management requests get your persona + tools (no knowledge base); ambiguous ones get the full prompt + tools; everything else is plain chat. <b>Full</b>: always persona + KB + tools. <b>Minimal</b>: bare tool router first, then fall back.</div>
+                        </div>
+                        <select class="input" id="ai-mcp-prompt-mode" style="max-width:280px;">
+                            <option value="auto">Auto — classify each message</option>
+                            <option value="full">Full prompt always</option>
+                            <option value="minimal">Minimal always</option>
+                        </select>
+                    </div>
+                    <div class="switch-row" style="margin-bottom:0;">
+                        <div><div class="sw-label">Tool categories to expose</div><div class="sw-sub">Empty = inherit from the MCP tab. Otherwise restricts the tools the AI can see.</div></div>
+                        <select class="input" id="ai-mcp-categories" style="max-width:220px;">
+                            <option value="">Inherit from MCP</option>
+                            <option value="read">Read only</option>
+                            <option value="read,write">Read + write</option>
+                            <option value="read,write,outbound">Read + write + outbound</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="card">
                     <div class="card-head"><div class="card-title c-green"><i class="fa-solid fa-user"></i> Private chats</div></div>
                     <div class="grid grid-2">
                         <div class="field"><label class="field-label">Reply in private chats</label><select class="input" id="ai-private"><option value="1">Yes</option><option value="0">No</option></select><span class="field-hint">Users who opened a DM with your bot.</span></div>
@@ -1407,6 +1443,45 @@ details.help > div { padding: 0 16px 14px; font-size: var(--fs-footnote); line-h
                 </div>
 
                 <div class="card">
+                    <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-brain"></i> Session memory &amp; rate limit</div></div>
+                    <div class="switch-row" style="margin-bottom:0;">
+                        <div><div class="sw-label">Session memory</div><div class="sw-sub">Keep the last few messages per session so follow-ups work.</div></div>
+                        <button class="switch" id="mcp-memory-enabled" onclick="toggleMcpMemory()"></button>
+                    </div>
+                    <div id="mcp-memory-settings" class="hidden" style="margin-top:16px;">
+                        <div class="grid grid-2">
+                            <div class="field"><label class="field-label">Memory size</label>
+                                <select class="input" id="mcp-memory-limit">
+                                    <option value="10">10 exchanges</option>
+                                    <option value="20">20 exchanges</option>
+                                    <option value="40">40 exchanges</option>
+                                </select>
+                                <span class="field-hint">1 exchange = 1 user message + 1 assistant reply.</span>
+                            </div>
+                            <div class="field"><label class="field-label">Retention (hours)</label>
+                                <input type="number" class="input" id="mcp-memory-ttl" min="1" max="720" value="24">
+                                <span class="field-hint">Sessions idle for longer than this are purged automatically.</span>
+                            </div>
+                            <div class="field"><label class="field-label">Rate limit</label>
+                                <input type="number" class="input" id="mcp-rate-limit" min="0" max="1000" value="20">
+                                <span class="field-hint">0 = no limit.</span>
+                            </div>
+                            <div class="field"><label class="field-label">Window</label>
+                                <select class="input" id="mcp-rate-window">
+                                    <option value="minute">per minute</option>
+                                    <option value="hour">per hour</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row" style="margin-top:8px;">
+                            <button class="btn btn-primary btn-sm" onclick="saveMcpMemorySettings()"><i class="fa-solid fa-check"></i> Save</button>
+                            <button class="btn btn-danger btn-sm" onclick="clearAllMcpSessions()"><i class="fa-solid fa-eraser"></i> Clear all sessions</button>
+                        </div>
+                        <div id="mcp-sessions-list" class="small" style="margin-top:12px;"></div>
+                    </div>
+                </div>
+
+                <div class="card">
                     <div class="card-head"><div class="card-title c-purple"><i class="fa-solid fa-wand-magic-sparkles"></i> MCP AI provider</div></div>
                     <div class="hint-banner">
                         <i class="fa-solid fa-circle-info"></i>
@@ -1447,23 +1522,20 @@ details.help > div { padding: 0 16px 14px; font-size: var(--fs-footnote); line-h
 
                 <div class="card">
                     <div class="card-head">
-                        <div class="card-title c-green"><i class="fa-solid fa-comments"></i> Chat with MCP</div>
-                        <div style="flex:1"></div>
-                        <button class="btn btn-gray btn-sm" onclick="clearMcpChat()" title="Clear chat" aria-label="Clear chat"><i class="fa-solid fa-trash-can"></i></button>
+                        <div class="card-title c-green"><i class="fa-solid fa-comments"></i> Chat with Nyxx</div>
                     </div>
                     <div class="hint-banner">
                         <i class="fa-solid fa-lightbulb"></i>
-                        <div>Type natural language. Example: <i>"List all users who started the bot"</i>, <i>"Create a /help command that replies with a welcome message"</i>, <i>"Show me the current AI prompt"</i>. Tool calls are logged below.</div>
+                        <div>Open a full-screen chat in its own tab — ask Nyxx to read stats, create commands, manage groups, tweak AI settings, and more. Each chat is a separate thread you can return to later.</div>
                     </div>
-                    <div class="playground" id="mcp-chat" style="height:320px;resize:vertical;"></div>
-                    <div class="row nowrap">
-                        <textarea class="textarea" id="mcp-input" rows="2" placeholder="Ask MCP…  (Enter to send, Shift+Enter for newline)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMcpChat();}" style="flex:1;"></textarea>
-                        <button class="btn btn-primary btn-icon btn-lg" id="mcp-send" onclick="sendMcpChat()" aria-label="Send"><i class="fa-solid fa-paper-plane"></i></button>
+                    <div class="row">
+                        <a class="btn btn-primary btn-lg" href="/chat" target="_blank" rel="noopener"><i class="fa-solid fa-up-right-from-square"></i> Open Chat</a>
+                        <a class="btn btn-gray btn-lg" href="/chat" target="_blank" rel="noopener"><i class="fa-solid fa-plus"></i> Start a new chat</a>
                     </div>
                 </div>
 
                 <div class="card">
-                    <div class="card-head"><div class="card-title"><i class="fa-solid fa-clock-rotate-left"></i> Recent calls</div><div style="flex:1"></div><button class="btn btn-gray btn-sm" onclick="loadMcpCalls()"><i class="fa-solid fa-rotate"></i></button></div>
+                    <div class="card-head"><div class="card-title"><i class="fa-solid fa-clock-rotate-left"></i> Recent calls</div><div style="flex:1"></div><button class="btn btn-gray btn-sm" onclick="go('logs')"><i class="fa-solid fa-list"></i> View all</button><button class="btn btn-gray btn-sm" onclick="loadMcpCalls()"><i class="fa-solid fa-rotate"></i></button></div>
                     <div id="mcp-calls-list"></div>
                 </div>
 
@@ -1479,6 +1551,35 @@ details.help > div { padding: 0 16px 14px; font-size: var(--fs-footnote); line-h
                         <p class="small">Debug with the official inspector: <code>npx @modelcontextprotocol/inspector</code></p>
                     </div>
                 </details>
+            </section>
+
+            <section class="page" id="page-permissions">
+                <div class="page-head">
+                    <div class="lead"><h1>Admin &amp; Permissions</h1><p>Centralised access control, synced across the whole worker. Applies to bot commands, AI replies, MCP tool calls, featured commands and button taps.</p></div>
+                    <div class="page-actions"><button class="btn btn-gray btn-sm" onclick="loadPermissions(true)"><i class="fa-solid fa-rotate"></i> Refresh</button></div>
+                </div>
+
+                <div class="hint-banner warn">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <div><b>Admin-only</b> modes reject non-admin users with an <i>"unauthorised"</i> message. Admin accounts are managed below, or from <b>Users → Promote</b>.</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-lock"></i> Global feature access</div></div>
+                    <div id="perm-list"></div>
+                    <div class="row" style="margin-top:16px;">
+                        <button class="btn btn-primary" onclick="savePermissions()"><i class="fa-solid fa-check"></i> Save permissions</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head"><div class="card-title c-purple"><i class="fa-solid fa-user-shield"></i> Administrators</div><div style="flex:1"></div><button class="btn btn-gray btn-sm" onclick="loadAdmins()" aria-label="Refresh admins"><i class="fa-solid fa-rotate"></i></button></div>
+                    <div class="row" style="margin-bottom:12px;">
+                        <input class="input" id="promote-user-id" placeholder="Telegram user ID" style="flex:1;max-width:240px;" type="number">
+                        <button class="btn btn-primary btn-sm" onclick="promoteAdmin()"><i class="fa-solid fa-plus"></i> Promote</button>
+                    </div>
+                    <div id="admins-list"></div>
+                </div>
             </section>
 
             <section class="page" id="page-settings">
@@ -1940,18 +2041,18 @@ async function api(method, path, body) {
     }
     if (timer) clearTimeout(timer);
 
-if (res.status === 401 && !isPublicEndpoint(path)) {
-    // Only treat 401 as session expiry if the server didn't supply a specific error
-    var isSessionIssue = !(data && (data.valid === false || data.success === false));
-    if (isSessionIssue) {
-        showStep('step-login');
-        toast('Session expired. Please sign in again.', 'info');
-        throw new Error('__SESSION_EXPIRED__');
-    }
-}
-
     var data = null;
     try { data = await res.json(); } catch (e) { data = null; }
+
+    if (res.status === 401 && !isPublicEndpoint(path)) {
+        // Only treat 401 as session expiry if the server didn't supply a specific error
+        var isSessionIssue = !(data && (data.valid === false || data.success === false));
+        if (isSessionIssue) {
+            showStep('step-login');
+            toast('Session expired. Please sign in again.', 'info');
+            throw new Error('__SESSION_EXPIRED__');
+        }
+    }
     if (!res.ok) {
         var msg = (data && data.error) || ('Request failed (' + res.status + ')');
         throw new Error(msg);
@@ -2065,7 +2166,8 @@ var PAGE_TITLES = {
     overview: 'Overview', commands: 'Commands', menu: 'Menu & Featured', users: 'Users',
     'user-manage': 'User', groups: 'Groups', 'group-manage': 'Group',
     broadcast: 'Broadcast', memory: 'Memory', ai: 'AI', settings: 'Settings', botinfo: 'Bot Info',
-    cron: 'Cleanup', backup: 'Backup', logs: 'Activity Log', update: 'Update'
+    cron: 'Cleanup', backup: 'Backup', logs: 'Activity Log', update: 'Update',
+    permissions: 'Admin & Permissions'
 };
 var currentPage = 'overview';
 function go(page) {
@@ -2089,6 +2191,7 @@ function go(page) {
     if (page === 'cron') loadCron();
     if (page === 'logs') { loadLogs(); loadLogClean(); }
     if (page === 'update') loadUpdateTab();
+    if (page === 'permissions') loadPermissions();
 }
 function toggleSidebar(force) {
     var app = document.querySelector('.app'); if (!app) return;
@@ -2155,7 +2258,6 @@ async function tryFetchStatus() { return await api('GET', '/api/status'); }
 /* ============================================================
    MCP TAB
    ============================================================ */
-var mcpHistory = [];
 var mcpSettings = {};
 
 async function loadMcp(force) {
@@ -2188,8 +2290,57 @@ function renderMcp() {
     toggleSwitch('mcp-cat-write', cats.indexOf('write') >= 0);
     toggleSwitch('mcp-cat-outbound', cats.indexOf('outbound') >= 0);
     toggleSwitch('mcp-cat-dangerous', cats.indexOf('dangerous') >= 0);
+    // Memory & rate limits
+    const memOn = (parseInt(s.mcp_memory_limit) || 0) > 0;
+    toggleSwitch('mcp-memory-enabled', memOn);
+    show($('mcp-memory-settings'), memOn);
+    if ($('mcp-memory-limit')) $('mcp-memory-limit').value = String(parseInt(s.mcp_memory_limit) || 10);
+    if ($('mcp-memory-ttl')) $('mcp-memory-ttl').value = String(parseInt(s.mcp_memory_ttl_hours) || 24);
+    if ($('mcp-rate-limit')) $('mcp-rate-limit').value = String(parseInt(s.mcp_rate_limit) || 20);
+    if ($('mcp-rate-window')) $('mcp-rate-window').value = s.mcp_rate_limit_window === 'hour' ? 'hour' : 'minute';
+    loadMcpSessionsList();
     // Snippets
     renderMcpSnippets();
+}
+
+function toggleMcpMemory() {
+    const on = toggleSwitch('mcp-memory-enabled');
+    show($('mcp-memory-settings'), on);
+}
+
+async function saveMcpMemorySettings() {
+    try {
+        await api('POST', '/api/mcp/settings', {
+            mcp_memory_limit: sw('mcp-memory-enabled') ? (parseInt($('mcp-memory-limit').value) || 0) : 0,
+            mcp_memory_ttl_hours: parseInt($('mcp-memory-ttl').value) || 24,
+            mcp_rate_limit: parseInt($('mcp-rate-limit').value) || 20,
+            mcp_rate_limit_window: $('mcp-rate-window').value || 'minute',
+        });
+        toast('MCP memory & rate limits saved.');
+        loadMcp(true);
+    } catch (e) { toast(e.message, 'error'); }
+}
+
+async function loadMcpSessionsList() {
+    const box = $('mcp-sessions-list');
+    if (!box) return;
+    try {
+        const d = await api('GET', '/api/mcp/sessions');
+        const sessions = d.sessions || [];
+        if (!sessions.length) { box.innerHTML = '<span class="muted">No active sessions.</span>'; return; }
+        box.innerHTML = '<div class="muted">Active sessions: ' + sessions.length + '</div>' +
+            sessions.slice(0, 10).map(s => '<div class="muted tiny">' + esc(s.session_key) + ' · ' + fmtTime(s.updated_at) + ' · ' + (s.size_bytes || 0) + ' bytes</div>').join('');
+    } catch (e) { box.innerHTML = ''; }
+}
+
+async function clearAllMcpSessions() {
+    const ok = await confirmDialog('Clear every MCP session? Follow-up context is lost.', 'Clear sessions');
+    if (!ok) return;
+    try {
+        await api('POST', '/api/mcp/sessions/clear');
+        toast('Sessions cleared.');
+        loadMcpSessionsList();
+    } catch (e) { toast(e.message, 'error'); }
 }
 
 function renderMcpSnippets() {
@@ -2292,77 +2443,31 @@ async function revokeMcpTokens() {
     catch (e) { toast(e.message, 'error'); }
 }
 
-function renderMcpChatMessage(role, text, toolCalls) {
-    var box = $('mcp-chat');
-    if (box.querySelector('.empty')) box.innerHTML = '';
-    var html = '';
-    if (role === 'user') {
-        html = '<div class="pg-msg user" dir="auto">' + esc(text) + '</div>';
-    } else {
-        html = '<div class="pg-msg bot" dir="auto">' + esc(text).replace(/\\n/g, '<br>');
-        if (toolCalls && toolCalls.length) {
-            html += '<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--hairline);font-size:12px;">';
-            for (var i = 0; i < toolCalls.length; i++) {
-                var tc = toolCalls[i];
-                var mark = tc.error ? '<span style="color:var(--red)">✗</span>' : '<span style="color:var(--green)">✓</span>';
-                html += '<div style="margin-bottom:4px;">' + mark + ' <code>' + esc(tc.name) + '</code>';
-                if (tc.error) html += ' — <span style="color:var(--red)">' + esc(tc.error) + '</span>';
-                html += '</div>';
-            }
-            html += '</div>';
-        }
-        html += '</div>';
-    }
-    box.insertAdjacentHTML('beforeend', html);
-    scrollBottom(box);
-}
-
-async function sendMcpChat() {
-    var input = $('mcp-input');
-    var text = input.value.trim();
-    if (!text) return;
-    renderMcpChatMessage('user', text);
-    input.value = '';
-    var history = mcpHistory.slice(-20);
-    var tempId = 'mcp-pending-' + Date.now();
-    var box = $('mcp-chat');
-    box.insertAdjacentHTML('beforeend', '<div class="pg-msg bot" id="' + tempId + '"><span class="mini-spinner"></span> <span class="muted small">Thinking…</span></div>');
-    scrollBottom(box);
-    withBusy($('mcp-send'), async function () {
-        try {
-            var d = await api('POST', '/api/mcp/chat', { message: text, history: history });
-            var pending = $(tempId); if (pending) pending.remove();
-            if (d && d.success) {
-                renderMcpChatMessage('assistant', d.response || '', d.toolCalls);
-                mcpHistory.push({ role: 'user', content: text });
-                mcpHistory.push({ role: 'assistant', content: d.response || '' });
-                if (d.toolCalls && d.toolCalls.length) loadMcpCalls();
-            } else {
-                renderMcpChatMessage('assistant', '⚠️ ' + (d.error || 'Request failed.'));
-            }
-        } catch (e) {
-            var pending2 = $(tempId); if (pending2) pending2.remove();
-            renderMcpChatMessage('assistant', '⚠️ ' + e.message);
-        }
-    });
-}
-
-function clearMcpChat() {
-    mcpHistory = [];
-    var box = $('mcp-chat');
-    if (box) box.innerHTML = emptyState('fa-solid fa-comments', 'Chat cleared. Ask a question to get started.');
-}
+// Chat with Nyxx now lives at /chat (a dedicated route).
 
 async function loadMcpCalls() {
+    var box = $('mcp-calls-list');
+    if (!box) return;
+    box.innerHTML = '<div class="spinner-page"><span class="mini-spinner"></span></div>';
     try {
         var d = await api('GET', '/api/mcp/calls');
-        var list = d.calls || [];
-        var box = $('mcp-calls-list');
-        if (!list.length) { box.innerHTML = '<div class="muted small">No MCP calls yet.</div>'; return; }
+        var list = (d.calls || []).slice(0, 5);
+        if (!list.length) {
+            box.innerHTML = '<div class="muted small">No MCP calls yet.</div>';
+            return;
+        }
         box.innerHTML = '<div class="list">' + list.map(function (c) {
-            return '<div class="list-row" style="padding:8px 12px;"><div class="lr-main"><div class="lr-title mono" style="font-size:13px;">' + esc(c.action) + '</div><div class="lr-sub">' + fmtTime(c.timestamp) + '</div></div></div>';
-        }).join('') + '</div>';
-    } catch (e) { /* silent */ }
+            return '<div class="list-row" style="padding:8px 12px;">' +
+                '<div class="lr-main">' +
+                    '<div class="lr-title mono" style="font-size:13px;">' + esc(c.action) + '</div>' +
+                    '<div class="lr-sub">' + fmtTime(c.timestamp) + '</div>' +
+                '</div>' +
+            '</div>';
+        }).join('') + '</div>' +
+        '<div class="tiny muted" style="margin-top:8px;">Showing last 5 · full history in Activity Log</div>';
+    } catch (e) {
+        box.innerHTML = '<div class="small" style="color:var(--red)">Could not load recent calls: ' + esc(e.message) + '</div>';
+    }
 }
 
 /* ============================================================
@@ -2990,9 +3095,16 @@ async function deleteUser(id, name) {
     try { await api('DELETE', '/api/users/' + id); toast('User deleted.'); loadUsers(); }
     catch (e) { toast(e.message, 'error'); }
 }
-async function openUser(id) {
-    manageUser = users.find(function (u) { return sameId(u.id, id); });
-    if (!manageUser) { toast('User not found in the current list. Try refreshing.', 'error'); return; }
+async function openUser(idOrUser) {
+    if (idOrUser && typeof idOrUser === 'object' && idOrUser.id !== undefined) {
+        manageUser = idOrUser;
+    } else {
+        manageUser = users.find(function (u) { return sameId(u.id, idOrUser); });
+        if (!manageUser && typeof memoryUsers !== 'undefined') {
+            manageUser = memoryUsers.find(function (u) { return sameId(u.id, idOrUser); });
+        }
+        if (!manageUser) { toast('User not found. Try refreshing.', 'error'); return; }
+    }
     go('user-manage');
     umSetTab('dm');
     $('um-title').textContent = manageUser.first_name || 'User';
@@ -3003,7 +3115,9 @@ async function openUser(id) {
         kvCard('Last active', fmtTime(manageUser.last_active)) +
         kvCard('Block status', manageUser.block_type === 'full' ? 'Blocked' : (manageUser.block_type === 'ai_only' ? 'AI disabled' : 'Active'));
     $('um-actions').innerHTML =
-        '<button class="btn btn-gray btn-sm" onclick="checkUser(' + manageUser.id + ')"><i class="fa-solid fa-stethoscope"></i> Check reachable</button>' +
+        manageUser.first_name === 'Unknown'
+        ? '<div class="muted small">This user record no longer exists — actions unavailable.</div>'
+        : '<button class="btn btn-gray btn-sm" onclick="checkUser(' + manageUser.id + ')"><i class="fa-solid fa-stethoscope"></i> Check reachable</button>' +
         '<button class="btn btn-gray btn-sm" onclick="toggleRole()"><i class="fa-solid fa-user-shield"></i> ' + (manageUser.role === 'admin' ? 'Demote' : 'Promote') + '</button>' +
         '<button class="btn btn-gray btn-sm" onclick="toggleBlock(\\'ai_only\\')"><i class="fa-solid fa-robot"></i> ' + (manageUser.block_type === 'ai_only' ? 'Unblock AI' : 'Block AI') + '</button>' +
         '<button class="btn btn-danger btn-sm" onclick="toggleBlock(\\'full\\')"><i class="fa-solid fa-ban"></i> ' + (manageUser.block_type === 'full' ? 'Unblock' : 'Block all') + '</button>';
@@ -3013,9 +3127,14 @@ async function openUser(id) {
 function kvCard(k, v) { return '<div class="card compact" style="margin:0;"><div class="tiny muted">' + esc(k) + '</div><div style="font-weight:600;margin-top:4px;word-break:break-word;">' + esc(v) + '</div></div>'; }
 async function toggleRole() {
     var role = manageUser.role === 'admin' ? 'user' : 'admin';
-    try { await api('PUT', '/api/users/role', { userId: manageUser.id, role: role }); toast('Role updated.'); manageUser.role = role; openUser(manageUser.id); }
-    catch (e) { toast(e.message, 'error'); }
+    try {
+        await api('PUT', '/api/users/role', { userId: manageUser.id, role: role });
+        toast('Role updated.');
+        manageUser.role = role;
+        openUser(manageUser);          // <— object, not ID
+    } catch (e) { toast(e.message, 'error'); }
 }
+
 async function toggleBlock(type) {
     var isOn = manageUser.block_type === type;
     try {
@@ -3023,7 +3142,7 @@ async function toggleBlock(type) {
         else await api('POST', '/api/users/block', { userId: manageUser.id, blockType: type });
         toast('Updated.');
         manageUser.block_type = isOn ? null : type;
-        openUser(manageUser.id);
+        openUser(manageUser);          // <— object, not ID
     } catch (e) { toast(e.message, 'error'); }
 }
 async function loadDmMessages(id) {
@@ -3687,6 +3806,91 @@ function kbSettingChanged(prefix) {
 }
 
 /* ============================================================
+   PERMISSIONS
+   ============================================================ */
+var PERM_LABELS = {
+    mcp_telegram: { label: 'MCP command in Telegram', sub: 'Whether non-admins can trigger a /mcp featured command in chats.' },
+    mcp_ai: { label: 'AI can call MCP tools', sub: 'Whether the main AI is allowed to invoke MCP tools while replying.' },
+    ai_chat: { label: 'AI replies to users', sub: 'Whether non-admins get AI replies in DMs and groups.' },
+    commands: { label: 'Bot commands', sub: 'Whether non-admins can run regular bot commands. Per-command "admin only" still applies.' },
+    featured_commands: { label: 'Featured commands', sub: 'Whether non-admins can use DM / Buttons / MCP featured commands.' },
+    start_command: { label: 'Start command', sub: 'Whether non-admins can use /start. Usually Everyone.' },
+    rules_command: { label: '/rules in groups', sub: 'Whether non-admins can read a group\\'s rules via /rules.' },
+    callback_queries: { label: 'Inline button taps', sub: 'Whether non-admins can tap inline or reply buttons on messages.' }
+};
+var permState = {};
+async function loadPermissions(force) {
+    try {
+        var d = await api('GET', '/api/permissions');
+        permState = d.permissions || {};
+        renderPermissions();
+        loadAdmins();
+    } catch (e) { toast(e.message, 'error'); }
+}
+function renderPermissions() {
+    var box = $('perm-list');
+    if (!box) return;
+    box.innerHTML = Object.keys(PERM_LABELS).map(function (k) {
+        var meta = PERM_LABELS[k];
+        var val = permState[k] || 'everyone';
+        return '<div class="switch-row" style="margin-bottom:10px;">' +
+            '<div style="flex:1"><div class="sw-label">' + esc(meta.label) + '</div><div class="sw-sub">' + esc(meta.sub) + '</div></div>' +
+            '<div class="segmented" data-perm="' + k + '">' +
+            '<button data-v="everyone" class="' + (val === 'everyone' ? 'active' : '') + '" onclick="setPerm(\\\'' + k + '\\\',\\\'everyone\\\',this)">Everyone</button>' +
+            '<button data-v="admin" class="' + (val === 'admin' ? 'active' : '') + '" onclick="setPerm(\\\'' + k + '\\\',\\\'admin\\\',this)">Admin only</button>' +
+            '</div>' +
+        '</div>';
+    }).join('');
+}
+function setPerm(key, val, btn) {
+    permState[key] = val;
+    btn.parentNode.querySelectorAll('button').forEach(function (b) { b.classList.toggle('active', b === btn); });
+}
+async function savePermissions() {
+    try {
+        await api('POST', '/api/permissions', { permissions: permState });
+        toast('Permissions saved.');
+    } catch (e) { toast(e.message, 'error'); }
+}
+async function loadAdmins() {
+    var box = $('admins-list');
+    if (!box) return;
+    box.innerHTML = '<div class="spinner-page"><span class="mini-spinner"></span></div>';
+    try {
+        var d = await api('GET', '/api/admins');
+        var admins = d.admins || [];
+        if (!admins.length) { box.innerHTML = '<div class="muted small">No admins yet. Promote a user above.</div>'; return; }
+        box.innerHTML = '<div class="list">' + admins.map(function (a) {
+            return '<div class="list-row">' +
+                userCircle({ private_started: 1, first_name: a.first_name || '?', username: a.username || '' }) +
+                '<div class="lr-main"><div class="lr-title">' + esc(a.first_name || 'Admin') + (a.username ? ' <span class="muted">@' + esc(a.username) + '</span>' : '') + '</div>' +
+                '<div class="lr-sub">ID ' + esc(a.id) + ' · last active ' + fmtTime(a.last_active) + '</div></div>' +
+                '<button class="btn btn-gray btn-sm" onclick="demoteAdmin(' + a.id + ')"><i class="fa-solid fa-user-minus"></i> Demote</button>' +
+            '</div>';
+        }).join('') + '</div>';
+    } catch (e) { box.innerHTML = errorState(e.message, 'loadAdmins()'); }
+}
+async function promoteAdmin() {
+    var id = parseInt($('promote-user-id').value);
+    if (!id) { toast('Enter a numeric user ID.', 'error'); return; }
+    try {
+        await api('POST', '/api/admins/promote', { userId: id });
+        toast('User promoted to admin.');
+        $('promote-user-id').value = '';
+        loadAdmins();
+    } catch (e) { toast(e.message, 'error'); }
+}
+async function demoteAdmin(userId) {
+    var ok = await confirmDialog('Demote this user from admin?', 'Demote admin');
+    if (!ok) return;
+    try {
+        await api('POST', '/api/admins/demote', { userId: userId });
+        toast('User demoted.');
+        loadAdmins();
+    } catch (e) { toast(e.message, 'error'); }
+}
+
+/* ============================================================
    AI
    ============================================================ */
 var aiEnabled = false;
@@ -3739,6 +3943,23 @@ function renderAi(s) {
     toggleSwitch('ai-rtl', s.ai_rtl_support === '1');
     toggleSwitch('ai-suggest', s.ai_suggested_questions_enabled === '1');
     toggleSwitch('ai-sq-once', s.ai_suggested_one_time !== '0');
+    const toolsOn = s.ai_use_mcp_tools === '1';
+    toggleSwitch('ai-use-mcp-tools', toolsOn);
+    const promptModeSel = $('ai-mcp-prompt-mode');
+    if (promptModeSel) {
+        promptModeSel.value = s.ai_mcp_prompt_mode || 'auto';
+        promptModeSel.disabled = !toolsOn;
+    }
+    if ($('ai-mcp-categories')) {
+        $('ai-mcp-categories').value = s.ai_mcp_categories || '';
+        $('ai-mcp-categories').disabled = !toolsOn;
+    }
+    const streamBtn = $('ai-stream');
+    if (streamBtn) {
+        streamBtn.disabled = toolsOn;
+        streamBtn.title = toolsOn ? 'Disabled — MCP tools are enabled' : '';
+        if (toolsOn) streamBtn.classList.remove('on');
+    }
     try { kbs = JSON.parse(s.ai_knowledge_bases || '[]'); } catch (e) { kbs = []; }
     renderKbs();
     try { alts = JSON.parse(s.ai_alt_providers || '[]'); } catch (e) { alts = []; }
@@ -3849,8 +4070,23 @@ function collectAi() {
         ai_rtl_support: sw('ai-rtl') ? '1' : '0',
         ai_suggested_questions_enabled: sw('ai-suggest') ? '1' : '0',
         ai_suggested_one_time: sw('ai-sq-once') ? '1' : '0',
-        ai_suggested_questions: JSON.stringify(sqs)
+        ai_suggested_questions: JSON.stringify(sqs),
+        ai_use_mcp_tools: sw('ai-use-mcp-tools') ? '1' : '0',
+        ai_mcp_prompt_mode: $('ai-mcp-prompt-mode').value || 'auto',
+        ai_mcp_categories: $('ai-mcp-categories').value || ''
     };
+}
+function toggleAiUseMcp() {
+    const on = toggleSwitch('ai-use-mcp-tools');
+    if ($('ai-mcp-categories')) $('ai-mcp-categories').disabled = !on;
+    if ($('ai-mcp-prompt-mode')) $('ai-mcp-prompt-mode').disabled = !on;
+    const streamBtn = $('ai-stream');
+    if (streamBtn) {
+        streamBtn.disabled = on;
+        streamBtn.title = on ? 'Disabled — MCP tools are enabled' : '';
+        if (on) streamBtn.classList.remove('on');
+    }
+    if (on) toast('Streaming is disabled while tools are on.', 'info');
 }
 async function saveAi() {
     try { await api('POST', '/api/ai_settings', collectAi()); toast('AI settings saved.'); refreshMemoryCount(); loadAi(true); }
@@ -4385,6 +4621,7 @@ export default {
         env.__requestUrl = url.toString();
         try {
             if (request.method === 'GET' && url.pathname === '/') return new Response(DASHBOARD_HTML, { headers: HTML_HEADERS });
+            if (request.method === 'GET' && url.pathname === '/chat') return await handleChatPage(request, env);
 
             if (request.method !== 'GET' && url.pathname.startsWith('/api/')) {
                 const origin = request.headers.get('Origin');
@@ -4401,10 +4638,9 @@ export default {
             if (request.method === 'POST' && url.pathname === '/api/setup') return await handleSetup(request, env);
             if (request.method === 'POST' && url.pathname === '/api/login') return await handleLogin(request, env);
             if (request.method === 'GET' && url.pathname === '/api/version') {
-    // skip the cache when the client explicitly asks for freshness
-    const fresh = url.searchParams.get('force') === '1';
-    return await getVersionInfo(env, fresh);
-}
+                const fresh = url.searchParams.get('force') === '1';
+                return await getVersionInfo(env, fresh);
+            }
             if (request.method === 'GET' && url.pathname === '/api/check_session') {
                 const s = await getSession(request, env);
                 return apiJson({ logged_in: !!s });
@@ -4502,7 +4738,7 @@ export default {
 
             if (request.method === 'GET' && url.pathname === '/api/stats') return await getStats(env);
             // ---- MCP dashboard API ----
-            if (request.method === 'GET'  && url.pathname === '/api/mcp/settings') return await getMcpSettings(env);
+            if (request.method === 'GET'  && url.pathname === '/api/mcp/settings') return await getMcpSettings(request, env);
             if (request.method === 'POST' && url.pathname === '/api/mcp/settings') return await saveMcpSettings(request, env);
             if (request.method === 'POST' && url.pathname === '/api/mcp/ai/test') return await handleMcpAiTest(request, env);
             if (request.method === 'POST' && url.pathname === '/api/mcp/chat') return await handleMcpDashboardChat(request, env);
@@ -4510,6 +4746,15 @@ export default {
             if (request.method === 'POST' && url.pathname === '/api/mcp/token/generate') return await generateMcpTokenHandler(request, env);
             if (request.method === 'POST' && url.pathname === '/api/mcp/token/revoke') return await revokeMcpTokens(env);
             if (request.method === 'GET'  && url.pathname === '/api/mcp/calls') return await getMcpCalls(env);
+            if (request.method === 'GET'  && url.pathname === '/api/mcp/sessions') return await listMcpSessions(env);
+            if (request.method === 'POST' && url.pathname === '/api/mcp/sessions/clear') return await clearMcpSessions(env);
+
+            // Dedicated chat (ChatGPT-like)
+            if (request.method === 'GET'  && url.pathname === '/api/chat/sessions') return await listChatSessions(env);
+            if (request.method === 'POST' && url.pathname === '/api/chat/sessions') return await createChatSession(request, env);
+            if (request.method === 'POST' && /^\/api\/chat\/sessions\/[^\/]+\/send$/.test(url.pathname)) return await sendChatMessage(request, env, url);
+            if (request.method === 'GET'  && /^\/api\/chat\/sessions\/[^\/]+$/.test(url.pathname)) return await getChatSession(env, url);
+            if (request.method === 'DELETE' && /^\/api\/chat\/sessions\/[^\/]+$/.test(url.pathname)) return await deleteChatSession(env, url);
 
             if (request.method === 'GET' && url.pathname === '/api/backup') return await exportBackup(env);
             if (request.method === 'POST' && url.pathname === '/api/backup/restore') return await restoreBackup(request, env);
@@ -4520,6 +4765,12 @@ export default {
             if (request.method === 'DELETE' && url.pathname === '/api/logs') return await clearAuditLogs(env);
             if (request.method === 'GET' && url.pathname === '/api/logs/settings') return await getLogCleanSettings(env);
             if (request.method === 'POST' && url.pathname === '/api/logs/settings') return await saveLogCleanSettings(request, env);
+
+            if (request.method === 'GET'  && url.pathname === '/api/permissions') return await getPermissionsHandler(env);
+            if (request.method === 'POST' && url.pathname === '/api/permissions') return await savePermissionsHandler(request, env);
+            if (request.method === 'GET'  && url.pathname === '/api/admins') return await listAdminsHandler(env);
+            if (request.method === 'POST' && url.pathname === '/api/admins/promote') return await promoteAdminHandler(request, env);
+            if (request.method === 'POST' && url.pathname === '/api/admins/demote') return await demoteAdminHandler(request, env);
 
             if (request.method === 'POST' && url.pathname === '/api/update/validate') return await validateCloudflareToken(request, env);
             if (request.method === 'POST' && url.pathname === '/api/update') return await performUpdate(request, env);
@@ -4586,6 +4837,12 @@ async function runScheduledCleanup(env) {
         summary.login_attempts = await changes(db.prepare('DELETE FROM login_attempts WHERE minute <= ?').bind(nowMinute - cfg.cron_login_attempts_hours * 60));
         summary.ai_rate_limits = await changes(db.prepare('DELETE FROM ai_rate_limits WHERE minute < ?').bind(nowMinute - cfg.cron_rate_limits_hours * 60));
         summary.group_flood = await changes(db.prepare('DELETE FROM group_flood WHERE minute < ?').bind(nowMinute - 120));
+        try {
+            const ttlRaw = await getSetting(db, 'mcp_memory_ttl_hours');
+            const ttl = Math.min(Math.max(parseInt(ttlRaw) || 24, 1), 720);
+            summary.mcp_sessions = await changes(db.prepare(`DELETE FROM mcp_sessions WHERE updated_at <= datetime('now', '-${ttl} hours')`));
+        } catch (e) { /* ignore */ }
+        try { summary.mcp_rate_limits = await changes(db.prepare('DELETE FROM mcp_rate_limits WHERE minute < ?').bind(nowMinute - 60)); } catch (e) { /* ignore */ }
         const logCfg = await getLogCleanFromDb(db);
         if (logCfg.enabled) {
             summary.audit_logs = await changes(db.prepare(`DELETE FROM logs WHERE timestamp <= datetime('now', '-${logCfg.days} day')`));
@@ -4679,12 +4936,121 @@ async function saveLogCleanSettings(request, env) {
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
 }
+// ============================================================================
+// PERMISSIONS
+// ============================================================================
+const DEFAULT_PERMISSIONS = {
+    mcp_telegram: 'admin',      // /mcp featured command in Telegram
+    mcp_ai: 'admin',            // main AI allowed to call MCP tools
+    ai_chat: 'everyone',        // AI replies to regular users
+    commands: 'everyone',       // regular bot commands (/help, /about…)
+    featured_commands: 'everyone', // DM / Buttons / MCP featured commands
+    start_command: 'everyone',  // /start
+    rules_command: 'everyone',  // /rules in groups
+    callback_queries: 'everyone' // inline / reply button taps
+};
+const PERMISSION_KEYS = Object.keys(DEFAULT_PERMISSIONS);
+
+async function getPermissions(env) {
+    let stored = {};
+    try {
+        const raw = await getSetting(env.DB, 'permissions_json');
+        if (raw) stored = JSON.parse(raw) || {};
+    } catch (e) {}
+    const out = {};
+    for (const k of PERMISSION_KEYS) {
+        const v = stored[k];
+        out[k] = (v === 'admin' || v === 'everyone') ? v : DEFAULT_PERMISSIONS[k];
+    }
+    return out;
+}
+async function isAdminUser(env, userId) {
+    if (!userId) return false;
+    try {
+        const row = await env.DB.prepare('SELECT role FROM users WHERE id = ?').bind(userId).first();
+        return !!(row && row.role === 'admin');
+    } catch (e) { return false; }
+}
+const _permCache = new WeakMap(); // env → { data, at }
+const PERM_CACHE_TTL_MS = 15000;
+
+async function getPermissionsCached(env) {
+    const entry = _permCache.get(env);
+    if (entry && (Date.now() - entry.at) < PERM_CACHE_TTL_MS) return entry.data;
+    const fresh = await getPermissions(env);
+    _permCache.set(env, { data: fresh, at: Date.now() });
+    return fresh;
+}
+
+async function checkPermission(env, userId, key) {
+    const perms = await getPermissionsCached(env);
+    const mode = perms[key] || 'everyone';
+    if (mode === 'everyone') return true;
+    return await isAdminUser(env, userId);
+}
+async function getPermissionsHandler(env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        const permissions = await getPermissions(env);
+        return apiJson({ success: true, permissions, keys: PERMISSION_KEYS });
+    } catch (err) { return internalError(err); }
+}
+async function savePermissionsHandler(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const body = await request.json();
+        const incoming = body.permissions || {};
+        const merged = await getPermissions(env);
+        for (const k of PERMISSION_KEYS) {
+            if (incoming[k] === 'admin' || incoming[k] === 'everyone') merged[k] = incoming[k];
+        }
+        await setSetting(env.DB, 'permissions_json', JSON.stringify(merged));
+        _permCache.delete(env);
+        await logAction(env.DB, null, 'Permissions updated');
+        return apiJson({ success: true, permissions: merged });
+    } catch (err) { return internalError(err); }
+}
+async function listAdminsHandler(env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        const rows = await env.DB.prepare(
+            "SELECT id, username, first_name, last_active FROM users WHERE role = 'admin' ORDER BY last_active DESC LIMIT 200"
+        ).all();
+        return apiJson({ admins: rows.results || [] });
+    } catch (err) { return internalError(err); }
+}
+async function promoteAdminHandler(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const body = await request.json();
+        const userId = parseInt(body.userId);
+        if (!userId) return apiJson({ error: 'Invalid userId.' }, 400);
+        await initializeDatabase(env.DB);
+        await env.DB.prepare("UPDATE users SET role = 'admin' WHERE id = ?").bind(userId).run();
+        await logAction(env.DB, userId, 'User promoted to admin');
+        return apiJson({ success: true });
+    } catch (err) { return internalError(err); }
+}
+async function demoteAdminHandler(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const body = await request.json();
+        const userId = parseInt(body.userId);
+        if (!userId) return apiJson({ error: 'Invalid userId.' }, 400);
+        await initializeDatabase(env.DB);
+        await env.DB.prepare("UPDATE users SET role = 'user' WHERE id = ?").bind(userId).run();
+        await logAction(env.DB, userId, 'User demoted from admin');
+        return apiJson({ success: true });
+    } catch (err) { return internalError(err); }
+}
 
 // ============================================================================
 // DATABASE
 // ============================================================================
 const dbInitCache = new WeakMap();
-const SCHEMA_VERSION = 7;
+const SCHEMA_VERSION = 9;
 
 const MIGRATIONS = {
     2: [
@@ -4730,6 +5096,25 @@ const MIGRATIONS = {
         )`,
         `ALTER TABLE featured_replies ADD COLUMN admin_only INTEGER DEFAULT 0`,
     ],
+    8: [
+        `CREATE TABLE IF NOT EXISTS mcp_sessions (
+            session_key TEXT PRIMARY KEY,
+            messages_json TEXT NOT NULL DEFAULT '[]',
+            size_bytes INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`,
+        `CREATE INDEX IF NOT EXISTS idx_mcp_sessions_updated ON mcp_sessions(updated_at)`,
+        `CREATE TABLE IF NOT EXISTS mcp_rate_limits (
+            session_key TEXT NOT NULL,
+            minute INTEGER NOT NULL,
+            count INTEGER NOT NULL DEFAULT 1,
+            PRIMARY KEY (session_key, minute)
+        )`,
+    ],
+    9: [
+        `ALTER TABLE mcp_sessions ADD COLUMN title TEXT DEFAULT ''`,
+    ],
 };
 
 async function initializeDatabase(db) {
@@ -4756,6 +5141,9 @@ async function initializeDatabase(db) {
         CREATE INDEX IF NOT EXISTS idx_logs_user ON logs(user_id);
         CREATE INDEX IF NOT EXISTS idx_groups_active ON groups(is_active);
         CREATE INDEX IF NOT EXISTS idx_featured_command ON featured_replies(command);
+        CREATE TABLE IF NOT EXISTS mcp_sessions (session_key TEXT PRIMARY KEY, messages_json TEXT NOT NULL DEFAULT '[]', size_bytes INTEGER DEFAULT 0, title TEXT DEFAULT '', created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP);
+        CREATE INDEX IF NOT EXISTS idx_mcp_sessions_updated ON mcp_sessions(updated_at);
+        CREATE TABLE IF NOT EXISTS mcp_rate_limits (session_key TEXT NOT NULL, minute INTEGER NOT NULL, count INTEGER NOT NULL DEFAULT 1, PRIMARY KEY (session_key, minute));
     `;
     const statements = schema.split(';').filter(s => s.trim().length > 0);
     const p = (async () => {
@@ -4895,10 +5283,10 @@ async function handleLogout(request, env) {
 }
 const VERSION_CACHE_TTL_MS = 60 * 60 * 1000;
 const versionCache = { data: null, fetchedAt: 0 };
-async function getVersionInfo(env) {
+async function getVersionInfo(env, fresh) {
     const current = VERSION;
     const now = Date.now();
-    if (versionCache.data && (now - versionCache.fetchedAt) < VERSION_CACHE_TTL_MS) return apiJson({ current, ...versionCache.data });
+    if (!fresh && versionCache.data && (now - versionCache.fetchedAt) < VERSION_CACHE_TTL_MS) return apiJson({ current, ...versionCache.data });
     let latest = null, released = null, notes = null, workerUrl = null;
     try {
         const res = await fetch('https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/version.json');
@@ -4984,24 +5372,29 @@ async function getMemoryOverview(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
+        // Filter out group chats (negative IDs) — this view is per-user.
         const [aiRows, dmRows] = await Promise.all([
-            env.DB.prepare('SELECT chat_id, COUNT(*) as n FROM ai_messages GROUP BY chat_id').all(),
-            env.DB.prepare('SELECT chat_id, COUNT(*) as n FROM dm_messages GROUP BY chat_id').all(),
+            env.DB.prepare('SELECT chat_id, COUNT(*) as n FROM ai_messages WHERE chat_id > 0 GROUP BY chat_id').all(),
+            env.DB.prepare('SELECT chat_id, COUNT(*) as n FROM dm_messages WHERE chat_id > 0 GROUP BY chat_id').all(),
         ]);
         const aiMap = {};
         const dmMap = {};
         const idSet = new Set();
         for (const r of (aiRows.results || [])) { aiMap[r.chat_id] = r.n; idSet.add(r.chat_id); }
         for (const r of (dmRows.results || [])) { dmMap[r.chat_id] = r.n; idSet.add(r.chat_id); }
-        const ids = Array.from(idSet);
+        const ids = Array.from(idSet).filter(id => id > 0);
         const userMap = {};
+        const blockMap = {};
         if (ids.length) {
-            // Chunked fetch to stay inside SQLite parameter limits on big lists.
             for (let i = 0; i < ids.length; i += 400) {
                 const slice = ids.slice(i, i + 400);
                 const ph = slice.map(() => '?').join(', ');
-                const users = await env.DB.prepare(`SELECT id, first_name, username FROM users WHERE id IN (${ph})`).bind(...slice).all();
+                const [users, blocks] = await Promise.all([
+                    env.DB.prepare(`SELECT id, first_name, username, private_started, role, last_active FROM users WHERE id IN (${ph})`).bind(...slice).all(),
+                    env.DB.prepare(`SELECT user_id, block_type FROM blocked_users WHERE user_id IN (${ph})`).bind(...slice).all(),
+                ]);
                 for (const u of (users.results || [])) userMap[u.id] = u;
+                for (const b of (blocks.results || [])) blockMap[b.user_id] = b.block_type;
             }
         }
         let aiTotal = 0, dmTotal = 0;
@@ -5009,10 +5402,15 @@ async function getMemoryOverview(env) {
             const ai = aiMap[id] || 0;
             const dm = dmMap[id] || 0;
             aiTotal += ai; dmTotal += dm;
+            const u = userMap[id] || {};
             return {
                 id,
-                first_name: userMap[id] ? userMap[id].first_name : 'Unknown',
-                username: userMap[id] ? userMap[id].username : '',
+                first_name: u.first_name || 'Unknown',
+                username: u.username || '',
+                private_started: u.private_started || 0,
+                role: u.role || 'user',
+                last_active: u.last_active || null,
+                block_type: blockMap[id] || null,
                 ai_count: ai,
                 dm_count: dm,
                 total_count: ai + dm,
@@ -5026,7 +5424,12 @@ async function handleMemoryClear(request, env) {
     try {
         const body = await request.json();
         const scope = (body.scope === 'ai' || body.scope === 'dm' || body.scope === 'all') ? body.scope : 'all';
-        const userId = body.userId ? parseInt(body.userId) : null;
+        let userId = null;
+        if (body.userId !== undefined && body.userId !== null && body.userId !== '') {
+            const parsed = parseInt(body.userId);
+            if (isNaN(parsed) || parsed <= 0) return apiJson({ error: 'Invalid userId.' }, 400);
+            userId = parsed;
+        }
         await initializeDatabase(env.DB);
         const ops = [];
         if (userId) {
@@ -5103,18 +5506,34 @@ async function runAutoRemoveMemory(env, summary) {
     catch (e) { return; }
     if (!cfg.enabled) return;
 
-    // ----- AI memory: synced with the AI tab's `ai_memory` (per-chat keep-count) -----
-    const aiKeep = parseInt(await getSetting(env.DB, 'ai_memory')) || 0;
-    if (aiKeep > 0) {
+    // ----- AI memory: per-chat, respects private vs group settings -----
+    const aiKeepPrivate = parseInt(await getSetting(env.DB, 'ai_memory')) || 0;
+    const aiKeepGroup = parseInt(await getSetting(env.DB, 'ai_group_memory')) || aiKeepPrivate;
+    if (aiKeepPrivate > 0 || aiKeepGroup > 0) {
         try {
             const chats = await env.DB.prepare('SELECT DISTINCT chat_id FROM ai_messages').all();
             let removed = 0;
             for (const row of (chats.results || [])) {
+                const chatId = row.chat_id;
+                let keep = aiKeepPrivate;
+                // Negative chat IDs are groups.
+                if (chatId < 0) {
+                    try {
+                        const gs = await getGroupSettings(env.DB, chatId);
+                        if (gs.memory !== 'inherit' && gs.memory !== undefined && gs.memory !== null) {
+                            keep = parseInt(gs.memory) || 0;
+                        } else {
+                            keep = aiKeepGroup;
+                        }
+                    } catch (e) { keep = aiKeepGroup; }
+                }
+                if (keep <= 0) continue;
+                const limit = keep * 2;
                 const cutoff = await env.DB.prepare('SELECT id FROM ai_messages WHERE chat_id = ? ORDER BY id DESC LIMIT 1 OFFSET ?')
-                    .bind(row.chat_id, aiKeep).first();
+                    .bind(chatId, limit).first();
                 if (cutoff) {
                     const r = await env.DB.prepare('DELETE FROM ai_messages WHERE chat_id = ? AND id <= ?')
-                        .bind(row.chat_id, cutoff.id).run();
+                        .bind(chatId, cutoff.id).run();
                     removed += (r && r.meta && r.meta.changes) || 0;
                 }
             }
@@ -5126,7 +5545,7 @@ async function runAutoRemoveMemory(env, summary) {
     const seconds = cfg.dm_value * (AUTO_REMOVE_UNITS_TO_SECONDS[cfg.dm_unit] || 86400);
     if (seconds > 0) {
         try {
-            const r = await env.DB.prepare(`DELETE FROM dm_messages WHERE created_at <= datetime('now', '-${seconds} seconds')`).run();
+            const r = await env.DB.prepare("DELETE FROM dm_messages WHERE created_at <= datetime('now', ?)").bind('-' + seconds + ' seconds').run();
             const n = (r && r.meta && r.meta.changes) || 0;
             if (n) summary.dm_messages = (summary.dm_messages || 0) + n;
         } catch (e) { /* ignore */ }
@@ -6154,7 +6573,8 @@ const AI_KEYS = [
     'ai_global_rate_limit', 'ai_global_rate_window', 'ai_group_mention', 'ai_private_reply',
     'ai_group_reply', 'ai_ignore_bots', 'ai_ignore_forwarded', 'ai_typing_indicator',
     'ai_retry_on_failure', 'ai_custom_vars_text', 'ai_knowledge_bases', 'ai_trigger_text',
-    'ai_group_memory', 'ai_strict_mode', 'ai_rtl_support', 'ai_streaming'
+    'ai_group_memory', 'ai_strict_mode', 'ai_rtl_support', 'ai_streaming',
+    'ai_use_mcp_tools', 'ai_mcp_prompt_mode', 'ai_mcp_categories'
 ];
 async function getAiSettings(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
@@ -6183,13 +6603,14 @@ async function getAiSettingsFromDb(env) {
     const rows = await env.DB.prepare(`SELECT key, value FROM settings WHERE key IN (${placeholders})`).bind(...AI_KEYS).all();
     for (const row of (rows.results || [])) if (row.value !== null && row.value !== undefined) settings[row.key] = row.value;
     const defaults = {
-        ai_enabled: '0', ai_provider: 'openai', ai_model: 'gpt-4o-mini', ai_trigger: 'no_command',
+        ai_enabled: '0', ai_provider: 'openai', ai_model: '', ai_trigger: 'no_command',
         ai_memory: '0', ai_group_memory: '0', ai_fallback: 'Sorry, I am currently unavailable. Please try again later.',
         ai_temperature: '0.7', ai_max_tokens: '1024', ai_top_p: '1.0', ai_suggested_questions_enabled: '0', ai_suggested_one_time: '1',
         ai_rate_limit: '10', ai_global_rate_limit: '0', ai_global_rate_window: 'minute', ai_ignore_prefixes: '/, !, #',
         ai_group_mention: '1', ai_private_reply: '1', ai_group_reply: '1', ai_ignore_bots: '1', ai_ignore_forwarded: '1',
         ai_typing_indicator: '1', ai_retry_on_failure: '0', ai_knowledge_bases: '[]', ai_suggested_questions: '[]',
         ai_streaming: '0', ai_strict_mode: '0', ai_rtl_support: '0',
+        ai_use_mcp_tools: '0', ai_mcp_prompt_mode: 'auto', ai_mcp_categories: '',
     };
     for (const [k, v] of Object.entries(defaults)) if (!settings[k]) settings[k] = v;
     aiSettingsCache.data = settings;
@@ -6207,8 +6628,12 @@ async function saveAiSettings(request, env) {
             try {
                 const incoming = JSON.parse(settings.ai_alt_providers);
                 const current = JSON.parse(await getSetting(env.DB, 'ai_alt_providers') || '[]');
-                incoming.forEach((a, i) => {
-                    if (a.apiKey === KEEP_SENTINEL && current[i] && current[i].apiKey) a.apiKey = current[i].apiKey;
+                const byProvider = {};
+                for (const a of current) if (a && a.provider) byProvider[String(a.provider)] = a.apiKey || '';
+                incoming.forEach(a => {
+                    if ((a.apiKey === KEEP_SENTINEL || !a.apiKey) && byProvider[a.provider]) {
+                        a.apiKey = byProvider[a.provider];
+                    }
                     delete a.apiKeyMasked;
                 });
                 settings.ai_alt_providers = JSON.stringify(incoming);
@@ -6306,20 +6731,87 @@ function replacePlaceholders(text, ctx) {
 function isSafeTelegramHref(url) { return /^https?:\/\//i.test(url || ''); }
 function escapeTelegramHTML(text) {
     if (!text) return '';
+    const escPlain = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    // 1) Code/pre blocks: contents are always literal text, never parsed as tags.
+    const codeBlocks = [];
+    const src = String(text).replace(/<pre>([\s\S]*?)<\/pre>|<code(?:\s+class="language-[\w+#.\-]+")?>([\s\S]*?)<\/code>/gi, (m, preInner, codeInner) => {
+        let out;
+        if (preInner !== undefined) {
+            const inner = preInner.match(/^\s*<code(?:\s+class="(language-[\w+#.\-]+)")?>([\s\S]*?)<\/code>\s*$/i);
+            out = inner ? '<pre><code' + (inner[1] ? ' class="' + inner[1] + '"' : '') + '>' + escPlain(inner[2]) + '</code></pre>' : '<pre>' + escPlain(preInner) + '</pre>';
+        } else out = '<code>' + escPlain(codeInner) + '</code>';
+        codeBlocks.push(out);
+        return '\u0001' + (codeBlocks.length - 1) + '\u0001';
+    });
+    // 2) Whitelisted inline tags survive; everything else is escaped.
     const placeholders = [];
-    const safe = text.replace(/<a\s+href="([^"]*)">|<\/a>|<\/?(?:b|strong|i|em|u|ins|s|strike|del|code|pre|blockquote|tg-spoiler)>/gi, (m) => {
+    const safe = src.replace(/<a\s+href="([^"]*)">|<\/a>|<blockquote\s+expandable>|<span\s+class="tg-spoiler">|<\/span>|<\/?(?:b|strong|i|em|u|ins|s|strike|del|code|pre|blockquote|tg-spoiler)>/gi, (m) => {
         if (m.toLowerCase().startsWith('<a ')) {
             const href = m.match(/href="([^"]*)"/i);
             if (href && !isSafeTelegramHref(href[1])) {
-                placeholders.push(m.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'));
+                placeholders.push(escPlain(m).replace(/"/g, '&quot;'));
                 return '\u0000' + (placeholders.length - 1) + '\u0000';
             }
         }
-        placeholders.push(m);
+        placeholders.push(m.replace(/&(?!amp;|lt;|gt;|quot;|#\d+;)/g, '&amp;'));
         return '\u0000' + (placeholders.length - 1) + '\u0000';
     });
-    const escaped = safe.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-    return escaped.replace(/\u0000(\d+)\u0000/g, (_, i) => placeholders[parseInt(i, 10)] || '');
+    const escaped = escPlain(safe).replace(/"/g, '&quot;');
+    const restored = escaped
+        .replace(/\u0000(\d+)\u0000/g, (_, i) => placeholders[parseInt(i, 10)] || '')
+        .replace(/\u0001(\d+)\u0001/g, (_, i) => codeBlocks[parseInt(i, 10)] || '');
+    // 3) Fix unbalanced / mis-nested tags so Telegram never rejects the message.
+    return balanceTelegramHtml(restored);
+}
+function balanceTelegramHtml(html) {
+    const stack = [];
+    let out = '', last = 0, m;
+    const re = /<(\/?)([a-z][a-z-]*)((?:\s[^>]*)?)>/gi;
+    while ((m = re.exec(html))) {
+        out += html.slice(last, m.index);
+        last = re.lastIndex;
+        const tag = m[2].toLowerCase();
+        if (m[1] !== '/') { stack.push({ tag, open: m[0] }); out += m[0]; continue; }
+        const idx = stack.map(s => s.tag).lastIndexOf(tag);
+        if (idx < 0) continue; // stray closing tag: drop it
+        const above = stack.splice(idx);
+        for (let i = above.length - 1; i >= 1; i--) out += '</' + above[i].tag + '>';
+        out += '</' + tag + '>';
+        for (let i = 1; i < above.length; i++) { out += above[i].open; stack.push(above[i]); }
+    }
+    out += html.slice(last);
+    for (let i = stack.length - 1; i >= 0; i--) out += '</' + stack[i].tag + '>';
+    return out;
+}
+// Converts the Markdown / reasoning-tag noise LLMs emit into Telegram-safe HTML.
+// Output still goes through escapeTelegramHTML() before sending.
+function formatAiReply(text) {
+    let t = String(text || '').replace(/\r\n/g, '\n');
+    if (/<\/think>/i.test(t)) t = t.replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/^[\s\S]*<\/think>/i, '');
+    const stash = [];
+    const keep = (html) => '\u0002' + (stash.push(html) - 1) + '\u0002';
+    t = t.replace(/```([\w+#.\-]*)[ \t]*\n?([\s\S]*?)```/g, (m, lang, body) => {
+        body = body.replace(/\n$/, '');
+        return keep(lang ? '<pre><code class="language-' + lang + '">' + body + '</code></pre>' : '<pre>' + body + '</pre>');
+    });
+    t = t.replace(/(?:^[ \t]*\|.*\|[ \t]*(?:\n|$))+/gm, (block) => {
+        const lines = block.trim().split('\n');
+        if (lines.length < 2) return block;
+        const rows = lines.filter(r => !/^[\s|:\-]+$/.test(r)).map(r => r.trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim()).join(' | '));
+        return keep('<pre>' + rows.join('\n') + '</pre>') + '\n';
+    });
+    t = t.replace(/`([^`\n]+)`/g, (m, c) => keep('<code>' + c + '</code>'));
+    t = t.replace(/^[ \t]*#{1,6}[ \t]+(.+?)[ \t]*#*[ \t]*$/gm, (m, h) => '<b>' + h.replace(/\*\*|__/g, '') + '</b>');
+    t = t.replace(/^[ \t]*([-*_])(?:[ \t]*\1){2,}[ \t]*$/gm, '──────────');
+    t = t.replace(/^([ \t]*)[-*+][ \t]+/gm, '$1• ');
+    t = t.replace(/\*\*(?=\S)([^\n]*?\S)\*\*/g, '<b>$1</b>');
+    t = t.replace(/(^|[^\w])__(?=\S)([^\n]*?\S)__(?!\w)/g, '$1<b>$2</b>');
+    t = t.replace(/~~(?=\S)([^\n]*?\S)~~/g, '<s>$1</s>');
+    t = t.replace(/(^|[^\w*])\*(?=\S)([^*\n]*?\S)\*(?![\w*])/g, '$1<i>$2</i>');
+    t = t.replace(/(^|[^\w])_(?=\S)([^_\n]*?\S)_(?!\w)/g, '$1<i>$2</i>');
+    t = t.replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g, (m, label, url) => '<a href="' + url.replace(/"/g, '%22') + '">' + label + '</a>');
+    t = t.replace(/(?:^>[ \t]?.*(?:\n|$))+/gm, (block) => '<blockquote>' + block.replace(/\n$/, '').split('\n').map(l => l.replace(/^>[ \t]?/, '')).join('\n') + '</blockquote>\n');
+    return t.replace(/\u0002(\d+)\u0002/g, (m, i) => stash[parseInt(i, 10)]).trim();
 }
 function htmlToPlain(html) {
     if (!html) return '';
@@ -6360,6 +6852,25 @@ const AI_LANGUAGE_NAMES = {
     english: 'English', spanish: 'Spanish', french: 'French', german: 'German',
     persian: 'Persian (Farsi)', arabic: 'Arabic', farsi: 'Farsi', russian: 'Russian'
 };
+function buildAiSystemPrompt(settings, context) {
+    let systemContent = settings.ai_system_prompt || '';
+    if (settings.ai_strict_mode === '1') systemContent += (systemContent ? '\n\n' : '') + 'CORE RULES:\n- Answer ONLY using the provided instructions and knowledge base.\n- NEVER invent information.\n- If the answer is not available, politely say you do not have that information.';
+    if (settings.ai_rtl_support === '1') systemContent += (systemContent ? '\n\n' : '') + 'When the response is primarily Persian, begin each paragraph with the U+200F right-to-left mark. Never mention this rule.';
+    try {
+        const kbs = JSON.parse(settings.ai_knowledge_bases || '[]');
+        const enabled = kbs.filter(kb => kb.enabled !== false && kb.content && kb.content.trim());
+        if (enabled.length) systemContent += (systemContent ? '\n\n' : '') + enabled.map((kb, i) => `${kb.label || 'Knowledge ' + (i + 1)}:\n${kb.content.trim()}`).join('\n\n');
+    } catch (e) {}
+    systemContent += (systemContent ? '\n\n' : '') + 'FORMATTING: Plain text by default. No Markdown. HTML allowed only with <b>, <i>, <u>, <s>, <code>, <pre>, <a href>, <blockquote>, <tg-spoiler>. Always produce valid Telegram HTML.';
+    const lang = AI_LANGUAGE_NAMES[settings.ai_language];
+    if (lang) systemContent += `\n\nIMPORTANT: Always respond in ${lang}.`;
+    const styleGuide = AI_STYLE_GUIDES[settings.ai_style];
+    if (styleGuide) systemContent += '\n\n' + styleGuide;
+    const lengthGuide = AI_LENGTH_GUIDES[settings.ai_length];
+    if (lengthGuide) systemContent += '\n\n' + lengthGuide;
+    if (context) systemContent = replacePlaceholders(systemContent, context);
+    return systemContent;
+}
 async function callAiCompletion(settings, chatHistory, userPrompt, context, providerType, altIndex, stream, onChunk) {
     providerType = providerType || 'main';
     const isMain = providerType === 'main';
@@ -6383,22 +6894,7 @@ async function callAiCompletion(settings, chatHistory, userPrompt, context, prov
     const temperature = parseFloat(settings.ai_temperature) || 0.7;
     const maxTokens = parseInt(settings.ai_max_tokens) || 1024;
     const topP = parseFloat(settings.ai_top_p) || 1.0;
-    let systemContent = settings.ai_system_prompt || '';
-    if (settings.ai_strict_mode === '1') systemContent += (systemContent ? '\n\n' : '') + 'CORE RULES:\n- Answer ONLY using the provided instructions and knowledge base.\n- NEVER invent information.\n- If the answer is not available, politely say you do not have that information.';
-    if (settings.ai_rtl_support === '1') systemContent += (systemContent ? '\n\n' : '') + 'When the response is primarily Persian, begin each paragraph with the U+200F right-to-left mark. Never mention this rule.';
-    try {
-        const kbs = JSON.parse(settings.ai_knowledge_bases || '[]');
-        const enabled = kbs.filter(kb => kb.enabled !== false && kb.content && kb.content.trim());
-        if (enabled.length) systemContent += (systemContent ? '\n\n' : '') + enabled.map((kb, i) => `${kb.label || 'Knowledge ' + (i + 1)}:\n${kb.content.trim()}`).join('\n\n');
-    } catch (e) {}
-    systemContent += (systemContent ? '\n\n' : '') + 'FORMATTING: Plain text by default. No Markdown. HTML allowed only with <b>, <i>, <u>, <s>, <code>, <pre>, <a href>, <blockquote>, <tg-spoiler>. Always produce valid Telegram HTML.';
-    const lang = AI_LANGUAGE_NAMES[settings.ai_language];
-    if (lang) systemContent += `\n\nIMPORTANT: Always respond in ${lang}.`;
-    const styleGuide = AI_STYLE_GUIDES[settings.ai_style];
-    if (styleGuide) systemContent += '\n\n' + styleGuide;
-    const lengthGuide = AI_LENGTH_GUIDES[settings.ai_length];
-    if (lengthGuide) systemContent += '\n\n' + lengthGuide;
-    if (context) systemContent = replacePlaceholders(systemContent, context);
+    const systemContent = buildAiSystemPrompt(settings, context);
     const messages = [];
     if (systemContent.trim()) messages.push({ role: 'system', content: systemContent.trim() });
     if (Array.isArray(chatHistory)) for (const m of chatHistory) messages.push({ role: m.role, content: m.content });
@@ -6938,9 +7434,13 @@ async function performUpdate(request, env) {
 const MCP_DEFAULT_SETTINGS = {
     mcp_enabled: '0',
     mcp_ai_provider: 'openai',
-    mcp_ai_model: 'gpt-4o-mini',
+    mcp_ai_model: '',
     mcp_ai_base_url: '',
     mcp_categories: '["read","write"]',
+    mcp_memory_limit: '0',
+    mcp_memory_ttl_hours: '24',
+    mcp_rate_limit: '20',
+    mcp_rate_limit_window: 'minute',
 };
 const MCP_CATEGORY_KEYS = ['read', 'write', 'outbound', 'dangerous'];
 const mcpTokenCache = new Map();
@@ -6955,11 +7455,12 @@ async function getMcpSettingsFromDb(env) {
     return out;
 }
 
-async function getMcpSettings(env) {
+async function getMcpSettings(request, env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
         const s = await getMcpSettingsFromDb(env);
+        /** @type {Record<string, any>} */
         const safe = Object.assign({}, s);
         safe.mcp_ai_api_key_set = !!s.mcp_ai_api_key;
         safe.mcp_ai_api_key_masked = maskSecret(s.mcp_ai_api_key || '');
@@ -6968,7 +7469,11 @@ async function getMcpSettings(env) {
         let cats = ['read', 'write'];
         try { const parsed = JSON.parse(s.mcp_categories || '[]'); if (Array.isArray(parsed)) cats = parsed.filter(c => MCP_CATEGORY_KEYS.includes(c)); } catch (e) {}
         safe.mcp_categories = cats;
-        safe.mcp_endpoint = (new URL(env.__requestUrl || 'https://worker.local/')).origin + '/mcp';
+        safe.mcp_memory_limit = String(parseInt(s.mcp_memory_limit) || 0);
+        safe.mcp_memory_ttl_hours = String(parseInt(s.mcp_memory_ttl_hours) || 24);
+        safe.mcp_rate_limit = String(parseInt(s.mcp_rate_limit) || 20);
+        safe.mcp_rate_limit_window = s.mcp_rate_limit_window === 'hour' ? 'hour' : 'minute';
+        try { safe.mcp_endpoint = new URL(request.url).origin + '/mcp'; } catch (e) { safe.mcp_endpoint = ''; }
         return apiJson({ success: true, settings: safe });
     } catch (err) { return internalError(err); }
 }
@@ -6988,6 +7493,10 @@ async function saveMcpSettings(request, env) {
             const cats = body.mcp_categories.filter(c => MCP_CATEGORY_KEYS.includes(c));
             writes.push(['mcp_categories', JSON.stringify(cats)]);
         }
+        if (body.mcp_memory_limit !== undefined) writes.push(['mcp_memory_limit', String(Math.min(Math.max(parseInt(body.mcp_memory_limit) || 0, 0), 200))]);
+        if (body.mcp_memory_ttl_hours !== undefined) writes.push(['mcp_memory_ttl_hours', String(Math.min(Math.max(parseInt(body.mcp_memory_ttl_hours) || 24, 1), 720))]);
+        if (body.mcp_rate_limit !== undefined) writes.push(['mcp_rate_limit', String(Math.min(Math.max(parseInt(body.mcp_rate_limit) || 20, 0), 1000))]);
+        if (body.mcp_rate_limit_window !== undefined) writes.push(['mcp_rate_limit_window', body.mcp_rate_limit_window === 'hour' ? 'hour' : 'minute']);
         for (const [k, v] of writes) await setSetting(env.DB, k, v);
         await logAction(env.DB, null, 'MCP settings updated');
         return apiJson({ success: true });
@@ -7014,6 +7523,7 @@ async function generateMcpTokenHandler(request, env) {
         const hashHex = toHex(hashBuf);
         const prefix = raw.slice(0, 12);
         await env.DB.prepare('INSERT INTO mcp_tokens (label, token_hash, token_prefix) VALUES (?, ?, ?)').bind(label, hashHex, prefix).run();
+        mcpTokenCache.delete(hashHex);
         await logAction(env.DB, null, 'MCP token generated');
         return apiJson({ success: true, token: raw, prefix, label });
     } catch (err) { return internalError(err); }
@@ -7023,6 +7533,8 @@ async function revokeMcpTokens(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await env.DB.prepare('DELETE FROM mcp_tokens').run();
+        await env.DB.prepare("DELETE FROM mcp_sessions WHERE session_key LIKE 'ext:%'").run();
+        await env.DB.prepare("DELETE FROM mcp_rate_limits WHERE session_key LIKE 'ext:%'").run();
         mcpTokenCache.clear();
         await logAction(env.DB, null, 'All MCP tokens revoked');
         return apiJson({ success: true });
@@ -7065,6 +7577,80 @@ async function verifyMcpToken(env, rawToken) {
         try { await env.DB.prepare('UPDATE mcp_tokens SET last_used_at = CURRENT_TIMESTAMP WHERE id = ?').bind(row.id).run(); } catch (e) {}
     }
     return row;
+}
+
+// ---- MCP session memory & rate limiting -------------------------------------
+async function getMcpMemoryLimit(db) {
+    try {
+        const raw = await getSetting(db, 'mcp_memory_limit');
+        const n = parseInt(raw);
+        return isNaN(n) ? 0 : Math.min(Math.max(n, 0), 200);
+    } catch (e) { return 0; }
+}
+async function loadMcpSession(db, sessionKey) {
+    if (!db || !sessionKey) return [];
+    try {
+        const row = await db.prepare('SELECT messages_json FROM mcp_sessions WHERE session_key = ?').bind(sessionKey).first();
+        if (!row || !row.messages_json) return [];
+        const parsed = JSON.parse(row.messages_json);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (e) { return []; }
+}
+async function saveMcpSession(db, sessionKey, messages, keep) {
+    if (!db || !sessionKey || keep <= 0) return;
+    try {
+        let capped = messages.slice(-(keep * 2));
+        let json = JSON.stringify(capped);
+        if (json.length > 64000) {
+            capped = capped.slice(-Math.max(2, Math.floor(keep / 2) * 2));
+            json = JSON.stringify(capped);
+        }
+        await db.prepare(
+            `INSERT INTO mcp_sessions (session_key, messages_json, size_bytes, updated_at)
+             VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+             ON CONFLICT(session_key) DO UPDATE SET messages_json = excluded.messages_json, size_bytes = excluded.size_bytes, updated_at = CURRENT_TIMESTAMP`
+        ).bind(sessionKey, json, json.length).run();
+    } catch (e) { /* ignore */ }
+}
+async function checkMcpRateLimit(db, sessionKey) {
+    if (!db) return { ok: true };
+    try {
+        const limit = parseInt(await getSetting(db, 'mcp_rate_limit')) || 0;
+        if (limit <= 0) return { ok: true };
+        const windowStr = await getSetting(db, 'mcp_rate_limit_window');
+        const isHour = windowStr === 'hour';
+        const minute = Math.floor(Date.now() / 60000);
+        const bucket = isHour ? Math.floor(minute / 60) : minute;
+        await db.prepare('INSERT INTO mcp_rate_limits (session_key, minute, count) VALUES (?, ?, 1) ON CONFLICT(session_key, minute) DO UPDATE SET count = count + 1').bind(sessionKey, minute).run();
+        let used;
+        if (isHour) {
+            const row = await db.prepare('SELECT COALESCE(SUM(count), 0) as n FROM mcp_rate_limits WHERE session_key = ? AND minute >= ?').bind(sessionKey, bucket * 60).first();
+            used = row ? row.n : 0;
+        } else {
+            const row = await db.prepare('SELECT count FROM mcp_rate_limits WHERE session_key = ? AND minute = ?').bind(sessionKey, minute).first();
+            used = row ? row.count : 0;
+        }
+        if (used > limit) return { ok: false, message: 'Rate limit exceeded. Please try again shortly.' };
+        return { ok: true };
+    } catch (e) { return { ok: true }; }
+}
+async function listMcpSessions(env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        const rows = await env.DB.prepare('SELECT session_key, size_bytes, updated_at FROM mcp_sessions ORDER BY updated_at DESC LIMIT 100').all();
+        return apiJson({ sessions: rows.results || [] });
+    } catch (err) { return internalError(err); }
+}
+async function clearMcpSessions(env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        await env.DB.prepare('DELETE FROM mcp_sessions').run();
+        await env.DB.prepare('DELETE FROM mcp_rate_limits').run();
+        await logAction(env.DB, null, 'All MCP sessions cleared');
+        return apiJson({ success: true });
+    } catch (err) { return internalError(err); }
 }
 
 // ---- Button input normalization ---------------------------------------------
@@ -7588,6 +8174,8 @@ async function executeMcpTool(name, args, env, categories) {
             if (!cmdName) throw new Error('command is required.');
             const content = String(args.content || '');
             if (!content) throw new Error('content is required.');
+            const existing = await env.DB.prepare('SELECT command FROM commands WHERE command = ?').bind(cmdName).first();
+            if (existing) throw new Error(`Command "${cmdName}" already exists. Use update_command to modify it.`);
             const payload = {
                 command: cmdName,
                 parent: args.parent || null,
@@ -7682,17 +8270,23 @@ async function executeMcpTool(name, args, env, categories) {
                         for (const a of storedAlts) if (a && a.provider) storedByProvider[String(a.provider)] = a.apiKey || '';
                         const cleaned = incomingAlts.map(a => {
                             const prov = String((a && a.provider) || '').trim();
+                            const incomingKey = a && a.apiKey && a.apiKey !== KEEP_SENTINEL ? String(a.apiKey) : '';
+                            const resolvedKey = incomingKey || storedByProvider[prov] || '';
+                            if (!resolvedKey) throw new Error(`Provider "${prov}" has no API key. Add it in the dashboard first, then retry.`);
                             return {
                                 provider: prov,
                                 model: String((a && a.model) || '').trim(),
-                                apiKey: storedByProvider[prov] || '',
+                                apiKey: resolvedKey,
                             };
                         }).filter(a => a.provider);
                         incoming.ai_alt_providers = JSON.stringify(cleaned);
                     } else {
                         delete incoming.ai_alt_providers;
                     }
-                } catch (e) { delete incoming.ai_alt_providers; }
+                } catch (e) {
+                    if (e && e.message && e.message.includes('has no API key')) throw e;
+                    delete incoming.ai_alt_providers;
+                }
             }
 
             // Also strip secrets hidden in custom headers.
@@ -7818,9 +8412,9 @@ async function handleMcp(request, env) {
         if (request.method === 'GET') {
             return new Response(null, { status: 405, headers: mcpJsonHeaders({ 'Allow': 'POST, DELETE, OPTIONS' }) });
         }
-        // DELETE = no-op (stateless transport has no session to terminate).
+        // DELETE — stateless transport, no session to terminate.
         if (request.method === 'DELETE') {
-            return new Response(null, { status: 200, headers: mcpJsonHeaders() });
+            return new Response(JSON.stringify({ jsonrpc: '2.0', error: { code: -32001, message: 'No session to terminate' }, id: null }), { status: 404, headers: mcpJsonHeaders() });
         }
         if (request.method !== 'POST') {
             return new Response(null, { status: 405, headers: mcpJsonHeaders({ 'Allow': 'POST, DELETE, OPTIONS' }) });
@@ -7869,12 +8463,13 @@ async function handleMcp(request, env) {
 
         if (method === 'initialize') {
             const requestedVersion = body.params && body.params.protocolVersion;
-            const supported = '2025-03-26';
+            const SUPPORTED = ['2025-03-26', '2024-11-05'];
+            const negotiate = SUPPORTED.includes(requestedVersion) ? requestedVersion : '2025-03-26';
             return new Response(JSON.stringify({
                 jsonrpc: '2.0',
                 id,
                 result: {
-                    protocolVersion: requestedVersion === supported ? supported : supported,
+                    protocolVersion: negotiate,
                     capabilities: { tools: { listChanged: false } },
                     serverInfo: { name: 'nyxx', version: VERSION }
                 }
@@ -7884,10 +8479,15 @@ async function handleMcp(request, env) {
             return new Response(JSON.stringify({ jsonrpc: '2.0', id, result: {} }), { status: 200, headers: mcpJsonHeaders() });
         }
         if (method === 'tools/list') {
+            const tools = getMcpToolDefinitions(categories).map(t => ({
+                name: t.function.name,
+                description: t.function.description,
+                inputSchema: t.function.parameters || { type: 'object', properties: {} },
+            }));
             return new Response(JSON.stringify({
                 jsonrpc: '2.0',
                 id,
-                result: { tools: getMcpToolDefinitions(categories).map(t => t.function) }
+                result: { tools }
             }), { status: 200, headers: mcpJsonHeaders() });
         }
         if (method === 'tools/call') {
@@ -7895,6 +8495,12 @@ async function handleMcp(request, env) {
             const toolArgs = (body.params && body.params.arguments) || {};
             if (!toolName || typeof toolName !== 'string') {
                 return new Response(JSON.stringify({ jsonrpc: '2.0', error: { code: -32602, message: 'Missing tool name' }, id }), { status: 200, headers: mcpJsonHeaders() });
+            }
+            const hdrSession = (request.headers.get('Mcp-Session-Id') || '').trim();
+            const sessionKey = 'ext:' + (hdrSession || tokenRow.token_prefix || 'unknown');
+            const rl = await checkMcpRateLimit(env.DB, sessionKey);
+            if (!rl.ok) {
+                return new Response(JSON.stringify({ jsonrpc: '2.0', error: { code: -32002, message: rl.message }, id }), { status: 429, headers: mcpJsonHeaders({ 'Retry-After': '60' }) });
             }
             try {
                 const result = await executeMcpTool(toolName, toolArgs, env, categories);
@@ -7962,12 +8568,21 @@ async function callMcpAiCompletion(settings, systemPrompt, messages, tools) {
         max_tokens: 2048
     };
     if (tools && tools.length) { payload.tools = tools; payload.tool_choice = 'auto'; }
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 60000);
     let res;
-    try {
-        res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey }, body: JSON.stringify(payload), signal: ctrl.signal });
-    } finally { clearTimeout(timer); }
+    for (let attempt = 0; ; attempt++) {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 60000);
+        try {
+            res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey }, body: JSON.stringify(payload), signal: ctrl.signal });
+        } finally { clearTimeout(timer); }
+        if (res.status === 429 && attempt < 2) {
+            const t = await res.text();
+            const m = t.match(/try again in ([\d.]+)s/i);
+            await new Promise(r => setTimeout(r, Math.min(((m ? parseFloat(m[1]) : 5) + 0.5) * 1000, 10000)));
+            continue;
+        }
+        break;
+    }
     if (!res.ok) { const t = await res.text(); throw new Error(`AI error ${res.status}: ${t.slice(0, 300)}`); }
     const data = await res.json();
     const choice = data.choices && data.choices[0];
@@ -7989,8 +8604,16 @@ Guidelines:
 
 async function runMcpAgent(userMessage, env, opts) {
     opts = opts || {};
-    // Always read categories from the DB — the dashboard passes only the AI provider
-    // fields, and categories are server-side config that must not be client-spoofable.
+    const sessionKey = opts.sessionKey || null;
+    const maxIter = Math.min(opts.maxIterations || 8, 8);
+
+    if (sessionKey) {
+        const rl = await checkMcpRateLimit(env.DB, sessionKey);
+        if (!rl.ok) {
+            return { finalMessage: '⚠️ ' + rl.message, toolCalls: [], messages: [], iterations: 0, rateLimited: true };
+        }
+    }
+
     const dbSettings = await getMcpSettingsFromDb(env);
     const aiSettings = await resolveMcpAiSettings(env, opts.settings || dbSettings);
     let categories = ['read', 'write'];
@@ -7999,25 +8622,44 @@ async function runMcpAgent(userMessage, env, opts) {
         if (Array.isArray(parsed)) categories = parsed.filter(c => MCP_CATEGORY_KEYS.includes(c));
     } catch (e) { /* keep default */ }
     const tools = getMcpToolDefinitions(categories);
-    const trimmedHistory = Array.isArray(opts.history)
-        ? opts.history.filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string').slice(-20)
-        : [];
-    const messages = trimmedHistory.concat([{ role: 'user', content: userMessage }]);
+
+    const keep = await getMcpMemoryLimit(env.DB);
+    let history = [];
+    if (sessionKey && keep > 0) history = await loadMcpSession(env.DB, sessionKey);
+    if (!history.length && Array.isArray(opts.history)) {
+        history = opts.history
+            .filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
+            .slice(-20);
+    }
+
+    return await runAgentLoop({
+        env,
+        sessionKey,
+        persistSession: true,
+        providerSettings: aiSettings,
+        systemPrompt: MCP_SYSTEM_PROMPT,
+        history,
+        userText: userMessage,
+        tools,
+        maxIter,
+        categories,
+    });
+}
+
+async function runAgentLoop({ env, sessionKey, persistSession, providerSettings, systemPrompt, history, userText, tools, maxIter, categories, forceKeep = 0 }) {
     const toolCallsLog = [];
-    const maxIter = opts.maxIterations || 8;
+    const messages = (history || []).concat([{ role: 'user', content: userText }]);
+    const keep = forceKeep || (persistSession && sessionKey ? await getMcpMemoryLimit(env.DB) : 0);
     let iteration = 0;
 
     while (iteration < maxIter) {
         iteration++;
-        const response = await callMcpAiCompletion(aiSettings, MCP_SYSTEM_PROMPT, messages, tools);
+        const response = await callMcpAiCompletion(providerSettings, systemPrompt, messages, tools);
         const toolCalls = response.tool_calls || [];
         if (!toolCalls.length) {
-            return {
-                finalMessage: response.content || '(no response)',
-                toolCalls: toolCallsLog,
-                messages: messages.concat([{ role: 'assistant', content: response.content || '' }]),
-                iterations: iteration,
-            };
+            const finalMessages = messages.concat([{ role: 'assistant', content: response.content || '' }]);
+            if (persistSession && sessionKey && keep > 0) await saveMcpSession(env.DB, sessionKey, finalMessages, keep);
+            return { finalMessage: response.content || '(no response)', toolCalls: toolCallsLog, messages: finalMessages, iterations: iteration };
         }
         messages.push({ role: 'assistant', content: response.content || null, tool_calls: toolCalls });
         for (const call of toolCalls) {
@@ -8027,44 +8669,54 @@ async function runMcpAgent(userMessage, env, opts) {
             let toolResult = null, toolError = null;
             try {
                 toolResult = await executeMcpTool(fnName, parsedArgs, env, categories);
-                try { await logAction(env.DB, null, 'MCP chat: ' + fnName + ' ' + JSON.stringify(parsedArgs).slice(0, 200)); } catch (e) {}
+                try { await logAction(env.DB, null, 'MCP agent: ' + fnName + ' ' + JSON.stringify(parsedArgs).slice(0, 200)); } catch (e) {}
             } catch (err) {
                 toolError = String(err.message || err);
+                try { await logAction(env.DB, null, 'MCP (error): ' + fnName + ' — ' + String(toolError).slice(0, 200)); } catch (e) {}
             }
             toolCallsLog.push({ name: fnName, args: parsedArgs, result: toolResult, error: toolError });
-            messages.push({
-                role: 'tool',
-                tool_call_id: call.id,
-                content: JSON.stringify(toolError ? { error: toolError } : toolResult),
-            });
+            messages.push({ role: 'tool', tool_call_id: call.id, content: JSON.stringify(toolError ? { error: toolError } : toolResult) });
         }
     }
-    return {
-        finalMessage: '(Reached maximum iterations without a final answer.)',
-        toolCalls: toolCallsLog, messages, iterations: iteration,
-    };
+
+    const finalMessages = messages.concat([{ role: 'assistant', content: '(Reached maximum iterations without a final answer.)' }]);
+    if (persistSession && sessionKey && keep > 0) await saveMcpSession(env.DB, sessionKey, finalMessages, keep);
+    return { finalMessage: '(Reached maximum iterations without a final answer.)', toolCalls: toolCallsLog, messages: finalMessages, iterations: iteration };
 }
 
 async function handleMcpDashboardChat(request, env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
+        const enabled = await getSetting(env.DB, 'mcp_enabled');
+        if (enabled !== '1') return apiJson({ error: 'MCP is disabled. Enable it in the MCP tab first.' }, 400);
         const body = await request.json().catch(() => null);
         if (!body || typeof body !== 'object') return apiJson({ error: 'Invalid request body.' }, 400);
         const msg = body.message;
         if (typeof msg !== 'string' || !msg.trim()) return apiJson({ error: 'Message must be a non-empty string.' }, 400);
         if (msg.length > 4000) return apiJson({ error: 'Message is too long (max 4000 chars).' }, 400);
-        const history = Array.isArray(body.history)
+
+        // Stable key — history must survive logout/login cycles.
+        const sessionKey = 'dash:admin';
+
+        const clientHistory = Array.isArray(body.history)
             ? body.history
                 .filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
                 .slice(-20)
                 .map(m => ({ role: m.role, content: String(m.content).slice(0, 4000) }))
             : [];
-        const result = await runMcpAgent(msg.trim(), env, { history });
-        return apiJson({ success: true, response: result.finalMessage, toolCalls: result.toolCalls, iterations: result.iterations });
-    } catch (err) {
-        return apiJson({ success: false, error: String(err.message || err) }, 200);
-    }
+
+        const result = await runMcpAgent(msg.trim(), env, { sessionKey, history: clientHistory, maxIterations: 6 });
+        return apiJson({
+            success: !result.rateLimited,
+            response: result.finalMessage,
+            toolCalls: result.toolCalls,
+            iterations: result.iterations,
+            rateLimited: !!result.rateLimited
+        });
+        } catch (err) {
+            return apiJson({ success: false, error: String(err.message || err) }, 500);
+        }
 }
 
 async function handleMcpAiTest(request, env) {
@@ -8083,9 +8735,504 @@ async function getMcpCalls(env) {
     if (!env.DB) return apiJson({ calls: [] });
     try {
         await initializeDatabase(env.DB);
-        const rows = await env.DB.prepare("SELECT id, action, timestamp FROM logs WHERE action LIKE 'MCP%' ORDER BY id DESC LIMIT 50").all();
+        const rows = await env.DB.prepare(
+            "SELECT id, action, timestamp FROM logs WHERE (action LIKE 'MCP:%' OR action LIKE 'MCP agent:%' OR action LIKE 'MCP (error):%') ORDER BY id DESC LIMIT 5"
+        ).all();
         return apiJson({ calls: rows.results || [] });
     } catch (err) { return internalError(err); }
+}
+
+// ============================================================================
+// DEDICATED CHAT ROUTE (ChatGPT-like)
+// ============================================================================
+const CHAT_HTML = `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Nyxx | Chat</title>
+<link rel="shortcut icon" href="https://raw.githubusercontent.com/Mahan07dev/Nyxx/refs/heads/main/logo.webp" type="image/x-icon">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+:root{--bg:#0a0a0a;--surface:#161616;--surface-2:#212121;--border:#2a2a2a;--text:#ececec;--text-2:#a3a3a3;--accent:#10a37f;--danger:#ef4444;--radius:12px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:15px}
+.app{display:flex;height:100vh;overflow:hidden}
+.sidebar{width:260px;background:#080808;border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;transition:transform .25s ease}
+.sidebar-head{padding:14px;border-bottom:1px solid var(--border)}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.brand img{width:28px;height:28px;border-radius:6px}
+.brand .name{font-weight:600;font-size:15px}
+.new-chat-btn{width:100%;padding:10px 14px;border:1px solid var(--border);background:transparent;color:var(--text);border-radius:var(--radius);cursor:pointer;font-size:14px;text-align:left;display:flex;align-items:center;gap:8px}
+.new-chat-btn:hover{background:var(--surface)}
+.chat-list{flex:1;overflow-y:auto;padding:8px}
+.chat-list .empty-sideless{padding:20px;color:var(--text-2);font-size:13px;text-align:center}
+.chat-item{padding:10px 12px;border-radius:8px;cursor:pointer;font-size:14px;color:var(--text-2);display:flex;align-items:center;gap:8px;margin-bottom:2px;transition:background .1s}
+.chat-item:hover{background:var(--surface)}
+.chat-item.active{background:var(--surface-2);color:var(--text)}
+.chat-item .ti{font-size:13px;color:var(--text-2);flex-shrink:0}
+.chat-item .title{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chat-item .del{background:none;border:none;color:var(--text-2);cursor:pointer;padding:4px;border-radius:4px;display:none;font-size:12px;flex-shrink:0}
+.chat-item:hover .del{display:inline-flex}
+.chat-item .del:hover{background:rgba(239,68,68,.15);color:var(--danger)}
+.sidebar-foot{padding:12px;border-top:1px solid var(--border);font-size:12px;color:var(--text-2)}
+.sidebar-foot a{color:var(--text-2);text-decoration:none}
+.sidebar-foot a:hover{color:var(--text)}
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.topbar{padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;min-height:56px}
+.topbar .hamburger{display:none;background:none;border:none;color:var(--text);font-size:18px;cursor:pointer;padding:6px;border-radius:6px}
+.topbar .hamburger:hover{background:var(--surface)}
+.topbar h1{font-size:16px;font-weight:600;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.topbar .back{color:var(--text-2);font-size:13px;text-decoration:none;padding:6px 10px;border-radius:6px;border:1px solid var(--border);display:inline-flex;align-items:center;gap:6px}
+.topbar .back:hover{background:var(--surface);color:var(--text)}
+.messages{flex:1;overflow-y:auto;padding:20px;max-width:900px;margin:0 auto;width:100%}
+.empty-chat{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;color:var(--text-2);padding:20px}
+.empty-chat .ic{font-size:40px;color:var(--accent);margin-bottom:16px}
+.empty-chat h2{color:var(--text);font-size:26px;margin:0 0 10px;font-weight:600}
+.empty-chat p{max-width:520px;line-height:1.6;margin:0 0 24px}
+.suggestions{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;width:100%;max-width:640px}
+.sugg{padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;font-size:13px;text-align:left;color:var(--text);line-height:1.5}
+.sugg:hover{background:var(--surface-2);border-color:#3a3a3a}
+.sugg b{display:block;margin-bottom:4px;color:var(--text);font-weight:600}
+.sugg span{color:var(--text-2);font-size:12px}
+.msg{display:flex;gap:12px;margin-bottom:22px;animation:fadeIn .2s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.msg .avatar{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+.msg.user .avatar{background:var(--accent);color:#fff}
+.msg.assistant .avatar{background:var(--surface-2);color:var(--text)}
+.msg .body{flex:1;min-width:0}
+.msg .role{font-size:11px;font-weight:700;color:var(--text-2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.06em}
+.msg .content{line-height:1.7;white-space:pre-wrap;word-wrap:break-word;overflow-wrap:break-word}
+.msg .content pre{background:#000;padding:14px;border-radius:8px;overflow-x:auto;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;margin:8px 0;line-height:1.5}
+.msg .content code{background:rgba(255,255,255,.08);padding:1px 6px;border-radius:4px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9em}
+.msg .content pre code{background:none;padding:0;font-size:13px}
+.tools{margin-top:10px;padding:8px 12px;background:var(--surface);border-radius:8px;font-size:12px;border-left:3px solid var(--accent)}
+.tools .tool{color:var(--text-2);margin-bottom:4px;display:flex;gap:6px;align-items:center}
+.tools .tool:last-child{margin-bottom:0}
+.tools .tool .ok{color:var(--accent)}
+.tools .tool .fail{color:var(--danger)}
+.thinking{display:inline-flex;gap:5px;align-items:center;color:var(--text-2);font-size:13px}
+.thinking .dot{width:6px;height:6px;border-radius:50%;background:var(--text-2);animation:bounce 1.2s infinite}
+.thinking .dot:nth-child(2){animation-delay:.15s}
+.thinking .dot:nth-child(3){animation-delay:.3s}
+@keyframes bounce{0%,80%,100%{opacity:.3;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
+.composer{padding:12px 20px 20px;max-width:900px;margin:0 auto;width:100%}
+.composer-inner{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;display:flex;gap:10px;align-items:flex-end;transition:border-color .15s}
+.composer-inner:focus-within{border-color:#3a3a3a}
+.composer textarea{flex:1;background:none;border:none;color:var(--text);font-family:inherit;font-size:15px;resize:none;max-height:220px;min-height:24px;line-height:1.5;outline:none;padding:0;overflow-y:auto}
+.composer .send{background:var(--accent);border:none;color:#fff;width:34px;height:34px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:opacity .15s}
+.composer .send:disabled{opacity:.35;cursor:not-allowed}
+.composer .send:not(:disabled):hover{background:#0d8a6a}
+.composer .hint{text-align:center;font-size:11px;color:var(--text-2);margin-top:8px}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:5}
+@media (max-width:768px){
+    .sidebar{position:fixed;left:0;top:0;bottom:0;z-index:10;transform:translateX(-100%)}
+    .sidebar.open{transform:none}
+    .topbar .hamburger{display:inline-flex}
+    .overlay.show{display:block}
+    .messages{padding:12px}
+    .composer{padding:12px}
+}
+</style></head>
+<body>
+<div class="app">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-head">
+            <div class="brand">
+                <img src="https://raw.githubusercontent.com/Mahan07dev/Nyxx/refs/heads/main/logo.webp" alt="Nyxx">
+                <span class="name">Nyxx Chat</span>
+            </div>
+            <button class="new-chat-btn" onclick="newChat()"><i class="fa-solid fa-plus"></i> New chat</button>
+        </div>
+        <div class="chat-list" id="chat-list"></div>
+        <div class="sidebar-foot">
+            <a href="/">← Back to dashboard</a>
+        </div>
+    </aside>
+    <div class="overlay" id="overlay" onclick="toggleSidebar(false)"></div>
+    <main class="main">
+        <header class="topbar">
+            <button class="hamburger" onclick="toggleSidebar()" aria-label="Toggle menu"><i class="fa-solid fa-bars"></i></button>
+            <h1 id="chat-title">Nyxx Chat</h1>
+            <a class="back" href="/"><i class="fa-solid fa-arrow-left"></i> Dashboard</a>
+        </header>
+        <div class="messages" id="messages"></div>
+        <div class="composer">
+            <div class="composer-inner">
+                <textarea id="input" rows="1" placeholder="Message Nyxx…" oninput="autoGrow(this)" onkeydown="onKey(event)"></textarea>
+                <button class="send" id="send-btn" onclick="send()" aria-label="Send"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+            <div class="hint">Enter to send · Shift+Enter for newline · AI can manage your bot</div>
+        </div>
+    </main>
+</div>
+<script>
+function $(id){return document.getElementById(id);}
+function esc(s){if(s==null)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function renderMarkdown(text){
+    var parts=String(text||'').split('\`\`\`');
+    var out='';
+    for(var i=0;i<parts.length;i++){
+        if(i%2===1){
+            var block=parts[i];
+            var nl=block.indexOf('\\n');
+            if(nl>0)block=block.slice(nl+1);
+            out+='<pre><code>'+esc(block.replace(/\\n$/,''))+'</code></pre>';
+        } else {
+            var t=esc(parts[i]);
+            t=t.replace(/\`([^\`\\n]+)\`/g,'<code>$1</code>');
+            out+=t;
+        }
+    }
+    return out;
+}
+async function api(method,path,body){
+    var opts={method:method,headers:{},credentials:'same-origin'};
+    if(body!==undefined){opts.headers['Content-Type']='application/json';opts.body=JSON.stringify(body);}
+    var res=await fetch(path,opts);
+    if(res.status===401){window.location.href='/';throw new Error('Session expired');}
+    var data=null;
+    try{data=await res.json();}catch(e){}
+    if(!res.ok)throw new Error((data&&data.error)||('Request failed ('+res.status+')'));
+    return data;
+}
+
+var currentKey=null;
+var currentMessages=[];
+var sessions=[];
+var sending=false;
+
+function toggleSidebar(force){
+    var s=$('sidebar'),o=$('overlay');
+    var open=(typeof force==='boolean')?force:!s.classList.contains('open');
+    s.classList.toggle('open',open);
+    o.classList.toggle('show',open);
+}
+function autoGrow(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,220)+'px';}
+function onKey(e){
+    if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}
+}
+function scrollBottom(){var m=$('messages');requestAnimationFrame(function(){m.scrollTop=m.scrollHeight;});}
+
+function emptyState(){
+    return '<div class="empty-chat">'+
+        '<div class="ic"><i class="fa-solid fa-wand-magic-sparkles"></i></div>'+
+        '<h2>How can I help with your bot?</h2>'+
+        '<p>I can read stats, create and edit commands, manage groups, send messages, tweak AI settings — anything enabled in the MCP tab.</p>'+
+        '<div class="suggestions">'+
+        '<div class="sugg" onclick="fillAndSend(\\'Show me the bot stats\\')"><b>Bot overview</b><span>Show me the bot stats</span></div>'+
+        '<div class="sugg" onclick="fillAndSend(\\'List all users who started the bot\\')"><b>Users</b><span>List all users who started the bot</span></div>'+
+        '<div class="sugg" onclick="fillAndSend(\\'Create a /help command that replies with a friendly welcome\\')"><b>Create command</b><span>Create a /help command</span></div>'+
+        '<div class="sugg" onclick="fillAndSend(\\'Show me the current AI system prompt\\')"><b>AI settings</b><span>Show the current AI prompt</span></div>'+
+        '</div>'+
+    '</div>';
+}
+function fillAndSend(text){
+    $('input').value=text;
+    autoGrow($('input'));
+    send();
+}
+
+function renderMessages(){
+    var box=$('messages');
+    if(!currentMessages.length){box.innerHTML=emptyState();return;}
+    var html='';
+    for(var i=0;i<currentMessages.length;i++){
+        var m=currentMessages[i];
+        var role=m.role==='user'?'user':'assistant';
+        var initial=role==='user'?'U':'N';
+        html+='<div class="msg '+role+'">'+
+            '<div class="avatar">'+initial+'</div>'+
+            '<div class="body">'+
+                '<div class="role">'+(role==='user'?'You':'Nyxx')+'</div>'+
+                '<div class="content">'+renderMarkdown(m.content||'')+'</div>'+
+                (m.toolCalls&&m.toolCalls.length?renderTools(m.toolCalls):'')+
+            '</div>'+
+        '</div>';
+    }
+    box.innerHTML=html;
+    scrollBottom();
+}
+function renderTools(tools){
+    var h='<div class="tools">';
+    for(var i=0;i<tools.length;i++){
+        var t=tools[i];
+        var cls=t.error?'fail':'ok';
+        var sym=t.error?'✗':'✓';
+        h+='<div class="tool"><span class="'+cls+'">'+sym+'</span> <code>'+esc(t.name)+'</code>'+
+            (t.error?' — <span class="fail">'+esc(String(t.error).slice(0,200))+'</span>':'')+
+        '</div>';
+    }
+    h+='</div>';
+    return h;
+}
+function appendLive(role,content,toolCalls){
+    var box=$('messages');
+    if(box.querySelector('.empty-chat'))box.innerHTML='';
+    var initial=role==='user'?'U':'N';
+    var div=document.createElement('div');
+    div.className='msg '+role;
+    div.innerHTML='<div class="avatar">'+initial+'</div>'+
+        '<div class="body">'+
+            '<div class="role">'+(role==='user'?'You':'Nyxx')+'</div>'+
+            '<div class="content">'+renderMarkdown(content||'')+'</div>'+
+            (toolCalls&&toolCalls.length?renderTools(toolCalls):'')+
+        '</div>';
+    box.appendChild(div);
+    scrollBottom();
+}
+function appendThinking(){
+    var box=$('messages');
+    var div=document.createElement('div');
+    div.className='msg assistant';
+    div.id='thinking';
+    div.innerHTML='<div class="avatar">N</div>'+
+        '<div class="body">'+
+            '<div class="role">Nyxx</div>'+
+            '<div class="content"><span class="thinking"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span></div>'+
+        '</div>';
+    box.appendChild(div);
+    scrollBottom();
+}
+function removeThinking(){var t=$('thinking');if(t)t.remove();}
+
+async function loadSessions(){
+    try{
+        var d=await api('GET','/api/chat/sessions');
+        sessions=d.sessions||[];
+        renderSessions();
+    }catch(e){/* silent */}
+}
+function renderSessions(){
+    var box=$('chat-list');
+    if(!sessions.length){box.innerHTML='<div class="empty-sideless">No chats yet</div>';return;}
+    var html='';
+    for(var i=0;i<sessions.length;i++){
+        var s=sessions[i];
+        var active=(s.session_key===currentKey)?' active':'';
+        html+='<div class="chat-item'+active+'" onclick="openSession(\\''+esc(s.session_key)+'\\')">'+
+            '<i class="fa-regular fa-comment ti"></i>'+
+            '<span class="title">'+esc(s.title||'New chat')+'</span>'+
+            '<button class="del" onclick="deleteSession(event,\\''+esc(s.session_key)+'\\')" aria-label="Delete"><i class="fa-solid fa-trash"></i></button>'+
+        '</div>';
+    }
+    box.innerHTML=html;
+}
+async function openSession(key){
+    currentKey=key;
+    toggleSidebar(false);
+    var box=$('messages');
+    box.innerHTML='<div style="text-align:center;padding:30px;color:var(--text-2)">Loading…</div>';
+    try{
+        var d=await api('GET','/api/chat/sessions/'+encodeURIComponent(key));
+        currentMessages=(d.messages||[]).filter(function(m){return m.role==='user'||m.role==='assistant';});
+        $('chat-title').textContent=d.title||'Chat';
+        renderMessages();
+        loadSessions();
+    }catch(e){
+        box.innerHTML='<div style="text-align:center;padding:30px;color:var(--danger)">'+esc(e.message)+'</div>';
+    }
+}
+function newChat(){
+    currentKey=null;
+    currentMessages=[];
+    $('chat-title').textContent='Nyxx Chat';
+    renderMessages();
+    renderSessions();
+    toggleSidebar(false);
+    $('input').focus();
+}
+async function deleteSession(ev,key){
+    ev.stopPropagation();
+    if(!confirm('Delete this chat?'))return;
+    try{
+        await api('DELETE','/api/chat/sessions/'+encodeURIComponent(key));
+        if(currentKey===key){newChat();}
+        await loadSessions();
+    }catch(e){alert(e.message);}
+}
+async function send(){
+    if(sending)return;
+    var input=$('input');
+    var text=input.value.trim();
+    if(!text)return;
+    sending=true;
+    $('send-btn').disabled=true;
+    var wasNew=!currentKey;
+    input.value='';
+    autoGrow(input);
+    appendLive('user',text);
+    appendThinking();
+try{
+    var path=wasNew?'/api/chat/sessions/new/send':'/api/chat/sessions/'+encodeURIComponent(currentKey)+'/send';
+    var d=await api('POST',path,{message:text});
+    removeThinking();
+    if(d.sessionKey)currentKey=d.sessionKey;
+
+    if(d && d.success === false){
+        // Server reported a real error (bad/missing API key, provider 4xx/5xx, etc.).
+        var errMsg='⚠️ '+(d.error||'The AI returned an error.');
+        appendLive('assistant',errMsg);
+    } else {
+        var respText=(d && d.response) || '(no response)';
+        appendLive('assistant',respText,(d && d.toolCalls)||[]);
+        currentMessages.push({role:'user',content:text});
+        currentMessages.push({role:'assistant',content:respText,toolCalls:(d && d.toolCalls)||[]});
+    }
+
+    if(wasNew||!$('chat-title').textContent||$('chat-title').textContent==='Nyxx Chat'){
+        $('chat-title').textContent=text.replace(/\\s+/g,' ').slice(0,60);
+    }
+    loadSessions();
+}catch(e){
+    removeThinking();
+    appendLive('assistant','⚠️ '+e.message);
+}finally{
+        sending=false;
+        $('send-btn').disabled=false;
+        $('input').focus();
+    }
+}
+
+(async function init(){
+    await loadSessions();
+    var q=new URLSearchParams(window.location.search);
+    var k=q.get('s');
+    if(k){await openSession(k);}else{renderMessages();}
+    $('input').focus();
+})();
+</script>
+</body></html>`;
+
+async function handleChatPage(request, env) {
+    const session = await getSession(request, env);
+    if (!session) {
+        return new Response(null, { status: 302, headers: { Location: '/' } });
+    }
+    return new Response(CHAT_HTML, { headers: HTML_HEADERS });
+}
+
+async function listChatSessions(env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        const rows = await env.DB.prepare(
+            "SELECT session_key, title, size_bytes, updated_at FROM mcp_sessions WHERE session_key LIKE 'chat:%' ORDER BY updated_at DESC LIMIT 100"
+        ).all();
+        return apiJson({ sessions: rows.results || [] });
+    } catch (err) { return internalError(err); }
+}
+
+async function createChatSession(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        const mcpOn = await getSetting(env.DB, 'mcp_enabled');
+        if (mcpOn !== '1') return apiJson({ error: 'MCP is disabled. Enable it in the MCP tab first.' }, 400);
+        const body = await request.json().catch(() => ({}));
+        const key = 'chat:' + crypto.randomUUID().slice(0, 8);
+        const title = String(body.title || 'New chat').slice(0, 60);
+        await env.DB.prepare(
+            "INSERT INTO mcp_sessions (session_key, messages_json, size_bytes, title) VALUES (?, '[]', 2, ?)"
+        ).bind(key, title).run();
+        return apiJson({ success: true, sessionKey: key, title });
+    } catch (err) { return internalError(err); }
+}
+
+async function getChatSession(env, url) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const key = decodeURIComponent(url.pathname.split('/')[4]);
+        if (!key || !key.startsWith('chat:')) return apiJson({ error: 'Invalid session key.' }, 400);
+        await initializeDatabase(env.DB);
+        const row = await env.DB.prepare(
+            "SELECT session_key, title, messages_json, updated_at FROM mcp_sessions WHERE session_key = ?"
+        ).bind(key).first();
+        if (!row) return apiJson({ error: 'Session not found.' }, 404);
+        let messages = [];
+        try { messages = JSON.parse(row.messages_json || '[]'); } catch (e) {}
+        return apiJson({ sessionKey: key, title: row.title || 'New chat', messages, updated_at: row.updated_at });
+    } catch (err) { return internalError(err); }
+}
+
+async function deleteChatSession(env, url) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const key = decodeURIComponent(url.pathname.split('/')[4]);
+        if (!key || !key.startsWith('chat:')) return apiJson({ error: 'Invalid session key.' }, 400);
+        await initializeDatabase(env.DB);
+        await env.DB.prepare("DELETE FROM mcp_sessions WHERE session_key = ?").bind(key).run();
+        return apiJson({ success: true });
+    } catch (err) { return internalError(err); }
+}
+
+async function sendChatMessage(request, env, url) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const keyIn = decodeURIComponent(url.pathname.split('/')[4]);
+        const body = await request.json().catch(() => null);
+        if (!body || typeof body !== 'object') return apiJson({ error: 'Invalid body.' }, 400);
+        const message = String(body.message || '').trim();
+        if (!message) return apiJson({ error: 'Message is required.' }, 400);
+        if (message.length > 8000) return apiJson({ error: 'Message too long (max 8000 chars).' }, 400);
+
+        await initializeDatabase(env.DB);
+        const mcpOn = await getSetting(env.DB, 'mcp_enabled');
+        if (mcpOn !== '1') return apiJson({ error: 'MCP is disabled. Enable it in the MCP tab first.' }, 400);
+
+        let key = keyIn;
+        let isNew = false;
+        if (key === 'new') {
+            key = 'chat:' + crypto.randomUUID().slice(0, 8);
+            isNew = true;
+            const firstTitle = message.replace(/\s+/g, ' ').trim().slice(0, 60) || 'New chat';
+            await env.DB.prepare(
+                "INSERT INTO mcp_sessions (session_key, messages_json, size_bytes, title) VALUES (?, '[]', 2, ?)"
+            ).bind(key, firstTitle).run();
+        } else if (!key.startsWith('chat:')) {
+            return apiJson({ error: 'Invalid session key.' }, 400);
+        }
+
+        const existing = await env.DB.prepare('SELECT title FROM mcp_sessions WHERE session_key = ?').bind(key).first();
+        if (!existing) return apiJson({ error: 'Session not found.' }, 404);
+
+        const settings = await getMcpSettingsFromDb(env);
+        const aiSettings = await resolveMcpAiSettings(env, settings);
+        let categories = ['read', 'write'];
+        try {
+            const parsed = JSON.parse(settings.mcp_categories || '[]');
+            if (Array.isArray(parsed)) categories = parsed.filter(c => MCP_CATEGORY_KEYS.includes(c));
+        } catch (e) { /* keep default */ }
+
+        const tools = getMcpToolDefinitions(categories);
+        const history = await loadMcpSession(env.DB, key);
+
+        const result = await runAgentLoop({
+            env,
+            sessionKey: key,
+            persistSession: true,
+            forceKeep: 50,
+            providerSettings: aiSettings,
+            systemPrompt: MCP_SYSTEM_PROMPT,
+            history,
+            userText: message,
+            tools,
+            maxIter: 8,
+            categories,
+        });
+
+        // Update title if still "New chat"
+        if (!isNew && (!existing.title || existing.title === 'New chat')) {
+            const newTitle = message.replace(/\s+/g, ' ').trim().slice(0, 60) || 'New chat';
+            await env.DB.prepare('UPDATE mcp_sessions SET title = ? WHERE session_key = ?').bind(newTitle, key).run();
+        }
+
+        return apiJson({
+            success: true,
+            sessionKey: key,
+            response: result.finalMessage,
+            toolCalls: result.toolCalls,
+            iterations: result.iterations,
+        });
+    } catch (err) {
+    return apiJson({ success: false, error: String(err.message || err) }, 500);
+    }
 }
 
 // ============================================================================
@@ -8330,6 +9477,10 @@ async function processTelegramUpdate(update, env) {
                     }
                 }
                 if (msg.text && msg.text.split('@')[0].trim() === '/rules' && groupSettings && groupSettings.rules_text) {
+                    if (!await checkPermission(env, msg.from.id, 'rules_command')) {
+                        await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: escapeTelegramHTML(botStrings().unauthorized), parse_mode: 'HTML' });
+                        return;
+                    }
                     await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: escapeTelegramHTML(groupSettings.rules_text), parse_mode: 'HTML' });
                     return;
                 }
@@ -8364,7 +9515,18 @@ async function processTelegramUpdate(update, env) {
                             // Always delete the user's trigger message so the chat stays clean.
                             await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id });
 
-                            // --- Admin-only guard (applies to all kinds) ---
+                            // Global permission: featured commands
+                            if (!await checkPermission(env, userId, 'featured_commands')) {
+                                await sendMessage(chatId, botStrings().unauthorized, BOT_TOKEN, 'HTML');
+                                return;
+                            }
+                            // Global permission: /mcp featured commands
+                            if (feat.kind === 'mcp' && !await checkPermission(env, userId, 'mcp_telegram')) {
+                                await sendMessage(chatId, botStrings().unauthorized, BOT_TOKEN, 'HTML');
+                                return;
+                            }
+
+                            // --- Admin-only guard (per-command, applies to all kinds) ---
                             if (feat.admin_only) {
                                 const u = await env.DB.prepare('SELECT role FROM users WHERE id = ?').bind(userId).first();
                                 if (!u || u.role !== 'admin') {
@@ -8388,21 +9550,23 @@ async function processTelegramUpdate(update, env) {
                                 // Show typing while the agent runs.
                                 await tgCall(BOT_TOKEN, 'sendChatAction', { chat_id: chatId, action: 'typing' });
                                 try {
-                                    const result = await runMcpAgent(argsTrimmed, env, {});
-                                    const lines = [result.finalMessage || '(no response)'];
+                                    const sessionKey = 'tg:' + chatId + ':' + userId;
+                                    const result = await runMcpAgent(argsTrimmed, env, { sessionKey, maxIterations: 3 });
+                                    if (result.rateLimited) {
+                                        await sendMessage(chatId, formatAiReply(result.finalMessage), BOT_TOKEN, 'HTML');
+                                        return;
+                                    }
+                                    const lines = [formatAiReply(result.finalMessage || '(no response)')];
                                     if (result.toolCalls && result.toolCalls.length) {
                                         lines.push('');
-                                        lines.push('_Tools used:_');
+                                        lines.push('<i>Tools used:</i>');
                                         for (const tc of result.toolCalls) {
                                             const mark = tc.error ? '✗' : '✓';
                                             lines.push(`• ${mark} ${tc.name}`);
                                         }
                                     }
-                                    let finalText = lines.join('\n');
-                                    // Send in Telegram-safe chunks (plain text — the AI may emit markdown).
-                                    for (const chunk of splitTelegramMessage(finalText, 3800)) {
-                                        await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: chunk });
-                                    }
+                                    const finalText = lines.join('\n');
+                                    await sendMessage(chatId, finalText, BOT_TOKEN, 'HTML');
                                 } catch (err) {
                                     await sendRichText(BOT_TOKEN, chatId, '⚠️ MCP error: ' + String(err.message || err).slice(0, 400));
                                 }
@@ -8501,6 +9665,10 @@ async function processTelegramUpdate(update, env) {
                 }
 
                 if (aiWillHandle) {
+                    if (!await checkPermission(env, userId, 'ai_chat')) {
+                        await sendMessage(chatId, botStrings().unauthorized, BOT_TOKEN, 'HTML');
+                        return;
+                    }
                     const effective = Object.assign({}, aiSettings);
                     if (isGroup && groupSettings) { if (groupSettings.memory !== 'inherit') effective.ai_group_memory = groupSettings.memory; }
                     await processAiReply(chatId, userId, text, effective, env, BOT_TOKEN, msg.chat.type);
@@ -8527,9 +9695,23 @@ async function processTelegramUpdate(update, env) {
                 }
                 if (targetCommand) {
                     const cmdRecord = await env.DB.prepare('SELECT * FROM commands WHERE command = ? AND enabled = 1').bind(targetCommand).first();
-                    if (cmdRecord) { await executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, msg.chat.type); return; }
+                    if (cmdRecord) {
+                        if (!await checkPermission(env, userId, 'commands')) {
+                            await sendMessage(chatId, botStrings().unauthorized, BOT_TOKEN, 'HTML');
+                            return;
+                        }
+                        await executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, msg.chat.type);
+                        return;
+                    }
                 }
-                if (text === '/start') { await sendDefaultStart(chatId, env, BOT_TOKEN); return; }
+                if (text === '/start') {
+                    if (!await checkPermission(env, userId, 'start_command')) {
+                        await sendMessage(chatId, botStrings().unauthorized, BOT_TOKEN, 'HTML');
+                        return;
+                    }
+                    await sendDefaultStart(chatId, env, BOT_TOKEN);
+                    return;
+                }
                 if (isPrivate) await sendMessage(chatId, botStrings().not_found, BOT_TOKEN, 'HTML');
                 return;
             }
@@ -8553,6 +9735,10 @@ async function processTelegramUpdate(update, env) {
             if (cb.from) await upsertUser(cb.from, { privateStarted: cb.message.chat.type === 'private' });
             const cbBlockType = cb.from ? await isUserBlocked(env, cb.from.id) : null;
             if (cbBlockType === 'full') { await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id }); return; }
+            if (cb.from && !await checkPermission(env, cb.from.id, 'callback_queries')) {
+                await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
+                return;
+            }
             if (data && data.startsWith('/')) {
                 if (data === '/start') {
                     const answer = tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
@@ -8580,6 +9766,10 @@ async function processTelegramUpdate(update, env) {
                 const aiSettings = await getAiSettingsFromDb(env);
                 const answer = tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
                 if (aiSettings.ai_enabled === '1' && aiEnabledFor(cb.message.chat.type)) {
+                    if (!await checkPermission(env, cb.from.id, 'ai_chat')) {
+                        await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
+                        return;
+                    }
                     await processAiReply(chatId, cb.from.id, data, aiSettings, env, BOT_TOKEN, cb.message.chat.type);
                 } else {
                     await sendMessage(chatId, data, BOT_TOKEN, 'HTML');
@@ -8659,6 +9849,35 @@ async function trimAiMessages(db, chatId, keep) {
     const row = await db.prepare('SELECT id FROM ai_messages WHERE chat_id = ? ORDER BY id DESC LIMIT 1 OFFSET ?').bind(chatId, keep * 2).first();
     if (row) await db.prepare('DELETE FROM ai_messages WHERE chat_id = ? AND id <= ?').bind(chatId, row.id).run();
 }
+// Local, zero-API-call intent detector for "auto" prompt mode.
+//   strong → bot-management entity + action (or a pending confirmation)
+//   weak   → bot-management entity only (let the model decide natively)
+//   none   → plain chat, tools are not attached at all
+const TOOL_ENTITY_RE = /\b(users?|members?|subscribers?|commands?|groups?|chats?|channels?|stats?|statistics|analytics|broadcasts?|menu|buttons?|keyboard|webhook|settings?|config(?:uration)?|bot|memory|logs?|bans?|unban|block(?:ed)?|admins?|welcome|database|ai)\b|کاربر|ممبر|عضو|دستور|کامند|گروه|آمار|همگانی|منو|دکمه|وب.?هوک|تنظیمات|ربات|بات|حافظه|مسدود|بن\b|ادمین|لاگ|خوشامد|هوش مصنوعی/i;
+const TOOL_ACTION_RE = /\b(list|show|get|give|fetch|count|how many|who|what(?:'s| is| are)|check|view|find|search|create|add|make|new|delete|remove|clear|reset|update|change|edit|set|rename|enable|disable|turn (?:on|off)|send|dm|message|test|ban|unban|block)\b|نشان|نمایش|لیست|بده|بگو|چند|چقدر|کیست|بساز|ایجاد|اضافه|حذف|پاک|تغییر|ویرایش|آپدیت|بروز|تنظیم|فعال|غیرفعال|ارسال|بفرست|تست|بررسی|چک/i;
+const TOOL_CONFIRM_PROMPT_RE = /\b(confirm|are you sure|proceed|go ahead|irreversible)\b|مطمئن|تایید|تأیید/i;
+function detectToolIntent(userText, history) {
+    const t = String(userText || '').trim().slice(0, 1000);
+    if (!t) return 'none';
+    // Short reply to a pending confirmation ("yes", "do it", "بله") must stay on the tool path.
+    const lastAssistant = [...(history || [])].reverse().find(h => h.role === 'assistant');
+    if (lastAssistant && t.length <= 40 && TOOL_CONFIRM_PROMPT_RE.test(String(lastAssistant.content || '').slice(-400))) return 'strong';
+    const entity = TOOL_ENTITY_RE.test(t);
+    if (!entity) return 'none';
+    return TOOL_ACTION_RE.test(t) ? 'strong' : 'weak';
+}
+async function resolveAiMcpCategories(aiSettings, env) {
+    let mcpCats = ['read', 'write'];
+    try {
+        const dbMcp = await getMcpSettingsFromDb(env);
+        const parsed = JSON.parse(dbMcp.mcp_categories || '[]');
+        if (Array.isArray(parsed)) mcpCats = parsed.filter(c => MCP_CATEGORY_KEYS.includes(c));
+    } catch (e) {}
+    const restrict = String(aiSettings.ai_mcp_categories || '').trim();
+    if (!restrict) return mcpCats;
+    const wanted = restrict.split(',').map(s => s.trim()).filter(Boolean);
+    return mcpCats.filter(c => wanted.includes(c));
+}
 async function processAiReply(chatId, userId, text, aiSettings, env, BOT_TOKEN, chatType) {
     const strings = botStrings();
     let streamMsgId = null;
@@ -8696,10 +9915,121 @@ async function processAiReply(chatId, userId, text, aiSettings, env, BOT_TOKEN, 
         const memoryLimit = parseInt(isGroup ? (aiSettings.ai_group_memory || '0') : (aiSettings.ai_memory || '0'));
         let history = [];
         if (memoryLimit > 0) history = await getAiHistory(env.DB, chatId, memoryLimit);
-        const streaming = aiSettings.ai_streaming === '1';
+
+        const toolsOn = aiSettings.ai_use_mcp_tools === '1';
+        const streaming = !toolsOn && aiSettings.ai_streaming === '1';
         let reply = null, mainError = null;
         let publishChain = Promise.resolve();
         let lastPreview = '';
+
+        if (toolsOn) {
+            const mcpLive = await getSetting(env.DB, 'mcp_enabled');
+            const aiMcpAllowed = mcpLive === '1' && await checkPermission(env, userId, 'mcp_ai');
+            const cats = aiMcpAllowed ? await resolveAiMcpCategories(aiSettings, env) : [];
+            if (cats.length) {
+                // ---- Decide how much prompt to send -------------------------
+                //   full    → always full persona + KB + tools (current behaviour)
+                //   minimal → always try the bare tool prompt first
+                //   auto    → classifier decides; skip the tool block entirely
+                //             when the message looks like plain chat
+                const promptMode = aiSettings.ai_mcp_prompt_mode || 'auto';
+                let useToolPath = true;
+                let useMinimalPrompt = false;
+                let useLeanPrompt = false;
+                if (promptMode === 'full') {
+                    useToolPath = true;
+                    useMinimalPrompt = false;
+                } else if (promptMode === 'minimal') {
+                    useToolPath = true;
+                    useMinimalPrompt = true;
+                } else { // auto — local intent detection, no extra API call
+                    const intent = detectToolIntent(text, history);
+                    useToolPath = intent !== 'none';
+                    useLeanPrompt = intent === 'strong';
+                }
+
+                if (useToolPath) {
+                    const providerShape = {
+                        mcp_ai_provider: aiSettings.ai_provider,
+                        mcp_ai_api_key: aiSettings.ai_api_key,
+                        mcp_ai_model: aiSettings.ai_model,
+                        mcp_ai_base_url: aiSettings.ai_base_url,
+                    };
+                    const destructiveGuard =
+                        '\n\nBefore calling any destructive tool (delete_user, clear_ai_memory), ' +
+                        'ask the user for explicit confirmation and only set confirm=true after they clearly say yes.';
+                    const sysPrompt = useMinimalPrompt
+                        ? 'You are a tool router for a Telegram bot management system.\n\n' +
+                          'If the user\'s request can be fully handled by calling one or more of the available tools, ' +
+                          'call the appropriate tool(s) now. After the tools return, reply with a brief 1-3 sentence summary.\n\n' +
+                          'If the request cannot be handled by any tool — greetings, chit-chat, general questions, or ' +
+                          'anything outside bot management — reply with EXACTLY: <NO_TOOL>\n\n' +
+                          'Never add persona, opinions, or knowledge beyond what the tools return.' +
+                          destructiveGuard
+                        : useLeanPrompt
+                        ? buildAiSystemPrompt({ ...aiSettings, ai_knowledge_bases: '[]' }, ctx) +
+                          '\n\nYou have admin tools for managing this bot. Call them when the request is an action or data lookup about the bot; otherwise answer normally.' +
+                          destructiveGuard
+                        : buildAiSystemPrompt(aiSettings, ctx) +
+                          '\n\nYou have admin tools available. Call them only when the request needs bot data or an action.' +
+                          destructiveGuard;
+
+                    let usedTools = false;
+                    try {
+                        const result = await runAgentLoop({
+                            env,
+                            sessionKey: null,
+                            persistSession: false,
+                            providerSettings: providerShape,
+                            systemPrompt: sysPrompt,
+                            history: history.map(h => ({ role: h.role, content: h.content })),
+                            userText: text,
+                            tools: getMcpToolDefinitions(cats),
+                            maxIter: 4,
+                            categories: cats,
+                        });
+                        usedTools = !!(result.toolCalls && result.toolCalls.length);
+                        // In minimal mode, if the model declined (<NO_TOOL>) we
+                        // discard its reply and fall through to the normal AI
+                        // call below (full persona + KB, no tools).
+                        if ((useMinimalPrompt || useLeanPrompt) && !usedTools) reply = null;
+                        else reply = result.finalMessage;
+                    } catch (err) {
+                        mainError = err.message;
+                        console.error('AI MCP agent error:', err);
+                        try { await logAction(env.DB, null, 'MCP AI (error): ' + String(err.message || err).slice(0, 300)); } catch (e) {}
+                    }
+                }
+                // If useToolPath was false (auto + classifier said CHAT),
+                // we fall through here and the normal callAiCompletion()
+                // runs with the full prompt — exactly the "same as now" path.
+
+                if (reply && String(reply).trim()) {
+                    if (memoryLimit > 0) {
+                        await saveAiMessage(env.DB, chatId, 'user', text);
+                        await saveAiMessage(env.DB, chatId, 'assistant', reply);
+                        await trimAiMessages(env.DB, chatId, memoryLimit);
+                    }
+                    reply = formatAiReply(reply);
+                    if (aiSettings.ai_rtl_support === '1') reply = addRtlMarkToPersian(reply);
+                    const delay = parseInt(aiSettings.ai_response_delay) || 0;
+                    if (delay > 0) await new Promise(r => setTimeout(r, Math.min(delay, 5000)));
+                    await sendMessage(chatId, reply, BOT_TOKEN, 'HTML');
+                    if (aiSettings.ai_suggested_questions_enabled === '1') {
+                        try {
+                            const questions = JSON.parse(aiSettings.ai_suggested_questions || '[]');
+                            if (Array.isArray(questions) && questions.length) {
+                                const rows = [];
+                                for (let i = 0; i < questions.length; i += 3) rows.push(questions.slice(i, i + 3).map(q => ({ text: q.label })));
+                                await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: ' ', reply_markup: { keyboard: rows, resize_keyboard: true, one_time_keyboard: aiSettings.ai_suggested_one_time !== '0' } });
+                            }
+                        } catch (e) {}
+                    }
+                    return;
+                }
+            }
+        }
+
         try {
             const onChunk = streaming ? (partial) => {
                 const t = stripTagsForPreview(partial);
@@ -8731,6 +10061,10 @@ async function processAiReply(chatId, userId, text, aiSettings, env, BOT_TOKEN, 
             if (mainError) throw new Error(mainError);
         }
         if (!reply || !String(reply).trim()) throw new Error('The AI returned an empty reply.');
+        const rawReply = reply;
+        reply = formatAiReply(reply);
+        if (!reply.trim()) throw new Error('The AI returned an empty reply.');
+        if (aiSettings.ai_rtl_support === '1') reply = addRtlMarkToPersian(reply);
         const finalHtml = escapeTelegramHTML(reply || '');
         const finalChunks = splitEscapedHtml(finalHtml, 4000);
         let sentFinal = false;
@@ -8743,10 +10077,9 @@ async function processAiReply(chatId, userId, text, aiSettings, env, BOT_TOKEN, 
         }
         if (memoryLimit > 0 && reply) {
             await saveAiMessage(env.DB, chatId, 'user', text);
-            await saveAiMessage(env.DB, chatId, 'assistant', reply);
+            await saveAiMessage(env.DB, chatId, 'assistant', rawReply);
             await trimAiMessages(env.DB, chatId, memoryLimit);
         }
-        if (aiSettings.ai_rtl_support === '1' && reply) reply = addRtlMarkToPersian(reply);
         let lastSent = null;
         if (!sentFinal) {
             if (streamMsgId !== null) await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: streamMsgId });
@@ -8769,6 +10102,7 @@ async function processAiReply(chatId, userId, text, aiSettings, env, BOT_TOKEN, 
         }
     } catch (err) {
         console.error('AI reply error:', err);
+        try { await logAction(env.DB, null, 'AI reply (error): ' + String(err && err.message || err).slice(0, 300)); } catch (e) {}
         const fallback = aiSettings.ai_fallback || 'Sorry, I am currently unavailable. Please try again later.';
         try {
             if (streamMsgId !== null) await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: streamMsgId });
