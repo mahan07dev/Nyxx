@@ -1,8 +1,8 @@
 // ============================================================================
-// NYXX — v4.3.0
+// NYXX — v4.4.0
 // Telegram bot builder + management dashboard for Cloudflare Workers + D1.
 // ============================================================================
-const VERSION = '4.3.0';
+const VERSION = '4.4.0';
 
 const RELAY_BASE = 'https://nyxx-proxy.nova-06272b19.workers.dev';
 const RELAY_EXCHANGE_SECRET = 'SECRET_ULTRA_PRO_MAX'; // Must match proxy.js
