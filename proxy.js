@@ -17,6 +17,17 @@
 // which surfaced as error 9106 ("Missing X-Auth-Key, X-Auth-Email or
 // Authorization headers") on PUT/POST requests.
 
+
+// in the Cloudflare dashboard for the nyxx-proxy worker:
+
+// Go to Workers & Pages → nyxx-proxy → Settings → Bindings.
+// Add a D1 database binding:
+// Variable name: DB
+// Database: create a new D1 database (e.g. nyxx-relay) or reuse an existing one.
+// Save and redeploy the proxy.
+
+// The relay tables (relay_oauth_state, relay_oauth_tokens) are created automatically on first use, so you don't need to run migrations manually.
+
 const DEFAULT_ALLOWED_HOSTS = [
   'api.cloudflare.com',
   'dash.cloudflare.com',       // OAuth token/revoke endpoints
@@ -214,13 +225,17 @@ async function resolvesToBlockedAddress(hostname) {
 
 export default {
   async fetch(request, env) {
-    if (request.method === 'OPTIONS') {
-      return new Response(null, { status: 204, headers: CORS_HEADERS });
-    }
-
     let url;
     try { url = new URL(request.url); } catch (e) {
       return jsonResponse({ error: 'Bad request URL' }, 400);
+    }
+    
+    if (url.pathname === '/oauth/start') return handleRelayOAuthStart(request, env);
+    if (url.pathname === '/oauth/callback') return handleRelayOAuthCallback(request, env);
+    if (url.pathname === '/oauth/exchange') return handleRelayExchange(request, env);
+
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { status: 204, headers: CORS_HEADERS });
     }
 
     const targetParam = url.searchParams.get('url');
@@ -309,3 +324,174 @@ export default {
     });
   },
 };
+
+// ============================================================================
+// CENTRAL OAUTH RELAY
+// ============================================================================
+// This section turns proxy.js into the single OAuth callback target for all
+// Nyxx tenants. Tenant workers redirect here to start the flow, and retrieve
+// tokens afterwards via a secure server-to-server exchange.
+const RELAY_OAUTH_KEYS = {
+  CLIENT_ID: '87f4c44a2c2d4df7af66628871fc7502', // Paste from Cloudflare Dashboard
+  AUTH_URL: 'https://dash.cloudflare.com/oauth2/auth',
+  TOKEN_URL: 'https://dash.cloudflare.com/oauth2/token',
+  SCOPES: ['account-settings.read', 'workers-scripts.edit', 'workers-scripts.admin', 'workers-scripts.content_read', 'd1.write'],
+  // The exchange secret prevents arbitrary callers from grabbing tokens.
+  // It must match the value used by the tenant worker.
+  EXCHANGE_SECRET: 'SECRET_ULTRA_PRO_MAX',
+};
+
+// D1 schema for the relay
+async function initializeRelayDB(db) {
+  await db.prepare(`
+    CREATE TABLE IF NOT EXISTS relay_oauth_state (
+      state TEXT PRIMARY KEY,
+      tenant_callback TEXT NOT NULL,
+      verifier TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `).run();
+  await db.prepare(`
+    CREATE TABLE IF NOT EXISTS relay_oauth_tokens (
+      exchange_code TEXT PRIMARY KEY,
+      access_token TEXT NOT NULL,
+      refresh_token TEXT,
+      expires_at INTEGER,
+      account_id TEXT,
+      script_name TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `).run();
+}
+
+function relayJson(body, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+  });
+}
+
+function b64url(bytes) {
+  let s = '';
+  for (const b of bytes) s += String.fromCharCode(b);
+  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function randomB64url(n) {
+  const a = new Uint8Array(n);
+  crypto.getRandomValues(a);
+  return b64url(a);
+}
+async function pkceChallenge(verifier) {
+  const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
+  return b64url(new Uint8Array(d));
+}
+
+async function handleRelayOAuthStart(request, env) {
+  if (!env.DB) return relayJson({ error: 'DB binding missing on relay.' }, 500);
+  await initializeRelayDB(env.DB);
+  const url = new URL(request.url);
+  const tenantCallback = url.searchParams.get('tenant_callback');
+  if (!tenantCallback || !tenantCallback.startsWith('https://')) {
+    return relayJson({ error: 'Missing or invalid tenant_callback.' }, 400);
+  }
+  const verifier = randomB64url(48);
+  const state = randomB64url(24);
+  const challenge = await pkceChallenge(verifier);
+
+  await env.DB.prepare(
+    'INSERT INTO relay_oauth_state (state, tenant_callback, verifier) VALUES (?, ?, ?)'
+  ).bind(state, tenantCallback, verifier).run();
+
+  const p = new URLSearchParams({
+    response_type: 'code',
+    client_id: RELAY_OAUTH_KEYS.CLIENT_ID,
+    redirect_uri: new URL(request.url).origin + '/oauth/callback',
+    scope: RELAY_OAUTH_KEYS.SCOPES.join(' '),
+    state,
+    code_challenge: challenge,
+    code_challenge_method: 'S256',
+  });
+  return Response.redirect(RELAY_OAUTH_KEYS.AUTH_URL + '?' + p.toString(), 302);
+}
+
+async function handleRelayOAuthCallback(request, env) {
+  if (!env.DB) return relayJson({ error: 'DB binding missing on relay.' }, 500);
+  const url = new URL(request.url);
+  const code = url.searchParams.get('code');
+  const state = url.searchParams.get('state');
+  const error = url.searchParams.get('error');
+  if (error) return relayJson({ error: 'Cloudflare denied: ' + error }, 400);
+  if (!code || !state) return relayJson({ error: 'Missing code or state.' }, 400);
+
+  const row = await env.DB.prepare('SELECT tenant_callback, verifier FROM relay_oauth_state WHERE state = ?').bind(state).first();
+  if (!row) return relayJson({ error: 'Invalid or expired state.' }, 400);
+  await env.DB.prepare('DELETE FROM relay_oauth_state WHERE state = ?').bind(state).run();
+
+  const body = new URLSearchParams({
+    grant_type: 'authorization_code',
+    code,
+    redirect_uri: url.origin + '/oauth/callback',
+    client_id: RELAY_OAUTH_KEYS.CLIENT_ID,
+    code_verifier: row.verifier,
+  });
+
+  const tokenRes = await fetch(RELAY_OAUTH_KEYS.TOKEN_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
+  });
+  const tokenData = await tokenRes.json();
+  if (!tokenRes.ok || !tokenData.access_token) {
+    return relayJson({ error: 'Token exchange failed: ' + (tokenData.error_description || tokenData.error || 'unknown') }, 400);
+  }
+
+  // Best-effort discovery of account and script
+  let accountId = '', scriptName = '';
+  try {
+    const accRes = await fetch('https://api.cloudflare.com/client/v4/accounts', {
+      headers: { Authorization: 'Bearer ' + tokenData.access_token },
+    });
+    const accData = await accRes.json();
+    if (accData.success && accData.result?.length) {
+      accountId = accData.result[0].id;
+      const host = new URL(row.tenant_callback).hostname;
+      if (host.endsWith('.workers.dev')) {
+        const parts = host.split('.');
+        if (parts.length >= 3) scriptName = parts[0];
+      }
+    }
+  } catch (e) { /* best effort */ }
+
+  const exchangeCode = randomB64url(24);
+  const expiresAt = tokenData.expires_in ? Date.now() + Number(tokenData.expires_in) * 1000 : 0;
+
+  await env.DB.prepare(`
+    INSERT INTO relay_oauth_tokens (exchange_code, access_token, refresh_token, expires_at, account_id, script_name)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).bind(exchangeCode, tokenData.access_token, tokenData.refresh_token || null, expiresAt, accountId, scriptName).run();
+
+  return Response.redirect(row.tenant_callback + '?exchange_code=' + exchangeCode, 302);
+}
+
+async function handleRelayExchange(request, env) {
+  if (!env.DB) return relayJson({ error: 'DB binding missing on relay.' }, 500);
+  const auth = request.headers.get('Authorization') || '';
+  if (auth !== 'Bearer ' + RELAY_OAUTH_KEYS.EXCHANGE_SECRET) {
+    return relayJson({ error: 'Unauthorized.' }, 401);
+  }
+  const { exchange_code } = await request.json().catch(() => ({}));
+  if (!exchange_code) return relayJson({ error: 'Missing exchange_code.' }, 400);
+
+  const row = await env.DB.prepare('SELECT * FROM relay_oauth_tokens WHERE exchange_code = ?').bind(exchange_code).first();
+  if (!row) return relayJson({ error: 'Invalid or expired exchange code.' }, 404);
+  // Single use
+  await env.DB.prepare('DELETE FROM relay_oauth_tokens WHERE exchange_code = ?').bind(exchange_code).run();
+
+  return relayJson({
+    access_token: row.access_token,
+    refresh_token: row.refresh_token,
+    expires_at: row.expires_at,
+    account_id: row.account_id,
+    script_name: row.script_name,
+  });
+}
