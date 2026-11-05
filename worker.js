@@ -2267,6 +2267,7 @@ function go(page) {
     if (page === 'cron') loadCron();
     if (page === 'logs') { loadLogs(); loadLogClean(); }
     if (page === 'permissions') loadPermissions();
+    if (page === 'update') loadUpdateTab();
 }
 function toggleSidebar(force) {
     var app = document.querySelector('.app'); if (!app) return;
@@ -4492,7 +4493,7 @@ var latestVersion = null, updateAvailable = false, workerUrl = null;
 async function checkUpdate(force) {
     $('up-latest').value = '…';
     try {
-        var d = await api('GET', '/api/version');
+        var d = await api('GET', '/api/version' + (force ? '?force=1' : ''));
         latestVersion = d.latest; workerUrl = d.worker_url;
         $('up-latest').value = d.latest || 'unknown';
         $('up-notes').textContent = d.released ? 'Released ' + d.released + (d.notes ? ' · ' + d.notes : '') : '';
@@ -4508,44 +4509,139 @@ function cmp(a, b) {
 }
 function autoCheckUpdate() { checkUpdate(true); }
 function openTokenGen() { window.open('https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22edit%22%7D%5D&accountId=*&zoneId=all&name=Nyxx%20Updater', '_blank'); }
-async function performUpdate() {
-    var token = $('up-token').value.trim();
-    var d = await api('GET', '/api/settings');
-    $('set-token').value = d.bot_token_masked || '';
-    $('set-token').type = 'password';
-    $('set-hook').value = d.webhook_url || '';
-    window.__botTokenSet = d.bot_token_set;
+var cfMethod = 'oauth';
+var cfOAuthStatus = null;
 
-    if (!token && !d.cf_token_set) { toast('Enter a Cloudflare API token.', 'error'); return; }
+function cfSetMethod(m) {
+  cfMethod = m;
+  document.querySelectorAll('#cf-method button').forEach(function (b) {
+    b.classList.toggle('active', b.dataset.v === m);
+  });
+  show($('cf-oauth-panel'), m === 'oauth');
+  show($('cf-token-panel'), m === 'token');
+}
 
-    $('up-result').innerHTML = '<span class="mini-spinner"></span> Validating token…';
+async function loadCfOAuthStatus() {
+  try {
+    cfOAuthStatus = await api('GET', '/api/oauth/status');
+    renderCfOAuthStatus();
+  } catch (e) { /* silent */ }
+}
 
+function renderCfOAuthStatus() {
+  var s = cfOAuthStatus;
+  if (!s) return;
+  var connect = $('cf-oauth-connect');
+  var disc    = $('cf-oauth-disconnect');
+  var label   = $('cf-oauth-label');
+  var sub     = $('cf-oauth-sub');
+
+  if (!s.configured) {
+    label.textContent = 'Not configured';
+    sub.innerHTML = 'OAuth is not enabled on this worker. Add a <code>CF_OAUTH.CLIENT_ID</code> in <code>worker.js</code> and redeploy.';
+    if (connect) connect.disabled = true;
+    if (disc) disc.classList.add('hidden');
+    return;
+  }
+  if (connect) connect.disabled = false;
+
+  if (s.connected) {
+    label.textContent = 'Connected via Cloudflare';
+    var parts = [];
+    if (s.account_id)  parts.push('Account ' + String(s.account_id).slice(0, 8) + '…');
+    if (s.script_name) parts.push('Script ' + s.script_name);
+    if (s.expires_in)  parts.push('Expires in ' + Math.round(s.expires_in / 60000) + ' min');
+    sub.textContent = parts.join(' · ') || 'Connected.';
+    if (connect) connect.innerHTML = '<i class="fa-solid fa-rotate"></i> Reconnect';
+    if (disc) disc.classList.remove('hidden');
+  } else {
+    label.textContent = 'Not connected';
+    sub.textContent = 'Connect your Cloudflare account to update without pasting a token.';
+    if (connect) connect.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Connect Cloudflare';
+    if (disc) disc.classList.add('hidden');
+  }
+}
+
+async function startCfOAuth() {
+  try {
+    var d = await api('POST', '/api/oauth/start', {});
+    if (!d || !d.authorize_url) throw new Error('Could not start OAuth.');
+    window.location.href = d.authorize_url;
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+async function disconnectCfOAuth() {
+  if (!await confirmDialog('Disconnect from Cloudflare? Future updates will need a manual API token unless you reconnect.', 'Disconnect Cloudflare')) return;
+  try {
+    await api('POST', '/api/oauth/disconnect', {});
+    toast('Disconnected from Cloudflare.', 'success');
+    await loadCfOAuthStatus();
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+async function loadUpdateTab() {
+  await loadSettings(true);
+  await checkUpdate(true);
+  await loadCfOAuthStatus();
+
+  // Handle post-OAuth redirect from /oauth/callback.
+  var params = new URLSearchParams(window.location.search);
+  if (params.get('oauth') === 'success') {
+    toast('Connected to Cloudflare via OAuth.', 'success');
+    params.delete('oauth');
+    var q = params.toString();
     try {
-        var v = await api('POST', '/api/update/validate', { token: token });
-        if (!v.valid) throw new Error(v.error || 'Invalid token');
+      history.replaceState(null, '', window.location.pathname + (q ? '?' + q : ''));
+    } catch (e) {}
+    await loadCfOAuthStatus();
+  }
 
-        $('up-result').innerHTML = '<span class="mini-spinner"></span> Deploying to ' + esc(v.scriptName || 'your Worker') + '…';
+  // Pick a sensible default method.
+  cfSetMethod('oauth');
+}
 
-        var r = await api('POST', '/api/update', {
-            token: token,
-            accountId: v.accountId,
-            scriptName: v.scriptName,
-            workerUrl: workerUrl
-        });
+async function performUpdate() {
+  var token = cfMethod === 'token' ? $('up-token').value.trim() : '';
+  var settings = await api('GET', '/api/settings');
 
-        // NEW: don't claim success when the server said it failed
-        if (!r || !r.success) throw new Error((r && r.error) || 'Update failed.');
-
-        $('up-result').innerHTML =
-            '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Updated to ' +
-            esc(r.version || 'latest') + '.</span>';
-        toast('Update complete.');
-        checkUpdate(true);
-    } catch (e) {
-        $('up-result').innerHTML =
-            '<span style="color:var(--red)"><i class="fa-solid fa-circle-xmark"></i> ' +
-            esc(e.message) + '</span>';
+  if (cfMethod === 'token') {
+    if (!token && !settings.cf_token_set) {
+      toast('Enter a Cloudflare API token.', 'error');
+      return;
     }
+  } else if (cfMethod === 'oauth') {
+    if (!cfOAuthStatus || !cfOAuthStatus.connected) {
+      toast('Connect your Cloudflare account first.', 'error');
+      return;
+    }
+  }
+
+  $('up-result').innerHTML = '<span class="mini-spinner"></span> Validating…';
+  try {
+    var v = await api('POST', '/api/update/validate', { token: token });
+    if (!v.valid) throw new Error(v.error || 'Invalid token');
+
+    $('up-result').innerHTML = '<span class="mini-spinner"></span> Deploying to ' + esc(v.scriptName || 'your Worker') + '…';
+
+    var r = await api('POST', '/api/update', {
+      token: token,
+      accountId: v.accountId,
+      scriptName: v.scriptName,
+      workerUrl: workerUrl
+    });
+    if (!r || !r.success) throw new Error((r && r.error) || 'Update failed.');
+
+    $('up-result').innerHTML =
+      '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Updated to ' +
+      esc(r.version || 'latest') + '.</span>';
+    toast('Update complete.');
+    checkUpdate(true);
+    loadCfOAuthStatus();
+  } catch (e) {
+    $('up-result').innerHTML =
+      '<span style="color:var(--red)"><i class="fa-solid fa-circle-xmark"></i> ' +
+      esc(e.message) + '</span>';
+  }
 }
 
 /* ============================================================
@@ -7440,6 +7536,9 @@ async function performUpdate(request, env) {
     let newVersion = null;
     const match = scriptText.match(/const\s+VERSION\s*=\s*['"]([^'"]+)['"]/);
     if (match) newVersion = match[1];
+    if (!match || !/export\s+default/.test(scriptText) || scriptText.length < 10000) {
+      return apiJson({ success: false, error: 'Downloaded update file looks invalid. Aborted; your Worker was not changed.' }, 400);
+    }
 
     const metadata = { main_module: 'worker.js', bindings };
     const formData = new FormData();
@@ -7524,7 +7623,7 @@ async function clearCfOAuth(db) {
   await db.prepare(`DELETE FROM settings WHERE key IN (${ph})`).bind(...keys).run();
 }
 async function refreshCfOAuthToken(db, tokens) {
-  if (!tokens.refresh_token) return null;
+  if (!tokens.refresh_token || !CF_OAUTH.CLIENT_ID) return null;
   try {
     const body = new URLSearchParams({
       grant_type:    'refresh_token',
@@ -7574,20 +7673,25 @@ async function handleCfOAuthStart(request, env) {
 
 async function handleCfOAuthCallback(request, env) {
   if (!env.DB) return new Response('DB not available', { status: 500 });
+  if (!(await getSession(request, env))) return new Response('Please sign in to the dashboard first, then reconnect Cloudflare.', { status: 401 });
   const url = new URL(request.url);
   const exchangeCode = url.searchParams.get('exchange_code');
   if (!exchangeCode) return new Response('Missing exchange code', { status: 400 });
 
-  const res = await fetch(`${RELAY_BASE}/oauth/exchange`, {
-    method: 'POST',
-    headers: {
-      'Authorization': 'Bearer ' + RELAY_EXCHANGE_SECRET,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ exchange_code: exchangeCode }),
-  });
-  if (!res.ok) return new Response('Token exchange failed', { status: 502 });
-  const tokens = await res.json();
+  let res, tokens;
+  try {
+    res = await fetch(`${RELAY_BASE}/oauth/exchange`, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + RELAY_EXCHANGE_SECRET,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ exchange_code: exchangeCode }),
+    });
+    if (!res.ok) return new Response('Token exchange failed', { status: 502 });
+    tokens = await res.json();
+  } catch (e) { return new Response('Token exchange failed', { status: 502 }); }
+  if (!tokens || !tokens.access_token) return new Response('Token exchange failed', { status: 502 });
 
   await initializeDatabase(env.DB);
   await saveCfOAuth(env.DB, {
@@ -7609,7 +7713,7 @@ async function handleCfOAuthStatus(request, env) {
     return apiJson({
       success:    true,
       configured: !!RELAY_BASE,
-      connected:  !!t.access_token,
+      connected:  !!t.access_token && (!t.expires_at || t.expires_at > Date.now() || !!(t.refresh_token && CF_OAUTH.CLIENT_ID)),
       account_id: t.account_id,
       script_name:t.script_name,
       expires_at: t.expires_at || 0,
@@ -7667,21 +7771,32 @@ async function validateCloudflareToken(request, env) {
       return apiJson({ valid: false, error: 'No Cloudflare accounts are attached to this token.' }, 400);
     }
 
-    const accountId = accountsData.result[0].id;
+    let storedAcc = '', storedScript = '';
+    if (env.DB) {
+      await initializeDatabase(env.DB);
+      const o = await getStoredCfOAuth(env.DB);
+      storedAcc    = o.account_id  || (await getSetting(env.DB, 'cf_account_id'))  || '';
+      storedScript = o.script_name || (await getSetting(env.DB, 'cf_script_name')) || '';
+    }
+    const accountId = (accountsData.result.find(a => a.id === storedAcc) || accountsData.result[0]).id;
     let scriptName = null;
     const host = new URL(request.url).hostname;
     if (host.endsWith('.workers.dev')) {
       const parts = host.split('.');
       if (parts.length >= 3) scriptName = parts[0];
     }
+    if (!scriptName && storedScript && accountId === storedAcc) scriptName = storedScript;
     if (!scriptName) {
       const scriptsRes  = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts`,
         { headers: { 'Authorization': 'Bearer ' + token } });
       const scriptsData = await scriptsRes.json();
-      if (scriptsData.success && Array.isArray(scriptsData.result) && scriptsData.result.length) {
+      if (scriptsData.success && Array.isArray(scriptsData.result) && scriptsData.result.length === 1) {
         scriptName = scriptsData.result[0].id;
+      } else if (scriptsData.success && Array.isArray(scriptsData.result) && scriptsData.result.length > 1) {
+        return apiJson({ valid: false, error: 'Could not tell which Worker is this bot. Open the dashboard from its *.workers.dev address and retry.' }, 400);
       }
     }
+    if (!scriptName) return apiJson({ valid: false, error: 'Could not find the Worker script name.' }, 400);
 
     if (env.DB) {
       await initializeDatabase(env.DB);
@@ -7697,141 +7812,6 @@ async function validateCloudflareToken(request, env) {
   } catch (e) {
     console.error('Token validation failed:', e);
     return apiJson({ valid: false, error: 'Could not reach Cloudflare. Please try again.' }, 400);
-  }
-}
-
-var cfMethod = 'oauth';
-var cfOAuthStatus = null;
-
-function cfSetMethod(m) {
-  cfMethod = m;
-  document.querySelectorAll('#cf-method button').forEach(function (b) {
-    b.classList.toggle('active', b.dataset.v === m);
-  });
-  show($('cf-oauth-panel'), m === 'oauth');
-  show($('cf-token-panel'), m === 'token');
-}
-
-async function loadCfOAuthStatus() {
-  try {
-    cfOAuthStatus = await api('GET', '/api/oauth/status');
-    renderCfOAuthStatus();
-  } catch (e) { /* silent */ }
-}
-
-function renderCfOAuthStatus() {
-  var s = cfOAuthStatus;
-  if (!s) return;
-  var connect = $('cf-oauth-connect');
-  var disc    = $('cf-oauth-disconnect');
-  var label   = $('cf-oauth-label');
-  var sub     = $('cf-oauth-sub');
-
-  if (!s.configured) {
-    label.textContent = 'Not configured';
-    sub.innerHTML = 'OAuth is not enabled on this worker. Add a <code>CF_OAUTH.CLIENT_ID</code> in <code>worker.js</code> and redeploy.';
-    if (connect) connect.disabled = true;
-    if (disc) disc.classList.add('hidden');
-    return;
-  }
-  if (connect) connect.disabled = false;
-
-  if (s.connected) {
-    label.textContent = 'Connected via Cloudflare';
-    var parts = [];
-    if (s.account_id)  parts.push('Account ' + String(s.account_id).slice(0, 8) + '…');
-    if (s.script_name) parts.push('Script ' + s.script_name);
-    if (s.expires_in)  parts.push('Expires in ' + Math.round(s.expires_in / 60000) + ' min');
-    sub.textContent = parts.join(' · ') || 'Connected.';
-    if (connect) connect.innerHTML = '<i class="fa-solid fa-rotate"></i> Reconnect';
-    if (disc) disc.classList.remove('hidden');
-  } else {
-    label.textContent = 'Not connected';
-    sub.textContent = 'Connect your Cloudflare account to update without pasting a token.';
-    if (connect) connect.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Connect Cloudflare';
-    if (disc) disc.classList.add('hidden');
-  }
-}
-
-async function startCfOAuth() {
-  try {
-    var d = await api('POST', '/api/oauth/start', {});
-    if (!d || !d.authorize_url) throw new Error('Could not start OAuth.');
-    window.location.href = d.authorize_url;
-  } catch (e) { toast(e.message, 'error'); }
-}
-
-async function disconnectCfOAuth() {
-  if (!await confirmDialog('Disconnect from Cloudflare? Future updates will need a manual API token unless you reconnect.', 'Disconnect Cloudflare')) return;
-  try {
-    await api('POST', '/api/oauth/disconnect', {});
-    toast('Disconnected from Cloudflare.', 'success');
-    await loadCfOAuthStatus();
-  } catch (e) { toast(e.message, 'error'); }
-}
-
-async function loadUpdateTab() {
-  await loadSettings(true);
-  await checkUpdate(true);
-  await loadCfOAuthStatus();
-
-  // Handle post-OAuth redirect from /oauth/callback.
-  var params = new URLSearchParams(window.location.search);
-  if (params.get('oauth') === 'success') {
-    toast('Connected to Cloudflare via OAuth.', 'success');
-    params.delete('oauth');
-    var q = params.toString();
-    try {
-      history.replaceState(null, '', window.location.pathname + (q ? '?' + q : ''));
-    } catch (e) {}
-    await loadCfOAuthStatus();
-  }
-
-  // Pick a sensible default method.
-  cfSetMethod(cfOAuthStatus && cfOAuthStatus.connected ? 'oauth' : 'oauth');
-}
-
-async function performUpdate() {
-  var token = cfMethod === 'token' ? $('up-token').value.trim() : '';
-  var settings = await api('GET', '/api/settings');
-
-  if (cfMethod === 'token') {
-    if (!token && !settings.cf_token_set) {
-      toast('Enter a Cloudflare API token.', 'error');
-      return;
-    }
-  } else if (cfMethod === 'oauth') {
-    if (!cfOAuthStatus || !cfOAuthStatus.connected) {
-      toast('Connect your Cloudflare account first.', 'error');
-      return;
-    }
-  }
-
-  $('up-result').innerHTML = '<span class="mini-spinner"></span> Validating…';
-  try {
-    var v = await api('POST', '/api/update/validate', { token: token });
-    if (!v.valid) throw new Error(v.error || 'Invalid token');
-
-    $('up-result').innerHTML = '<span class="mini-spinner"></span> Deploying to ' + esc(v.scriptName || 'your Worker') + '…';
-
-    var r = await api('POST', '/api/update', {
-      token: token,
-      accountId: v.accountId,
-      scriptName: v.scriptName,
-      workerUrl: workerUrl
-    });
-    if (!r || !r.success) throw new Error((r && r.error) || 'Update failed.');
-
-    $('up-result').innerHTML =
-      '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Updated to ' +
-      esc(r.version || 'latest') + '.</span>';
-    toast('Update complete.');
-    checkUpdate(true);
-    loadCfOAuthStatus();
-  } catch (e) {
-    $('up-result').innerHTML =
-      '<span style="color:var(--red)"><i class="fa-solid fa-circle-xmark"></i> ' +
-      esc(e.message) + '</span>';
   }
 }
 
