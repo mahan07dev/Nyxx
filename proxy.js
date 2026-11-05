@@ -16,17 +16,19 @@
 // object causes the Cloudflare runtime to silently drop `Authorization`,
 // which surfaced as error 9106 ("Missing X-Auth-Key, X-Auth-Email or
 // Authorization headers") on PUT/POST requests.
-
-
-// in the Cloudflare dashboard for the nyxx-proxy worker:
-
-// Go to Workers & Pages → nyxx-proxy → Settings → Bindings.
-// Add a D1 database binding:
-// Variable name: DB
-// Database: create a new D1 database (e.g. nyxx-relay) or reuse an existing one.
-// Save and redeploy the proxy.
-
-// The relay tables (relay_oauth_state, relay_oauth_tokens) are created automatically on first use, so you don't need to run migrations manually.
+//
+// Resilience
+// ----------
+// The entire handler is wrapped in a top-level try/catch so that *every* error
+// response (including unexpected exceptions) carries CORS headers. Without
+// this, an unhandled throw produces a 500 with no Access-Control-Allow-Origin
+// and the browser reports a "CORS error" that hides the real cause.
+//
+// Setup (Cloudflare dashboard → Workers & Pages → <this worker> → Settings → Bindings)
+// -----------------------------------------------------------------------------------
+// The OAuth relay endpoints (/oauth/start, /oauth/callback, /oauth/exchange) need
+// a D1 binding named DB. Create a D1 database (e.g. nyxx-relay) and bind it as DB.
+// Relay tables are created automatically on first use — no migrations needed.
 
 const DEFAULT_ALLOWED_HOSTS = [
   'api.cloudflare.com',
@@ -88,6 +90,11 @@ const DROP_RESPONSE_HEADERS = new Set([
   'content-length',   // recomputed by the runtime
 ]);
 
+// Give slow uploads (worker.js deploy) plenty of headroom.
+const UPSTREAM_TIMEOUT_MS = 60000;
+// Hard cap so a huge body can't OOM the worker (which would bypass try/catch).
+const MAX_BODY_BYTES = 25 * 1024 * 1024;
+
 // ---- helpers ---------------------------------------------------------------
 
 function jsonResponse(body, status) {
@@ -99,6 +106,10 @@ function jsonResponse(body, status) {
       ...CORS_HEADERS,
     },
   });
+}
+
+function errorResponse(message, status) {
+  return jsonResponse({ success: false, error: message }, status || 500);
 }
 
 function ipv4ToBytes(ip) {
@@ -225,105 +236,141 @@ async function resolvesToBlockedAddress(hostname) {
 
 export default {
   async fetch(request, env) {
-    let url;
-    try { url = new URL(request.url); } catch (e) {
-      return jsonResponse({ error: 'Bad request URL' }, 400);
-    }
-    
-    if (url.pathname === '/oauth/start') return handleRelayOAuthStart(request, env);
-    if (url.pathname === '/oauth/callback') return handleRelayOAuthCallback(request, env);
-    if (url.pathname === '/oauth/exchange') return handleRelayExchange(request, env);
-
-    if (request.method === 'OPTIONS') {
-      return new Response(null, { status: 204, headers: CORS_HEADERS });
-    }
-
-    const targetParam = url.searchParams.get('url');
-    if (!targetParam) return jsonResponse({ error: 'Missing ?url= parameter' }, 400);
-
-    let target;
-    try { target = new URL(targetParam); } catch (e) {
-      return jsonResponse({ error: 'Invalid ?url= parameter' }, 400);
-    }
-
-    if (target.protocol !== 'http:' && target.protocol !== 'https:') {
-      return jsonResponse({ error: 'Only http/https targets are allowed' }, 400);
-    }
-
-    if (!isAllowed(target, env)) {
-      return jsonResponse({
-        error: `Target host '${target.hostname}' is not in the proxy allow-list.`,
-      }, 403);
-    }
-
-    // SSRF defense-in-depth.
-    if (isIpLiteral(target.hostname)) {
-      const bare = target.hostname.replace(/^\[|\]$/g, '');
-      if (isBlockedIp(bare)) {
-        return jsonResponse({ error: `Target host '${target.hostname}' is a blocked address.` }, 403);
-      }
-    } else {
-      const check = await resolvesToBlockedAddress(target.hostname);
-      if (check.known && check.blocked) {
-        return jsonResponse({ error: `Target host '${target.hostname}' resolves to a blocked address.` }, 403);
-      }
-    }
-
-    const method = request.method.toUpperCase();
-    const hasBody = method !== 'GET' && method !== 'HEAD';
-
-    // Buffer the body so the runtime can compute Content-Length itself and
-    // does not fall back to the header-stripping stream path.
-    let bodyBuffer = null;
-    if (hasBody) {
-      try {
-        bodyBuffer = await request.arrayBuffer();
-      } catch (e) {
-        return jsonResponse({ error: 'Failed to read request body' }, 400);
-      }
-    }
-
-    // Rebuild headers from scratch.
-    const fwdHeaders = new Headers();
-    for (const [k, v] of request.headers) {
-      if (!DROP_REQUEST_HEADERS.has(k.toLowerCase())) fwdHeaders.set(k, v);
-    }
-    // Belt-and-braces: never lose Authorization.
-    const auth = request.headers.get('authorization');
-    if (auth && !fwdHeaders.has('authorization')) {
-      fwdHeaders.set('Authorization', auth);
-    }
-
-    const init = { method, headers: fwdHeaders, redirect: 'follow' };
-    if (bodyBuffer && bodyBuffer.byteLength > 0) {
-      init.body = bodyBuffer;
-    }
-
-    let upstream;
+    // CRITICAL: never let an exception escape without CORS headers, otherwise
+    // the browser reports a "CORS error" that hides the real failure (e.g. a
+    // ReferenceError inside the handler). This wrapper guarantees that every
+    // path — success or failure — produces a CORS-visible response.
     try {
-      upstream = await fetch(target.toString(), init);
+      return await handleRequest(request, env || {});
     } catch (e) {
-      return jsonResponse({
-        error: `Upstream request failed: ${(e && e.message) || 'network error'}`,
-      }, 502);
+      return errorResponse('Proxy error: ' + ((e && e.message) || 'unknown error'), 500);
     }
-
-    // Rebuild response headers, dropping framing/encoding headers the runtime
-    // would otherwise duplicate, then layer on CORS.
-    const outHeaders = new Headers();
-    for (const [k, v] of upstream.headers) {
-      if (!DROP_RESPONSE_HEADERS.has(k.toLowerCase())) outHeaders.set(k, v);
-    }
-    for (const [k, v] of Object.entries(CORS_HEADERS)) outHeaders.set(k, v);
-    outHeaders.set('X-Content-Type-Options', 'nosniff');
-
-    return new Response(upstream.body, {
-      status: upstream.status,
-      statusText: upstream.statusText,
-      headers: outHeaders,
-    });
   },
 };
+
+async function handleRequest(request, env) {
+  let url;
+  try { url = new URL(request.url); } catch (e) {
+    return errorResponse('Bad request URL', 400);
+  }
+
+  // Preflight — always answer, always with CORS.
+  if (request.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
+  }
+
+  // OAuth relay routes.
+  if (url.pathname === '/oauth/start')    return handleRelayOAuthStart(request, env);
+  if (url.pathname === '/oauth/callback') return handleRelayOAuthCallback(request, env);
+  if (url.pathname === '/oauth/exchange') return handleRelayExchange(request, env);
+
+  // ---- CORS forwarding proxy ----
+  const targetParam = url.searchParams.get('url');
+  if (!targetParam) return errorResponse('Missing ?url= parameter', 400);
+
+  let target;
+  try { target = new URL(targetParam); } catch (e) {
+    return errorResponse('Invalid ?url= parameter', 400);
+  }
+
+  if (target.protocol !== 'http:' && target.protocol !== 'https:') {
+    return errorResponse('Only http/https targets are allowed', 400);
+  }
+
+  if (!isAllowed(target, env)) {
+    return errorResponse(`Target host '${target.hostname}' is not in the proxy allow-list.`, 403);
+  }
+
+  // SSRF defense-in-depth.
+  if (isIpLiteral(target.hostname)) {
+    const bare = target.hostname.replace(/^\[|\]$/g, '');
+    if (isBlockedIp(bare)) {
+      return errorResponse(`Target host '${target.hostname}' is a blocked address.`, 403);
+    }
+  } else {
+    const check = await resolvesToBlockedAddress(target.hostname);
+    if (check.known && check.blocked) {
+      return errorResponse(`Target host '${target.hostname}' resolves to a blocked address.`, 403);
+    }
+  }
+
+  const method = request.method.toUpperCase();
+  const hasBody = method !== 'GET' && method !== 'HEAD';
+
+  // Size guard — prevents an OOM abort (which would bypass the top-level catch
+  // and manifest as a CORS error in the browser).
+  if (hasBody) {
+    const declaredLength = parseInt(request.headers.get('content-length') || '0', 10);
+    if (declaredLength > MAX_BODY_BYTES) {
+      return errorResponse(
+        `Request body too large (${declaredLength} bytes, max ${MAX_BODY_BYTES}).`,
+        413
+      );
+    }
+  }
+
+  // Buffer the body into an ArrayBuffer. DO NOT stream request.body here:
+  // in the Workers runtime, passing a ReadableStream body together with the
+  // rebuilt headers silently drops `Authorization` on PUT/POST requests.
+  let bodyBuffer = null;
+  if (hasBody) {
+    try {
+      bodyBuffer = await request.arrayBuffer();
+    } catch (e) {
+      return errorResponse('Failed to read request body', 400);
+    }
+    if (bodyBuffer.byteLength > MAX_BODY_BYTES) {
+      return errorResponse(
+        `Request body too large (${bodyBuffer.byteLength} bytes, max ${MAX_BODY_BYTES}).`,
+        413
+      );
+    }
+  }
+
+  // Rebuild request headers from scratch.
+  const fwdHeaders = new Headers();
+  for (const [k, v] of request.headers) {
+    if (!DROP_REQUEST_HEADERS.has(k.toLowerCase())) fwdHeaders.set(k, v);
+  }
+  // Belt-and-braces: never lose Authorization.
+  const auth = request.headers.get('authorization');
+  if (auth) fwdHeaders.set('Authorization', auth);
+
+  const init = { method, headers: fwdHeaders, redirect: 'follow' };
+  if (bodyBuffer !== null) init.body = bodyBuffer;
+
+  // Abort hung upstream requests so the browser's fetch never silently dies.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT_MS);
+  init.signal = controller.signal;
+
+  let upstream;
+  try {
+    upstream = await fetch(target.toString(), init);
+  } catch (e) {
+    clearTimeout(timer);
+    if (e && e.name === 'AbortError') {
+      return errorResponse(`Upstream request timed out after ${UPSTREAM_TIMEOUT_MS}ms.`, 504);
+    }
+    return errorResponse(`Upstream request failed: ${(e && e.message) || 'network error'}`, 502);
+  }
+  clearTimeout(timer);
+
+  // Rebuild response headers, dropping framing/encoding headers the runtime
+  // would otherwise duplicate, then layer on CORS.
+  const outHeaders = new Headers();
+  for (const [k, v] of upstream.headers) {
+    if (!DROP_RESPONSE_HEADERS.has(k.toLowerCase())) outHeaders.set(k, v);
+  }
+  for (const [k, v] of Object.entries(CORS_HEADERS)) outHeaders.set(k, v);
+  outHeaders.set('X-Content-Type-Options', 'nosniff');
+
+  return new Response(upstream.body, {
+    status: upstream.status,
+    statusText: upstream.statusText,
+    headers: outHeaders,
+  });
+}
 
 // ============================================================================
 // CENTRAL OAUTH RELAY
@@ -335,13 +382,19 @@ const RELAY_OAUTH_KEYS = {
   CLIENT_ID: '87f4c44a2c2d4df7af66628871fc7502', // Paste from Cloudflare Dashboard
   AUTH_URL: 'https://dash.cloudflare.com/oauth2/auth',
   TOKEN_URL: 'https://dash.cloudflare.com/oauth2/token',
-  SCOPES: ['account-settings.read', 'workers-scripts.edit', 'workers-scripts.admin', 'workers-scripts.content_read', 'd1.write'],
+  SCOPES: [
+    'account-settings.read',
+    'workers-scripts.edit',
+    'workers-scripts.admin',
+    'workers-scripts.content_read',
+    'd1.write',
+  ],
   // The exchange secret prevents arbitrary callers from grabbing tokens.
   // It must match the value used by the tenant worker.
   EXCHANGE_SECRET: 'SECRET_ULTRA_PRO_MAX',
 };
 
-// D1 schema for the relay
+// D1 schema for the relay.
 async function initializeRelayDB(db) {
   await db.prepare(`
     CREATE TABLE IF NOT EXISTS relay_oauth_state (
@@ -445,7 +498,7 @@ async function handleRelayOAuthCallback(request, env) {
     return relayJson({ error: 'Token exchange failed: ' + (tokenData.error_description || tokenData.error || 'unknown') }, 400);
   }
 
-  // Best-effort discovery of account and script
+  // Best-effort discovery of account and script.
   let accountId = '', scriptName = '';
   try {
     const accRes = await fetch('https://api.cloudflare.com/client/v4/accounts', {
@@ -484,7 +537,7 @@ async function handleRelayExchange(request, env) {
 
   const row = await env.DB.prepare('SELECT * FROM relay_oauth_tokens WHERE exchange_code = ?').bind(exchange_code).first();
   if (!row) return relayJson({ error: 'Invalid or expired exchange code.' }, 404);
-  // Single use
+  // Single use.
   await env.DB.prepare('DELETE FROM relay_oauth_tokens WHERE exchange_code = ?').bind(exchange_code).run();
 
   return relayJson({
