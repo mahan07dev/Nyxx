@@ -1,32 +1,35 @@
-// proxy.js – forwards requests to the Cloudflare API (and the few other hosts the
-// Nyxx installer legitimately needs), with SSRF protection.
+// proxy.js – CORS forwarding proxy for the Nyxx installer.
 //
-// Security model:
-//   - By default ONLY allow-listed hosts can be proxied, so this worker cannot be
-//     abused as an open relay. The hosts Nyxx actually needs are:
-//       * api.cloudflare.com          -> Cloudflare API
-//       * raw.githubusercontent.com   -> fetching worker.js / version.json
-//       * *.workers.dev               -> probing the deployed panel
-//   - Override the allow-list with a binding, e.g.:
-//       ALLOWED_HOSTS = "api.cloudflare.com, raw.githubusercontent.com, example.com"
-//   - Opt back into open mode with a binding:
-//       ALLOW_ALL = "true"
-//   - The target is always resolved and validated against private / link-local /
-//     loopback / metadata ranges, so even allow-listed hostnames cannot be pointed
-//     at internal infrastructure (SSRF defense in depth).
+// Security model
+// --------------
+// * Only allow-listed hosts can be proxied (ALLOWED_HOSTS binding).
+//   Opt into open mode with ALLOW_ALL = "true".
+// * Every target is validated against a block-list of private, loopback,
+//   link-local, CGNAT and metadata address ranges (direct IP check + DNS-over-
+//   HTTPS resolution), so an allow-listed hostname cannot be pointed at
+//   internal infrastructure.
+//
+// Header handling (this is the important part)
+// --------------------------------------------
+// Request bodies are buffered into an ArrayBuffer and headers are rebuilt from
+// scratch. Passing a ReadableStream body together with the incoming header
+// object causes the Cloudflare runtime to silently drop `Authorization`,
+// which surfaced as error 9106 ("Missing X-Auth-Key, X-Auth-Email or
+// Authorization headers") on PUT/POST requests.
 
 const DEFAULT_ALLOWED_HOSTS = [
   'api.cloudflare.com',
+  'dash.cloudflare.com',       // OAuth token/revoke endpoints
   'raw.githubusercontent.com',
   '*.workers.dev',
 ];
 
+// IPv4: private, loopback, link-local, CGNAT, reserved, cloud metadata.
+// IPv6: loopback, unspecified, ULA, link-local, multicast, documentation.
 const IP_BLOCK_RANGES = [
-  // IPv4: private, loopback, link-local, CGNAT, reserved, and cloud metadata.
   ['0.0.0.0', 8], ['10.0.0.0', 8], ['100.64.0.0', 10], ['127.0.0.0', 8],
   ['169.254.0.0', 16], ['172.16.0.0', 12], ['192.168.0.0', 16],
   ['198.18.0.0', 15], ['224.0.0.0', 4], ['240.0.0.0', 4],
-  // IPv6: loopback, link-local, ULA, and reserved.
   ['::1', 128], ['::', 128], ['fc00::', 7], ['fe80::', 10],
   ['ff00::', 8], ['2001:db8::', 32],
 ];
@@ -38,6 +41,41 @@ const CORS_HEADERS = {
   'Access-Control-Expose-Headers': '*',
   'Access-Control-Max-Age': '86400',
 };
+
+// Headers that must NOT be copied onto the upstream request.
+const DROP_REQUEST_HEADERS = new Set([
+  'host',
+  'content-length',
+  'connection',
+  'keep-alive',
+  'proxy-authenticate',
+  'proxy-authorization',
+  'te',
+  'trailer',
+  'transfer-encoding',
+  'upgrade',
+  'cdn-loop',
+  'cf-connecting-ip',
+  'cf-ipcountry',
+  'cf-ray',
+  'cf-visitor',
+  'cf-worker',
+  'x-real-ip',
+]);
+
+// Headers that must NOT be copied from the upstream response.
+const DROP_RESPONSE_HEADERS = new Set([
+  'connection',
+  'keep-alive',
+  'proxy-authenticate',
+  'proxy-authorization',
+  'te',
+  'trailer',
+  'transfer-encoding',
+  'upgrade',
+  'content-encoding', // body is delivered decoded by the runtime
+  'content-length',   // recomputed by the runtime
+]);
 
 // ---- helpers ---------------------------------------------------------------
 
@@ -62,12 +100,11 @@ function ipv4ToBytes(ip) {
 
 function ipv6ToBytes(ip) {
   let addr = ip.toLowerCase();
-  // Normalize IPv4-mapped IPv6 (::ffff:1.2.3.4) into ::ffff:c001:0203-style groups.
   const v4mapped = addr.match(/^(.*:)(\d+\.\d+\.\d+\.\d+)$/);
   if (v4mapped) {
     const v4 = v4mapped[2].split('.').map(n => parseInt(n, 10));
     if (v4.some(n => isNaN(n) || n < 0 || n > 255)) return null;
-    const hex = (v4[0] << 8 | v4[1]).toString(16) + ':' + (v4[2] << 8 | v4[3]).toString(16);
+    const hex = ((v4[0] << 8) | v4[1]).toString(16) + ':' + ((v4[2] << 8) | v4[3]).toString(16);
     addr = v4mapped[1] + hex;
   }
 
@@ -114,18 +151,22 @@ function ipInRange(ipBytes, rangeStart, prefixLen) {
 
 function isBlockedIp(ip) {
   let bytes = ip.includes(':') ? ipv6ToBytes(ip) : ipv4ToBytes(ip);
-  if (!bytes) return true; // unparsable => block (fail closed)
-  // IPv4-mapped IPv6 (::ffff:a.b.c.d) should be judged as IPv4, otherwise the
-  // leading zero bytes make it look like 0.0.0.0/8.
+  if (!bytes) return true; // unparsable => fail closed
+  // IPv4-mapped IPv6 (::ffff:a.b.c.d) must be judged as IPv4.
   const mapped = bytes.length === 16 && bytes[10] === 0xff && bytes[11] === 0xff &&
     bytes.slice(0, 10).every(b => b === 0);
   if (mapped) bytes = bytes.slice(12);
   return IP_BLOCK_RANGES.some(([start, len]) => ipInRange(bytes, start, len));
 }
 
+function isIpLiteral(host) {
+  const bare = host.replace(/^\[|\]$/g, '');
+  return /^\d{1,3}(\.\d{1,3}){3}$/.test(bare) || bare.includes(':');
+}
+
 function hostMatches(host, pattern) {
   if (pattern.startsWith('*.')) {
-    const suffix = pattern.slice(1); // ".example.com"
+    const suffix = pattern.slice(1);
     return host.endsWith(suffix) && host.length > suffix.length;
   }
   return host === pattern;
@@ -134,33 +175,59 @@ function hostMatches(host, pattern) {
 function isAllowed(target, env) {
   if (env && env.ALLOW_ALL === 'true') return true;
   const raw = (env && env.ALLOWED_HOSTS) || '';
-  const patterns = raw
-    .split(',')
-    .map(s => s.trim().toLowerCase())
-    .filter(Boolean);
-  if (patterns.length > 0) return patterns.some(p => hostMatches(target.hostname, p));
-  return DEFAULT_ALLOWED_HOSTS.some(p => hostMatches(target.hostname, p));
+  const patterns = raw.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+  if (patterns.length > 0) return patterns.some(p => hostMatches(target.hostname.toLowerCase(), p));
+  return DEFAULT_ALLOWED_HOSTS.some(p => hostMatches(target.hostname.toLowerCase(), p));
+}
+
+// DNS-over-HTTPS resolution with a small in-memory TTL cache.
+const dnsCache = new Map();
+const DNS_TTL_MS = 5 * 60 * 1000;
+
+async function resolvesToBlockedAddress(hostname) {
+  const now = Date.now();
+  const cached = dnsCache.get(hostname);
+  if (cached && now - cached.ts < DNS_TTL_MS) return cached.result;
+
+  let result = { known: false, blocked: false };
+  try {
+    const resp = await fetch(
+      'https://cloudflare-dns.com/dns-query?name=' + encodeURIComponent(hostname) + '&type=A',
+      { headers: { accept: 'application/dns-json' } }
+    );
+    if (resp.ok) {
+      const data = await resp.json();
+      const answers = (data && data.Answer) || [];
+      const ips = answers.filter(a => a.type === 1 || a.type === 28).map(a => a.data);
+      if (ips.length > 0) {
+        result = { known: true, blocked: ips.every(isBlockedIp) };
+      }
+    }
+  } catch (e) {
+    // DNS lookup failed: leave as unknown and let the upstream fetch surface it.
+  }
+  dnsCache.set(hostname, { result, ts: now });
+  return result;
 }
 
 // ---- main ------------------------------------------------------------------
 
 export default {
   async fetch(request, env) {
-    // CORS preflight
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: CORS_HEADERS });
     }
 
-    const url = new URL(request.url);
-    const targetParam = url.searchParams.get('url');
-    if (!targetParam) {
-      return jsonResponse({ error: 'Missing ?url= parameter' }, 400);
+    let url;
+    try { url = new URL(request.url); } catch (e) {
+      return jsonResponse({ error: 'Bad request URL' }, 400);
     }
 
+    const targetParam = url.searchParams.get('url');
+    if (!targetParam) return jsonResponse({ error: 'Missing ?url= parameter' }, 400);
+
     let target;
-    try {
-      target = new URL(targetParam);
-    } catch (e) {
+    try { target = new URL(targetParam); } catch (e) {
       return jsonResponse({ error: 'Invalid ?url= parameter' }, 400);
     }
 
@@ -174,55 +241,71 @@ export default {
       }, 403);
     }
 
-    // SSRF defense: never forward to private / link-local / metadata addresses.
-    try {
-      const dns = await fetch(`https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(target.hostname)}`,
-        { headers: { accept: 'application/dns-json' } });
-      if (dns.ok) {
-        const data = await dns.json();
-        const ips = [];
-        for (const answer of (data.Answer || [])) {
-          if (answer.type === 1 || answer.type === 28) ips.push(answer.data);
-        }
-        const blocked = ips.filter(isBlockedIp);
-        // Block only when every resolved address is forbidden (a host mixing public
-        // and private addresses can still resolve, but never to the private ones).
-        if (ips.length > 0 && blocked.length === ips.length) {
-          return jsonResponse({
-            error: `Target host '${target.hostname}' resolves to a blocked address.`,
-          }, 403);
-        }
+    // SSRF defense-in-depth.
+    if (isIpLiteral(target.hostname)) {
+      const bare = target.hostname.replace(/^\[|\]$/g, '');
+      if (isBlockedIp(bare)) {
+        return jsonResponse({ error: `Target host '${target.hostname}' is a blocked address.` }, 403);
       }
-    } catch (e) {
-      // If DNS resolution fails we still forward; the upstream fetch will surface the error.
+    } else {
+      const check = await resolvesToBlockedAddress(target.hostname);
+      if (check.known && check.blocked) {
+        return jsonResponse({ error: `Target host '${target.hostname}' resolves to a blocked address.` }, 403);
+      }
     }
 
-    // Forward the exact request (method, headers, body). Streaming body keeps
-    // multipart/form-data uploads working unchanged.
+    const method = request.method.toUpperCase();
+    const hasBody = method !== 'GET' && method !== 'HEAD';
+
+    // Buffer the body so the runtime can compute Content-Length itself and
+    // does not fall back to the header-stripping stream path.
+    let bodyBuffer = null;
+    if (hasBody) {
+      try {
+        bodyBuffer = await request.arrayBuffer();
+      } catch (e) {
+        return jsonResponse({ error: 'Failed to read request body' }, 400);
+      }
+    }
+
+    // Rebuild headers from scratch.
+    const fwdHeaders = new Headers();
+    for (const [k, v] of request.headers) {
+      if (!DROP_REQUEST_HEADERS.has(k.toLowerCase())) fwdHeaders.set(k, v);
+    }
+    // Belt-and-braces: never lose Authorization.
+    const auth = request.headers.get('authorization');
+    if (auth && !fwdHeaders.has('authorization')) {
+      fwdHeaders.set('Authorization', auth);
+    }
+
+    const init = { method, headers: fwdHeaders, redirect: 'follow' };
+    if (bodyBuffer && bodyBuffer.byteLength > 0) {
+      init.body = bodyBuffer;
+    }
+
     let upstream;
     try {
-      upstream = await fetch(target.toString(), {
-        method: request.method,
-        headers: request.headers,
-        body: request.body,
-        redirect: 'follow',
-      });
+      upstream = await fetch(target.toString(), init);
     } catch (e) {
       return jsonResponse({
-        error: `Upstream request failed: ${e.message || 'network error'}`,
+        error: `Upstream request failed: ${(e && e.message) || 'network error'}`,
       }, 502);
     }
 
-    const headers = new Headers(upstream.headers);
-    headers.set('X-Content-Type-Options', 'nosniff');
-    for (const [key, value] of Object.entries(CORS_HEADERS)) {
-      headers.set(key, value);
+    // Rebuild response headers, dropping framing/encoding headers the runtime
+    // would otherwise duplicate, then layer on CORS.
+    const outHeaders = new Headers();
+    for (const [k, v] of upstream.headers) {
+      if (!DROP_RESPONSE_HEADERS.has(k.toLowerCase())) outHeaders.set(k, v);
     }
+    for (const [k, v] of Object.entries(CORS_HEADERS)) outHeaders.set(k, v);
+    outHeaders.set('X-Content-Type-Options', 'nosniff');
 
     return new Response(upstream.body, {
       status: upstream.status,
       statusText: upstream.statusText,
-      headers,
+      headers: outHeaders,
     });
   },
 };
