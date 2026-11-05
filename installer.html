@@ -944,6 +944,19 @@ input::placeholder, textarea::placeholder { color: var(--text-4); }
     }
     .step-card .sticky-cta .btn { box-shadow: 0 8px 24px -8px rgba(0,122,255,0.4); }
 }
+
+/* ---- OAuth connect ---- */
+details.fallback { margin-top: var(--s4); margin-bottom: var(--s4); }
+details.fallback > summary {
+    list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 12px; border-radius: var(--r-md); background: var(--fill-1); color: var(--text-2);
+    font-size: var(--fs-subhead); font-weight: 600;
+}
+details.fallback > summary::-webkit-details-marker { display: none; }
+details.fallback > summary i { font-size: 0.8em; transition: transform 0.2s; }
+details.fallback[open] > summary { margin-bottom: var(--s3); }
+details.fallback[open] > summary i { transform: rotate(90deg); }
+#oauth-status { word-break: break-word; }
 </style>
 </head>
 <body>
@@ -993,6 +1006,24 @@ input::placeholder, textarea::placeholder { color: var(--text-4); }
         <h2><span class="grad">Account</span> &amp; Token</h2>
         <p class="desc">Connect your Cloudflare account to get started.</p>
 
+        <div id="oauth-box" class="group hidden">
+            <div class="group-row">
+                <span class="num"><i class="fa-solid fa-link"></i></span>
+                <div class="body">
+                    <h3>Connect with Cloudflare</h3>
+                    <p>Sign in on Cloudflare and approve access. No API token to copy, and you can revoke access anytime from your Cloudflare profile.</p>
+                    <div class="actions">
+                        <button class="btn btn-sm" id="btn-oauth" onclick="startOAuth()"><i class="fa-solid fa-cloud-arrow-up"></i> Connect Cloudflare</button>
+                        <button class="btn btn-ghost btn-sm hidden" id="btn-oauth-disconnect" onclick="disconnectOAuth()"><i class="fa-solid fa-link-slash"></i> Disconnect</button>
+                    </div>
+                    <div id="oauth-status" class="field-hint" role="status" aria-live="polite" style="min-height:20px;margin-top:8px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <details id="token-fallback" class="fallback">
+        <summary><i class="fa-solid fa-chevron-right"></i> Use an API token instead</summary>
+
         <div class="group">
             <div class="group-row">
                 <span class="num">1</span>
@@ -1031,6 +1062,8 @@ input::placeholder, textarea::placeholder { color: var(--text-4); }
                 </div>
             </div>
         </div>
+
+        </details>
 
         <div class="sticky-cta">
             <button class="btn btn-lg" onclick="goToStep('security')" id="btn-account-next" disabled>Continue <i class="fa-solid fa-arrow-right"></i></button>
@@ -1222,6 +1255,29 @@ const API_TIMEOUT_MS = 20000;
 const WORKER_NAME_PATTERN = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
 const TOKEN_DEEPLINK = "https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22d1%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22account_settings%22%2C%22type%22%3A%22read%22%7D%5D&accountId=*&zoneId=all&name=Nyxx%20Installer";
 
+// OAuth "Connect with Cloudflare" (Authorization Code + PKCE, no client secret).
+// Create the client at dash.cloudflare.com > Manage Account > OAuth clients:
+//   - token auth method: none (public client), PKCE S256, grant: authorization_code (+ refresh_token if REQUEST_REFRESH_TOKEN)
+//   - redirect URL: exactly this installer's URL (origin + path), no query/hash
+//   - allowed CORS origins: this installer's origin
+//   - scopes: must match SCOPES below exactly (IDs from GET /client/v4/oauth/scopes)
+//   - make the client PUBLIC (needs logo, client URL and DNS TXT verification) or only your own account members can authorize it
+// Leave CLIENT_ID empty to hide the Connect button and use the API token method only.
+const OAUTH = {
+  CLIENT_ID: '87f4c44a2c2d4df7af66628871fc7502',
+  SCOPES: ['account-settings.read', 'workers-scripts.edit', 'd1.write'],
+  REQUEST_REFRESH_TOKEN: false,
+  REDIRECT_URI: 'https://mahan07dev.github.io/Nyxx/installer',
+  AUTH_URL: 'https://dash.cloudflare.com/oauth2/auth',
+  TOKEN_URL: 'https://dash.cloudflare.com/oauth2/token',
+  REVOKE_URL: 'https://dash.cloudflare.com/oauth2/revoke',
+  ISSUER: 'https://dash.cloudflare.com'
+};
+const CF_API = 'https://api.cloudflare.com/client/v4';
+const OAUTH_TOKENS_KEY = 'nyxx_oauth_tokens_v1';
+const OAUTH_PKCE_KEY = 'nyxx_oauth_pkce_v1';
+const OAUTH_PROXY_FLAG = 'nyxx_oauth_via_proxy';
+
 const STORAGE_KEY = 'nyxx_install_state_v4';
 const CONFIG_KEY = 'nyxx_config_v4';
 const CACHE_KEY = 'nyxx_worker_cache';
@@ -1238,7 +1294,7 @@ const STEP_ORDER = ['welcome', 'account', 'security', 'installer', 'create', 're
 // ============================
 // STATE
 // ============================
-let config = { proxyMode: 'default', proxyUrl: DEFAULT_PROXY, token: '', tokenVerified: false };
+let config = { proxyMode: 'default', proxyUrl: DEFAULT_PROXY, token: '', tokenVerified: false, authMode: 'token' };
 let installState = {
   accountId: null, subName: '', dbId: null, dbName: '', workerName: '', panelUrl: '',
   workerCode: null, completedSteps: [], failedStep: null, errorMessage: null,
@@ -1296,7 +1352,12 @@ function init() {
   fetchLatestVersion();
   checkProxyHealth(false);
 
-  if (config.token && tokenInput) {
+  initOAuthUI();
+  if (hasOAuthCallback()) {
+    handleOAuthCallback();
+  } else if (config.authMode === 'oauth') {
+    verifyOAuthSession();
+  } else if (config.token && tokenInput) {
     tokenInput.value = config.token;
     if (config.token.length >= 20) {
       verifyToken();
@@ -1467,10 +1528,16 @@ function updateChoiceFocus(moveFocus) {
 // ============================
 // LOCAL STORAGE
 // ============================
-function saveConfig() { try { localStorage.setItem(CONFIG_KEY, JSON.stringify(config)); } catch (e) {} }
+function saveConfig() {
+  try {
+    const c = { ...config };
+    if (c.authMode === 'oauth') c.token = ''; // OAuth tokens never go to localStorage
+    localStorage.setItem(CONFIG_KEY, JSON.stringify(c));
+  } catch (e) {}
+}
 function loadConfig() {
-  try { const raw = localStorage.getItem(CONFIG_KEY); if (raw) config = JSON.parse(raw); }
-  catch (e) { config = { proxyMode: 'default', proxyUrl: DEFAULT_PROXY, token: '', tokenVerified: false }; }
+  try { const raw = localStorage.getItem(CONFIG_KEY); if (raw) config = JSON.parse(raw); restoreOAuth(); }
+  catch (e) { config = { proxyMode: 'default', proxyUrl: DEFAULT_PROXY, token: '', tokenVerified: false, authMode: 'token' }; }
 }
 function saveState() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(installState)); } catch (e) {} }
 function loadState() {
@@ -1481,8 +1548,9 @@ function clearState() {
   localStorage.removeItem(STORAGE_KEY);
   localStorage.removeItem(CONFIG_KEY);
   localStorage.removeItem(CACHE_KEY);
+  resetOAuthMemory();
   installState = { accountId: null, subName: '', dbId: null, dbName: '', workerName: '', panelUrl: '', workerCode: null, completedSteps: [], failedStep: null, errorMessage: null, scanResults: { workers: [], databases: [] }, updateMode: false, updateTarget: null, workerVersion: null };
-  config = { proxyMode: 'default', proxyUrl: DEFAULT_PROXY, token: '', tokenVerified: false };
+  config = { proxyMode: 'default', proxyUrl: DEFAULT_PROXY, token: '', tokenVerified: false, authMode: 'token' };
 }
 
 // ============================
@@ -1719,6 +1787,11 @@ if (tokenInput) {
 
 async function verifyToken() {
   const token = tokenInput.value.trim();
+  if (config.authMode === 'oauth') {
+    if (token.length < 20) return;
+    disconnectOAuth(true); // user switched to a manual token
+  }
+  config.authMode = 'token';
   config.token = token;
   saveConfig();
 
@@ -1784,14 +1857,15 @@ async function fetchWithTimeout(url, init, timeoutMs) {
 function api(method, target, token, body, ctype) {
   const proxy = config.proxyUrl || DEFAULT_PROXY;
   const url = proxy + (proxy.endsWith('/') ? '' : '/') + "?url=" + encodeURIComponent(target);
-  const headers = { Authorization: 'Bearer ' + (token || config.token) };
-  if (ctype) headers['Content-Type'] = ctype;
+  const baseHeaders = {};
+  if (ctype) baseHeaders['Content-Type'] = ctype;
 
   async function sendRequest(effectiveMethod, extraHeaders, useProxy) {
     const requestUrl = useProxy ? url : target;
+    const bearer = await resolveBearer(token);
     const requestInit = {
       method: effectiveMethod,
-      headers: { ...headers, ...extraHeaders },
+      headers: { Authorization: 'Bearer ' + bearer, ...baseHeaders, ...extraHeaders },
       body,
       mode: 'cors'
     };
@@ -1820,6 +1894,13 @@ function api(method, target, token, body, ctype) {
   }
 
   return withRetry().then(async res => {
+    if (res.status === 401 && config.authMode === 'oauth') {
+      const refreshed = await refreshOAuth();
+      if (refreshed) {
+        try { res = await withRetry(); } catch (e) {}
+      }
+      if (res.status === 401) oauthExpired();
+    }
     const upperMethod = (method || 'GET').toUpperCase();
     if ((res.status === 415 || res.status === 405) && upperMethod !== 'GET' && upperMethod !== 'HEAD') {
       try {
@@ -2557,6 +2638,7 @@ function resetInstallation() {
 
 function clearAllData() {
   if (!confirm('This will clear ALL saved data including tokens, installation state, and cached worker code. Continue?')) return;
+  if (oauth.access || oauth.refresh) disconnectOAuth(true);
   clearState();
   isInstalling = false;
   currentStepIndex = -1;
@@ -2564,6 +2646,7 @@ function clearAllData() {
   if (tokenInput) tokenInput.value = '';
   if (tokenStatus) tokenStatus.textContent = '';
   config.tokenVerified = false;
+  updateOAuthUI();
   if (goBtn) goBtn.disabled = true;
   if (btnAccountNext) btnAccountNext.disabled = true;
   document.getElementById('progress-card').classList.add('hidden');
@@ -2650,6 +2733,326 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+
+// ============================
+// OAUTH (Connect with Cloudflare)
+// ============================
+let oauth = { access: '', refresh: '', expiresAt: 0 };
+let oauthBusy = false;
+let oauthRefreshing = null;
+let oauthVerifying = null;
+let oauthSessionEnded = false;
+
+function ssGet(k) { try { return JSON.parse(sessionStorage.getItem(k) || 'null'); } catch (e) { return null; } }
+function ssSet(k, v) { try { sessionStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
+function ssDel(k) { try { sessionStorage.removeItem(k); } catch (e) {} }
+
+function b64url(bytes) {
+  let s = '';
+  for (const b of bytes) s += String.fromCharCode(b);
+  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function randomB64url(n) { const a = new Uint8Array(n); crypto.getRandomValues(a); return b64url(a); }
+async function pkceChallenge(verifier) {
+  const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
+  return b64url(new Uint8Array(d));
+}
+
+function oauthRedirectUri() { return OAUTH.REDIRECT_URI || (location.origin + location.pathname); }
+function oauthUnsupportedReason() {
+  if (!/^https?:$/.test(location.protocol)) return 'Open this installer from a web address (https://…), not as a local file.';
+  if (!window.isSecureContext || !(window.crypto && crypto.subtle)) return 'Cloudflare sign-in needs a secure (https) page.';
+  return '';
+}
+function isOAuthConnected() { return config.authMode === 'oauth' && !!oauth.access && config.tokenVerified === true; }
+
+function restoreOAuth() {
+  if (config.authMode !== 'oauth') { config.authMode = 'token'; return; }
+  const t = ssGet(OAUTH_TOKENS_KEY);
+  if (t && t.access) {
+    oauth = { access: t.access, refresh: t.refresh || '', expiresAt: t.expiresAt || 0 };
+    config.token = oauth.access;
+  } else {
+    config.authMode = 'token'; config.token = ''; config.tokenVerified = false;
+    oauthSessionEnded = true;
+  }
+}
+function resetOAuthMemory() {
+  oauth = { access: '', refresh: '', expiresAt: 0 };
+  ssDel(OAUTH_TOKENS_KEY); ssDel(OAUTH_PKCE_KEY);
+}
+function applyOAuthTokens(tok) {
+  oauth.access = tok.access_token;
+  if (tok.refresh_token) oauth.refresh = tok.refresh_token;
+  oauth.expiresAt = tok.expires_in ? Date.now() + Number(tok.expires_in) * 1000 : 0;
+  ssSet(OAUTH_TOKENS_KEY, oauth);
+  config.authMode = 'oauth';
+  config.token = oauth.access;
+  saveConfig();
+}
+
+// ---- UI ----
+function setOAuthStatus(kind, text) {
+  const el = document.getElementById('oauth-status');
+  if (!el) return;
+  el.textContent = '';
+  if (!kind || !text) return;
+  const map = { ok: ['fa-circle-check', 'var(--green)'], err: ['fa-circle-xmark', 'var(--red)'], busy: ['fa-spinner fa-spin', 'var(--text-4)'], warn: ['fa-triangle-exclamation', 'var(--orange)'] };
+  const [ic, col] = map[kind] || map.busy;
+  const i = document.createElement('i'); i.className = 'fa-solid ' + ic;
+  el.appendChild(i);
+  el.appendChild(document.createTextNode(' ' + String(text).slice(0, 300)));
+  el.style.color = col;
+  if (kind === 'err') announce(String(text).slice(0, 300));
+}
+function setAccountNext(enabled) { if (btnAccountNext) btnAccountNext.disabled = !enabled; }
+function openFallback() { const fb = document.getElementById('token-fallback'); if (fb) fb.open = true; }
+function updateOAuthUI() {
+  const connect = document.getElementById('btn-oauth');
+  const disc = document.getElementById('btn-oauth-disconnect');
+  if (!connect || !disc) return;
+  const connected = isOAuthConnected();
+  connect.disabled = oauthBusy || !!oauthUnsupportedReason();
+  connect.innerHTML = connected
+    ? '<i class="fa-solid fa-rotate"></i> Reconnect'
+    : '<i class="fa-solid fa-cloud-arrow-up"></i> Connect Cloudflare';
+  disc.classList.toggle('hidden', !(config.authMode === 'oauth' && oauth.access));
+  if (!oauthBusy && !connected && !oauthSessionEnded) { /* keep any error text */ }
+}
+function initOAuthUI() {
+  const box = document.getElementById('oauth-box');
+  const fb = document.getElementById('token-fallback');
+  if (!box || !fb) return;
+  if (!OAUTH.CLIENT_ID) {
+    box.classList.add('hidden');
+    fb.open = true;
+    const sum = fb.querySelector('summary'); if (sum) sum.classList.add('hidden');
+    return;
+  }
+  box.classList.remove('hidden');
+  fb.open = config.authMode !== 'oauth' && !!config.token;
+  const why = oauthUnsupportedReason();
+  if (why) { setOAuthStatus('warn', why); fb.open = true; }
+  else if (oauthSessionEnded) setOAuthStatus('warn', 'Your previous Cloudflare connection ended. Connect again to continue.');
+  updateOAuthUI();
+}
+// Back button from Cloudflare can restore this page from bfcache with a stuck button
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted && !isOAuthConnected()) { oauthBusy = false; setOAuthStatus('', ''); updateOAuthUI(); }
+});
+
+// ---- Start ----
+async function startOAuth() {
+  if (oauthBusy) return;
+  const why = oauthUnsupportedReason();
+  if (!OAUTH.CLIENT_ID || why) { setOAuthStatus('err', why || 'Connect is not configured.'); openFallback(); return; }
+  oauthBusy = true; updateOAuthUI();
+  try {
+    const verifier = randomB64url(48);
+    const state = randomB64url(24);
+    const challenge = await pkceChallenge(verifier);
+    const redirect = oauthRedirectUri();
+    if (!ssSet(OAUTH_PKCE_KEY, { verifier, state, redirect, ts: Date.now() })) throw new Error('storage');
+    const scope = OAUTH.SCOPES.concat(OAUTH.REQUEST_REFRESH_TOKEN ? ['offline_access'] : []).join(' ');
+    const p = new URLSearchParams({
+      response_type: 'code', client_id: OAUTH.CLIENT_ID, redirect_uri: redirect,
+      scope, state, code_challenge: challenge, code_challenge_method: 'S256'
+    });
+    setOAuthStatus('busy', 'Redirecting to Cloudflare…');
+    location.assign(OAUTH.AUTH_URL + '?' + p.toString());
+  } catch (e) {
+    oauthBusy = false; updateOAuthUI();
+    setOAuthStatus('err', e.message === 'storage'
+      ? 'Your browser blocked session storage (private mode?). Use the API token method below.'
+      : 'Could not start sign-in. Try again or use the API token method below.');
+    openFallback();
+  }
+}
+
+// ---- Callback ----
+function hasOAuthCallback() {
+  const q = new URLSearchParams(location.search);
+  return q.has('state') && (q.has('code') || q.has('error'));
+}
+async function handleOAuthCallback() {
+  const q = new URLSearchParams(location.search);
+  const code = q.get('code'), state = q.get('state'), err = q.get('error'), errDesc = q.get('error_description'), iss = q.get('iss');
+  ['code', 'state', 'error', 'error_description', 'error_uri', 'iss'].forEach(k => q.delete(k));
+  try { history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q.toString() : '') + location.hash); } catch (e) {}
+  goToStep('account');
+
+  const saved = ssGet(OAUTH_PKCE_KEY);
+  ssDel(OAUTH_PKCE_KEY); // single use
+  oauthBusy = true; updateOAuthUI();
+  setOAuthStatus('busy', 'Finishing sign-in…');
+  try {
+    if (err) {
+      throw new InstallError(err === 'access_denied'
+        ? 'Authorization was cancelled. Click Connect to try again.'
+        : ('Cloudflare returned an error: ' + (errDesc || err)), 'AUTH');
+    }
+    if (!saved || !state || saved.state !== state) throw new InstallError('Sign-in session was lost or does not match (different tab or browser, expired, or storage blocked). Click Connect to start again.', 'SECURITY');
+    if (Date.now() - saved.ts > 15 * 60 * 1000) throw new InstallError('Sign-in took too long and expired. Click Connect to start again.', 'AUTH');
+    if (iss && iss !== OAUTH.ISSUER) throw new InstallError('Unexpected sign-in issuer. Click Connect to start again.', 'SECURITY');
+    if (!code) throw new InstallError('Cloudflare did not return an authorization code. Click Connect to try again.', 'AUTH');
+    const tok = await oauthTokenRequest({
+      grant_type: 'authorization_code', code, redirect_uri: saved.redirect,
+      client_id: OAUTH.CLIENT_ID, code_verifier: saved.verifier
+    });
+    applyOAuthTokens(tok);
+    oauthSessionEnded = false;
+    oauthBusy = false;
+    await verifyOAuthSession();
+  } catch (e) {
+    setOAuthStatus('err', e.message || 'Sign-in failed.');
+    openFallback();
+  } finally {
+    oauthBusy = false; updateOAuthUI();
+  }
+}
+
+// ---- Token endpoint (direct first, proxy fallback if the browser blocks it) ----
+async function oauthTokenRequest(params) {
+  const init = {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' },
+    body: new URLSearchParams(params).toString()
+  };
+  const proxy = config.proxyUrl || DEFAULT_PROXY;
+  const proxied = proxy + (proxy.endsWith('/') ? '' : '/') + '?url=' + encodeURIComponent(OAUTH.TOKEN_URL);
+  let viaProxy = false, res;
+  const preferProxy = (() => { try { return localStorage.getItem(OAUTH_PROXY_FLAG) === '1'; } catch (e) { return false; } })();
+  try {
+    viaProxy = preferProxy;
+    res = await fetchWithTimeout(preferProxy ? proxied : OAUTH.TOKEN_URL, init, API_TIMEOUT_MS);
+  } catch (e) {
+    if (preferProxy) throw new InstallError('Could not reach Cloudflare to finish sign-in. Check your connection and try again.', 'NETWORK');
+    try {
+      viaProxy = true;
+      res = await fetchWithTimeout(proxied, init, API_TIMEOUT_MS);
+      try { localStorage.setItem(OAUTH_PROXY_FLAG, '1'); } catch (e2) {}
+    } catch (e2) {
+      throw new InstallError('Could not reach Cloudflare to finish sign-in. Check your connection and try again.', 'NETWORK');
+    }
+  }
+  const txt = await res.text();
+  let json = null; try { json = JSON.parse(txt); } catch (e) {}
+  if (res.ok && json && json.access_token) return json;
+
+  const code = json && json.error;
+  let msg;
+  if (code === 'invalid_grant') msg = viaProxy && !preferProxy
+    ? 'Sign-in could not complete (the browser blocked Cloudflare’s response). Click Connect again; if it repeats, the installer’s origin must be added to the OAuth client’s allowed CORS origins.'
+    : 'This sign-in expired or was already used. Click Connect to try again.';
+  else if (code === 'invalid_client') msg = 'This installer is not registered correctly with Cloudflare (client ID, redirect URL or client visibility). The installer owner needs to check the OAuth client.';
+  else if (code === 'invalid_scope') msg = 'Requested permissions do not match the OAuth client configuration. The installer owner needs to check the client scopes.';
+  else if (viaProxy && res.status === 403) msg = 'The proxy refused the sign-in request. Add dash.cloudflare.com to the proxy’s ALLOWED_HOSTS, or add this installer’s origin to the OAuth client’s allowed CORS origins.';
+  else msg = (json && (json.error_description || json.error)) || ('Sign-in failed (HTTP ' + res.status + ').');
+  const ie = new InstallError(msg, 'AUTH'); ie.oauthCode = code;
+  throw ie;
+}
+
+// ---- Refresh / bearer ----
+function refreshOAuth() {
+  if (!OAUTH.REQUEST_REFRESH_TOKEN || !oauth.refresh) return Promise.resolve(false);
+  if (oauthRefreshing) return oauthRefreshing; // single flight: refresh tokens may rotate
+  oauthRefreshing = (async () => {
+    try {
+      const tok = await oauthTokenRequest({ grant_type: 'refresh_token', refresh_token: oauth.refresh, client_id: OAUTH.CLIENT_ID });
+      applyOAuthTokens(tok);
+      return true;
+    } catch (e) {
+      if (e.oauthCode === 'invalid_grant') { oauth.refresh = ''; ssSet(OAUTH_TOKENS_KEY, oauth); }
+      return false;
+    } finally {
+      oauthRefreshing = null;
+    }
+  })();
+  return oauthRefreshing;
+}
+async function resolveBearer(explicit) {
+  if (config.authMode !== 'oauth') return explicit || config.token;
+  if (oauth.refresh && oauth.expiresAt && Date.now() > oauth.expiresAt - 60000) await refreshOAuth();
+  return oauth.access || explicit || config.token;
+}
+function oauthExpired() {
+  if (config.authMode !== 'oauth' || !config.tokenVerified) return;
+  config.tokenVerified = false; saveConfig();
+  setAccountNext(false); updateOAuthUI();
+  setOAuthStatus('warn', 'Your Cloudflare session expired. Reconnect to continue.');
+  showToast('Cloudflare session expired — reconnect on the Account step.', 'warn');
+}
+
+// ---- Verify (accounts + Workers/D1 access preflight) ----
+function verifyOAuthSession() {
+  if (oauthVerifying) return oauthVerifying;
+  oauthVerifying = (async () => {
+    config.tokenVerified = false; setAccountNext(false);
+    setOAuthStatus('busy', 'Checking permissions…');
+    try {
+      const acc = await api('GET', CF_API + '/accounts?per_page=50', oauth.access);
+      if (acc.status === 401) throw new InstallError('Your Cloudflare session expired. Click Reconnect.', 'AUTH');
+      if (!cfOk(acc)) throw new InstallError('Cloudflare rejected the connection: ' + cfErr(acc), 'AUTH');
+      const accounts = acc.json.result || [];
+      if (!accounts.length) throw new InstallError('No Cloudflare account was authorized. Reconnect and select an account on the consent screen (an account admin may also have disabled OAuth apps).', 'AUTH');
+
+      const ids = accounts.map(a => a.id);
+      if (installState.accountId && !ids.includes(installState.accountId)) {
+        // different account than the saved install progress belongs to
+        installState.subName = ''; installState.dbId = null; installState.dbName = '';
+        installState.completedSteps = []; installState.failedStep = null; installState.errorMessage = null;
+        installState.accountId = null;
+      }
+      if (!installState.accountId) installState.accountId = ids[0];
+      saveState();
+      const accountId = installState.accountId;
+
+      const [w, d] = await Promise.all([
+        api('GET', `${CF_API}/accounts/${accountId}/workers/scripts`, oauth.access),
+        api('GET', `${CF_API}/accounts/${accountId}/d1/database?per_page=1`, oauth.access)
+      ]);
+      const denied = r => r.status === 401 || r.status === 403;
+      const missing = [];
+      if (denied(w)) missing.push('Workers');
+      if (denied(d)) missing.push('D1');
+      if (missing.length) throw new InstallError('Connected, but Cloudflare did not grant ' + missing.join(' and ') + ' access. Reconnect and keep all requested permissions enabled.', 'AUTH');
+
+      config.tokenVerified = true; saveConfig(); setAccountNext(true);
+      setOAuthStatus('ok', 'Connected to Cloudflare' + (accounts.length > 1 ? ' · ' + accounts.length + ' accounts authorized, the first one will be used' : ''));
+      announce('Cloudflare connected.');
+      return true;
+    } catch (e) {
+      config.tokenVerified = false; saveConfig(); setAccountNext(false);
+      setOAuthStatus('err', e.message || 'Could not verify the connection.');
+      return false;
+    } finally {
+      oauthVerifying = null; updateOAuthUI();
+    }
+  })();
+  return oauthVerifying;
+}
+
+// ---- Disconnect ----
+async function disconnectOAuth(silent) {
+  const tok = oauth.refresh || oauth.access;
+  const hint = oauth.refresh ? 'refresh_token' : 'access_token';
+  oauth = { access: '', refresh: '', expiresAt: 0 };
+  ssDel(OAUTH_TOKENS_KEY);
+  if (config.authMode === 'oauth') { config.authMode = 'token'; config.token = ''; config.tokenVerified = false; }
+  saveConfig();
+  setAccountNext(false);
+  if (tok && OAUTH.CLIENT_ID) {
+    // best effort; the user can always revoke from their Cloudflare profile
+    fetchWithTimeout(OAUTH.REVOKE_URL, {
+      method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ token: tok, token_type_hint: hint, client_id: OAUTH.CLIENT_ID }).toString()
+    }, 8000).catch(() => {});
+  }
+  setOAuthStatus('', '');
+  updateOAuthUI();
+  if (!silent) showToast('Disconnected from Cloudflare', 'ok');
 }
 
 // ============================
