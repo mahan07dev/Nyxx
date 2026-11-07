@@ -1,8 +1,8 @@
 // ============================================================================
-// NYXX — v4.4.0
+// NYXX — v4.5.0
 // Telegram bot builder + management dashboard for Cloudflare Workers + D1.
 // ============================================================================
-const VERSION = '4.4.0';
+const VERSION = '4.5.0';
 
 const RELAY_BASE = 'https://nyxx-proxy.nova-06272b19.workers.dev';
 const RELAY_EXCHANGE_SECRET = 'SECRET_ULTRA_PRO_MAX'; // Must match proxy.js
@@ -631,6 +631,48 @@ details.help > div { padding: 0 16px 14px; font-size: var(--fs-footnote); line-h
     .sheet-body .row.nowrap > select.input { flex: 1 1 140px; min-width: 0; }
     .sheet-body .row.nowrap > .btn { flex: 0 0 auto; }
 }
+
+/* ===== v4.5.0 additions ===== */
+.role-badge-moderator { background: var(--accent-soft); color: var(--accent); }
+.featured-delete-badge { font-size: 10px; }
+.group-status-active { color: var(--green); }
+.group-status-inactive { color: var(--red); }
+
+/* Larger tap targets on mobile for inline/reply button builder */
+@media (max-width: 640px) {
+    .sheet-body .row.nowrap { flex-wrap: wrap !important; }
+    .sheet-body .row.nowrap > .input,
+    .sheet-body .row.nowrap > select.input,
+    .sheet-body .row.nowrap > .pw-wrap {
+        flex: 1 1 100% !important;
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+    .sheet-body .row.nowrap > .btn { flex: 0 0 auto !important; }
+    .menu-entry { flex-direction: column; align-items: stretch !important; }
+    .menu-entry .icon-btn { align-self: flex-start; }
+    .menu-entry .menu-cmd, .menu-entry .menu-desc { width: 100% !important; flex-basis: auto !important; }
+}
+
+/* Loading state for entire forms */
+.btn.loading .btn-spinner { display: flex; }
+.form-busy { opacity: .6; pointer-events: none; }
+
+/* Cron warnings */
+.cron-warn { background: var(--orange-soft); color: var(--orange); border-radius: var(--r-sm); padding: 10px 14px; font-size: var(--fs-footnote); margin-bottom: 12px; display: flex; gap: 8px; align-items: flex-start; }
+.cron-warn i { margin-top: 2px; }
+
+/* Group memory chat */
+.gm-memory-actions { display: flex; gap: 4px; }
+
+/* v4.5.0: prevent horizontal page scroll that can feel like "stuck" vertical scroll */
+body { overflow-x: hidden; }
+
+/* Prevent touch overscroll inside inner scroll regions from chaining (accidental pull-to-refresh) */
+.chat, .playground, .messages, .sheet-body {
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+}
 </style>
 </head>
 <body>
@@ -746,7 +788,7 @@ details.help > div { padding: 0 16px 14px; font-size: var(--fs-footnote); line-h
                             <button type="button" class="pw-toggle" onclick="togglePw('setup-password-confirm',this)" aria-label="Show or hide password"><i class="fa-regular fa-eye"></i></button>
                         </div>
                     </div>
-                    <button class="btn btn-primary btn-block btn-lg" onclick="submitSetup()"><i class="fa-solid fa-check"></i> Save &amp; continue</button>
+                    <button class="btn btn-primary btn-block btn-lg" id="setup-submit" onclick="submitSetup()"><i class="fa-solid fa-check"></i> Save &amp; continue<span class="btn-spinner"><span class="mini-spinner"></span></span></button>
                     <div class="err-box" id="setup-error"></div>
                 </div>
             </div>
@@ -769,7 +811,7 @@ details.help > div { padding: 0 16px 14px; font-size: var(--fs-footnote); line-h
                                 <button type="button" class="pw-toggle" onclick="togglePw('login-password',this)" aria-label="Show or hide password"><i class="fa-regular fa-eye"></i></button>
                             </div>
                         </div>
-                        <button type="submit" class="btn btn-primary btn-block btn-lg"><i class="fa-solid fa-arrow-right-to-bracket"></i> Sign in</button>
+                        <button type="submit" class="btn btn-primary btn-block btn-lg" id="login-submit"><i class="fa-solid fa-arrow-right-to-bracket"></i> Sign in<span class="btn-spinner"><span class="mini-spinner"></span></span></button>
                         <div class="err-box" id="login-error"></div>
                     </form>
                 </div>
@@ -799,7 +841,10 @@ details.help > div { padding: 0 16px 14px; font-size: var(--fs-footnote); line-h
                     </div>
                 </div>
                 <input type="file" id="pack-file" accept=".json" class="hidden" onchange="importCommandPack(event)">
-                <div class="toolbar"><div class="search"><i class="fa-solid fa-magnifying-glass"></i><input id="cmd-search" placeholder="Search commands" oninput="renderCommands()"></div></div>
+                <div class="toolbar">
+                    <div class="search"><i class="fa-solid fa-magnifying-glass"></i><input id="cmd-search" placeholder="Search commands" oninput="renderCommands()"></div>
+                    <button class="btn btn-gray btn-sm" onclick="commands=[];loadCommands(true)" aria-label="Refresh commands"><i class="fa-solid fa-rotate"></i> Refresh</button>
+                </div>
                 <div class="row" style="margin-bottom:12px;">
                     <span class="badge blue"><i class="fa-regular fa-folder-open"></i> <span id="crumb">Root</span></span>
                     <button class="btn btn-gray btn-sm" id="btn-up" onclick="navigateUp()"><i class="fa-solid fa-arrow-up"></i> Up</button>
@@ -813,7 +858,11 @@ details.help > div { padding: 0 16px 14px; font-size: var(--fs-footnote); line-h
                 </div>
 
                 <div class="card">
-                    <div class="card-head"><div class="card-title"><i class="fa-solid fa-list"></i> Telegram menu commands</div></div>
+                    <div class="card-head">
+                        <div class="card-title"><i class="fa-solid fa-list"></i> Telegram menu commands</div>
+                        <div style="flex:1"></div>
+                        <button class="btn btn-gray btn-sm" onclick="loadMenu(true)" aria-label="Refresh menu"><i class="fa-solid fa-rotate"></i></button>
+                    </div>
                     <div class="hint-banner">
                         <i class="fa-solid fa-circle-info"></i>
                         <div>These appear in the blue menu button (the "☰" that shows next to the message box in a chat). Use <b>lowercase</b>, no slash. <code>start</code> is fixed and always shown.</div>
@@ -830,6 +879,7 @@ details.help > div { padding: 0 16px 14px; font-size: var(--fs-footnote); line-h
                     <div class="card-head">
                         <div class="card-title"><i class="fa-solid fa-wand-magic-sparkles"></i> Featured commands</div>
                         <div style="flex:1"></div>
+                        <button class="btn btn-gray btn-sm" onclick="loadFeatured(true)" aria-label="Refresh"><i class="fa-solid fa-rotate"></i></button>
                         <button class="btn btn-gray btn-sm" onclick="openFeaturedModal('text')"><i class="fa-solid fa-plus"></i> DM command</button>
                         <button class="btn btn-gray btn-sm" onclick="openFeaturedModal('buttons')"><i class="fa-solid fa-plus"></i> Buttons command</button>
                         <button class="btn btn-gray btn-sm" onclick="openFeaturedModal('mcp')"><i class="fa-solid fa-plug"></i> MCP command</button>
@@ -837,9 +887,13 @@ details.help > div { padding: 0 16px 14px; font-size: var(--fs-footnote); line-h
                     <details class="help">
                         <summary><i class="fa-solid fa-circle-question"></i> How featured commands work</summary>
                         <div>
-                            <b>DM commands</b> quietly deliver a note from a user to you. When a user types <code>/contact hello boss</code>, the text <code>hello boss</code> lands in <b>Users → Direct messages</b> under that user. The bot deletes the trigger message and does not reply to the note itself — it just confirms with the success message you set.<br><br>
-                            <b>Buttons commands</b> let users build their own inline keyboards. Example: <code>/menu "Hi there!" {Google}(https://google.com){Say hi}(Hi!){Menu}(/start)</code> — the bot sends "Hi there!" with those three buttons, three per row. Values starting with <b>http</b> open a link, values starting with <b>/</b> run a command, anything else is posted back as a new message.<br><br>
-                            Each featured command has <b>three separate messages</b>: the <b>hint</b> (sent when the command is typed alone, with no arguments), the <b>success message</b> (sent after the action completes) and the <b>failure message</b> (sent if the action fails). Leave a field blank to stay silent in that case.
+                            <b>DM commands</b> quietly deliver a note from a user to you. When a user types <code>/contact hello boss</code>, the text <code>hello boss</code> lands in <b>Users → Direct messages</b> under that user. Configure whether the trigger message is deleted below.<br><br>
+                            <b>Buttons commands</b> let users build their own inline keyboards. The <b>simplest syntax</b> is:<br>
+                            <code>/menu Hi there! | Google:https://google.com | Say hi:Hi!</code><br>
+                            The part before the first <code>|</code> is the message. Each <code>Label:value</code> pair becomes a button (3 per row). Values starting with <b>http</b> open a link, <code>/</code> runs a command, anything else is posted back as a new message.<br><br>
+                            The <b>advanced syntax</b> uses braces: <code>/menu "Hi there!" {Google}(https://google.com){Say hi}(Hi!)</code><br><br>
+                            Each featured command has three separate messages: the <b>hint</b> (sent when the command is typed alone), the <b>success message</b> (after the action) and the <b>failure message</b>. Leave a field blank to stay silent in that case.<br><br>
+                            <b>Delete user message:</b> when enabled, the bot removes the user's <code>/contact hello boss</code> message from the chat right away. Turn this off if you want the command to leave a visible log in the chat.
                         </div>
                     </details>
                     <div id="featured-list"></div>
@@ -894,6 +948,8 @@ details.help > div { padding: 0 16px 14px; font-size: var(--fs-footnote); line-h
                         </div>
                         <div class="row" style="margin-bottom:8px;">
                             <span class="badge" id="um-dm-count">0</span>
+                            <div style="flex:1"></div>
+                            <button class="btn btn-gray btn-sm" onclick="loadDmMessages(manageUser.id)" aria-label="Refresh messages"><i class="fa-solid fa-rotate"></i></button>
                         </div>
                         <div class="chat" id="um-chat"></div>
                         <div class="chat-compose">
@@ -946,6 +1002,29 @@ details.help > div { padding: 0 16px 14px; font-size: var(--fs-footnote); line-h
                 <div class="grid grid-3" id="gm-cards" style="margin-bottom:16px;"></div>
 
                 <div class="card">
+                    <div class="row">
+                        <button class="btn btn-gray btn-sm" onclick="syncGroup()"><i class="fa-solid fa-rotate"></i> Sync with Telegram</button>
+                        <div style="flex:1"></div>
+                        <span class="badge" id="gm-status-badge">—</span>
+                    </div>
+                    <div class="field-hint" style="margin-top:8px;">Checks whether the bot is still in this group and updates its title and member count.</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head">
+                        <div class="card-title c-purple"><i class="fa-solid fa-brain"></i> Group AI memory</div>
+                        <div style="flex:1"></div>
+                        <button class="btn btn-gray btn-sm" onclick="loadGroupMemory()" aria-label="Refresh memory"><i class="fa-solid fa-rotate"></i></button>
+                        <button class="btn btn-danger btn-sm" onclick="clearGroupMemory()"><i class="fa-solid fa-eraser"></i> Clear all</button>
+                    </div>
+                    <div class="hint-banner">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <div>These are the AI messages stored for this group. Memory is shared across all members of this chat. Deleting is permanent.</div>
+                    </div>
+                    <div class="chat" id="gm-memory" style="max-height:400px;overflow-y:auto;"></div>
+                </div>
+
+                <div class="card">
                     <div class="card-head"><div class="card-title c-purple"><i class="fa-solid fa-wand-magic-sparkles"></i> AI behaviour</div></div>
                     <div class="field">
                         <label class="field-label">Reply in this group</label>
@@ -976,6 +1055,66 @@ details.help > div { padding: 0 16px 14px; font-size: var(--fs-footnote); line-h
                                 <option value="0">No — reply to every text message</option>
                             </select>
                             <span class="field-hint">Recommended for busy groups: "Yes" avoids the bot butting into every conversation.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-shield-halved"></i> Permissions in this group</div></div>
+                    <div class="hint-banner">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <div>Each row overrides the global setting from the <a href="#" onclick="go('permissions');return false;">Permissions</a> tab for <b>this group only</b>. <b>Inherit</b> keeps using the global value. <b>Moderator+</b> allows moderators and admins.</div>
+                    </div>
+                    <div class="grid grid-2">
+                        <div class="field">
+                            <label class="field-label">Regular commands</label>
+                            <div class="segmented" id="gm-commands-perm">
+                                <button data-v="inherit" onclick="setSeg('gm-commands-perm','inherit')">Inherit</button>
+                                <button data-v="everyone" onclick="setSeg('gm-commands-perm','everyone')">Everyone</button>
+                                <button data-v="moderator" onclick="setSeg('gm-commands-perm','moderator')">Mod+</button>
+                                <button data-v="admin" onclick="setSeg('gm-commands-perm','admin')">Admin</button>
+                            </div>
+                            <span class="field-hint">Per-command "admin only" flags still apply.</span>
+                        </div>
+                        <div class="field">
+                            <label class="field-label">Featured commands</label>
+                            <div class="segmented" id="gm-featured-perm">
+                                <button data-v="inherit" onclick="setSeg('gm-featured-perm','inherit')">Inherit</button>
+                                <button data-v="everyone" onclick="setSeg('gm-featured-perm','everyone')">Everyone</button>
+                                <button data-v="moderator" onclick="setSeg('gm-featured-perm','moderator')">Mod+</button>
+                                <button data-v="admin" onclick="setSeg('gm-featured-perm','admin')">Admin</button>
+                            </div>
+                            <span class="field-hint">DM, Buttons and MCP featured commands.</span>
+                        </div>
+                        <div class="field">
+                            <label class="field-label">AI replies</label>
+                            <div class="segmented" id="gm-ai-perm">
+                                <button data-v="inherit" onclick="setSeg('gm-ai-perm','inherit')">Inherit</button>
+                                <button data-v="everyone" onclick="setSeg('gm-ai-perm','everyone')">Everyone</button>
+                                <button data-v="moderator" onclick="setSeg('gm-ai-perm','moderator')">Mod+</button>
+                                <button data-v="admin" onclick="setSeg('gm-ai-perm','admin')">Admin</button>
+                            </div>
+                            <span class="field-hint">Who can trigger the AI in this group.</span>
+                        </div>
+                        <div class="field">
+                            <label class="field-label">Inline button taps</label>
+                            <div class="segmented" id="gm-callback-perm">
+                                <button data-v="inherit" onclick="setSeg('gm-callback-perm','inherit')">Inherit</button>
+                                <button data-v="everyone" onclick="setSeg('gm-callback-perm','everyone')">Everyone</button>
+                                <button data-v="moderator" onclick="setSeg('gm-callback-perm','moderator')">Mod+</button>
+                                <button data-v="admin" onclick="setSeg('gm-callback-perm','admin')">Admin</button>
+                            </div>
+                            <span class="field-hint">Who can tap inline / reply keyboard buttons.</span>
+                        </div>
+                        <div class="field">
+                            <label class="field-label">/mcp command</label>
+                            <div class="segmented" id="gm-mcp-perm">
+                                <button data-v="inherit" onclick="setSeg('gm-mcp-perm','inherit')">Inherit</button>
+                                <button data-v="everyone" onclick="setSeg('gm-mcp-perm','everyone')">Everyone</button>
+                                <button data-v="moderator" onclick="setSeg('gm-mcp-perm','moderator')">Mod+</button>
+                                <button data-v="admin" onclick="setSeg('gm-mcp-perm','admin')">Admin</button>
+                            </div>
+                            <span class="field-hint">Only affects MCP-type featured commands.</span>
                         </div>
                     </div>
                 </div>
@@ -1100,9 +1239,13 @@ details.help > div { padding: 0 16px 14px; font-size: var(--fs-footnote); line-h
 
                 <div class="card">
                     <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-clock-rotate-left"></i> Auto-remove memory</div></div>
+                    <div class="cron-warn">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <div><b>Requires a Cron Trigger.</b> Add <code>[triggers]</code> with <code>crons = ["0 3 * * *"]</code> to your <code>wrangler.toml</code>, then redeploy. See the <a href="#" onclick="go('cron');return false;">Cleanup tab</a> for details. Without a cron trigger, nothing is removed automatically — you must use <b>Cleanup → Run now</b>.</div>
+                    </div>
                     <div class="hint-banner">
                         <i class="fa-solid fa-circle-info"></i>
-                        <div>When enabled, the scheduled cleanup will prune old memory automatically. <b>AI memory</b> is governed by the value you set in the <a href="#" onclick="go('ai');return false;">AI</a> tab — it is kept in sync here. <b>Direct messages</b> are pruned by age using the unit you pick below. Off by default.</div>
+                        <div><b>AI memory</b> is governed by the value you set in the <a href="#" onclick="go('ai');return false;">AI</a> tab — it is kept in sync here. <b>Direct messages</b> are pruned by age using the unit you pick below. Off by default.</div>
                     </div>
                     <div class="switch-row" style="margin-bottom:0;">
                         <div><div class="sw-label">Enable auto-remove</div><div class="sw-sub">Requires a Cron trigger in wrangler.toml, or use "Run now" in the Cleanup tab.</div></div>
@@ -1147,14 +1290,17 @@ details.help > div { padding: 0 16px 14px; font-size: var(--fs-footnote); line-h
                 </details>
 
                 <div class="chips" id="mem-filters">
-                    <button class="chip active" data-mf="all" onclick="setMemFilter('all')">All users with memory</button>
+                    <button class="chip active" data-mf="all" onclick="setMemFilter('all')">All users</button>
                     <button class="chip" data-mf="ai" onclick="setMemFilter('ai')">AI memory only</button>
                     <button class="chip" data-mf="dm" onclick="setMemFilter('dm')">Direct messages only</button>
+                    <button class="chip" data-mf="groups" onclick="setMemFilter('groups')">Groups</button>
                 </div>
                 <div class="toolbar">
                     <div class="search"><i class="fa-solid fa-magnifying-glass"></i><input id="mem-search" placeholder="Search by name or username" oninput="renderMemory()"></div>
+                    <button class="btn btn-gray btn-sm" onclick="loadMemory(true)" aria-label="Refresh memory"><i class="fa-solid fa-rotate"></i></button>
                 </div>
                 <div id="mem-list"></div>
+                <div id="mem-groups-list" style="margin-top:20px;"></div>
             </section>
 
             <section class="page" id="page-ai">
@@ -1603,6 +1749,10 @@ details.help > div { padding: 0 16px 14px; font-size: var(--fs-footnote); line-h
                     <div class="card-head"><div class="card-title c-purple"><i class="fa-solid fa-user-shield"></i> Administrators</div><div style="flex:1"></div><button class="btn btn-gray btn-sm" onclick="loadAdmins()" aria-label="Refresh admins"><i class="fa-solid fa-rotate"></i></button></div>
                     <div class="row" style="margin-bottom:12px;">
                         <input class="input" id="promote-user-id" placeholder="Telegram user ID" style="flex:1;max-width:240px;" type="number">
+                        <select class="input" id="promote-user-role" style="max-width:170px;">
+                            <option value="moderator">Moderator</option>
+                            <option value="admin" selected>Admin</option>
+                        </select>
                         <button class="btn btn-primary btn-sm" onclick="promoteAdmin()"><i class="fa-solid fa-plus"></i> Promote</button>
                     </div>
                     <div id="admins-list"></div>
@@ -1682,7 +1832,7 @@ details.help > div { padding: 0 16px 14px; font-size: var(--fs-footnote); line-h
                 <div class="page-head"><div class="lead"><h1>Automatic cleanup</h1><p>Optionally prune old data on a schedule.</p></div></div>
                 <div class="hint-banner warn">
                     <i class="fa-solid fa-triangle-exclamation"></i>
-                    <div><b>Automatic cleanup is OFF by default.</b> Turning it on will permanently delete old data on the schedule below. There is no undo.</div>
+                    <div><b>Automatic cleanup requires a Cron Trigger in Cloudflare.</b> Enabling the switches below does <u>not</u> start the cleanup — Cloudflare must call your Worker on a schedule. Add the <code>[triggers]</code> block below to <code>wrangler.toml</code> and redeploy. Without it, nothing is deleted until you press <b>Run now</b>.</div>
                 </div>
                 <div class="card">
                     <div class="switch-row"><div><div class="sw-label">Enable automatic cleanup</div><div class="sw-sub">Requires a Cron trigger in wrangler.toml or press Run now.</div></div><button class="switch" id="cron-enable" onclick="toggleCronEnabled()"></button></div>
@@ -1705,9 +1855,9 @@ crons = ["0 3 * * *"]</code></pre>
 
             <section class="page" id="page-backup">
                 <div class="page-head"><div class="lead"><h1>Backup</h1><p>Download or restore a snapshot of your bot.</p></div></div>
-                <div class="hint-banner">
-                    <i class="fa-solid fa-circle-info"></i>
-                    <div>Backups include commands, users, groups, direct messages, AI memory, settings and history. <b>Secrets are never included</b> for your safety.</div>
+                <div class="hint-banner danger">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <div><b>Your backup will contain your AI API keys</b> (OpenAI, Gemini, DeepSeek, etc.) in plain text. Keep the file private. Bot tokens and webhook secrets are still excluded for safety.</div>
                 </div>
                 <div class="card">
                     <div class="card-head"><div class="card-title c-green"><i class="fa-solid fa-download"></i> Export</div></div>
@@ -1758,6 +1908,10 @@ crons = ["0 3 * * *"]</code></pre>
     <div class="hint-banner">
       <i class="fa-solid fa-circle-info"></i>
       <div>The update downloads the latest code from GitHub and redeploys your Worker, keeping all your bindings and data.</div>
+    </div>
+    <div class="hint-banner warn hidden" id="up-beta-hint">
+      <i class="fa-solid fa-flask"></i>
+      <div><b>Beta version available.</b> The latest release on GitHub is a pre-release and may contain bugs. Updating is optional — you can stay on your current version and update later when a stable release lands.</div>
     </div>
     <div class="grid grid-2">
       <div class="field"><label class="field-label">Current version</label>
@@ -1821,9 +1975,15 @@ crons = ["0 3 * * *"]</code></pre>
       </div>
     </div>
 
-    <button class="btn btn-primary" id="up-btn" onclick="performUpdate()" disabled>
-      <i class="fa-solid fa-cloud-arrow-up"></i> Update now
-    </button>
+    <div class="row">
+      <button class="btn btn-primary" id="up-btn" onclick="performUpdate(false)" disabled>
+        <i class="fa-solid fa-cloud-arrow-up"></i> Update now
+      </button>
+      <button class="btn btn-gray" id="up-reinstall-btn" onclick="performUpdate(true)">
+        <i class="fa-solid fa-rotate"></i> Force redeploy
+      </button>
+    </div>
+    <div class="field-hint" style="margin-top:8px;">Force redeploy re-downloads and re-deploys whatever version is currently on GitHub main, even if it matches your current version. Useful when your deployment feels corrupted.</div>
     <div id="up-result" class="small" style="margin-top:10px;"></div>
   </div>
 </section>
@@ -1966,6 +2126,10 @@ crons = ["0 3 * * *"]</code></pre>
                 <div><div class="sw-label">Admin only</div><div class="sw-sub">Only users with the admin role can run this command.</div></div>
                 <button class="switch" id="featured-admin" onclick="toggleSwitch('featured-admin')"></button>
             </div>
+            <div class="switch-row">
+                <div><div class="sw-label">Delete the user's message</div><div class="sw-sub">Remove the trigger message from the chat automatically.</div></div>
+                <button class="switch on" id="featured-delete-msg" onclick="toggleSwitch('featured-delete-msg')"></button>
+            </div>
             <div class="switch-row" style="margin-bottom:0;">
                 <div><div class="sw-label">Enabled</div><div class="sw-sub">Disabled entries stay here but the bot won't respond to them.</div></div>
                 <button class="switch on" id="featured-enabled" onclick="toggleSwitch('featured-enabled')"></button>
@@ -2003,7 +2167,7 @@ crons = ["0 3 * * *"]</code></pre>
 </div>
 
 <div class="modal hidden" id="about-modal" role="dialog" aria-modal="true">
-    <div class="modal-bg" onclick="document.getElementById('about-modal').classList.add('hidden')"></div>
+    <div class="modal-bg" onclick="closeAboutModal()"></div>
     <div class="sheet small">
         <div class="sheet-head"><div class="sheet-title">About Nyxx</div></div>
         <div class="sheet-body">
@@ -2012,12 +2176,12 @@ crons = ["0 3 * * *"]</code></pre>
             <p class="muted small">Version ${VERSION}</p>
             <a class="btn btn-gray btn-block" href="https://github.com/Mahan07dev/Nyxx" target="_blank" rel="noopener"><i class="fa-brands fa-github"></i> Source code</a>
         </div>
-        <div class="sheet-foot"><button class="btn btn-primary" onclick="document.getElementById('about-modal').classList.add('hidden')">Done</button></div>
+        <div class="sheet-foot"><button class="btn btn-primary" onclick="closeAboutModal()">Done</button></div>
     </div>
 </div>
 
 <div class="modal hidden" id="token-modal" role="dialog" aria-modal="true">
-    <div class="modal-bg" onclick="document.getElementById('token-modal').classList.add('hidden')"></div>
+    <div class="modal-bg" onclick="closeTokenModal()"></div>
     <div class="sheet small">
         <div class="sheet-head"><div class="sheet-title">Change bot token</div></div>
         <div class="sheet-body">
@@ -2025,7 +2189,7 @@ crons = ["0 3 * * *"]</code></pre>
             <div id="token-result" class="small"></div>
         </div>
         <div class="sheet-foot">
-            <button class="btn btn-gray" onclick="document.getElementById('token-modal').classList.add('hidden')">Cancel</button>
+            <button class="btn btn-gray" onclick="closeTokenModal()">Cancel</button>
             <button class="btn btn-primary" onclick="saveToken()">Save</button>
         </div>
     </div>
@@ -2038,6 +2202,7 @@ crons = ["0 3 * * *"]</code></pre>
    HELPERS
    ============================================================ */
 var KEEP_SENTINEL = '__NYXX_KEEP__';
+var __setupDone = null;   // null = unknown, true = setup done, false = needs setup
 function $(id) { return document.getElementById(id); }
 function esc(s) {
     if (s === null || s === undefined) return '';
@@ -2121,11 +2286,24 @@ async function api(method, path, body) {
     try { data = await res.json(); } catch (e) { data = null; }
 
     if (res.status === 401 && !isPublicEndpoint(path)) {
-        // Only treat 401 as session expiry if the server didn't supply a specific error
         var isSessionIssue = !(data && (data.valid === false || data.success === false));
         if (isSessionIssue) {
+            // Only guess if we don't already know the setup state.
+            if (__setupDone === null) {
+                try {
+                    var st = await api('GET', '/api/status');
+                    __setupDone = !!st.admin_password_set;
+                } catch (e) {
+                    // If we can't reach status either, don't loop — assume login is needed.
+                    __setupDone = true;
+                }
+            }
+            if (!__setupDone) {
+                showStep('step-setup');
+                throw new Error('__SETUP_REQUIRED__');
+            }
             showStep('step-login');
-            toast('Session expired. Please sign in again.', 'info');
+            toast('Your session expired. Please sign in again.', 'info');
             throw new Error('__SESSION_EXPIRED__');
         }
     }
@@ -2172,7 +2350,7 @@ function skeletonRows(n) {
 var openModals = [];
 function trackModal(id) {
     var el = $(id); if (!el) return;
-    openModals.push(id);
+    if (openModals.indexOf(id) < 0) openModals.push(id);
     document.body.style.overflow = 'hidden';
     setTimeout(function () {
         var first = el.querySelector('input, textarea, select, button');
@@ -2268,6 +2446,7 @@ function go(page) {
     if (page === 'logs') { loadLogs(); loadLogClean(); }
     if (page === 'permissions') loadPermissions();
     if (page === 'update') loadUpdateTab();
+    if (page === 'mcp') loadMcp(true);
 }
 function toggleSidebar(force) {
     var app = document.querySelector('.app'); if (!app) return;
@@ -2276,7 +2455,15 @@ function toggleSidebar(force) {
     var overlay = document.getElementById('sidebar-overlay');
     if (overlay) overlay.classList.toggle('show', open);
 }
-function showInfo() { $('about-modal').classList.remove('hidden'); trackModal('about-modal'); }
+function showInfo() {
+    if (openModals.indexOf('about-modal') >= 0) return;
+    $('about-modal').classList.remove('hidden');
+    trackModal('about-modal');
+}
+function closeAboutModal() {
+    $('about-modal').classList.add('hidden');
+    untrackModal('about-modal');
+}
 function showStep(id) {
     ['step-status', 'step-setup', 'step-login', 'step-dashboard'].forEach(function (s) {
         var el = $(s); if (el) el.classList.toggle('hidden', s !== id);
@@ -2563,7 +2750,6 @@ openFeaturedModal = function (kind, item) {
 };
 
 // Patch saveFeatured to send kind + admin_only.
-var __origSaveFeatured = saveFeatured;
 saveFeatured = async function () {
     var err = $('featured-error'); err.classList.remove('show');
     var command = $('featured-command').value.trim();
@@ -2575,6 +2761,7 @@ saveFeatured = async function () {
         success_text: $('featured-success').value.trim(),
         failure_text: $('featured-failure').value.trim(),
         admin_only: sw('featured-admin') ? 1 : 0,
+        delete_user_message: sw('featured-delete-msg') ? 1 : 0,
         enabled: sw('featured-enabled') ? 1 : 0
     };
     var btn = $('featured-save');
@@ -2588,7 +2775,6 @@ saveFeatured = async function () {
 };
 
 // Patch renderFeatured to show MCP badge + admin badge.
-var __origRenderFeatured = renderFeatured;
 renderFeatured = function () {
     var box = $('featured-list');
     if (!featured.length) { box.innerHTML = emptyState('fa-solid fa-wand-magic-sparkles', 'No featured commands yet.', 'Create one to get started.'); return; }
@@ -2598,13 +2784,15 @@ renderFeatured = function () {
             f.kind === 'mcp' ? '<span class="badge orange">MCP</span>' :
             '<span class="badge blue">DM</span>';
         var adminBadge = f.admin_only ? '<span class="badge red"><i class="fa-solid fa-lock"></i> Admin</span>' : '';
+        var delBadge = (f.delete_user_message === undefined || f.delete_user_message === null || f.delete_user_message == 1)
+            ? '<span class="badge featured-delete-badge"><i class="fa-solid fa-eraser"></i> auto-delete</span>' : '';
         var blocks = '';
         if (f.content) blocks += '<div class="fr-block hint"><b>Hint:</b> ' + esc(f.content) + '</div>';
         if (f.success_text) blocks += '<div class="fr-block success"><b style="color:var(--green)">Success:</b> ' + esc(f.success_text) + '</div>';
         if (f.failure_text) blocks += '<div class="fr-block failure"><b style="color:var(--red)">Failure:</b> ' + esc(f.failure_text) + '</div>';
         return '<div class="featured-reply ' + (f.enabled ? '' : 'disabled') + '">' +
             '<div class="fr-head">' +
-                '<span class="fr-cmd">' + esc(f.command) + '</span>' + kindLabel + adminBadge +
+                '<span class="fr-cmd">' + esc(f.command) + '</span>' + kindLabel + adminBadge + delBadge +
                 '<div style="flex:1"></div>' +
                 '<button class="switch ' + (f.enabled ? 'on' : '') + '" onclick="toggleFeatured(' + f.id + ')" title="Enable or disable" aria-label="Toggle"></button>' +
             '</div>' +
@@ -2617,7 +2805,6 @@ renderFeatured = function () {
 };
 
 // Patch editFeatured to accept mcp kind.
-var __origEditFeatured = editFeatured;
 editFeatured = async function (id) {
     var item = featured.find(function (f) { return f.id === id; });
     if (!item) return;
@@ -2625,13 +2812,6 @@ editFeatured = async function (id) {
     openFeaturedModal(kind, item);
     // Pre-fill admin switch from saved value.
     setTimeout(function () { toggleSwitch('featured-admin', !!item.admin_only); }, 0);
-};
-
-// Route to correct page when go('mcp') is called.
-var __origGo = go;
-go = function (page) {
-    __origGo(page);
-    if (page === 'mcp') loadMcp(true);
 };
 
 async function checkStatus() {
@@ -2649,7 +2829,8 @@ async function checkStatus() {
                 );
                 return;
             }
-            if (!data.admin_password_set) { showStep('step-setup'); return; }
+            if (!data.admin_password_set) { __setupDone = false; showStep('step-setup'); return; }
+            __setupDone = true;
             try {
                 var s = await api('GET', '/api/check_session');
                 if (s.logged_in) enterDashboard(); else showStep('step-login');
@@ -2679,6 +2860,7 @@ async function checkStatus() {
 }
 
 function enterDashboard() {
+  __setupDone = true;
   showStep('step-dashboard');
   go('overview');
   loadCommands(true);
@@ -2704,18 +2886,27 @@ async function submitSetup() {
     var body = { adminPassword: pw };
     var tok = $('setup-bot-token').value.trim();
     if (tok && !$('setup-skip-bot').checked) body.botToken = tok;
-    try {
-        await api('POST', '/api/setup', body);
-        toast('Setup complete — please sign in.');
-        showStep('step-login');
-    } catch (e) { err.textContent = e.message; err.classList.add('show'); }
+    var btn = $('setup-submit');
+    if (btn && btn.classList.contains('loading')) return;
+    await withBusy(btn, async function () {
+        try {
+            await api('POST', '/api/setup', body);
+            __setupDone = true;
+            toast('Setup complete — please sign in.');
+            showStep('step-login');
+        } catch (e) { err.textContent = e.message; err.classList.add('show'); }
+    });
 }
 async function submitLogin() {
     var err = $('login-error'); err.classList.remove('show');
-    try {
-        await api('POST', '/api/login', { password: $('login-password').value });
-        enterDashboard();
-    } catch (e) { err.textContent = e.message; err.classList.add('show'); }
+    var btn = $('login-submit');
+    if (btn && btn.classList.contains('loading')) return;
+    await withBusy(btn, async function () {
+        try {
+            await api('POST', '/api/login', { password: $('login-password').value });
+            enterDashboard();
+        } catch (e) { err.textContent = e.message; err.classList.add('show'); }
+    });
 }
 async function logout() {
     try { await api('POST', '/api/logout'); } catch (e) {}
@@ -2800,7 +2991,7 @@ function renderCommands() {
     var html = '<div class="list">';
     list.forEach(function (c, i) {
         var kids = (children[c.command] || []).length;
-        var cmdEsc = esc(c.command).replace(/'/g, "\\\\'");
+        var cmdEsc = esc(c.command).replace(/&#39;/g, "\\'");
         html += '<div class="list-row">' +
             '<i class="fa-regular ' + (kids ? 'fa-folder tag-folder' : 'fa-file') + '"></i>' +
             '<div class="lr-main" onclick="' + (kids ? 'enterFolder(\\'' + cmdEsc + '\\')' : 'editCommand(\\'' + cmdEsc + '\\')') + '" style="cursor:pointer;">' +
@@ -2992,12 +3183,15 @@ function moveMenu(i, d) {
 async function publishMenu() {
     var clean = menuEntries.filter(function (e) { return e.command && e.description; });
     if (!clean.some(function (e) { return e.command === 'start'; })) clean.unshift({ command: 'start', description: 'Start the bot' });
+    var btn = document.querySelector('button[onclick="publishMenu()"]');
+    await withBusy(btn, async function () {
     try {
         var d = await api('POST', '/api/menu_commands', { menu: clean });
         if (d.warning) $('menu-result').innerHTML = '<span style="color:var(--orange)"><i class="fa-solid fa-triangle-exclamation"></i> ' + esc(d.warning) + '</span>';
         else $('menu-result').innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-check"></i> Published</span>';
         menuEntries = clean;
     } catch (e) { $('menu-result').innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
+    });
 }
 
 var featured = [];
@@ -3006,28 +3200,6 @@ var featuredKind = 'text';
 async function loadFeatured(force) {
     try { var d = await api('GET', '/api/featured'); featured = d.items || []; renderFeatured(); }
     catch (e) { $('featured-list').innerHTML = errorState(e.message, 'loadFeatured(true)'); }
-}
-function renderFeatured() {
-    var box = $('featured-list');
-    if (!featured.length) { box.innerHTML = emptyState('fa-solid fa-wand-magic-sparkles', 'No featured commands yet.', 'Create one to get started.'); return; }
-    box.innerHTML = featured.map(function (f) {
-        var kindLabel = f.kind === 'buttons' ? '<span class="badge purple">Buttons</span>' : '<span class="badge blue">DM</span>';
-        var blocks = '';
-        if (f.content) blocks += '<div class="fr-block hint"><b>Hint:</b> ' + esc(f.content) + '</div>';
-        if (f.success_text) blocks += '<div class="fr-block success"><b style="color:var(--green)">Success:</b> ' + esc(f.success_text) + '</div>';
-        if (f.failure_text) blocks += '<div class="fr-block failure"><b style="color:var(--red)">Failure:</b> ' + esc(f.failure_text) + '</div>';
-        return '<div class="featured-reply ' + (f.enabled ? '' : 'disabled') + '">' +
-            '<div class="fr-head">' +
-                '<span class="fr-cmd">' + esc(f.command) + '</span>' + kindLabel +
-                '<div style="flex:1"></div>' +
-                '<button class="switch ' + (f.enabled ? 'on' : '') + '" onclick="toggleFeatured(' + f.id + ')" title="Enable or disable" aria-label="Toggle"></button>' +
-            '</div>' +
-            blocks +
-            '<div class="fr-actions">' +
-                '<button class="btn btn-gray btn-sm" onclick="editFeatured(' + f.id + ')"><i class="fa-regular fa-pen-to-square"></i> Edit</button>' +
-                '<button class="btn btn-danger btn-sm" onclick="deleteFeatured(' + f.id + ')"><i class="fa-regular fa-trash-can"></i> Delete</button>' +
-            '</div></div>';
-    }).join('');
 }
 function openFeaturedModal(kind, item) {
     featuredKind = kind || 'text';
@@ -3039,41 +3211,19 @@ function openFeaturedModal(kind, item) {
     $('featured-success').value = item ? (item.success_text || '') : '';
     $('featured-failure').value = item ? (item.failure_text || '') : '';
     toggleSwitch('featured-enabled', item ? !!item.enabled : true);
+    // Default delete_user_message = ON for new items, preserve for edits.
+    var delOn = item ? (item.delete_user_message === undefined || item.delete_user_message === null ? true : !!item.delete_user_message) : true;
+    toggleSwitch('featured-delete-msg', delOn);
     var hintDesc = $('featured-hint-desc');
     if (kind === 'buttons') {
-        if (hintDesc) hintDesc.innerHTML = 'Shown when the command is sent alone. Example: <code>Use /menu "message" {Label}(value) {Label}(value)</code>';
+        if (hintDesc) hintDesc.innerHTML = 'Shown when sent alone. Simple syntax: <code>/menu Hi there! | Google:https://google.com | Say hi:Hi!</code><br>Advanced: <code>/menu "Hi there!" {Google}(https://google.com){Say hi}(Hi!)</code>';
     } else {
-        if (hintDesc) hintDesc.innerHTML = 'Shown when the command is sent alone. Example: <code>Use /contact your message here</code>';
+        if (hintDesc) hintDesc.innerHTML = 'Shown when the command is sent alone. Example: <code>/contact hello boss</code>';
     }
     $('featured-modal').classList.remove('hidden');
     trackModal('featured-modal');
 }
 function closeFeaturedModal() { $('featured-modal').classList.add('hidden'); untrackModal('featured-modal'); }
-async function saveFeatured() {
-    var err = $('featured-error'); err.classList.remove('show');
-    var command = $('featured-command').value.trim();
-    if (!command || command === '/') { err.textContent = 'Command is required.'; err.classList.add('show'); return; }
-    var payload = {
-        command: command, kind: featuredKind,
-        content: $('featured-hint').value.trim(),
-        success_text: $('featured-success').value.trim(),
-        failure_text: $('featured-failure').value.trim(),
-        enabled: sw('featured-enabled') ? 1 : 0
-    };
-    var btn = $('featured-save');
-    await withBusy(btn, async function () {
-        try {
-            if (featuredEditing) await api('PUT', '/api/featured/' + featuredEditing.id, payload);
-            else await api('POST', '/api/featured', payload);
-            closeFeaturedModal(); toast('Featured command saved.'); loadFeatured();
-        } catch (e) { err.textContent = e.message; err.classList.add('show'); }
-    });
-}
-async function editFeatured(id) {
-    var item = featured.find(function (f) { return f.id === id; });
-    if (!item) return;
-    openFeaturedModal(item.kind === 'buttons' ? 'buttons' : 'text', item);
-}
 async function toggleFeatured(id) {
     var item = featured.find(function (f) { return f.id === id; });
     if (!item) return;
@@ -3129,7 +3279,8 @@ function renderUsers() {
     users.forEach(function (u) {
         var status = u.block_type === 'full' ? '<span class="badge red">Blocked</span>' :
             (u.block_type === 'ai_only' ? '<span class="badge orange">AI off</span>' : '');
-        var role = u.role === 'admin' ? '<span class="badge purple">Admin</span>' : '';
+        var role = u.role === 'admin' ? '<span class="badge purple">Admin</span>'
+                 : u.role === 'moderator' ? '<span class="badge role-badge-moderator">Moderator</span>' : '';
         var nameEsc = esc(u.first_name || '').replace(/'/g, '');
         html += '<div class="list-row">' +
             userCircle(u) +
@@ -3199,11 +3350,12 @@ async function openUser(idOrUser) {
         kvCard('Source', manageUser.private_started == 1 ? 'Started the bot' : 'Group only') +
         kvCard('Last active', fmtTime(manageUser.last_active)) +
         kvCard('Block status', manageUser.block_type === 'full' ? 'Blocked' : (manageUser.block_type === 'ai_only' ? 'AI disabled' : 'Active'));
+    var roleLabel = manageUser.role === 'admin' ? 'Demote' : (manageUser.role === 'moderator' ? 'Promote to Admin' : 'Promote');
     $('um-actions').innerHTML =
         manageUser.first_name === 'Unknown'
         ? '<div class="muted small">This user record no longer exists — actions unavailable.</div>'
         : '<button class="btn btn-gray btn-sm" onclick="checkUser(' + manageUser.id + ')"><i class="fa-solid fa-stethoscope"></i> Check reachable</button>' +
-        '<button class="btn btn-gray btn-sm" onclick="toggleRole()"><i class="fa-solid fa-user-shield"></i> ' + (manageUser.role === 'admin' ? 'Demote' : 'Promote') + '</button>' +
+        '<button class="btn btn-gray btn-sm" onclick="toggleRole()"><i class="fa-solid fa-user-shield"></i> ' + roleLabel + '</button>' +
         '<button class="btn btn-gray btn-sm" onclick="toggleBlock(\\'ai_only\\')"><i class="fa-solid fa-robot"></i> ' + (manageUser.block_type === 'ai_only' ? 'Unblock AI' : 'Block AI') + '</button>' +
         '<button class="btn btn-danger btn-sm" onclick="toggleBlock(\\'full\\')"><i class="fa-solid fa-ban"></i> ' + (manageUser.block_type === 'full' ? 'Unblock' : 'Block all') + '</button>';
     $('um-input').value = ''; $('um-photo').value = '';
@@ -3211,12 +3363,15 @@ async function openUser(idOrUser) {
 }
 function kvCard(k, v) { return '<div class="card compact" style="margin:0;"><div class="tiny muted">' + esc(k) + '</div><div style="font-weight:600;margin-top:4px;word-break:break-word;">' + esc(v) + '</div></div>'; }
 async function toggleRole() {
-    var role = manageUser.role === 'admin' ? 'user' : 'admin';
+    var current = manageUser.role || 'user';
+    var next = current === 'user' ? 'moderator' : (current === 'moderator' ? 'admin' : 'user');
+    var label = next === 'admin' ? 'Promote to Admin' : (next === 'moderator' ? 'Promote to Moderator' : 'Demote to User');
+    if (!await confirmDialog('Set role to "' + next + '"?', label, false)) return;
     try {
-        await api('PUT', '/api/users/role', { userId: manageUser.id, role: role });
-        toast('Role updated.');
-        manageUser.role = role;
-        openUser(manageUser);          // <— object, not ID
+        await api('PUT', '/api/users/role', { userId: manageUser.id, role: next });
+        toast('Role set to ' + next + '.');
+        manageUser.role = next;
+        openUser(manageUser);
     } catch (e) { toast(e.message, 'error'); }
 }
 
@@ -3339,7 +3494,8 @@ async function clearAiMemoryUser() {
    MEMORY
    ============================================================ */
 var memoryUsers = [];
-var memoryTotals = { ai: 0, dm: 0, users: 0 };
+var memoryGroups = [];
+var memoryTotals = { ai: 0, dm: 0, users: 0, groups: 0 };
 var memFilter = 'all';
 function setMemFilter(f) {
     memFilter = f;
@@ -3353,54 +3509,98 @@ async function loadMemory(force) {
     try {
         var d = await api('GET', '/api/memory/overview');
         memoryUsers = (d && d.users) || [];
-        memoryTotals = (d && d.totals) || { ai: 0, dm: 0, users: 0 };
+        memoryGroups = (d && d.groups) || [];
+        memoryTotals = (d && d.totals) || { ai: 0, dm: 0, users: 0, groups: 0 };
         var st = $('mem-stats');
         st.innerHTML =
             '<div class="stat"><div class="st-ic purple"><i class="fa-solid fa-brain"></i></div><div class="st-val">' + memoryTotals.ai + '</div><div class="st-lbl">AI memory messages</div></div>' +
             '<div class="stat"><div class="st-ic blue"><i class="fa-solid fa-comment-dots"></i></div><div class="st-val">' + memoryTotals.dm + '</div><div class="st-lbl">Direct messages</div></div>' +
-            '<div class="stat"><div class="st-ic green"><i class="fa-solid fa-user-group"></i></div><div class="st-val">' + memoryTotals.users + '</div><div class="st-lbl">Users with memory</div></div>';
+            '<div class="stat"><div class="st-ic green"><i class="fa-solid fa-user-group"></i></div><div class="st-val">' + memoryTotals.users + '</div><div class="st-lbl">Users with memory</div></div>' +
+            '<div class="stat"><div class="st-ic orange"><i class="fa-solid fa-comments"></i></div><div class="st-val">' + (memoryTotals.groups || 0) + '</div><div class="st-lbl">Groups with memory</div></div>';
         renderMemory();
     } catch (e) { box.innerHTML = errorState(e.message, 'loadMemory(true)'); }
 }
 function renderMemory() {
     var box = $('mem-list');
+    var groupsBox = $('mem-groups-list');
+    if (!box || !groupsBox) return;
     var q = ($('mem-search').value || '').toLowerCase().trim();
-    var list = memoryUsers.slice();
-    if (memFilter === 'ai') list = list.filter(function (u) { return u.ai_count > 0; });
-    else if (memFilter === 'dm') list = list.filter(function (u) { return u.dm_count > 0; });
-    if (q) list = list.filter(function (u) {
-        return (String(u.first_name || '') + ' ' + String(u.username || '') + ' ' + String(u.id)).toLowerCase().indexOf(q) >= 0;
-    });
-    if (!list.length) { box.innerHTML = emptyState('fa-solid fa-database', 'Nothing stored yet.'); return; }
-    var html = '<div class="list">';
-    list.forEach(function (u) {
-        html += '<div class="list-row">' +
-            userCircle(u) +
-            '<div class="lr-main" onclick="openUser(' + u.id + ')" style="cursor:pointer;">' +
-                '<div class="lr-title">' + esc(u.first_name || 'Unknown') + (u.username ? ' <span class="muted">@' + esc(u.username) + '</span>' : '') + '</div>' +
-                '<div class="lr-sub">ID ' + esc(u.id) + ' · ' + u.ai_count + ' AI · ' + u.dm_count + ' DM</div>' +
-            '</div>' +
-            (u.ai_count > 0 ? '<span class="badge purple mem-badge">' + u.ai_count + ' AI</span>' : '') +
-            (u.dm_count > 0 ? '<span class="badge blue mem-badge">' + u.dm_count + ' DM</span>' : '') +
-            '<div class="lr-actions">' +
-                '<div class="lr-actions-desktop" style="display:flex;gap:4px;">' +
-                    '<button class="icon-btn" onclick="openUser(' + u.id + ')" title="Open user" aria-label="Open user"><i class="fa-solid fa-chevron-right"></i></button>' +
-                    (u.ai_count > 0 ? '<button class="icon-btn" onclick="clearMemForUser(' + u.id + ',\\'ai\\')" title="Clear AI memory" aria-label="Clear AI memory"><i class="fa-solid fa-brain"></i></button>' : '') +
-                    (u.dm_count > 0 ? '<button class="icon-btn" onclick="clearMemForUser(' + u.id + ',\\'dm\\')" title="Clear direct messages" aria-label="Clear direct messages"><i class="fa-solid fa-comment-dots"></i></button>' : '') +
-                    '<button class="icon-btn danger" onclick="clearMemForUser(' + u.id + ',\\'all\\')" title="Clear all memory" aria-label="Clear all memory"><i class="fa-regular fa-trash-can"></i></button>' +
-                '</div>' +
-                '<div class="lr-actions-mobile dropdown">' +
-                    '<button class="icon-btn" onclick="toggleDropdown(this)" aria-label="More actions"><i class="fa-solid fa-ellipsis-vertical"></i></button>' +
-                    '<div class="dropdown-menu hidden">' +
-                        '<button onclick="openUser(' + u.id + ')"><i class="fa-solid fa-chevron-right"></i> Open</button>' +
-                        (u.ai_count > 0 ? '<button class="danger" onclick="clearMemForUser(' + u.id + ',\\'ai\\')"><i class="fa-solid fa-brain"></i> Clear AI memory</button>' : '') +
-                        (u.dm_count > 0 ? '<button class="danger" onclick="clearMemForUser(' + u.id + ',\\'dm\\')"><i class="fa-solid fa-comment-dots"></i> Clear direct messages</button>' : '') +
-                        '<button class="danger" onclick="clearMemForUser(' + u.id + ',\\'all\\')"><i class="fa-regular fa-trash-can"></i> Clear all memory</button>' +
+
+    // Users list (hidden if filter === 'groups')
+    if (memFilter === 'groups') {
+        box.innerHTML = '';
+    } else {
+        var list = memoryUsers.slice();
+        if (memFilter === 'ai') list = list.filter(function (u) { return u.ai_count > 0; });
+        else if (memFilter === 'dm') list = list.filter(function (u) { return u.dm_count > 0; });
+        if (q) list = list.filter(function (u) {
+            return (String(u.first_name || '') + ' ' + String(u.username || '') + ' ' + String(u.id)).toLowerCase().indexOf(q) >= 0;
+        });
+        if (!list.length) { box.innerHTML = emptyState('fa-solid fa-database', 'Nothing stored yet.'); }
+        else {
+            var html = '<div class="list">';
+            list.forEach(function (u) {
+                html += '<div class="list-row">' +
+                    userCircle(u) +
+                    '<div class="lr-main" onclick="openUser(' + u.id + ')" style="cursor:pointer;">' +
+                        '<div class="lr-title">' + esc(u.first_name || 'Unknown') + (u.username ? ' <span class="muted">@' + esc(u.username) + '</span>' : '') + '</div>' +
+                        '<div class="lr-sub">ID ' + esc(u.id) + ' · ' + u.ai_count + ' AI · ' + u.dm_count + ' DM</div>' +
                     '</div>' +
+                    (u.role === 'admin' ? '<span class="badge purple">Admin</span>' : u.role === 'moderator' ? '<span class="badge role-badge-moderator">Mod</span>' : '') +
+                    (u.ai_count > 0 ? '<span class="badge purple mem-badge">' + u.ai_count + ' AI</span>' : '') +
+                    (u.dm_count > 0 ? '<span class="badge blue mem-badge">' + u.dm_count + ' DM</span>' : '') +
+                    '<div class="lr-actions">' +
+                        '<div class="lr-actions-desktop" style="display:flex;gap:4px;">' +
+                            '<button class="icon-btn" onclick="openUser(' + u.id + ')" title="Open user" aria-label="Open user"><i class="fa-solid fa-chevron-right"></i></button>' +
+                            (u.ai_count > 0 ? '<button class="icon-btn" onclick="clearMemForUser(' + u.id + ',\\'ai\\')" title="Clear AI memory" aria-label="Clear AI memory"><i class="fa-solid fa-brain"></i></button>' : '') +
+                            (u.dm_count > 0 ? '<button class="icon-btn" onclick="clearMemForUser(' + u.id + ',\\'dm\\')" title="Clear direct messages" aria-label="Clear direct messages"><i class="fa-solid fa-comment-dots"></i></button>' : '') +
+                            '<button class="icon-btn danger" onclick="clearMemForUser(' + u.id + ',\\'all\\')" title="Clear all memory" aria-label="Clear all memory"><i class="fa-regular fa-trash-can"></i></button>' +
+                        '</div>' +
+                        '<div class="lr-actions-mobile dropdown">' +
+                            '<button class="icon-btn" onclick="toggleDropdown(this)" aria-label="More actions"><i class="fa-solid fa-ellipsis-vertical"></i></button>' +
+                            '<div class="dropdown-menu hidden">' +
+                                '<button onclick="openUser(' + u.id + ')"><i class="fa-solid fa-chevron-right"></i> Open</button>' +
+                                (u.ai_count > 0 ? '<button class="danger" onclick="clearMemForUser(' + u.id + ',\\'ai\\')"><i class="fa-solid fa-brain"></i> Clear AI memory</button>' : '') +
+                                (u.dm_count > 0 ? '<button class="danger" onclick="clearMemForUser(' + u.id + ',\\'dm\\')"><i class="fa-solid fa-comment-dots"></i> Clear direct messages</button>' : '') +
+                                '<button class="danger" onclick="clearMemForUser(' + u.id + ',\\'all\\')"><i class="fa-regular fa-trash-can"></i> Clear all memory</button>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div></div>';
+            });
+            box.innerHTML = html + '</div>';
+        }
+    }
+
+    // Groups list
+    var groupList = memoryGroups.slice();
+    if (memFilter !== 'groups' && memFilter !== 'all') groupList = [];
+    if (q) groupList = groupList.filter(function (g) { return String(g.title || '').toLowerCase().indexOf(q) >= 0 || String(g.id).indexOf(q) >= 0; });
+    if (!groupList.length && memFilter === 'groups') {
+        groupsBox.innerHTML = emptyState('fa-solid fa-comments', 'No groups with memory.');
+    } else if (groupList.length) {
+        var gh = '<div class="section-title" style="margin-top:8px;">Groups with AI memory</div><div class="list">';
+        groupList.forEach(function (g) {
+            gh += '<div class="list-row">' +
+                '<i class="fa-solid fa-users" style="color:var(--accent);width:20px;text-align:center;"></i>' +
+                '<div class="lr-main" onclick="openGroup(' + g.id + ')" style="cursor:pointer;">' +
+                    '<div class="lr-title">' + esc(g.title || 'Group') + '</div>' +
+                    '<div class="lr-sub">ID ' + esc(g.id) + ' · ' + g.ai_count + ' AI messages' + (g.is_active ? '' : ' · left') + '</div>' +
                 '</div>' +
-            '</div></div>';
-    });
-    box.innerHTML = html + '</div>';
+                '<span class="badge purple">' + g.ai_count + ' AI</span>' +
+                '<div class="lr-actions">' +
+                    '<button class="icon-btn" onclick="openGroup(' + g.id + ')" aria-label="Open"><i class="fa-solid fa-chevron-right"></i></button>' +
+                    '<button class="icon-btn danger" onclick="clearMemForGroup(' + g.id + ')" aria-label="Clear"><i class="fa-regular fa-trash-can"></i></button>' +
+                '</div></div>';
+        });
+        groupsBox.innerHTML = gh + '</div>';
+    } else {
+        groupsBox.innerHTML = '';
+    }
+}
+async function clearMemForGroup(gid) {
+    if (!await confirmDialog('Clear AI memory for this group?', 'Clear group memory')) return;
+    try { await api('POST', '/api/groups/' + gid + '/memory/clear'); toast('Cleared.'); loadMemory(true); }
+    catch (e) { toast(e.message, 'error'); }
 }
 async function clearMemForUser(id, scope) {
     var label = scope === 'ai' ? 'AI memory' : (scope === 'dm' ? 'direct messages' : 'all memory');
@@ -3489,10 +3689,28 @@ async function openGroup(id) {
         $('gm-sub').textContent = manageGroup.type + ' · ID ' + id + (manageGroup.username ? ' · @' + manageGroup.username : '');
         box.innerHTML = kvCard('Members tracked', manageGroup.member_count || 0) + kvCard('Added', fmtTime(manageGroup.added_at)) + kvCard('Last active', fmtTime(manageGroup.last_active));
         applyGroupSettings(groupSettings);
+        var badge = $('gm-status-badge');
+        if (badge) {
+            badge.className = 'badge ' + (manageGroup.is_active == 1 ? 'green' : 'red');
+            badge.innerHTML = '<i class="fa-solid fa-circle" style="font-size:8px;"></i> ' + (manageGroup.is_active == 1 ? 'Active' : 'Left / removed');
+        }
+        loadGroupMemory();
+        // Best-effort background sync — don't block the UI.
+        api('POST', '/api/groups/' + manageGroup.id + '/sync', {}).then(function (d) {
+            if (badge) {
+                badge.className = 'badge ' + (d.is_active ? 'green' : 'red');
+                badge.innerHTML = '<i class="fa-solid fa-circle" style="font-size:8px;"></i> ' + (d.is_active ? 'Active' : 'Left / removed');
+            }
+        }).catch(function () {});
     } catch (e) { toast(e.message, 'error'); }
 }
 function applyGroupSettings(s) {
     setSeg('gm-ai-mode', s.ai || 'inherit');
+    setSeg('gm-commands-perm', s.commands_permission || 'inherit');
+    setSeg('gm-featured-perm', s.featured_commands_permission || 'inherit');
+    setSeg('gm-ai-perm', s.ai_chat_permission || 'inherit');
+    setSeg('gm-callback-perm', s.callback_queries_permission || 'inherit');
+    setSeg('gm-mcp-perm', s.mcp_telegram_permission || 'inherit');
     $('gm-memory').value = s.memory === undefined ? 'inherit' : String(s.memory);
     $('gm-mention').value = s.mention === undefined ? 'inherit' : String(s.mention);
     toggleSwitch('gm-welcome-toggle', !!s.welcome_enabled); $('gm-welcome-text').value = s.welcome_text || '';
@@ -3509,7 +3727,13 @@ function gmToggle(key) {
 function gmSet(k, v) { setSeg('gm-ai-mode', v); }
 async function saveGroupSettings() {
     var body = {
-        ai: getSeg('gm-ai-mode') || 'inherit', memory: $('gm-memory').value, mention: $('gm-mention').value,
+        ai: getSeg('gm-ai-mode') || 'inherit',
+        commands_permission: getSeg('gm-commands-perm') || 'inherit',
+        featured_commands_permission: getSeg('gm-featured-perm') || 'inherit',
+        ai_chat_permission: getSeg('gm-ai-perm') || 'inherit',
+        callback_queries_permission: getSeg('gm-callback-perm') || 'inherit',
+        mcp_telegram_permission: getSeg('gm-mcp-perm') || 'inherit',
+        memory: $('gm-memory').value, mention: $('gm-mention').value,
         welcome_enabled: sw('gm-welcome-toggle'), welcome_text: $('gm-welcome-text').value, rules_text: $('gm-rules').value,
         anti_flood: sw('gm-flood-toggle'), flood_limit: parseInt($('gm-flood-limit').value) || 6,
         link_filter: sw('gm-link-toggle'), auto_delete_service: sw('gm-service-toggle'), track_members: sw('gm-track-toggle')
@@ -3534,6 +3758,59 @@ async function removeGroup() {
     var ok = await confirmDialog('Remove this group from the dashboard? The bot stays in the group.', 'Remove group');
     if (!ok) return;
     try { await api('DELETE', '/api/groups/' + manageGroup.id); toast('Removed.'); groups = []; go('groups'); }
+    catch (e) { toast(e.message, 'error'); }
+}
+
+async function syncGroup() {
+    if (!manageGroup) return;
+    try {
+        var d = await api('POST', '/api/groups/' + manageGroup.id + '/sync', {});
+        var badge = $('gm-status-badge');
+        if (badge) {
+            badge.className = 'badge ' + (d.is_active ? 'green' : 'red');
+            badge.innerHTML = '<i class="fa-solid fa-circle" style="font-size:8px;"></i> ' + (d.is_active ? 'Active' : 'Left / removed');
+        }
+        toast(d.is_active ? 'Group synced — bot is present.' : 'Group synced — bot is NOT in this group.', d.is_active ? 'success' : 'error');
+        if (d.title) { $('gm-title').textContent = d.title; }
+    } catch (e) { toast(e.message, 'error'); }
+}
+
+async function loadGroupMemory() {
+    var box = $('gm-memory');
+    if (!box || !manageGroup) return;
+    box.innerHTML = '<div class="spinner-page"><span class="mini-spinner"></span></div>';
+    try {
+        var d = await api('GET', '/api/groups/' + manageGroup.id + '/memory');
+        var msgs = d.messages || [];
+        window.__groupMem = msgs;
+        if (!msgs.length) { box.innerHTML = emptyState('fa-solid fa-brain', 'No memory stored yet.'); return; }
+        box.innerHTML = msgs.map(function (m, i) {
+            return '<div class="bubble ' + (m.role === 'user' ? 'in' : 'out') + '" dir="auto">' +
+                esc(m.content) +
+                '<div class="b-meta">' + fmtTime(m.timestamp) + '</div>' +
+                '<div class="b-actions">' +
+                    '<button onclick="deleteGroupMemMsg(' + i + ')"><i class="fa-regular fa-trash-can"></i> Delete</button>' +
+                '</div></div>';
+        }).join('');
+        scrollBottom(box);
+    } catch (e) { box.innerHTML = errorState(e.message, 'loadGroupMemory()'); }
+}
+
+async function deleteGroupMemMsg(idx) {
+    var m = window.__groupMem && window.__groupMem[idx];
+    if (!m) return;
+    if (!await confirmDialog('Delete this memory entry?', 'Delete memory')) return;
+    try {
+        await api('POST', '/api/groups/' + manageGroup.id + '/memory/delete', { messageId: m.id });
+        toast('Deleted.');
+        loadGroupMemory();
+    } catch (e) { toast(e.message, 'error'); }
+}
+
+async function clearGroupMemory() {
+    if (!manageGroup) return;
+    if (!await confirmDialog('Clear all AI memory for this group? This cannot be undone.', 'Clear group memory')) return;
+    try { await api('POST', '/api/groups/' + manageGroup.id + '/memory/clear'); toast('Group memory cleared.'); loadGroupMemory(); }
     catch (e) { toast(e.message, 'error'); }
 }
 
@@ -3894,14 +4171,18 @@ function kbSettingChanged(prefix) {
    PERMISSIONS
    ============================================================ */
 var PERM_LABELS = {
-    mcp_telegram: { label: 'MCP command in Telegram', sub: 'Whether non-admins can trigger a /mcp featured command in chats.' },
+    mcp_telegram: { label: 'MCP command in Telegram', sub: 'Whether lower-role users can trigger a /mcp featured command in chats.' },
     mcp_ai: { label: 'AI can call MCP tools', sub: 'Whether the main AI is allowed to invoke MCP tools while replying.' },
     ai_chat: { label: 'AI replies to users', sub: 'Whether non-admins get AI replies in DMs and groups.' },
     commands: { label: 'Bot commands', sub: 'Whether non-admins can run regular bot commands. Per-command "admin only" still applies.' },
     featured_commands: { label: 'Featured commands', sub: 'Whether non-admins can use DM / Buttons / MCP featured commands.' },
     start_command: { label: 'Start command', sub: 'Whether non-admins can use /start. Usually Everyone.' },
     rules_command: { label: '/rules in groups', sub: 'Whether non-admins can read a group\\'s rules via /rules.' },
-    callback_queries: { label: 'Inline button taps', sub: 'Whether non-admins can tap inline or reply buttons on messages.' }
+    callback_queries: { label: 'Inline button taps', sub: 'Whether non-admins can tap inline or reply buttons on messages.' },
+    private_chat: { label: 'Reply in private chats', sub: 'Whether lower-role users get replies in direct messages.' },
+    group_chat: { label: 'Reply in groups', sub: 'Whether lower-role users get replies in groups.' },
+    group_commands: { label: 'Commands in groups', sub: 'Whether lower-role users can run bot commands in groups.' },
+    media_commands: { label: 'Media replies', sub: 'Whether lower-role users can trigger photo/media responses from the bot.' }
 };
 var permState = {};
 async function loadPermissions(force) {
@@ -3922,6 +4203,7 @@ function renderPermissions() {
             '<div style="flex:1"><div class="sw-label">' + esc(meta.label) + '</div><div class="sw-sub">' + esc(meta.sub) + '</div></div>' +
             '<div class="segmented" data-perm="' + k + '">' +
             '<button data-v="everyone" class="' + (val === 'everyone' ? 'active' : '') + '" onclick="setPerm(\\\'' + k + '\\\',\\\'everyone\\\',this)">Everyone</button>' +
+            '<button data-v="moderator" class="' + (val === 'moderator' ? 'active' : '') + '" onclick="setPerm(\\\'' + k + '\\\',\\\'moderator\\\',this)">Moderator+</button>' +
             '<button data-v="admin" class="' + (val === 'admin' ? 'active' : '') + '" onclick="setPerm(\\\'' + k + '\\\',\\\'admin\\\',this)">Admin only</button>' +
             '</div>' +
         '</div>';
@@ -3957,10 +4239,12 @@ async function loadAdmins() {
 }
 async function promoteAdmin() {
     var id = parseInt($('promote-user-id').value);
+    var role = $('promote-user-role').value;
     if (!id) { toast('Enter a numeric user ID.', 'error'); return; }
+    if (!['moderator', 'admin'].includes(role)) role = 'admin';
     try {
-        await api('POST', '/api/admins/promote', { userId: id });
-        toast('User promoted to admin.');
+        await api('POST', '/api/admins/promote', { userId: id, role: role });
+        toast('User promoted to ' + role + '.');
         $('promote-user-id').value = '';
         loadAdmins();
     } catch (e) { toast(e.message, 'error'); }
@@ -4271,7 +4555,17 @@ async function revealToken() {
     } catch (e) { toast(e.message, 'error'); }
 }
 function copyVal(id) { navigator.clipboard.writeText($(id).value); toast('Copied.'); }
-function changeToken() { $('token-modal').classList.remove('hidden'); $('token-input').value = ''; $('token-result').innerHTML = ''; trackModal('token-modal'); }
+function changeToken() {
+    if (openModals.indexOf('token-modal') >= 0) return;
+    $('token-modal').classList.remove('hidden');
+    $('token-input').value = '';
+    $('token-result').innerHTML = '';
+    trackModal('token-modal');
+}
+function closeTokenModal() {
+    $('token-modal').classList.add('hidden');
+    untrackModal('token-modal');
+}
 async function saveToken() {
     var newTok = $('token-input').value.trim();
     if (!newTok) { $('token-result').innerHTML = '<span style="color:var(--red)">Please paste a token first.</span>'; return; }
@@ -4497,15 +4791,41 @@ async function checkUpdate(force) {
         latestVersion = d.latest; workerUrl = d.worker_url;
         $('up-latest').value = d.latest || 'unknown';
         $('up-notes').textContent = d.released ? 'Released ' + d.released + (d.notes ? ' · ' + d.notes : '') : '';
-        updateAvailable = d.latest && cmp(d.latest, d.current) > 0;
+        var isLatestBeta = isBeta(d.latest);
+        var cmpResult = d.latest ? cmp(d.latest, d.current) : 0;
+        var versionChanged = !!(d.latest && d.latest !== d.current);
+        var stableUpgrade = cmpResult > 0 && !isLatestBeta;
+        updateAvailable = versionChanged;
         $('up-btn').disabled = !updateAvailable;
-        show($('update-pill'), updateAvailable);
+        $('up-btn').innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> ' + (stableUpgrade ? 'Update now' : 'Update (version changed)');
+        show($('update-pill'), stableUpgrade);
+        show($('up-beta-hint'), isLatestBeta);
+        var reBtn = $('up-reinstall-btn');
+        if (reBtn) reBtn.disabled = false;
     } catch (e) { $('up-latest').value = 'error'; }
 }
+function parseVersion(v) {
+    var s = String(v || '').replace(/^v/i, '').replace(/_/g, '-');
+    var dashIdx = s.indexOf('-');
+    var base = dashIdx >= 0 ? s.slice(0, dashIdx) : s;
+    var pre = dashIdx >= 0 ? s.slice(dashIdx + 1) : '';
+    return { nums: base.split('.').map(function (x) { return parseInt(x, 10) || 0; }), pre: pre };
+}
 function cmp(a, b) {
-    var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number);
-    for (var i = 0; i < Math.max(x.length, y.length); i++) { var n = x[i] || 0, m = y[i] || 0; if (n > m) return 1; if (n < m) return -1; }
-    return 0;
+    var pa = parseVersion(a), pb = parseVersion(b);
+    var max = Math.max(pa.nums.length, pb.nums.length);
+    for (var i = 0; i < max; i++) {
+        var n = pa.nums[i] || 0, m = pb.nums[i] || 0;
+        if (n > m) return 1;
+        if (n < m) return -1;
+    }
+    if (pa.pre === pb.pre) return 0;
+    if (!pa.pre) return 1;      // 4.5.0 > 4.5.0-beta
+    if (!pb.pre) return -1;     // 4.5.0-beta < 4.5.0
+    return pa.pre < pb.pre ? -1 : 1;
+}
+function isBeta(v) {
+    return /[-_.](beta|alpha|rc|dev|pre|canary|nightly)/i.test(String(v || ''));
 }
 function autoCheckUpdate() { checkUpdate(true); }
 function openTokenGen() { window.open('https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22edit%22%7D%5D&accountId=*&zoneId=all&name=Nyxx%20Updater', '_blank'); }
@@ -4600,7 +4920,8 @@ async function loadUpdateTab() {
   cfSetMethod('oauth');
 }
 
-async function performUpdate() {
+async function performUpdate(force) {
+  force = !!force;
   var token = cfMethod === 'token' ? $('up-token').value.trim() : '';
   var settings = await api('GET', '/api/settings');
 
@@ -4614,6 +4935,10 @@ async function performUpdate() {
       toast('Connect your Cloudflare account first.', 'error');
       return;
     }
+  }
+  if (!force && !updateAvailable) {
+    toast('You are already on the latest version. Use "Force redeploy" if you want to re-install.', 'info');
+    return;
   }
 
   $('up-result').innerHTML = '<span class="mini-spinner"></span> Validating…';
@@ -4671,8 +4996,8 @@ document.addEventListener('keydown', function (e) {
         else if (top === 'featured-modal') closeFeaturedModal();
         else if (top === 'confirm-modal') closeConfirm(false);
         else if (top === 'backup-modal') closeCustomBackup();
-        else if (top === 'about-modal') { $('about-modal').classList.add('hidden'); untrackModal('about-modal'); }
-        else if (top === 'token-modal') { $('token-modal').classList.add('hidden'); untrackModal('token-modal'); }
+        else if (top === 'about-modal') closeAboutModal();
+        else if (top === 'token-modal') closeTokenModal();
     }
     if (e.key === 'Escape') closeAllDropdowns();
 });
@@ -4883,6 +5208,10 @@ export default {
 
             if (request.method === 'GET' && url.pathname === '/api/groups') return await getGroups(env);
             if (request.method === 'GET' && /^\/api\/groups\/-?[0-9]+$/.test(url.pathname)) return await getGroupDetail(env, url);
+            if (request.method === 'POST' && /^\/api\/groups\/-?[0-9]+\/sync$/.test(url.pathname)) return await syncGroupStatus(env, url);
+            if (request.method === 'GET' && /^\/api\/groups\/-?[0-9]+\/memory$/.test(url.pathname)) return await getGroupMemory(env, url);
+            if (request.method === 'POST' && /^\/api\/groups\/-?[0-9]+\/memory\/clear$/.test(url.pathname)) return await clearGroupMemory(env, url);
+            if (request.method === 'POST' && /^\/api\/groups\/-?[0-9]+\/memory\/delete$/.test(url.pathname)) return await deleteGroupMemoryMessage(request, env, url);
             if (request.method === 'POST' && url.pathname.endsWith('/settings') && url.pathname.startsWith('/api/groups/')) return await saveGroupSettings(request, env, url);
             if (request.method === 'POST' && url.pathname.endsWith('/send') && url.pathname.startsWith('/api/groups/')) return await sendGroupMessage(request, env, url);
             if (request.method === 'DELETE' && /^\/api\/groups\/-?[0-9]+$/.test(url.pathname)) return await deleteGroup(env, url);
@@ -4935,6 +5264,7 @@ export default {
             if (request.method === 'GET'  && url.pathname === '/api/chat/sessions') return await listChatSessions(env);
             if (request.method === 'POST' && url.pathname === '/api/chat/sessions') return await createChatSession(request, env);
             if (request.method === 'POST' && /^\/api\/chat\/sessions\/[^\/]+\/send$/.test(url.pathname)) return await sendChatMessage(request, env, url);
+            if (request.method === 'POST' && /^\/api\/chat\/sessions\/[^\/]+\/rename$/.test(url.pathname)) return await renameChatSession(request, env, url);
             if (request.method === 'GET'  && /^\/api\/chat\/sessions\/[^\/]+$/.test(url.pathname)) return await getChatSession(env, url);
             if (request.method === 'DELETE' && /^\/api\/chat\/sessions\/[^\/]+$/.test(url.pathname)) return await deleteChatSession(env, url);
 
@@ -5126,16 +5456,21 @@ async function saveLogCleanSettings(request, env) {
 // PERMISSIONS
 // ============================================================================
 const DEFAULT_PERMISSIONS = {
-    mcp_telegram: 'admin',      // /mcp featured command in Telegram
-    mcp_ai: 'admin',            // main AI allowed to call MCP tools
-    ai_chat: 'everyone',        // AI replies to regular users
-    commands: 'everyone',       // regular bot commands (/help, /about…)
-    featured_commands: 'everyone', // DM / Buttons / MCP featured commands
-    start_command: 'everyone',  // /start
-    rules_command: 'everyone',  // /rules in groups
-    callback_queries: 'everyone' // inline / reply button taps
+    mcp_telegram: 'admin',
+    mcp_ai: 'admin',
+    ai_chat: 'everyone',
+    commands: 'everyone',
+    featured_commands: 'everyone',
+    start_command: 'everyone',
+    rules_command: 'everyone',
+    callback_queries: 'everyone',
+    private_chat: 'everyone',
+    group_chat: 'everyone',
+    group_commands: 'everyone',
+    media_commands: 'everyone',
 };
 const PERMISSION_KEYS = Object.keys(DEFAULT_PERMISSIONS);
+const PERMISSION_VALUES = ['everyone', 'moderator', 'admin'];
 
 async function getPermissions(env) {
     let stored = {};
@@ -5146,7 +5481,7 @@ async function getPermissions(env) {
     const out = {};
     for (const k of PERMISSION_KEYS) {
         const v = stored[k];
-        out[k] = (v === 'admin' || v === 'everyone') ? v : DEFAULT_PERMISSIONS[k];
+        out[k] = PERMISSION_VALUES.includes(v) ? v : DEFAULT_PERMISSIONS[k];
     }
     return out;
 }
@@ -5155,6 +5490,13 @@ async function isAdminUser(env, userId) {
     try {
         const row = await env.DB.prepare('SELECT role FROM users WHERE id = ?').bind(userId).first();
         return !!(row && row.role === 'admin');
+    } catch (e) { return false; }
+}
+async function isModeratorOrAbove(env, userId) {
+    if (!userId) return false;
+    try {
+        const row = await env.DB.prepare('SELECT role FROM users WHERE id = ?').bind(userId).first();
+        return !!(row && (row.role === 'admin' || row.role === 'moderator'));
     } catch (e) { return false; }
 }
 const _permCache = new WeakMap(); // env → { data, at }
@@ -5172,8 +5514,27 @@ async function checkPermission(env, userId, key) {
     const perms = await getPermissionsCached(env);
     const mode = perms[key] || 'everyone';
     if (mode === 'everyone') return true;
-    return await isAdminUser(env, userId);
+    if (mode === 'admin') return await isAdminUser(env, userId);
+    if (mode === 'moderator') return await isModeratorOrAbove(env, userId);
+    return false;
 }
+
+async function checkPermissionForChat(env, userId, key, chatId, chatType) {
+    // In groups, a per-group override wins if set to a non-inherit value.
+    // Private chats and groups with `inherit` fall back to the global setting.
+    if ((chatType === 'group' || chatType === 'supergroup') && env.DB) {
+        try {
+            const gs = await getGroupSettings(env.DB, chatId);
+            const override = gs[key + '_permission'] || 'inherit';
+            if (override === 'everyone') return true;
+            if (override === 'moderator') return await isModeratorOrAbove(env, userId);
+            if (override === 'admin') return await isAdminUser(env, userId);
+            // 'inherit' or unknown → fall through
+        } catch (e) { /* fall through */ }
+    }
+    return await checkPermission(env, userId, key);
+}
+
 async function getPermissionsHandler(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
@@ -5189,7 +5550,7 @@ async function savePermissionsHandler(request, env) {
         const incoming = body.permissions || {};
         const merged = await getPermissions(env);
         for (const k of PERMISSION_KEYS) {
-            if (incoming[k] === 'admin' || incoming[k] === 'everyone') merged[k] = incoming[k];
+            if (PERMISSION_VALUES.includes(incoming[k])) merged[k] = incoming[k];
         }
         await setSetting(env.DB, 'permissions_json', JSON.stringify(merged));
         _permCache.delete(env);
@@ -5212,11 +5573,12 @@ async function promoteAdminHandler(request, env) {
     try {
         const body = await request.json();
         const userId = parseInt(body.userId);
+        const role = body.role === 'moderator' ? 'moderator' : (body.role === 'user' ? 'user' : 'admin');
         if (!userId) return apiJson({ error: 'Invalid userId.' }, 400);
         await initializeDatabase(env.DB);
-        await env.DB.prepare("UPDATE users SET role = 'admin' WHERE id = ?").bind(userId).run();
-        await logAction(env.DB, userId, 'User promoted to admin');
-        return apiJson({ success: true });
+        await env.DB.prepare('UPDATE users SET role = ? WHERE id = ?').bind(role, userId).run();
+        await logAction(env.DB, userId, 'Role set to ' + role);
+        return apiJson({ success: true, role });
     } catch (err) { return internalError(err); }
 }
 async function demoteAdminHandler(request, env) {
@@ -5236,7 +5598,7 @@ async function demoteAdminHandler(request, env) {
 // DATABASE
 // ============================================================================
 const dbInitCache = new WeakMap();
-const SCHEMA_VERSION = 9;
+const SCHEMA_VERSION = 10;
 
 const MIGRATIONS = {
     2: [
@@ -5300,6 +5662,9 @@ const MIGRATIONS = {
     ],
     9: [
         `ALTER TABLE mcp_sessions ADD COLUMN title TEXT DEFAULT ''`,
+    ],
+    10: [
+        `ALTER TABLE featured_replies ADD COLUMN delete_user_message INTEGER DEFAULT 1`,
     ],
 };
 
@@ -5558,10 +5923,10 @@ async function getMemoryOverview(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
-        // Filter out group chats (negative IDs) — this view is per-user.
-        const [aiRows, dmRows] = await Promise.all([
+        const [aiRows, dmRows, groupAiRows] = await Promise.all([
             env.DB.prepare('SELECT chat_id, COUNT(*) as n FROM ai_messages WHERE chat_id > 0 GROUP BY chat_id').all(),
             env.DB.prepare('SELECT chat_id, COUNT(*) as n FROM dm_messages WHERE chat_id > 0 GROUP BY chat_id').all(),
+            env.DB.prepare('SELECT chat_id, COUNT(*) as n FROM ai_messages WHERE chat_id < 0 GROUP BY chat_id').all(),
         ]);
         const aiMap = {};
         const dmMap = {};
@@ -5584,7 +5949,7 @@ async function getMemoryOverview(env) {
             }
         }
         let aiTotal = 0, dmTotal = 0;
-        const out = ids.map(id => {
+        const usersOut = ids.map(id => {
             const ai = aiMap[id] || 0;
             const dm = dmMap[id] || 0;
             aiTotal += ai; dmTotal += dm;
@@ -5602,7 +5967,33 @@ async function getMemoryOverview(env) {
                 total_count: ai + dm,
             };
         }).sort((a, b) => b.total_count - a.total_count);
-        return apiJson({ success: true, users: out, totals: { ai: aiTotal, dm: dmTotal, users: ids.length } });
+
+        const groupAiList = groupAiRows.results || [];
+        const groupIds = groupAiList.map(r => r.chat_id);
+        const groupMap = {};
+        if (groupIds.length) {
+            const ph = groupIds.map(() => '?').join(', ');
+            const gs = await env.DB.prepare(`SELECT id, title, is_active FROM groups WHERE id IN (${ph})`).bind(...groupIds).all();
+            for (const g of (gs.results || [])) groupMap[g.id] = g;
+        }
+        let groupsTotal = 0;
+        const groupsOut = groupAiList.map(r => {
+            groupsTotal += r.n;
+            const g = groupMap[r.chat_id] || {};
+            return {
+                id: r.chat_id,
+                title: g.title || ('Group ' + r.chat_id),
+                is_active: g.is_active !== 0,
+                ai_count: r.n,
+            };
+        }).sort((a, b) => b.ai_count - a.ai_count);
+
+        return apiJson({
+            success: true,
+            users: usersOut,
+            groups: groupsOut,
+            totals: { ai: aiTotal + groupsTotal, dm: dmTotal, users: usersOut.length, groups: groupsOut.length, group_ai: groupsTotal }
+        });
     } catch (err) { return internalError(err); }
 }
 async function handleMemoryClear(request, env) {
@@ -6095,10 +6486,11 @@ async function createFeatured(request, env) {
         const kind = (body.kind === 'buttons' || body.kind === 'mcp') ? body.kind : 'text';
         const enabled = body.enabled ? 1 : 0;
         const adminOnly = body.admin_only ? 1 : 0;
+        const deleteTrigger = body.delete_user_message !== undefined ? (body.delete_user_message ? 1 : 0) : 1;
         await initializeDatabase(env.DB);
         try {
-            await env.DB.prepare('INSERT INTO featured_replies (command, kind, content, buttons_json, success_text, failure_text, admin_only, enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-                .bind(command, kind, content, null, successText, failureText, adminOnly, enabled).run();
+            await env.DB.prepare('INSERT INTO featured_replies (command, kind, content, buttons_json, success_text, failure_text, admin_only, delete_user_message, enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+                .bind(command, kind, content, null, successText, failureText, adminOnly, deleteTrigger, enabled).run();
         } catch (e) {
             if (String(e.message || '').includes('UNIQUE')) return apiJson({ error: `A featured command with the command "${command}" already exists.` }, 400);
             throw e;
@@ -6121,8 +6513,11 @@ async function updateFeatured(request, env, url) {
         const kind = body.kind !== undefined ? ((body.kind === 'buttons' || body.kind === 'mcp') ? body.kind : 'text') : existing.kind;
         const enabled = body.enabled !== undefined ? (body.enabled ? 1 : 0) : existing.enabled;
         const adminOnly = body.admin_only !== undefined ? (body.admin_only ? 1 : 0) : (existing.admin_only || 0);
-        await env.DB.prepare('UPDATE featured_replies SET command = ?, kind = ?, content = ?, buttons_json = NULL, success_text = ?, failure_text = ?, admin_only = ?, enabled = ? WHERE id = ?')
-            .bind(command, kind, content, successText, failureText, adminOnly, enabled, id).run();
+        const deleteTrigger = body.delete_user_message !== undefined
+            ? (body.delete_user_message ? 1 : 0)
+            : (existing.delete_user_message !== undefined && existing.delete_user_message !== null ? (existing.delete_user_message ? 1 : 0) : 1);
+        await env.DB.prepare('UPDATE featured_replies SET command = ?, kind = ?, content = ?, buttons_json = NULL, success_text = ?, failure_text = ?, admin_only = ?, delete_user_message = ?, enabled = ? WHERE id = ?')
+            .bind(command, kind, content, successText, failureText, adminOnly, deleteTrigger, enabled, id).run();
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
 }
@@ -6234,6 +6629,7 @@ async function updateUserRole(request, env) {
     try {
         const { userId, role } = await request.json();
         if (!userId || !role) return apiJson({ error: 'Missing user or role.' }, 400);
+        if (!['user', 'moderator', 'admin'].includes(role)) return apiJson({ error: 'Invalid role. Must be user, moderator, or admin.' }, 400);
         await initializeDatabase(env.DB);
         await env.DB.prepare('UPDATE users SET role = ? WHERE id = ?').bind(role, userId).run();
         await logAction(env.DB, userId, `Role changed to ${role}`);
@@ -6479,6 +6875,11 @@ const GROUP_DEFAULT_SETTINGS = {
     welcome_enabled: false, welcome_text: '', rules_text: '',
     anti_flood: false, flood_limit: 6, link_filter: false,
     auto_delete_service: false, track_members: false,
+    commands_permission: 'inherit',
+    featured_commands_permission: 'inherit',
+    ai_chat_permission: 'inherit',
+    callback_queries_permission: 'inherit',
+    mcp_telegram_permission: 'inherit',
 };
 async function getGroups(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
@@ -6524,6 +6925,63 @@ async function deleteGroup(env, url) {
         await initializeDatabase(env.DB);
         await env.DB.prepare('DELETE FROM groups WHERE id = ?').bind(id).run();
         await logAction(env.DB, null, `Group ${id} removed from dashboard`);
+        return apiJson({ success: true });
+    } catch (err) { return internalError(err); }
+}
+async function syncGroupStatus(env, url) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const id = parseInt(url.pathname.split('/')[3]);
+        await initializeDatabase(env.DB);
+        const token = await getSetting(env.DB, 'bot_token');
+        if (!token) return apiJson({ error: 'Bot token is not set.' }, 400);
+        const info = await tgCall(token, 'getChat', { chat_id: id });
+        if (!info || !info.ok) {
+            await env.DB.prepare('UPDATE groups SET is_active = 0 WHERE id = ?').bind(id).run();
+            return apiJson({ success: true, is_active: 0, reason: (info && info.description) || 'getChat failed' });
+        }
+        const chat = info.result || {};
+        await env.DB.prepare(
+            'UPDATE groups SET title = ?, type = ?, username = ?, is_active = 1, last_active = CURRENT_TIMESTAMP WHERE id = ?'
+        ).bind(chat.title || '', chat.type || 'group', chat.username || '', id).run();
+        try {
+            const count = await tgCall(token, 'getChatMemberCount', { chat_id: id });
+            if (count && count.ok) await env.DB.prepare('UPDATE groups SET member_count = ? WHERE id = ?').bind(count.result, id).run();
+        } catch (e) {}
+        return apiJson({ success: true, is_active: 1, title: chat.title || '' });
+    } catch (err) { return internalError(err); }
+}
+
+async function getGroupMemory(env, url) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const id = parseInt(url.pathname.split('/')[3]);
+        await initializeDatabase(env.DB);
+        const rows = await env.DB.prepare(
+            'SELECT id, role, content, timestamp FROM ai_messages WHERE chat_id = ? ORDER BY id ASC LIMIT 500'
+        ).bind(id).all();
+        return apiJson({ messages: rows.results || [] });
+    } catch (err) { return internalError(err); }
+}
+
+async function clearGroupMemory(env, url) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const id = parseInt(url.pathname.split('/')[3]);
+        await env.DB.prepare('DELETE FROM ai_messages WHERE chat_id = ?').bind(id).run();
+        await logAction(env.DB, null, 'Group memory cleared (' + id + ')');
+        return apiJson({ success: true });
+    } catch (err) { return internalError(err); }
+}
+
+async function deleteGroupMemoryMessage(request, env, url) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const gid = parseInt(url.pathname.split('/')[3]);
+        const body = await request.json();
+        const msgId = parseInt(body.messageId);
+        if (!gid || !msgId) return apiJson({ error: 'Missing fields.' }, 400);
+        await env.DB.prepare('DELETE FROM ai_messages WHERE id = ? AND chat_id = ?').bind(msgId, gid).run();
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
 }
@@ -7353,7 +7811,10 @@ async function setBotInfo(request, env) {
 // ============================================================================
 // BACKUP
 // ============================================================================
-const SECRET_SETTING_KEYS = ['bot_token', 'webhook_secret', 'cf_api_token', 'ai_api_key'];
+// Bot token and webhook secret stay excluded from backups. AI keys are INCLUDED by
+// user request, but the frontend warns loudly before exporting them.
+const SECRET_SETTING_KEYS = ['bot_token', 'webhook_secret', 'cf_api_token',
+    'cf_oauth_access_token', 'cf_oauth_refresh_token', 'cf_oauth_expires_at', 'cf_oauth_scope'];
 async function exportBackup(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
@@ -8923,12 +9384,6 @@ async function handleMcp(request, env) {
         return new Response(JSON.stringify({ jsonrpc: '2.0', error: { code: -32603, message: 'Internal error' }, id: null }), { status: 500, headers: mcpJsonHeaders() });
     }
 }
-function jsonRpcResult(id, result) {
-    return new Response(JSON.stringify({ jsonrpc: '2.0', result, id }), { status: 200, headers: JSON_HEADERS });
-}
-function jsonRpcError(id, code, message) {
-    return new Response(JSON.stringify({ jsonrpc: '2.0', error: { code, message }, id: id === undefined ? null : id }), { status: 200, headers: JSON_HEADERS });
-}
 
 // ---- MCP AI (provider test, agent loop, dashboard chat) ---------------------
 async function resolveMcpAiSettings(env, incoming) {
@@ -9133,14 +9588,14 @@ async function getMcpCalls(env) {
 // DEDICATED CHAT ROUTE (ChatGPT-like)
 // ============================================================================
 const CHAT_HTML = `<!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Nyxx | Chat</title>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"><meta name="theme-color" content="#0a0a0a"><title>Nyxx | Chat</title>
 <link rel="shortcut icon" href="https://raw.githubusercontent.com/Mahan07dev/Nyxx/refs/heads/main/logo.webp" type="image/x-icon">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <style>
 :root{--bg:#0a0a0a;--surface:#161616;--surface-2:#212121;--border:#2a2a2a;--text:#ececec;--text-2:#a3a3a3;--accent:#10a37f;--danger:#ef4444;--radius:12px}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;padding:0;height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:15px}
-.app{display:flex;height:100vh;overflow:hidden}
+html,body{margin:0;padding:0;height:100vh;height:100dvh;overflow:hidden;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:15px}
+.app{display:flex;height:100vh;height:100dvh;overflow:hidden}
 .sidebar{width:260px;background:#080808;border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;transition:transform .25s ease}
 .sidebar-head{padding:14px;border-bottom:1px solid var(--border)}
 .brand{display:flex;align-items:center;gap:10px;margin-bottom:12px}
@@ -9148,7 +9603,7 @@ html,body{margin:0;padding:0;height:100%;background:var(--bg);color:var(--text);
 .brand .name{font-weight:600;font-size:15px}
 .new-chat-btn{width:100%;padding:10px 14px;border:1px solid var(--border);background:transparent;color:var(--text);border-radius:var(--radius);cursor:pointer;font-size:14px;text-align:left;display:flex;align-items:center;gap:8px}
 .new-chat-btn:hover{background:var(--surface)}
-.chat-list{flex:1;overflow-y:auto;padding:8px}
+.chat-list{flex:1;overflow-y:auto;padding:8px;-webkit-overflow-scrolling:touch}
 .chat-list .empty-sideless{padding:20px;color:var(--text-2);font-size:13px;text-align:center}
 .chat-item{padding:10px 12px;border-radius:8px;cursor:pointer;font-size:14px;color:var(--text-2);display:flex;align-items:center;gap:8px;margin-bottom:2px;transition:background .1s}
 .chat-item:hover{background:var(--surface)}
@@ -9158,33 +9613,40 @@ html,body{margin:0;padding:0;height:100%;background:var(--bg);color:var(--text);
 .chat-item .del{background:none;border:none;color:var(--text-2);cursor:pointer;padding:4px;border-radius:4px;display:none;font-size:12px;flex-shrink:0}
 .chat-item:hover .del{display:inline-flex}
 .chat-item .del:hover{background:rgba(239,68,68,.15);color:var(--danger)}
-.sidebar-foot{padding:12px;border-top:1px solid var(--border);font-size:12px;color:var(--text-2)}
+.sidebar-foot{padding:12px;border-top:1px solid var(--border);font-size:12px;color:var(--text-2);padding-bottom:calc(12px + env(safe-area-inset-bottom))}
 .sidebar-foot a{color:var(--text-2);text-decoration:none}
 .sidebar-foot a:hover{color:var(--text)}
-.main{flex:1;display:flex;flex-direction:column;min-width:0}
-.topbar{padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;min-height:56px}
+.main{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0}
+.topbar{padding:12px 20px;border-top:env(safe-area-inset-top) solid transparent;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;min-height:56px;flex-shrink:0;background:var(--bg)}
 .topbar .hamburger{display:none;background:none;border:none;color:var(--text);font-size:18px;cursor:pointer;padding:6px;border-radius:6px}
 .topbar .hamburger:hover{background:var(--surface)}
-.topbar h1{font-size:16px;font-weight:600;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.topbar h1{font-size:16px;font-weight:600;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;cursor:pointer;border-radius:6px;padding:4px 6px}
+.topbar h1:hover{background:var(--surface)}
+.topbar .rename{background:none;border:none;color:var(--text-2);cursor:pointer;padding:6px;border-radius:6px;font-size:14px}
+.topbar .rename:hover{background:var(--surface);color:var(--text)}
 .topbar .back{color:var(--text-2);font-size:13px;text-decoration:none;padding:6px 10px;border-radius:6px;border:1px solid var(--border);display:inline-flex;align-items:center;gap:6px}
 .topbar .back:hover{background:var(--surface);color:var(--text)}
-.messages{flex:1;overflow-y:auto;padding:20px;max-width:900px;margin:0 auto;width:100%}
-.empty-chat{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;color:var(--text-2);padding:20px}
+.messages{flex:1;overflow-y:auto;padding:20px;max-width:900px;margin:0 auto;width:100%;min-height:0;-webkit-overflow-scrolling:touch;scroll-behavior:smooth}
+.empty-chat{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100%;text-align:center;color:var(--text-2);padding:20px}
 .empty-chat .ic{font-size:40px;color:var(--accent);margin-bottom:16px}
-.empty-chat h2{color:var(--text);font-size:26px;margin:0 0 10px;font-weight:600}
-.empty-chat p{max-width:520px;line-height:1.6;margin:0 0 24px}
+.empty-chat h2{color:var(--text);font-size:24px;margin:0 0 10px;font-weight:600}
+.empty-chat p{max-width:520px;line-height:1.6;margin:0 0 24px;font-size:14px}
 .suggestions{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;width:100%;max-width:640px}
 .sugg{padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;font-size:13px;text-align:left;color:var(--text);line-height:1.5}
 .sugg:hover{background:var(--surface-2);border-color:#3a3a3a}
 .sugg b{display:block;margin-bottom:4px;color:var(--text);font-weight:600}
 .sugg span{color:var(--text-2);font-size:12px}
-.msg{display:flex;gap:12px;margin-bottom:22px;animation:fadeIn .2s ease}
+.msg{display:flex;gap:12px;margin-bottom:22px;animation:fadeIn .2s ease;position:relative}
 @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .msg .avatar{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
 .msg.user .avatar{background:var(--accent);color:#fff}
 .msg.assistant .avatar{background:var(--surface-2);color:var(--text)}
 .msg .body{flex:1;min-width:0}
-.msg .role{font-size:11px;font-weight:700;color:var(--text-2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.06em}
+.msg .role{font-size:11px;font-weight:700;color:var(--text-2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:8px}
+.msg .actions{display:flex;gap:4px;opacity:0;transition:opacity .15s}
+.msg:hover .actions{opacity:1}
+.msg .actions button{background:none;border:none;color:var(--text-2);cursor:pointer;padding:3px 6px;border-radius:4px;font-size:11px}
+.msg .actions button:hover{background:var(--surface-2);color:var(--text)}
 .msg .content{line-height:1.7;white-space:pre-wrap;word-wrap:break-word;overflow-wrap:break-word}
 .msg .content pre{background:#000;padding:14px;border-radius:8px;overflow-x:auto;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;margin:8px 0;line-height:1.5}
 .msg .content code{background:rgba(255,255,255,.08);padding:1px 6px;border-radius:4px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9em}
@@ -9199,22 +9661,26 @@ html,body{margin:0;padding:0;height:100%;background:var(--bg);color:var(--text);
 .thinking .dot:nth-child(2){animation-delay:.15s}
 .thinking .dot:nth-child(3){animation-delay:.3s}
 @keyframes bounce{0%,80%,100%{opacity:.3;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
-.composer{padding:12px 20px 20px;max-width:900px;margin:0 auto;width:100%}
+.composer{padding:12px 20px;padding-bottom:calc(20px + env(safe-area-inset-bottom));max-width:900px;margin:0 auto;width:100%;flex-shrink:0}
 .composer-inner{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;display:flex;gap:10px;align-items:flex-end;transition:border-color .15s}
 .composer-inner:focus-within{border-color:#3a3a3a}
-.composer textarea{flex:1;background:none;border:none;color:var(--text);font-family:inherit;font-size:15px;resize:none;max-height:220px;min-height:24px;line-height:1.5;outline:none;padding:0;overflow-y:auto}
+.composer textarea{flex:1;background:none;border:none;color:var(--text);font-family:inherit;font-size:15px;resize:none;max-height:180px;min-height:24px;line-height:1.5;outline:none;padding:0;overflow-y:auto}
 .composer .send{background:var(--accent);border:none;color:#fff;width:34px;height:34px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:opacity .15s}
 .composer .send:disabled{opacity:.35;cursor:not-allowed}
 .composer .send:not(:disabled):hover{background:#0d8a6a}
 .composer .hint{text-align:center;font-size:11px;color:var(--text-2);margin-top:8px}
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:5}
 @media (max-width:768px){
-    .sidebar{position:fixed;left:0;top:0;bottom:0;z-index:10;transform:translateX(-100%)}
+    .sidebar{position:fixed;left:0;top:0;bottom:0;z-index:10;transform:translateX(-100%);width:280px}
     .sidebar.open{transform:none}
     .topbar .hamburger{display:inline-flex}
     .overlay.show{display:block}
     .messages{padding:12px}
-    .composer{padding:12px}
+    .composer{padding:10px 12px;padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+    .msg .content{font-size:14px}
+    .msg .actions{opacity:1}
+    .empty-chat h2{font-size:20px}
+    .empty-chat p{font-size:13px}
 }
 </style></head>
 <body>
@@ -9236,7 +9702,8 @@ html,body{margin:0;padding:0;height:100%;background:var(--bg);color:var(--text);
     <main class="main">
         <header class="topbar">
             <button class="hamburger" onclick="toggleSidebar()" aria-label="Toggle menu"><i class="fa-solid fa-bars"></i></button>
-            <h1 id="chat-title">Nyxx Chat</h1>
+            <h1 id="chat-title" onclick="renameCurrent()">Nyxx Chat</h1>
+            <button class="rename" onclick="renameCurrent()" title="Rename"><i class="fa-solid fa-pen"></i></button>
             <a class="back" href="/"><i class="fa-solid fa-arrow-left"></i> Dashboard</a>
         </header>
         <div class="messages" id="messages"></div>
@@ -9291,7 +9758,7 @@ function toggleSidebar(force){
     s.classList.toggle('open',open);
     o.classList.toggle('show',open);
 }
-function autoGrow(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,220)+'px';}
+function autoGrow(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,180)+'px';}
 function onKey(e){
     if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}
 }
@@ -9324,10 +9791,11 @@ function renderMessages(){
         var m=currentMessages[i];
         var role=m.role==='user'?'user':'assistant';
         var initial=role==='user'?'U':'N';
+        var copyBtn='<button onclick="copyMsg('+i+')" title="Copy"><i class="fa-regular fa-copy"></i> Copy</button>';
         html+='<div class="msg '+role+'">'+
             '<div class="avatar">'+initial+'</div>'+
             '<div class="body">'+
-                '<div class="role">'+(role==='user'?'You':'Nyxx')+'</div>'+
+                '<div class="role">'+(role==='user'?'You':'Nyxx')+'<div class="actions">'+copyBtn+'</div></div>'+
                 '<div class="content">'+renderMarkdown(m.content||'')+'</div>'+
                 (m.toolCalls&&m.toolCalls.length?renderTools(m.toolCalls):'')+
             '</div>'+
@@ -9335,6 +9803,17 @@ function renderMessages(){
     }
     box.innerHTML=html;
     scrollBottom();
+}
+function copyMsg(idx){
+    var m=currentMessages[idx];
+    if(!m)return;
+    navigator.clipboard.writeText(m.content||'').then(function(){
+        var toast=document.createElement('div');
+        toast.textContent='Copied';
+        toast.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--surface-2);color:var(--text);padding:8px 16px;border-radius:8px;font-size:13px;z-index:100;animation:fadeIn .2s ease';
+        document.body.appendChild(toast);
+        setTimeout(function(){toast.remove();},1500);
+    }).catch(function(){});
 }
 function renderTools(tools){
     var h='<div class="tools">';
@@ -9366,6 +9845,7 @@ function appendLive(role,content,toolCalls){
 }
 function appendThinking(){
     var box=$('messages');
+    if(box.querySelector('.empty-chat'))box.innerHTML='';
     var div=document.createElement('div');
     div.className='msg assistant';
     div.id='thinking';
@@ -9434,6 +9914,19 @@ async function deleteSession(ev,key){
         await loadSessions();
     }catch(e){alert(e.message);}
 }
+async function renameCurrent(){
+    if(!currentKey){return;}
+    var cur=$('chat-title').textContent;
+    var nt=prompt('Rename this chat:',cur);
+    if(nt===null)return;
+    nt=nt.trim().slice(0,60);
+    if(!nt||nt===cur)return;
+    try{
+        await api('POST','/api/chat/sessions/'+encodeURIComponent(currentKey)+'/rename',{title:nt});
+        $('chat-title').textContent=nt;
+        await loadSessions();
+    }catch(e){alert(e.message);}
+}
 async function send(){
     if(sending)return;
     var input=$('input');
@@ -9446,31 +9939,29 @@ async function send(){
     autoGrow(input);
     appendLive('user',text);
     appendThinking();
-try{
-    var path=wasNew?'/api/chat/sessions/new/send':'/api/chat/sessions/'+encodeURIComponent(currentKey)+'/send';
-    var d=await api('POST',path,{message:text});
-    removeThinking();
-    if(d.sessionKey)currentKey=d.sessionKey;
+    try{
+        var path=wasNew?'/api/chat/sessions/new/send':'/api/chat/sessions/'+encodeURIComponent(currentKey)+'/send';
+        var d=await api('POST',path,{message:text});
+        removeThinking();
+        if(d.sessionKey)currentKey=d.sessionKey;
 
-    if(d && d.success === false){
-        // Server reported a real error (bad/missing API key, provider 4xx/5xx, etc.).
-        var errMsg='⚠️ '+(d.error||'The AI returned an error.');
-        appendLive('assistant',errMsg);
-    } else {
-        var respText=(d && d.response) || '(no response)';
-        appendLive('assistant',respText,(d && d.toolCalls)||[]);
-        currentMessages.push({role:'user',content:text});
-        currentMessages.push({role:'assistant',content:respText,toolCalls:(d && d.toolCalls)||[]});
-    }
+        if(d && d.success === false){
+            appendLive('assistant','⚠️ '+(d.error||'The AI returned an error.'));
+        } else {
+            var respText=(d && d.response) || '(no response)';
+            appendLive('assistant',respText,(d && d.toolCalls)||[]);
+            currentMessages.push({role:'user',content:text});
+            currentMessages.push({role:'assistant',content:respText,toolCalls:(d && d.toolCalls)||[]});
+        }
 
-    if(wasNew||!$('chat-title').textContent||$('chat-title').textContent==='Nyxx Chat'){
-        $('chat-title').textContent=text.replace(/\\s+/g,' ').slice(0,60);
-    }
-    loadSessions();
-}catch(e){
-    removeThinking();
-    appendLive('assistant','⚠️ '+e.message);
-}finally{
+        if(wasNew||!$('chat-title').textContent||$('chat-title').textContent==='Nyxx Chat'){
+            $('chat-title').textContent=text.replace(/\\s+/g,' ').slice(0,60);
+        }
+        loadSessions();
+    }catch(e){
+        removeThinking();
+        appendLive('assistant','⚠️ '+e.message);
+    }finally{
         sending=false;
         $('send-btn').disabled=false;
         $('input').focus();
@@ -9549,6 +10040,20 @@ async function deleteChatSession(env, url) {
     } catch (err) { return internalError(err); }
 }
 
+async function renameChatSession(request, env, url) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const key = decodeURIComponent(url.pathname.split('/')[4]);
+        if (!key || !key.startsWith('chat:')) return apiJson({ error: 'Invalid session key.' }, 400);
+        const body = await request.json().catch(() => ({}));
+        const title = String(body.title || '').trim().slice(0, 60);
+        if (!title) return apiJson({ error: 'Title is required.' }, 400);
+        await initializeDatabase(env.DB);
+        await env.DB.prepare('UPDATE mcp_sessions SET title = ? WHERE session_key = ?').bind(title, key).run();
+        return apiJson({ success: true, title });
+    } catch (err) { return internalError(err); }
+}
+
 async function sendChatMessage(request, env, url) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
@@ -9618,7 +10123,11 @@ async function sendChatMessage(request, env, url) {
             iterations: result.iterations,
         });
     } catch (err) {
-    return apiJson({ success: false, error: String(err.message || err) }, 500);
+        const msg = String(err.message || err);
+        // Expected, user-actionable errors → 200 so the client's d.success===false
+        // branch renders a friendly message instead of throwing a network error.
+        const isUserError = /^AI error \d{3}|MCP AI API key|MCP is disabled|Session not found|Invalid session key|Message is required|Message too long/i.test(msg);
+        return apiJson({ success: false, error: msg }, isUserError ? 200 : 500);
     }
 }
 
@@ -9899,16 +10408,18 @@ async function processTelegramUpdate(update, env) {
                         const feat = await env.DB.prepare('SELECT * FROM featured_replies WHERE command = ? AND enabled = 1').bind(bare).first();
                         if (feat) {
                             const argsTrimmed = args.trim();
-                            // Always delete the user's trigger message so the chat stays clean.
-                            await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id });
+                            // Respect the per-command delete_user_message flag (defaults to ON for legacy rows).
+                            if (feat.delete_user_message === undefined || feat.delete_user_message === null || feat.delete_user_message == 1) {
+                                await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id });
+                            }
 
-                            // Global permission: featured commands
-                            if (!await checkPermission(env, userId, 'featured_commands')) {
+                            // Per-chat permission: featured commands
+                            if (!await checkPermissionForChat(env, userId, 'featured_commands', chatId, msg.chat.type)) {
                                 await sendMessage(chatId, botStrings().unauthorized, BOT_TOKEN, 'HTML');
                                 return;
                             }
-                            // Global permission: /mcp featured commands
-                            if (feat.kind === 'mcp' && !await checkPermission(env, userId, 'mcp_telegram')) {
+                            // Per-chat permission: /mcp featured commands
+                            if (feat.kind === 'mcp' && !await checkPermissionForChat(env, userId, 'mcp_telegram', chatId, msg.chat.type)) {
                                 await sendMessage(chatId, botStrings().unauthorized, BOT_TOKEN, 'HTML');
                                 return;
                             }
@@ -10052,7 +10563,7 @@ async function processTelegramUpdate(update, env) {
                 }
 
                 if (aiWillHandle) {
-                    if (!await checkPermission(env, userId, 'ai_chat')) {
+                    if (!await checkPermissionForChat(env, userId, 'ai_chat', chatId, msg.chat.type)) {
                         await sendMessage(chatId, botStrings().unauthorized, BOT_TOKEN, 'HTML');
                         return;
                     }
@@ -10083,10 +10594,8 @@ async function processTelegramUpdate(update, env) {
                 if (targetCommand) {
                     const cmdRecord = await env.DB.prepare('SELECT * FROM commands WHERE command = ? AND enabled = 1').bind(targetCommand).first();
                     if (cmdRecord) {
-                        if (!await checkPermission(env, userId, 'commands')) {
-                            await sendMessage(chatId, botStrings().unauthorized, BOT_TOKEN, 'HTML');
-                            return;
-                        }
+                        // Permission check now lives inside executeCommand() so it also
+                        // protects command execution from inline-button callbacks.
                         await executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, msg.chat.type);
                         return;
                     }
@@ -10122,13 +10631,18 @@ async function processTelegramUpdate(update, env) {
             if (cb.from) await upsertUser(cb.from, { privateStarted: cb.message.chat.type === 'private' });
             const cbBlockType = cb.from ? await isUserBlocked(env, cb.from.id) : null;
             if (cbBlockType === 'full') { await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id }); return; }
-            if (cb.from && !await checkPermission(env, cb.from.id, 'callback_queries')) {
+            if (cb.from && !await checkPermissionForChat(env, cb.from.id, 'callback_queries', chatId, cb.message.chat.type)) {
                 await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
                 return;
             }
             if (data && data.startsWith('/')) {
                 if (data === '/start') {
                     const answer = tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
+                    if (!await checkPermission(env, cb.from.id, 'start_command')) {
+                        await sendMessage(chatId, botStrings().unauthorized, BOT_TOKEN, 'HTML');
+                        await answer;
+                        return;
+                    }
                     await sendDefaultStart(chatId, env, BOT_TOKEN);
                     await answer;
                     return;
@@ -10153,7 +10667,7 @@ async function processTelegramUpdate(update, env) {
                 const aiSettings = await getAiSettingsFromDb(env);
                 const answer = tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
                 if (aiSettings.ai_enabled === '1' && aiEnabledFor(cb.message.chat.type)) {
-                    if (!await checkPermission(env, cb.from.id, 'ai_chat')) {
+                    if (!await checkPermissionForChat(env, cb.from.id, 'ai_chat', chatId, cb.message.chat.type)) {
                         await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
                         return;
                     }
@@ -10188,6 +10702,10 @@ async function sendDefaultStart(chatId, env, BOT_TOKEN) {
 }
 async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatType) {
     const strings = botStrings();
+    if (!await checkPermissionForChat(env, userId, 'commands', chatId, chatType)) {
+        await sendMessage(chatId, strings.unauthorized, BOT_TOKEN, 'HTML');
+        return;
+    }
     await env.DB.prepare(`
         INSERT INTO sessions (token, user_id, command, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)
         ON CONFLICT(user_id) DO UPDATE SET token = excluded.token, command = excluded.command, updated_at = CURRENT_TIMESTAMP
