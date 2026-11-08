@@ -1,8 +1,8 @@
 // ============================================================================
-// NYXX — v4.5.0
+// NYXX — v4.6.0
 // Telegram bot builder + management dashboard for Cloudflare Workers + D1.
 // ============================================================================
-const VERSION = '4.5.0';
+const VERSION = '4.6.0';
 
 const RELAY_BASE = 'https://nyxx-proxy.nova-06272b19.workers.dev';
 const RELAY_EXCHANGE_SECRET = 'SECRET_ULTRA_PRO_MAX'; // Must match proxy.js
@@ -297,7 +297,7 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
 .row { display: flex; gap: var(--s3); align-items: center; flex-wrap: wrap; }
 .row.nowrap { flex-wrap: nowrap; }
 .grid { display: grid; gap: var(--s4); }
-.grid-2 { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.grid-2 { grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); }
 .grid-3 { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
 .switch {
     position: relative; width: 51px; height: 31px; flex-shrink: 0;
@@ -574,9 +574,18 @@ details.help > div { padding: 0 16px 14px; font-size: var(--fs-footnote); line-h
 .user-circle.yellow { background: var(--orange-soft); color: var(--orange); }
 
 /* ===== NEW: MENU ENTRY ===== */
-.menu-entry { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.menu-entry .menu-cmd { width: 150px; flex-shrink: 0; }
-.menu-entry .menu-desc { flex: 1 1 200px; min-width: 0; }
+.menu-entry { display: flex; gap: 8px; align-items: stretch; padding: 10px 12px; border: 1px solid var(--hairline); border-radius: var(--r-md); margin-bottom: 8px; background: var(--surface); }
+.menu-entry .menu-inputs { flex: 1 1 0; min-width: 0; display: flex; gap: 8px; }
+.menu-entry .menu-cmd { width: 160px; flex-shrink: 0; }
+.menu-entry .menu-desc { min-width: 0; }
+.menu-entry .menu-actions { display: flex; gap: 4px; align-items: center; flex-shrink: 0; }
+@media (max-width: 640px) {
+    .menu-entry { flex-direction: column; }
+    .menu-entry .menu-inputs { flex-direction: column; width: 100%; }
+    .menu-entry .menu-cmd { width: 100%; }
+    .menu-entry .menu-desc { width: 100%; }
+    .menu-entry .menu-actions { justify-content: center; }
+}
 
 /* ===== AUTH GATEWAY ===== */
 .auth-shell { min-height: calc(100vh - 200px); display: flex; align-items: center; justify-content: center; padding: var(--s6) 0; }
@@ -624,8 +633,6 @@ details.help > div { padding: 0 16px 14px; font-size: var(--fs-footnote); line-h
     .topbar:has(#update-pill:not(.hidden)) #status-pills { display: none !important; }
     .sticky-actions { margin: var(--s4) calc(-1 * var(--s4)) 0; }
     .stats { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
-    .menu-entry .menu-cmd { width: auto; flex: 1 1 auto; }
-    .menu-entry .menu-desc { flex-basis: 100%; }
     .sheet-body .row.nowrap { flex-wrap: wrap; }
     .sheet-body .row.nowrap > .input,
     .sheet-body .row.nowrap > select.input { flex: 1 1 140px; min-width: 0; }
@@ -649,9 +656,6 @@ details.help > div { padding: 0 16px 14px; font-size: var(--fs-footnote); line-h
         min-width: 0 !important;
     }
     .sheet-body .row.nowrap > .btn { flex: 0 0 auto !important; }
-    .menu-entry { flex-direction: column; align-items: stretch !important; }
-    .menu-entry .icon-btn { align-self: flex-start; }
-    .menu-entry .menu-cmd, .menu-entry .menu-desc { width: 100% !important; flex-basis: auto !important; }
 }
 
 /* Loading state for entire forms */
@@ -905,19 +909,20 @@ body { overflow-x: hidden; }
                     <div class="lead"><h1>Users</h1><p>People who started your bot, plus group members you chose to track.</p></div>
                     <div class="page-actions">
                         <button class="btn btn-gray btn-sm" onclick="checkAllUsers()"><i class="fa-solid fa-stethoscope"></i> Check all reachable</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteUnreachableUsers()"><i class="fa-solid fa-user-slash"></i> Delete unreachable</button>
                         <button class="btn btn-gray btn-sm" onclick="go('broadcast')"><i class="fa-solid fa-bullhorn"></i> Broadcast</button>
                         <button class="btn btn-gray btn-sm" onclick="loadUsers(true)"><i class="fa-solid fa-rotate"></i></button>
                     </div>
                 </div>
                 <div class="hint-banner">
                     <i class="fa-solid fa-circle-info"></i>
-                    <div><span class="badge green" style="margin-right:4px;"><i class="fa-solid fa-circle" style="font-size:8px;"></i></span> <b>Green</b> users started the bot — you can DM them. <span class="badge orange" style="margin-left:8px;margin-right:4px;"><i class="fa-solid fa-circle" style="font-size:8px;"></i></span> <b>Yellow</b> users only exist because of a group — they haven't pressed Start yet.</div>
+                    <div><span class="badge green" style="margin-right:4px;"><i class="fa-solid fa-circle" style="font-size:8px;"></i></span> <b>Green</b> users started the bot — you can DM them. <span class="badge orange" style="margin-left:8px;margin-right:4px;"><i class="fa-solid fa-circle" style="font-size:8px;"></i></span> <b>Yellow</b> users are <b>not reachable</b> — they never started the bot, or they blocked it. Safe to delete in bulk; admins and moderators are preserved.</div>
                 </div>
                 <div class="toolbar"><div class="search"><i class="fa-solid fa-magnifying-glass"></i><input id="user-search" placeholder="Search by name or username" oninput="debouncedUsers()"></div></div>
                 <div class="chips" id="user-filters">
                     <button class="chip active" data-filter="all" onclick="setUserFilter('all')">All</button>
                     <button class="chip" data-filter="private" onclick="setUserFilter('private')">Started bot</button>
-                    <button class="chip" data-filter="group" onclick="setUserFilter('group')">Group only</button>
+                    <button class="chip" data-filter="group" onclick="setUserFilter('group')">Not reachable</button>
                     <button class="chip" data-filter="admin" onclick="setUserFilter('admin')">Admins</button>
                     <button class="chip" data-filter="blocked" onclick="setUserFilter('blocked')">Blocked</button>
                 </div>
@@ -1038,7 +1043,7 @@ body { overflow-x: hidden; }
                     <div class="grid grid-2">
                         <div class="field">
                             <label class="field-label">Conversation memory</label>
-                            <select class="input" id="gm-memory">
+                            <select class="input" id="gm-memory-select">
                                 <option value="inherit">Inherit global</option>
                                 <option value="0">Disabled — no memory</option>
                                 <option value="5">Keep last 5 messages</option>
@@ -1048,13 +1053,16 @@ body { overflow-x: hidden; }
                             <span class="field-hint">How many past messages the AI sees when replying here.</span>
                         </div>
                         <div class="field">
-                            <label class="field-label">Mention required</label>
-                            <select class="input" id="gm-mention">
+                            <label class="field-label">When should it reply?</label>
+                            <select class="input" id="gm-ai-trigger">
                                 <option value="inherit">Inherit global</option>
-                                <option value="1">Yes — only when tagged (@yourbot)</option>
-                                <option value="0">No — reply to every text message</option>
+                                <option value="mention">Mention required (@yourbot)</option>
+                                <option value="reply">Reply required (reply to a bot message)</option>
+                                <option value="either">Mention or reply</option>
+                                <option value="both">Mention and reply</option>
+                                <option value="none">Every text message</option>
                             </select>
-                            <span class="field-hint">Recommended for busy groups: "Yes" avoids the bot butting into every conversation.</span>
+                            <span class="field-hint">Overrides the global group trigger. "On" above also overrides the global "Reply in groups" switch.</span>
                         </div>
                     </div>
                 </div>
@@ -1116,6 +1124,16 @@ body { overflow-x: hidden; }
                             </div>
                             <span class="field-hint">Only affects MCP-type featured commands.</span>
                         </div>
+                        <div class="field">
+                            <label class="field-label">/rules command</label>
+                            <div class="segmented" id="gm-rules-perm">
+                                <button data-v="inherit" onclick="setSeg('gm-rules-perm','inherit')">Inherit</button>
+                                <button data-v="everyone" onclick="setSeg('gm-rules-perm','everyone')">Everyone</button>
+                                <button data-v="moderator" onclick="setSeg('gm-rules-perm','moderator')">Mod+</button>
+                                <button data-v="admin" onclick="setSeg('gm-rules-perm','admin')">Admin</button>
+                            </div>
+                            <span class="field-hint">Who can see this group's rules via /rules.</span>
+                        </div>
                     </div>
                 </div>
 
@@ -1138,7 +1156,14 @@ body { overflow-x: hidden; }
                     <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-shield-halved"></i> Moderation</div></div>
                     <div class="switch-row"><div><div class="sw-label">Anti-flood</div><div class="sw-sub">Delete a member's messages after too many in a minute.</div></div><button class="switch" id="gm-flood-toggle" onclick="gmToggle('flood')"></button></div>
                     <div class="field" id="gm-flood-limit-wrap"><label class="field-label">Messages per minute before deletion</label><input type="number" class="input" id="gm-flood-limit" min="2" max="60" value="6"><span class="field-hint">Bot must be an admin in the group for this to work.</span></div>
-                    <div class="switch-row"><div><div class="sw-label">Block links</div><div class="sw-sub">Delete messages containing URLs from non-admins.</div></div><button class="switch" id="gm-link-toggle" onclick="gmToggle('link')"></button></div>
+                    <div class="switch-row"><div><div class="sw-label">Block links</div><div class="sw-sub">Delete messages containing URLs.</div></div><button class="switch" id="gm-link-toggle" onclick="gmToggle('link')"></button></div>
+                    <div class="field hidden" id="gm-link-level-wrap" style="margin-top:4px;">
+                        <label class="field-label">Who is exempt?</label>
+                        <div class="segmented" id="gm-link-level">
+                            <button data-v="admins" onclick="setSeg('gm-link-level','admins')">Admins only</button>
+                            <button data-v="admins_moderators" onclick="setSeg('gm-link-level','admins_moderators')">Admins + moderators</button>
+                        </div>
+                    </div>
                     <div class="switch-row"><div><div class="sw-label">Clean up service messages</div><div class="sw-sub">Delete "X joined", pinned notices and similar.</div></div><button class="switch" id="gm-service-toggle" onclick="gmToggle('service')"></button></div>
                     <div class="switch-row" style="margin-bottom:0;"><div><div class="sw-label">Track members in Users tab</div><div class="sw-sub">Off by default. When off, only members who DM the bot appear in Users.</div></div><button class="switch" id="gm-track-toggle" onclick="gmToggle('track')"></button></div>
                 </div>
@@ -1499,7 +1524,13 @@ body { overflow-x: hidden; }
                     </div>
                     <div class="grid grid-2">
                         <div class="field"><label class="field-label">Reply in groups</label><select class="input" id="ai-group"><option value="1">Yes</option><option value="0">No</option></select></div>
-                        <div class="field"><label class="field-label">Mention required</label><select class="input" id="ai-mention"><option value="1">Yes — only when tagged</option><option value="0">No — reply to all text</option></select><span class="field-hint">Recommended: Yes for busy groups.</span></div>
+                        <div class="field"><label class="field-label">When should it reply?</label><select class="input" id="ai-group-trigger">
+                            <option value="mention">Mention required (@bot)</option>
+                            <option value="reply">Reply required (reply to a bot message)</option>
+                            <option value="either">Mention or reply</option>
+                            <option value="both">Mention and reply</option>
+                            <option value="none">Every text message</option>
+                        </select><span class="field-hint">Default for groups. Each group can override this in the Groups tab.</span></div>
                         <div class="field"><label class="field-label">Memory</label>
                             <select class="input" id="ai-gmemory">
                                 <option value="0">Disabled</option><option value="5">Last 5 messages</option>
@@ -1529,7 +1560,7 @@ body { overflow-x: hidden; }
 
                 <div class="card">
                     <div class="card-head"><div class="card-title c-purple"><i class="fa-solid fa-keyboard"></i> Quick replies</div></div>
-                    <div class="switch-row"><div><div class="sw-label">One-time keyboard</div><div class="sw-sub">Hide after the first tap.</div></div><button class="switch on" id="ai-sq-once" onclick="toggleSwitch('ai-sq-once')"></button></div>
+                    <div class="switch-row"><div><div class="sw-label">One-time keyboard</div><div class="sw-sub">Telegram hides the keyboard after the user taps a button. It will re-appear on the next AI reply. Turn off to keep it always visible.</div></div><button class="switch on" id="ai-sq-once" onclick="toggleSwitch('ai-sq-once')"></button></div>
                     <div class="row" style="margin-bottom:10px;">
                         <input class="input" id="sq-label" placeholder="Button label" style="flex:1;">
                         <input class="input" id="sq-value" placeholder="Text to send when tapped" style="flex:1;">
@@ -2031,13 +2062,21 @@ crons = ["0 3 * * *"]</code></pre>
                 <div id="kbCmd-reply-list"></div>
                 <div id="kbCmd-reply-preview" class="kb-preview"></div>
                 <div class="row" style="margin-top:8px;font-size:13px;color:var(--text-3);">
-                    <label class="check"><input type="checkbox" id="kbCmd-reply-resize" checked> Resize</label>
-                    <label class="check"><input type="checkbox" id="kbCmd-reply-onetime"> One-time</label>
-                    <label class="check"><input type="checkbox" id="kbCmd-reply-persistent" checked> Persistent</label>
+                    <label class="check"><input type="checkbox" id="kbCmd-reply-resize" checked onchange="kbSettingChanged('kbCmd')"> Resize</label>
+                    <label class="check"><input type="checkbox" id="kbCmd-reply-onetime" onchange="kbSettingChanged('kbCmd')"> One-time</label>
+                    <label class="check"><input type="checkbox" id="kbCmd-reply-persistent" checked onchange="kbSettingChanged('kbCmd')"> Persistent</label>
                     <input class="input" id="kbCmd-reply-placeholder" placeholder="Input placeholder" style="flex:1;min-width:140px;" oninput="kbSettingChanged('kbCmd')">
                 </div>
             </div>
-            <div class="switch-row"><div><div class="sw-label">Admin only</div><div class="sw-sub">Only promoted users can run it.</div></div><button class="switch" id="cmd-admin" onclick="toggleSwitch('cmd-admin')"></button></div>
+            <div class="field">
+                <label class="field-label">Who can run it?</label>
+                <div class="segmented" id="cmd-access">
+                    <button data-v="everyone" onclick="setSeg('cmd-access','everyone')">Everyone</button>
+                    <button data-v="moderator" onclick="setSeg('cmd-access','moderator')">Moderator+</button>
+                    <button data-v="admin" onclick="setSeg('cmd-access','admin')">Admin only</button>
+                </div>
+                <span class="field-hint">Moderator+ allows moderators and admins. Group permission overrides still apply.</span>
+            </div>
             <div class="switch-row" style="margin-bottom:0;"><div><div class="sw-label">Enabled</div><div class="sw-sub">Disabled commands are hidden.</div></div><button class="switch on" id="cmd-enabled" onclick="toggleSwitch('cmd-enabled')"></button></div>
             <div class="err-box" id="cmd-error"></div>
         </div>
@@ -2081,9 +2120,9 @@ crons = ["0 3 * * *"]</code></pre>
                     <div id="kbMe-reply-list"></div>
                     <div id="kbMe-reply-preview" class="kb-preview"></div>
                     <div class="row" style="margin-top:8px;font-size:13px;color:var(--text-3);">
-                        <label class="check"><input type="checkbox" id="kbMe-reply-resize" checked> Resize</label>
-                        <label class="check"><input type="checkbox" id="kbMe-reply-onetime"> One-time</label>
-                        <label class="check"><input type="checkbox" id="kbMe-reply-persistent" checked> Persistent</label>
+                        <label class="check"><input type="checkbox" id="kbMe-reply-resize" checked onchange="kbSettingChanged('kbMe')"> Resize</label>
+                        <label class="check"><input type="checkbox" id="kbMe-reply-onetime" onchange="kbSettingChanged('kbMe')"> One-time</label>
+                        <label class="check"><input type="checkbox" id="kbMe-reply-persistent" checked onchange="kbSettingChanged('kbMe')"> Persistent</label>
                         <input class="input" id="kbMe-reply-placeholder" placeholder="Input placeholder" style="flex:1;min-width:140px;" oninput="kbSettingChanged('kbMe')">
                     </div>
                 </div>
@@ -2122,9 +2161,14 @@ crons = ["0 3 * * *"]</code></pre>
                 <textarea class="textarea" id="featured-failure" rows="2" placeholder="Shown if the action fails."></textarea>
                 <span class="field-hint">Leave empty to stay silent on failure.</span>
             </div>
-            <div class="switch-row">
-                <div><div class="sw-label">Admin only</div><div class="sw-sub">Only users with the admin role can run this command.</div></div>
-                <button class="switch" id="featured-admin" onclick="toggleSwitch('featured-admin')"></button>
+            <div class="field">
+                <label class="field-label">Who can run it?</label>
+                <div class="segmented" id="featured-access">
+                    <button data-v="everyone"  onclick="setSeg('featured-access','everyone')">Everyone</button>
+                    <button data-v="moderator" onclick="setSeg('featured-access','moderator')">Moderator+</button>
+                    <button data-v="admin"     onclick="setSeg('featured-access','admin')">Admin only</button>
+                </div>
+                <span class="field-hint">Per-group overrides still apply.</span>
             </div>
             <div class="switch-row">
                 <div><div class="sw-label">Delete the user's message</div><div class="sw-sub">Remove the trigger message from the chat automatically.</div></div>
@@ -2745,8 +2789,10 @@ openFeaturedModal = function (kind, item) {
     if (isMcp) title.textContent = (item ? 'Edit' : 'New') + ' MCP command';
     var hintDesc = $('featured-hint-desc');
     if (isMcp && hintDesc) hintDesc.innerHTML = 'Shown when <code>/mcp</code> is sent alone. Example: <code>Send a message or instruction for the MCP agent.</code>';
-    // Default admin_only ON for new MCP commands, off otherwise.
-    toggleSwitch('featured-admin', item ? !!item.admin_only : isMcp);
+    var acc = (item && item.access_level) ? item.access_level
+        : (item && item.admin_only ? 'admin'
+        : (isMcp ? 'admin' : 'everyone'));
+    setSeg('featured-access', acc);
 };
 
 // Patch saveFeatured to send kind + admin_only.
@@ -2754,13 +2800,15 @@ saveFeatured = async function () {
     var err = $('featured-error'); err.classList.remove('show');
     var command = $('featured-command').value.trim();
     if (!command || command === '/') { err.textContent = 'Command is required.'; err.classList.add('show'); return; }
+    var access = getSeg('featured-access') || 'everyone';
     var payload = {
         command: command,
         kind: featuredKind,
         content: $('featured-hint').value.trim(),
         success_text: $('featured-success').value.trim(),
         failure_text: $('featured-failure').value.trim(),
-        admin_only: sw('featured-admin') ? 1 : 0,
+        access_level: access,
+        admin_only: access === 'admin' ? 1 : 0,
         delete_user_message: sw('featured-delete-msg') ? 1 : 0,
         enabled: sw('featured-enabled') ? 1 : 0
     };
@@ -2783,7 +2831,11 @@ renderFeatured = function () {
             f.kind === 'buttons' ? '<span class="badge purple">Buttons</span>' :
             f.kind === 'mcp' ? '<span class="badge orange">MCP</span>' :
             '<span class="badge blue">DM</span>';
-        var adminBadge = f.admin_only ? '<span class="badge red"><i class="fa-solid fa-lock"></i> Admin</span>' : '';
+        var _acc = f.access_level || (f.admin_only ? 'admin' : 'everyone');
+        var adminBadge =
+            _acc === 'admin'     ? '<span class="badge red"><i class="fa-solid fa-lock"></i> Admin</span>' :
+            _acc === 'moderator' ? '<span class="badge role-badge-moderator"><i class="fa-solid fa-shield"></i> Mod+</span>' :
+                                   '<span class="badge green"><i class="fa-solid fa-users"></i> Everyone</span>';
         var delBadge = (f.delete_user_message === undefined || f.delete_user_message === null || f.delete_user_message == 1)
             ? '<span class="badge featured-delete-badge"><i class="fa-solid fa-eraser"></i> auto-delete</span>' : '';
         var blocks = '';
@@ -2810,8 +2862,8 @@ editFeatured = async function (id) {
     if (!item) return;
     var kind = item.kind === 'buttons' ? 'buttons' : (item.kind === 'mcp' ? 'mcp' : 'text');
     openFeaturedModal(kind, item);
-    // Pre-fill admin switch from saved value.
-    setTimeout(function () { toggleSwitch('featured-admin', !!item.admin_only); }, 0);
+    var acc = item.access_level || (item.admin_only ? 'admin' : 'everyone');
+    setTimeout(function () { setSeg('featured-access', acc); }, 0);
 };
 
 async function checkStatus() {
@@ -2869,13 +2921,11 @@ function enterDashboard() {
   loadSettings(true);
   autoCheckUpdate();
 
+  // After the OAuth callback we land here with ?oauth=success.
+  // loadUpdateTab() handles the toast and clearing the URL parameter.
   var params = new URLSearchParams(window.location.search);
   if (params.get('oauth') === 'success') {
     go('update');
-    toast('Connected to Cloudflare via OAuth.', 'success');
-    params.delete('oauth');
-    try { history.replaceState(null, '', window.location.pathname + (params.toString() ? '?' + params.toString() : '')); } catch (e) {}
-    setTimeout(loadCfOAuthStatus, 100);
   }
 }
 async function submitSetup() {
@@ -2958,6 +3008,14 @@ var children = {};
 var crumbPath = [];
 var currentParent = null;
 var editingCmd = null;
+function commandAccessLevel(c) {
+    var level = c && c.access_level;
+    if (level === 'admin' || level === 'moderator' || level === 'everyone') {
+        if (level === 'everyone' && c.is_admin_only) return 'admin';
+        return level;
+    }
+    return c && c.is_admin_only ? 'admin' : 'everyone';
+}
 
 async function loadCommands(force) {
     var box = $('cmd-list');
@@ -2999,7 +3057,7 @@ function renderCommands() {
                 '<div class="lr-sub">' + (c.response_type === 'photo' ? 'Photo' : 'Text') + (kids ? ' · ' + kids + ' sub-command' + (kids > 1 ? 's' : '') : '') + '</div>' +
             '</div>' +
             '<span class="badge ' + (c.enabled == 1 ? 'green' : 'red') + '">' + (c.enabled == 1 ? 'On' : 'Off') + '</span>' +
-            (c.is_admin_only == 1 ? '<span class="badge purple">Admin</span>' : '') +
+            (commandAccessLevel(c) === 'admin' ? '<span class="badge purple">Admin</span>' : (commandAccessLevel(c) === 'moderator' ? '<span class="badge purple">Mod+</span>' : '')) +
             '<div class="lr-actions">' +
                 '<div class="lr-actions-desktop" style="display:flex;gap:4px;">' +
                     '<button class="icon-btn" onclick="moveCmd(' + i + ',-1)" ' + (i === 0 ? 'disabled' : '') + ' aria-label="Move up"><i class="fa-solid fa-arrow-up"></i></button>' +
@@ -3067,7 +3125,7 @@ async function openCommandModal(cmd, parent) {
         $('cmd-content').value = editingCmd.content || '';
         $('cmd-media').value = editingCmd.media_url || '';
         parentSel.value = editingCmd.parent || '';
-        toggleSwitch('cmd-admin', !!editingCmd.is_admin_only);
+        setSeg('cmd-access', commandAccessLevel(editingCmd));
         toggleSwitch('cmd-enabled', editingCmd.enabled != 0);
         if (editingCmd.buttons_json) { kbCmd.loadInline(editingCmd.buttons_json); toggleSwitch('cmd-inline-toggle', true); show($('cmd-inline-section'), true); }
         if (editingCmd.show_reply_keyboard) { kbCmd.loadReply(editingCmd.reply_keyboard_json); toggleSwitch('cmd-reply-toggle', true); show($('cmd-reply-section'), true); }
@@ -3076,7 +3134,7 @@ async function openCommandModal(cmd, parent) {
         $('cmd-name').value = ''; $('cmd-type').value = 'text';
         $('cmd-content').value = ''; $('cmd-media').value = '';
         parentSel.value = parent || currentParent || '';
-        toggleSwitch('cmd-admin', false); toggleSwitch('cmd-enabled', true);
+        setSeg('cmd-access', 'everyone'); toggleSwitch('cmd-enabled', true);
     }
     toggleMedia();
     $('cmd-modal').classList.remove('hidden');
@@ -3089,13 +3147,15 @@ function editCommand(name) {
 }
 async function saveCommand() {
     var err = $('cmd-error'); err.classList.remove('show');
+    var accessLevel = getSeg('cmd-access') || 'everyone';
     var payload = {
         command: $('cmd-name').value.trim(),
         parent: $('cmd-parent').value || null,
         response_type: $('cmd-type').value,
         content: $('cmd-content').value.trim(),
         media_url: $('cmd-media').value.trim(),
-        is_admin_only: sw('cmd-admin') ? 1 : 0,
+        access_level: accessLevel,
+        is_admin_only: accessLevel === 'admin' ? 1 : 0,
         enabled: sw('cmd-enabled') ? 1 : 0,
         buttons_json: kbCmd.inlineJSON() ? JSON.stringify(kbCmd.inlineJSON()) : '',
         show_reply_keyboard: sw('cmd-reply-toggle') ? 1 : 0,
@@ -3166,12 +3226,20 @@ function renderMenu() {
     box.innerHTML = menuEntries.map(function (e, i) {
         var fixed = e.command === 'start';
         return '<div class="menu-entry">' +
-            '<button class="icon-btn" onclick="moveMenu(' + i + ',-1)" ' + (i === 0 ? 'disabled' : '') + ' aria-label="Move up" style="flex-shrink:0;"><i class="fa-solid fa-arrow-up"></i></button>' +
-            '<button class="icon-btn" onclick="moveMenu(' + i + ',1)" ' + (i === menuEntries.length - 1 ? 'disabled' : '') + ' aria-label="Move down" style="flex-shrink:0;"><i class="fa-solid fa-arrow-down"></i></button>' +
-            '<input class="input mono menu-cmd" value="' + esc(e.command) + '" ' + (fixed ? 'readonly' : '') + ' oninput="menuEntries[' + i + '].command=this.value">' +
-            '<input class="input menu-desc" value="' + esc(e.description) + '" placeholder="Description" oninput="menuEntries[' + i + '].description=this.value">' +
-            (fixed ? '<span class="badge" title="Fixed" style="flex-shrink:0;"><i class="fa-solid fa-lock"></i></span>' : '<button class="icon-btn danger" onclick="removeMenu(' + i + ')" aria-label="Remove" style="flex-shrink:0;"><i class="fa-regular fa-trash-can"></i></button>') +
-            '</div>';
+            '<div class="menu-inputs">' +
+                '<input class="input mono menu-cmd" value="' + esc(e.command) + '" ' + (fixed ? 'readonly' : '') +
+                    ' oninput="menuEntries[' + i + '].command=this.value" placeholder="/command">' +
+                '<input class="input menu-desc" value="' + esc(e.description) + '"' +
+                    ' placeholder="Description" oninput="menuEntries[' + i + '].description=this.value">' +
+            '</div>' +
+            '<div class="menu-actions">' +
+                '<button class="icon-btn" onclick="moveMenu(' + i + ',-1)" ' + (i === 0 ? 'disabled' : '') + ' aria-label="Move up"><i class="fa-solid fa-arrow-up"></i></button>' +
+                '<button class="icon-btn" onclick="moveMenu(' + i + ',1)" ' + (i === menuEntries.length - 1 ? 'disabled' : '') + ' aria-label="Move down"><i class="fa-solid fa-arrow-down"></i></button>' +
+                (fixed
+                    ? '<span class="badge" title="Fixed" style="height: 36px;width: 36px;justify-content: center;align-items: center;"><i class="fa-solid fa-lock"></i></span>'
+                    : '<button class="icon-btn danger" onclick="removeMenu(' + i + ')" aria-label="Remove"><i class="fa-regular fa-trash-can"></i></button>') +
+            '</div>' +
+        '</div>';
     }).join('');
 }
 function addMenuRow() { menuEntries.push({ command: '', description: '' }); renderMenu(); }
@@ -3260,7 +3328,9 @@ function setUserFilter(f) {
 function userCircle(u) {
     var cls = u.private_started == 1 ? 'green' : 'yellow';
     var initial = (u.first_name || '?').charAt(0).toUpperCase();
-    var title = u.private_started == 1 ? 'Started the bot — you can DM them' : 'Group only — has not pressed Start';
+    var title = u.private_started == 1
+        ? 'Started the bot — you can DM them'
+        : 'Not reachable — has not started the bot (or blocked it)';
     return '<div class="user-circle ' + cls + '" title="' + title + '">' + esc(initial) + '</div>';
 }
 async function loadUsers(force) {
@@ -3324,6 +3394,17 @@ async function checkAllUsers() {
     }
     toast('Checked ' + loaded + ' users.');
     loadUsers();
+}
+async function deleteUnreachableUsers() {
+    var ok = await confirmDialog(
+        'Delete every non-admin user who has never started the bot? Their AI memory, DM history and blocks are removed. Admins and moderators are preserved. This cannot be undone.',
+        'Delete unreachable users', true);
+    if (!ok) return;
+    try {
+        var d = await api('POST', '/api/users/delete_unreachable');
+        toast('Deleted ' + (d.deleted || 0) + ' user(s).');
+        loadUsers(true);
+    } catch (e) { toast(e.message, 'error'); }
 }
 async function deleteUser(id, name) {
     var ok = await confirmDialog('Delete ' + (name || 'this user') + '? Their AI memory, direct messages and blocks are removed. This cannot be undone.', 'Delete user');
@@ -3711,18 +3792,24 @@ function applyGroupSettings(s) {
     setSeg('gm-ai-perm', s.ai_chat_permission || 'inherit');
     setSeg('gm-callback-perm', s.callback_queries_permission || 'inherit');
     setSeg('gm-mcp-perm', s.mcp_telegram_permission || 'inherit');
-    $('gm-memory').value = s.memory === undefined ? 'inherit' : String(s.memory);
-    $('gm-mention').value = s.mention === undefined ? 'inherit' : String(s.mention);
+    setSeg('gm-rules-perm', s.rules_command_permission || 'inherit');
+    setSeg('gm-link-level', s.link_filter_level || 'admins');
+    $('gm-memory-select').value = s.memory === undefined ? 'inherit' : String(s.memory);
+    $('gm-ai-trigger').value = s.ai_trigger || 'inherit';
     toggleSwitch('gm-welcome-toggle', !!s.welcome_enabled); $('gm-welcome-text').value = s.welcome_text || '';
     $('gm-rules').value = s.rules_text || '';
     toggleSwitch('gm-flood-toggle', !!s.anti_flood); $('gm-flood-limit').value = s.flood_limit || 6;
     toggleSwitch('gm-link-toggle', !!s.link_filter);
     toggleSwitch('gm-service-toggle', !!s.auto_delete_service);
     toggleSwitch('gm-track-toggle', !!s.track_members);
+    show($('gm-flood-limit-wrap'), !!s.anti_flood);
+    show($('gm-link-level-wrap'), !!s.link_filter);
 }
 function gmToggle(key) {
     var map = { welcome: 'gm-welcome-toggle', flood: 'gm-flood-toggle', link: 'gm-link-toggle', service: 'gm-service-toggle', track: 'gm-track-toggle' };
-    toggleSwitch(map[key]);
+    var on = toggleSwitch(map[key]);
+    if (key === 'flood') show($('gm-flood-limit-wrap'), on);
+    if (key === 'link') show($('gm-link-level-wrap'), on);
 }
 function gmSet(k, v) { setSeg('gm-ai-mode', v); }
 async function saveGroupSettings() {
@@ -3733,7 +3820,9 @@ async function saveGroupSettings() {
         ai_chat_permission: getSeg('gm-ai-perm') || 'inherit',
         callback_queries_permission: getSeg('gm-callback-perm') || 'inherit',
         mcp_telegram_permission: getSeg('gm-mcp-perm') || 'inherit',
-        memory: $('gm-memory').value, mention: $('gm-mention').value,
+        rules_command_permission: getSeg('gm-rules-perm') || 'inherit',
+        link_filter_level: getSeg('gm-link-level') || 'admins',
+        memory: $('gm-memory-select').value, ai_trigger: $('gm-ai-trigger').value,
         welcome_enabled: sw('gm-welcome-toggle'), welcome_text: $('gm-welcome-text').value, rules_text: $('gm-rules').value,
         anti_flood: sw('gm-flood-toggle'), flood_limit: parseInt($('gm-flood-limit').value) || 6,
         link_filter: sw('gm-link-toggle'), auto_delete_service: sw('gm-service-toggle'), track_members: sw('gm-track-toggle')
@@ -3770,8 +3859,13 @@ async function syncGroup() {
             badge.className = 'badge ' + (d.is_active ? 'green' : 'red');
             badge.innerHTML = '<i class="fa-solid fa-circle" style="font-size:8px;"></i> ' + (d.is_active ? 'Active' : 'Left / removed');
         }
+        if (d.title) { manageGroup.title = d.title; $('gm-title').textContent = d.title; }
+        if (d.member_count !== undefined) manageGroup.member_count = d.member_count;
+        $('gm-cards').innerHTML =
+            kvCard('Members tracked', manageGroup.member_count || 0) +
+            kvCard('Added', fmtTime(manageGroup.added_at)) +
+            kvCard('Last active', fmtTime(manageGroup.last_active));
         toast(d.is_active ? 'Group synced — bot is present.' : 'Group synced — bot is NOT in this group.', d.is_active ? 'success' : 'error');
-        if (d.title) { $('gm-title').textContent = d.title; }
     } catch (e) { toast(e.message, 'error'); }
 }
 
@@ -4109,6 +4203,12 @@ function createKeyboardBuilder(prefix, opts) {
         }
         renderInline();
     }
+    function updateSettingsUi() {
+        if (el('reply-resize')) el('reply-resize').checked = reply.resize !== false;
+        if (el('reply-onetime')) el('reply-onetime').checked = !!reply.one_time;
+        if (el('reply-persistent')) el('reply-persistent').checked = reply.persistent !== false;
+        if (el('reply-placeholder')) el('reply-placeholder').value = reply.placeholder || '';
+    }
     function loadReply(raw) {
         reply = { rows: [], actions: {}, resize: true, one_time: false, persistent: true, placeholder: '' };
         if (raw) {
@@ -4125,6 +4225,7 @@ function createKeyboardBuilder(prefix, opts) {
                 }
             } catch (e) {}
         }
+        updateSettingsUi();
         renderReply();
     }
     function inlineJSON() { return inline.length ? { v: 2, inline: inline } : null; }
@@ -4132,7 +4233,7 @@ function createKeyboardBuilder(prefix, opts) {
         if (!reply.rows.length) return null;
         return { v: 2, reply: { rows: reply.rows, actions: reply.actions, resize: reply.resize, one_time: reply.one_time, persistent: reply.persistent, placeholder: reply.placeholder } };
     }
-    function reset() { inline = []; reply = { rows: [], actions: {}, resize: true, one_time: false, persistent: true, placeholder: '' }; renderInline(); renderReply(); }
+    function reset() { inline = []; reply = { rows: [], actions: {}, resize: true, one_time: false, persistent: true, placeholder: '' }; updateSettingsUi(); renderInline(); renderReply(); }
     function populateCommands() {
         ['inline-cmd', 'reply-cmd'].forEach(function (id) {
             var sel = el(id); if (!sel) return;
@@ -4299,7 +4400,7 @@ function renderAi(s) {
     $('ai-private').value = s.ai_private_reply || '1';
     $('ai-memory').value = s.ai_memory || '0';
     $('ai-group').value = s.ai_group_reply || '1';
-    $('ai-mention').value = s.ai_group_mention || '1';
+    $('ai-group-trigger').value = s.ai_group_trigger || (s.ai_group_mention === '0' ? 'none' : 'mention');
     $('ai-gmemory').value = s.ai_group_memory || '0';
     $('ai-rate').value = s.ai_rate_limit || '10';
     $('ai-grate').value = s.ai_global_rate_limit || '0';
@@ -4431,7 +4532,7 @@ function collectAi() {
         ai_ignore_prefixes: $('ai-prefixes').value.trim(),
         ai_ignore_bots: $('ai-ignore-bots').value, ai_ignore_forwarded: $('ai-ignore-fwd').value,
         ai_private_reply: $('ai-private').value, ai_memory: $('ai-memory').value,
-        ai_group_reply: $('ai-group').value, ai_group_mention: $('ai-mention').value, ai_group_memory: $('ai-gmemory').value,
+        ai_group_reply: $('ai-group').value, ai_group_trigger: $('ai-group-trigger').value, ai_group_memory: $('ai-gmemory').value,
         ai_rate_limit: $('ai-rate').value, ai_global_rate_limit: $('ai-grate').value,
         ai_global_rate_window: $('ai-gwindow').value, ai_response_delay: $('ai-delay').value,
         ai_typing_indicator: sw('ai-typing') ? '1' : '0', ai_retry_on_failure: sw('ai-retry') ? '1' : '0',
@@ -5204,6 +5305,7 @@ export default {
                 if (request.method === 'PUT') return await updateAiMessage(request, env, url);
                 if (request.method === 'DELETE') return await deleteAiMessage(env, url);
             }
+            if (request.method === 'POST' && url.pathname === '/api/users/delete_unreachable') return await deleteUnreachableUsers(env);
             if (request.method === 'DELETE' && /^\/api\/users\/[0-9]+$/.test(url.pathname)) return await deleteUser(request, env, url);
 
             if (request.method === 'GET' && url.pathname === '/api/groups') return await getGroups(env);
@@ -5598,7 +5700,7 @@ async function demoteAdminHandler(request, env) {
 // DATABASE
 // ============================================================================
 const dbInitCache = new WeakMap();
-const SCHEMA_VERSION = 10;
+const SCHEMA_VERSION = 12;
 
 const MIGRATIONS = {
     2: [
@@ -5666,6 +5768,14 @@ const MIGRATIONS = {
     10: [
         `ALTER TABLE featured_replies ADD COLUMN delete_user_message INTEGER DEFAULT 1`,
     ],
+    11: [
+        `ALTER TABLE commands ADD COLUMN access_level TEXT DEFAULT 'everyone'`,
+        `UPDATE commands SET access_level = 'admin' WHERE is_admin_only = 1 AND (access_level IS NULL OR access_level = 'everyone')`,
+    ],
+    12: [
+        `ALTER TABLE featured_replies ADD COLUMN access_level TEXT DEFAULT 'everyone'`,
+        `UPDATE featured_replies SET access_level = 'admin' WHERE admin_only = 1 AND (access_level IS NULL OR access_level = 'everyone')`,
+    ],
 };
 
 async function initializeDatabase(db) {
@@ -5673,7 +5783,7 @@ async function initializeDatabase(db) {
     const schema = `
         CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT);
         CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT, first_name TEXT, role TEXT DEFAULT 'user', is_premium BOOLEAN DEFAULT 0, private_started BOOLEAN DEFAULT 0, last_group_id INTEGER, last_active DATETIME DEFAULT CURRENT_TIMESTAMP);
-        CREATE TABLE IF NOT EXISTS commands (command TEXT PRIMARY KEY, parent TEXT, response_type TEXT DEFAULT 'text', content TEXT, media_url TEXT, buttons_json TEXT, is_admin_only BOOLEAN DEFAULT 0, enabled BOOLEAN DEFAULT 1, show_reply_keyboard BOOLEAN DEFAULT 0, reply_keyboard_json TEXT, order_idx INTEGER DEFAULT 0);
+        CREATE TABLE IF NOT EXISTS commands (command TEXT PRIMARY KEY, parent TEXT, response_type TEXT DEFAULT 'text', content TEXT, media_url TEXT, buttons_json TEXT, is_admin_only BOOLEAN DEFAULT 0, access_level TEXT DEFAULT 'everyone', enabled BOOLEAN DEFAULT 1, show_reply_keyboard BOOLEAN DEFAULT 0, reply_keyboard_json TEXT, order_idx INTEGER DEFAULT 0);
         CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, user_id INTEGER UNIQUE, command TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP);
         CREATE TABLE IF NOT EXISTS logs (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, action TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP);
         CREATE TABLE IF NOT EXISTS ai_messages (id INTEGER PRIMARY KEY AUTOINCREMENT, chat_id INTEGER, role TEXT, content TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP);
@@ -5685,7 +5795,7 @@ async function initializeDatabase(db) {
         CREATE TABLE IF NOT EXISTS broadcast_recipients (broadcast_id INTEGER NOT NULL, chat_id INTEGER NOT NULL, message_id INTEGER, PRIMARY KEY (broadcast_id, chat_id));
         CREATE TABLE IF NOT EXISTS groups (id INTEGER PRIMARY KEY, title TEXT, type TEXT, username TEXT, added_at DATETIME DEFAULT CURRENT_TIMESTAMP, last_active DATETIME DEFAULT CURRENT_TIMESTAMP, is_active BOOLEAN DEFAULT 1, settings_json TEXT, member_count INTEGER DEFAULT 0);
         CREATE TABLE IF NOT EXISTS group_flood (chat_id INTEGER, user_id INTEGER, minute INTEGER, count INTEGER DEFAULT 0, PRIMARY KEY (chat_id, user_id, minute));
-        CREATE TABLE IF NOT EXISTS featured_replies (id INTEGER PRIMARY KEY AUTOINCREMENT, command TEXT UNIQUE NOT NULL, kind TEXT DEFAULT 'text', content TEXT, buttons_json TEXT, success_text TEXT DEFAULT '', failure_text TEXT DEFAULT '', enabled BOOLEAN DEFAULT 1, created_at DATETIME DEFAULT CURRENT_TIMESTAMP);
+        CREATE TABLE IF NOT EXISTS featured_replies (id INTEGER PRIMARY KEY AUTOINCREMENT, command TEXT UNIQUE NOT NULL, kind TEXT DEFAULT 'text', content TEXT, buttons_json TEXT, success_text TEXT DEFAULT '', failure_text TEXT DEFAULT '', enabled BOOLEAN DEFAULT 1, access_level TEXT DEFAULT 'everyone', created_at DATETIME DEFAULT CURRENT_TIMESTAMP);
         CREATE INDEX IF NOT EXISTS idx_commands_parent ON commands(parent);
         CREATE INDEX IF NOT EXISTS idx_ai_messages_chat ON ai_messages(chat_id);
         CREATE INDEX IF NOT EXISTS idx_dm_messages_chat ON dm_messages(chat_id);
@@ -5774,9 +5884,8 @@ async function getStatus(env) {
 async function handleSetup(request, env) {
     if (!env.DB) return apiJson({ error: 'Database is not connected. Please check your D1 binding.' }, 500);
     await initializeDatabase(env.DB);
-    const envPass = env.ADMIN_PASS || null;
     const existing = await getSetting(env.DB, 'admin_password');
-    if (existing && !envPass) return apiJson({ error: 'Admin password is already set. Please sign in.' }, 400);
+    if (existing) return apiJson({ error: 'Admin password is already set. Please sign in.' }, 400);
     const body = await request.json();
     const { botToken, adminPassword } = body;
     if (!adminPassword || adminPassword.length < 6) return apiJson({ error: 'Password must be at least 6 characters.' }, 400);
@@ -6262,6 +6371,29 @@ function invalidateReplyButtonMap() { replyButtonMapCache = { data: null, fetche
 // ============================================================================
 // COMMANDS
 // ============================================================================
+const COMMAND_ACCESS_LEVELS = ['everyone', 'moderator', 'admin'];
+function normalizeCommandAccessLevel(value) {
+    return COMMAND_ACCESS_LEVELS.includes(value) ? value : null;
+}
+function effectiveCommandAccess(row) {
+    if (!row) return 'everyone';
+    const level = normalizeCommandAccessLevel(row.access_level);
+    if (level && level !== 'everyone') return level;
+    // Legacy rows predate access_level: honour their admin-only flag.
+    if (row.is_admin_only) return 'admin';
+    return level || 'everyone';
+}
+async function canUseCommandAccess(env, userId, access) {
+    if (access === 'admin') return await isAdminUser(env, userId);
+    if (access === 'moderator') return await isModeratorOrAbove(env, userId);
+    return true;
+}
+function resolveCommandAccessInput(value, adminOnlyValue, existing) {
+    const explicit = normalizeCommandAccessLevel(value);
+    if (explicit) return explicit;
+    if (adminOnlyValue !== undefined && adminOnlyValue !== null) return adminOnlyValue ? 'admin' : 'everyone';
+    return effectiveCommandAccess(existing);
+}
 async function getCommands(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
@@ -6288,11 +6420,12 @@ async function createCommand(request, env) {
         if (parent && parent === command) return apiJson({ error: 'A command cannot be its own parent.' }, 400);
         await initializeDatabase(env.DB);
         if (parent && await commandIsDescendant(env.DB, command, parent)) return apiJson({ error: 'You cannot nest a command inside its own child.' }, 400);
+        const accessLevel = resolveCommandAccessInput(body.access_level, is_admin_only, null);
         const maxOrder = await env.DB.prepare('SELECT MAX(order_idx) as max FROM commands').first();
         const orderIdx = (maxOrder && maxOrder.max !== null) ? maxOrder.max + 1 : 0;
         try {
-            await env.DB.prepare(`INSERT INTO commands (command, parent, response_type, content, media_url, buttons_json, is_admin_only, enabled, show_reply_keyboard, reply_keyboard_json, order_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-                .bind(command, parent || null, response_type || 'text', content, media_url || '', buttons_json || '', is_admin_only ? 1 : 0, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', orderIdx).run();
+            await env.DB.prepare(`INSERT INTO commands (command, parent, response_type, content, media_url, buttons_json, is_admin_only, access_level, enabled, show_reply_keyboard, reply_keyboard_json, order_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+                .bind(command, parent || null, response_type || 'text', content, media_url || '', buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', orderIdx).run();
         } catch (e) { if (String(e.message || '').includes('UNIQUE')) return apiJson({ error: `A command named "${command}" already exists.` }, 400); throw e; }
         invalidateReplyButtonMap();
         return apiJson({ success: true });
@@ -6324,12 +6457,14 @@ async function updateCommand(request, env) {
         if (!command || !content) return apiJson({ error: 'Please fill in both the command and its content.' }, 400);
         if (parent && parent === command) return apiJson({ error: 'A command cannot be its own parent.' }, 400);
         await initializeDatabase(env.DB);
+        const existing = await env.DB.prepare('SELECT access_level, is_admin_only FROM commands WHERE command = ?').bind(oldCommand).first();
+        const accessLevel = resolveCommandAccessInput(body.access_level, is_admin_only, existing);
         if (command !== oldCommand) {
             const clash = await env.DB.prepare('SELECT command FROM commands WHERE command = ?').bind(command).first();
             if (clash) return apiJson({ error: `A command named "${command}" already exists.` }, 400);
             if (parent && await commandIsDescendant(env.DB, command, parent)) return apiJson({ error: 'You cannot nest a command inside its own child.' }, 400);
-            await env.DB.prepare(`UPDATE commands SET command = ?, parent = ?, response_type = ?, content = ?, media_url = ?, buttons_json = ?, is_admin_only = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ? WHERE command = ?`)
-                .bind(command, parent || null, response_type || 'text', content, media_url || '', buttons_json || '', is_admin_only ? 1 : 0, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', oldCommand).run();
+            await env.DB.prepare(`UPDATE commands SET command = ?, parent = ?, response_type = ?, content = ?, media_url = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ? WHERE command = ?`)
+                .bind(command, parent || null, response_type || 'text', content, media_url || '', buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', oldCommand).run();
             await env.DB.prepare('UPDATE commands SET parent = ? WHERE parent = ?').bind(command, oldCommand).run();
             const refRows = await env.DB.prepare('SELECT command, buttons_json, reply_keyboard_json FROM commands WHERE buttons_json LIKE ? OR reply_keyboard_json LIKE ?').bind(`%${oldCommand}%`, `%${oldCommand}%`).all();
             for (const row of refRows.results) {
@@ -6341,8 +6476,8 @@ async function updateCommand(request, env) {
             }
         } else {
             if (parent && await commandIsDescendant(env.DB, command, parent)) return apiJson({ error: 'You cannot nest a command inside its own child.' }, 400);
-            await env.DB.prepare(`UPDATE commands SET parent = ?, response_type = ?, content = ?, media_url = ?, buttons_json = ?, is_admin_only = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ? WHERE command = ?`)
-                .bind(parent || null, response_type || 'text', content, media_url || '', buttons_json || '', is_admin_only ? 1 : 0, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', command).run();
+            await env.DB.prepare(`UPDATE commands SET parent = ?, response_type = ?, content = ?, media_url = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ? WHERE command = ?`)
+                .bind(parent || null, response_type || 'text', content, media_url || '', buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', command).run();
         }
         invalidateReplyButtonMap();
         return apiJson({ success: true });
@@ -6387,7 +6522,7 @@ async function exportCommandPack(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
-        const commands = await env.DB.prepare('SELECT command, parent, response_type, content, media_url, buttons_json, is_admin_only, enabled, show_reply_keyboard, reply_keyboard_json FROM commands ORDER BY order_idx, command').all();
+        const commands = await env.DB.prepare('SELECT command, parent, response_type, content, media_url, buttons_json, is_admin_only, access_level, enabled, show_reply_keyboard, reply_keyboard_json FROM commands ORDER BY order_idx, command').all();
         let menu = [];
         const raw = await getSetting(env.DB, 'menu_commands');
         if (raw) { try { menu = JSON.parse(raw); } catch (e) {} }
@@ -6406,15 +6541,18 @@ async function importCommandPack(request, env) {
         if (!valid.length) return apiJson({ error: 'No valid commands found in the file.' }, 400);
         await initializeDatabase(env.DB);
         if (mode === 'replace') await env.DB.prepare('DELETE FROM commands').run();
-        const stmts = valid.map((c, i) => env.DB.prepare(`
-            INSERT INTO commands (command, parent, response_type, content, media_url, buttons_json, is_admin_only, enabled, show_reply_keyboard, reply_keyboard_json, order_idx)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        const stmts = valid.map((c, i) => {
+            const access = effectiveCommandAccess(c);
+            return env.DB.prepare(`
+            INSERT INTO commands (command, parent, response_type, content, media_url, buttons_json, is_admin_only, access_level, enabled, show_reply_keyboard, reply_keyboard_json, order_idx)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(command) DO UPDATE SET
                 parent = excluded.parent, response_type = excluded.response_type, content = excluded.content,
                 media_url = excluded.media_url, buttons_json = excluded.buttons_json,
-                is_admin_only = excluded.is_admin_only, enabled = excluded.enabled,
+                is_admin_only = excluded.is_admin_only, access_level = excluded.access_level, enabled = excluded.enabled,
                 show_reply_keyboard = excluded.show_reply_keyboard, reply_keyboard_json = excluded.reply_keyboard_json
-        `).bind(c.command, c.parent || null, c.response_type || 'text', c.content || '', c.media_url || '', c.buttons_json || '', c.is_admin_only ? 1 : 0, c.enabled != 0 ? 1 : 0, c.show_reply_keyboard ? 1 : 0, c.reply_keyboard_json || '', i));
+        `).bind(c.command, c.parent || null, c.response_type || 'text', c.content || '', c.media_url || '', c.buttons_json || '', access === 'admin' ? 1 : 0, access, c.enabled != 0 ? 1 : 0, c.show_reply_keyboard ? 1 : 0, c.reply_keyboard_json || '', i);
+        });
         await runBatchChunks(env.DB, stmts);
         if (Array.isArray(data.menu) && data.menu.length) {
             const ok = data.menu.filter(m => m && m.command && m.description);
@@ -6485,12 +6623,18 @@ async function createFeatured(request, env) {
         const failureText = String(body.failure_text || '').trim();
         const kind = (body.kind === 'buttons' || body.kind === 'mcp') ? body.kind : 'text';
         const enabled = body.enabled ? 1 : 0;
-        const adminOnly = body.admin_only ? 1 : 0;
+        let access = 'everyone';
+        if (body.access_level !== undefined && ['everyone', 'moderator', 'admin'].includes(String(body.access_level).trim())) {
+            access = String(body.access_level).trim();
+        } else if (body.admin_only !== undefined) {
+            access = body.admin_only ? 'admin' : 'everyone';
+        }
+        const adminOnly = access === 'admin' ? 1 : 0;
         const deleteTrigger = body.delete_user_message !== undefined ? (body.delete_user_message ? 1 : 0) : 1;
         await initializeDatabase(env.DB);
         try {
-            await env.DB.prepare('INSERT INTO featured_replies (command, kind, content, buttons_json, success_text, failure_text, admin_only, delete_user_message, enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
-                .bind(command, kind, content, null, successText, failureText, adminOnly, deleteTrigger, enabled).run();
+            await env.DB.prepare('INSERT INTO featured_replies (command, kind, content, buttons_json, success_text, failure_text, admin_only, access_level, delete_user_message, enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+                .bind(command, kind, content, null, successText, failureText, adminOnly, access, deleteTrigger, enabled).run();
         } catch (e) {
             if (String(e.message || '').includes('UNIQUE')) return apiJson({ error: `A featured command with the command "${command}" already exists.` }, 400);
             throw e;
@@ -6512,12 +6656,22 @@ async function updateFeatured(request, env, url) {
         const failureText = body.failure_text !== undefined ? String(body.failure_text).trim() : (existing.failure_text || '');
         const kind = body.kind !== undefined ? ((body.kind === 'buttons' || body.kind === 'mcp') ? body.kind : 'text') : existing.kind;
         const enabled = body.enabled !== undefined ? (body.enabled ? 1 : 0) : existing.enabled;
-        const adminOnly = body.admin_only !== undefined ? (body.admin_only ? 1 : 0) : (existing.admin_only || 0);
+        let access = null;
+        if (body.access_level !== undefined && ['everyone', 'moderator', 'admin'].includes(String(body.access_level).trim())) {
+            access = String(body.access_level).trim();
+        } else if (body.admin_only !== undefined) {
+            access = body.admin_only ? 'admin' : 'everyone';
+        } else if (existing.access_level && ['everyone', 'moderator', 'admin'].includes(existing.access_level)) {
+            access = existing.access_level;
+        } else {
+            access = existing.admin_only ? 'admin' : 'everyone';
+        }
+        const adminOnly = access === 'admin' ? 1 : 0;
         const deleteTrigger = body.delete_user_message !== undefined
             ? (body.delete_user_message ? 1 : 0)
             : (existing.delete_user_message !== undefined && existing.delete_user_message !== null ? (existing.delete_user_message ? 1 : 0) : 1);
-        await env.DB.prepare('UPDATE featured_replies SET command = ?, kind = ?, content = ?, buttons_json = NULL, success_text = ?, failure_text = ?, admin_only = ?, delete_user_message = ?, enabled = ? WHERE id = ?')
-            .bind(command, kind, content, successText, failureText, adminOnly, deleteTrigger, enabled, id).run();
+        await env.DB.prepare('UPDATE featured_replies SET command = ?, kind = ?, content = ?, buttons_json = NULL, success_text = ?, failure_text = ?, admin_only = ?, access_level = ?, delete_user_message = ?, enabled = ? WHERE id = ?')
+            .bind(command, kind, content, successText, failureText, adminOnly, access, deleteTrigger, enabled, id).run();
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
 }
@@ -6669,6 +6823,35 @@ async function deleteUser(request, env, url) {
         ]);
         await logAction(env.DB, id, 'User deleted');
         return apiJson({ success: true });
+    } catch (err) { return internalError(err); }
+}
+async function deleteUnreachableUsers(env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        // Only delete plain users. Promoted admins and moderators may
+        // legitimately have private_started = 0 (e.g. they were promoted from
+        // group tracking without ever messaging the bot), and silently
+        // stripping their role via bulk delete would be data loss.
+        const rows = await env.DB.prepare(
+            "SELECT id FROM users WHERE COALESCE(private_started, 0) = 0 AND (role IS NULL OR role = 'user')"
+        ).all();
+        const ids = (rows.results || []).map(r => r.id);
+        if (!ids.length) return apiJson({ success: true, deleted: 0 });
+        const chunk = 200;
+        for (let i = 0; i < ids.length; i += chunk) {
+            const slice = ids.slice(i, i + chunk);
+            const ph = slice.map(() => '?').join(', ');
+            await env.DB.batch([
+                env.DB.prepare(`DELETE FROM users         WHERE id IN (${ph})`).bind(...slice),
+                env.DB.prepare(`DELETE FROM ai_messages   WHERE chat_id IN (${ph})`).bind(...slice),
+                env.DB.prepare(`DELETE FROM dm_messages   WHERE chat_id IN (${ph})`).bind(...slice),
+                env.DB.prepare(`DELETE FROM blocked_users WHERE user_id IN (${ph})`).bind(...slice),
+                env.DB.prepare(`DELETE FROM sessions      WHERE user_id IN (${ph}) AND token LIKE 'bot-%'`).bind(...slice),
+            ]);
+        }
+        await logAction(env.DB, null, `Deleted ${ids.length} unreachable users`);
+        return apiJson({ success: true, deleted: ids.length });
     } catch (err) { return internalError(err); }
 }
 async function blockUser(request, env) {
@@ -6870,17 +7053,43 @@ async function deleteSentMessage(request, env) {
 // ============================================================================
 // GROUPS
 // ============================================================================
+const GROUP_AI_MODES = ['inherit', 'on', 'off'];
+const GROUP_AI_TRIGGERS = ['inherit', 'mention', 'reply', 'either', 'both', 'none'];
 const GROUP_DEFAULT_SETTINGS = {
-    ai: 'inherit', memory: 'inherit', mention: 'inherit',
+    ai: 'inherit', ai_trigger: 'inherit', memory: 'inherit', mention: 'inherit',
     welcome_enabled: false, welcome_text: '', rules_text: '',
-    anti_flood: false, flood_limit: 6, link_filter: false,
+    anti_flood: false, flood_limit: 6, link_filter: false, link_filter_level: 'admins',
     auto_delete_service: false, track_members: false,
     commands_permission: 'inherit',
     featured_commands_permission: 'inherit',
     ai_chat_permission: 'inherit',
     callback_queries_permission: 'inherit',
     mcp_telegram_permission: 'inherit',
+    rules_command_permission: 'inherit',
 };
+function normalizeGroupSettings(raw) {
+    const src = raw && typeof raw === 'object' ? raw : {};
+    const out = Object.assign({}, GROUP_DEFAULT_SETTINGS, src);
+    if (!GROUP_AI_MODES.includes(out.ai)) out.ai = 'inherit';
+    if (!src.ai_trigger && src.mention !== undefined) {
+        out.ai_trigger = src.mention === '1' ? 'mention' : (src.mention === '0' ? 'none' : 'inherit');
+    }
+    if (!GROUP_AI_TRIGGERS.includes(out.ai_trigger)) out.ai_trigger = 'inherit';
+    if (out.memory !== 'inherit') {
+        const n = parseInt(out.memory, 10);
+        out.memory = Number.isFinite(n) && n > 0 ? String(n) : '0';
+    }
+    if (!['admins', 'admins_moderators'].includes(out.link_filter_level)) out.link_filter_level = 'admins';
+    if (!['inherit', 'everyone', 'moderator', 'admin'].includes(out.rules_command_permission)) out.rules_command_permission = 'inherit';
+    out.welcome_enabled = !!out.welcome_enabled;
+    out.anti_flood = !!out.anti_flood;
+    out.link_filter = !!out.link_filter;
+    out.auto_delete_service = !!out.auto_delete_service;
+    out.track_members = !!out.track_members;
+    const limit = parseInt(out.flood_limit, 10);
+    out.flood_limit = Number.isFinite(limit) ? Math.min(Math.max(limit, 2), 60) : 6;
+    return out;
+}
 async function getGroups(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
@@ -6903,7 +7112,7 @@ async function getGroupDetail(env, url) {
         if (!row) return apiJson({ error: 'Group not found.' }, 404);
         let settings = {};
         try { settings = JSON.parse(row.settings_json || '{}'); } catch (e) {}
-        return apiJson({ group: row, settings: Object.assign({}, GROUP_DEFAULT_SETTINGS, settings) });
+        return apiJson({ group: row, settings: normalizeGroupSettings(settings) });
     } catch (err) { return internalError(err); }
 }
 async function saveGroupSettings(request, env, url) {
@@ -6912,7 +7121,7 @@ async function saveGroupSettings(request, env, url) {
         const id = parseInt(url.pathname.split('/')[3]);
         const body = await request.json();
         await initializeDatabase(env.DB);
-        const clean = Object.assign({}, GROUP_DEFAULT_SETTINGS, body);
+        const clean = normalizeGroupSettings(body);
         await env.DB.prepare('UPDATE groups SET settings_json = ? WHERE id = ?').bind(JSON.stringify(clean), id).run();
         await logAction(env.DB, null, `Group ${id} settings updated`);
         return apiJson({ success: true });
@@ -6938,17 +7147,18 @@ async function syncGroupStatus(env, url) {
         const info = await tgCall(token, 'getChat', { chat_id: id });
         if (!info || !info.ok) {
             await env.DB.prepare('UPDATE groups SET is_active = 0 WHERE id = ?').bind(id).run();
-            return apiJson({ success: true, is_active: 0, reason: (info && info.description) || 'getChat failed' });
+            return apiJson({ success: true, is_active: 0, member_count: 0, reason: (info && info.description) || 'getChat failed' });
         }
         const chat = info.result || {};
-        await env.DB.prepare(
-            'UPDATE groups SET title = ?, type = ?, username = ?, is_active = 1, last_active = CURRENT_TIMESTAMP WHERE id = ?'
-        ).bind(chat.title || '', chat.type || 'group', chat.username || '', id).run();
+        let memberCount = 0;
         try {
             const count = await tgCall(token, 'getChatMemberCount', { chat_id: id });
-            if (count && count.ok) await env.DB.prepare('UPDATE groups SET member_count = ? WHERE id = ?').bind(count.result, id).run();
+            if (count && count.ok) memberCount = count.result || 0;
         } catch (e) {}
-        return apiJson({ success: true, is_active: 1, title: chat.title || '' });
+        await env.DB.prepare(
+            'UPDATE groups SET title = ?, type = ?, username = ?, is_active = 1, member_count = ?, last_active = CURRENT_TIMESTAMP WHERE id = ?'
+        ).bind(chat.title || '', chat.type || 'group', chat.username || '', memberCount, id).run();
+        return apiJson({ success: true, is_active: 1, title: chat.title || '', member_count: memberCount });
     } catch (err) { return internalError(err); }
 }
 
@@ -7014,8 +7224,8 @@ async function getGroupSettings(db, chatId) {
         const row = await db.prepare('SELECT settings_json FROM groups WHERE id = ?').bind(chatId).first();
         let s = {};
         if (row && row.settings_json) { try { s = JSON.parse(row.settings_json); } catch (e) {} }
-        return Object.assign({}, GROUP_DEFAULT_SETTINGS, s);
-    } catch (e) { return Object.assign({}, GROUP_DEFAULT_SETTINGS); }
+        return normalizeGroupSettings(s);
+    } catch (e) { return normalizeGroupSettings({}); }
 }
 async function upsertGroup(db, chat, isActive) {
     try {
@@ -7215,7 +7425,7 @@ const AI_KEYS = [
     'ai_alt_providers', 'ai_custom_headers', 'ai_display_name', 'ai_language',
     'ai_style', 'ai_length', 'ai_rate_limit', 'ai_response_delay', 'ai_ignore_prefixes',
     'ai_global_rate_limit', 'ai_global_rate_window', 'ai_group_mention', 'ai_private_reply',
-    'ai_group_reply', 'ai_ignore_bots', 'ai_ignore_forwarded', 'ai_typing_indicator',
+    'ai_group_reply', 'ai_group_trigger', 'ai_ignore_bots', 'ai_ignore_forwarded', 'ai_typing_indicator',
     'ai_retry_on_failure', 'ai_custom_vars_text', 'ai_knowledge_bases', 'ai_trigger_text',
     'ai_group_memory', 'ai_strict_mode', 'ai_rtl_support', 'ai_streaming',
     'ai_use_mcp_tools', 'ai_mcp_prompt_mode', 'ai_mcp_categories'
@@ -7257,6 +7467,8 @@ async function getAiSettingsFromDb(env) {
         ai_use_mcp_tools: '0', ai_mcp_prompt_mode: 'auto', ai_mcp_categories: '',
     };
     for (const [k, v] of Object.entries(defaults)) if (!settings[k]) settings[k] = v;
+    // Backwards compatibility: derive the group trigger from the old mention flag.
+    if (!settings.ai_group_trigger) settings.ai_group_trigger = settings.ai_group_mention === '0' ? 'none' : 'mention';
     aiSettingsCache.data = settings;
     aiSettingsCache.fetchedAt = Date.now();
     return Object.assign({}, settings);
@@ -7326,9 +7538,13 @@ async function resolveAiSettingsForApi(env, incoming) {
         try {
             const alts = JSON.parse(resolved.ai_alt_providers);
             const storedAlts = JSON.parse(await getSetting(env.DB, 'ai_alt_providers') || '[]');
-            alts.forEach(function (a, i) {
-                if ((a.apiKey === KEEP_SENTINEL || !a.apiKey) && storedAlts[i] && storedAlts[i].apiKey) {
-                    a.apiKey = storedAlts[i].apiKey;
+            // Match by provider NAME (not index) — reordering or inserting a
+            // provider in the UI must never hand it another provider's key.
+            const storedByProvider = {};
+            for (const a of storedAlts) if (a && a.provider) storedByProvider[String(a.provider)] = a.apiKey || '';
+            alts.forEach(function (a) {
+                if ((a.apiKey === KEEP_SENTINEL || !a.apiKey) && a.provider && storedByProvider[a.provider]) {
+                    a.apiKey = storedByProvider[a.provider];
                 }
                 delete a.apiKeyMasked;
             });
@@ -7364,6 +7580,10 @@ function replacePlaceholders(text, ctx) {
         bot_name: ctx.bot_name || 'Nyxx Bot', owner_name: ctx.owner_name || '',
         company_name: ctx.company_name || '', website: ctx.website || '', phone: ctx.phone || '',
         user_first_name: ctx.user_first_name || 'User', user_username: ctx.user_username || '',
+        // Short aliases advertised by the group welcome editor.
+        first_name: ctx.first_name || ctx.user_first_name || 'User',
+        username: ctx.username !== undefined ? ctx.username : (ctx.user_username || ''),
+        id: ctx.id || ctx.chat_id || '',
         chat_id: ctx.chat_id || '', current_time: new Date().toLocaleString(),
         available_commands: ctx.available_commands || '', title: ctx.title || '',
     };
@@ -7821,7 +8041,7 @@ async function exportBackup(env) {
         await initializeDatabase(env.DB);
         const [commands, featured, users, messages, settingsRows, broadcastRows, groupsRows, dmRows] = await Promise.all([
             env.DB.prepare('SELECT * FROM commands').all(),
-            env.DB.prepare('SELECT command, kind, content, buttons_json, success_text, failure_text, admin_only, enabled FROM featured_replies').all(),
+            env.DB.prepare('SELECT command, kind, content, buttons_json, success_text, failure_text, admin_only, access_level, enabled FROM featured_replies').all(),
             env.DB.prepare('SELECT * FROM users').all(),
             env.DB.prepare('SELECT chat_id, role, content, timestamp FROM ai_messages ORDER BY id').all(),
             env.DB.prepare('SELECT key, value FROM settings').all(),
@@ -7865,12 +8085,27 @@ async function restoreBackup(request, env) {
         if (clearOps.length) await env.DB.batch(clearOps);
 
         if (wants('commands') && Array.isArray(data.commands)) {
-            await runBatchChunks(env.DB, data.commands.filter(c => c && c.command).map(c => env.DB.prepare(`INSERT INTO commands (command, parent, response_type, content, media_url, buttons_json, is_admin_only, enabled, show_reply_keyboard, reply_keyboard_json, order_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-                .bind(c.command, c.parent || null, c.response_type || 'text', c.content || '', c.media_url || '', c.buttons_json || '', c.is_admin_only ? 1 : 0, c.enabled !== undefined ? c.enabled : 1, c.show_reply_keyboard ? 1 : 0, c.reply_keyboard_json || '', c.order_idx || 0)));
+            await runBatchChunks(env.DB, data.commands.filter(c => c && c.command).map(c => {
+                const access = effectiveCommandAccess(c);
+                return env.DB.prepare(`INSERT INTO commands (command, parent, response_type, content, media_url, buttons_json, is_admin_only, access_level, enabled, show_reply_keyboard, reply_keyboard_json, order_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+                    .bind(c.command, c.parent || null, c.response_type || 'text', c.content || '', c.media_url || '', c.buttons_json || '', access === 'admin' ? 1 : 0, access, c.enabled !== undefined ? c.enabled : 1, c.show_reply_keyboard ? 1 : 0, c.reply_keyboard_json || '', c.order_idx || 0);
+            }));
         }
         if (wants('featured') && Array.isArray(data.featured)) {
-            await runBatchChunks(env.DB, data.featured.filter(f => f && f.command).map(f => env.DB.prepare('INSERT INTO featured_replies (command, kind, content, buttons_json, success_text, failure_text, admin_only, enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-                .bind(f.command, f.kind || 'text', f.content || '', null, f.success_text || '', f.failure_text || '', f.admin_only ? 1 : 0, f.enabled ? 1 : 0)));
+            await runBatchChunks(env.DB, data.featured.filter(f => f && f.command).map(f => {
+                // Prefer the authoritative access_level; fall back to admin_only
+                // so backups taken before v12 restore the correct access.
+                const access = ['everyone', 'moderator', 'admin'].includes(f.access_level)
+                    ? f.access_level
+                    : (f.admin_only ? 'admin' : 'everyone');
+                return env.DB.prepare(
+                    'INSERT INTO featured_replies (command, kind, content, buttons_json, success_text, failure_text, admin_only, access_level, enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                ).bind(
+                    f.command, f.kind || 'text', f.content || '', null,
+                    f.success_text || '', f.failure_text || '',
+                    access === 'admin' ? 1 : 0, access, f.enabled ? 1 : 0
+                );
+            }));
         }
         if (wants('users') && Array.isArray(data.users)) {
             await runBatchChunks(env.DB, data.users.filter(u => u && u.id).map(u => env.DB.prepare(`INSERT INTO users (id, username, first_name, role, is_premium, private_started, last_group_id, last_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
@@ -7968,16 +8203,26 @@ async function performUpdate(request, env) {
       return apiJson({ success: false, error: 'Missing token, account or script name.' }, 400);
     }
 
-    // Discover bindings so we keep the D1 attachment.
-    const settingsRes  = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${scriptName}/settings`,
-      { headers: { 'Authorization': 'Bearer ' + token } }
-    );
-    const settingsData = await settingsRes.json();
-    let bindings = [];
-    if (settingsData.success && settingsData.result && settingsData.result.bindings) {
-      bindings = settingsData.result.bindings;
+    // Read the current bindings so the deploy keeps D1 (and everything else).
+    // This MUST succeed: uploading a module without `bindings` detaches D1 and
+    // bricks the Worker, so any failure here aborts the update.
+    let settingsRes;
+    try {
+      settingsRes = await fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${scriptName}/settings`,
+        { headers: { 'Authorization': 'Bearer ' + token } }
+      );
+    } catch (e) {
+      return apiJson({ success: false, error: 'Could not reach Cloudflare to read Worker settings. Update aborted; your Worker was not changed.' }, 400);
     }
+    if (!settingsRes.ok) {
+      return apiJson({ success: false, error: `Cloudflare returned ${settingsRes.status} while reading Worker settings. Update aborted so your D1 binding is not lost.` }, 400);
+    }
+    const settingsData = await settingsRes.json().catch(() => null);
+    if (!settingsData || !settingsData.success || !settingsData.result || !Array.isArray(settingsData.result.bindings)) {
+      return apiJson({ success: false, error: 'Could not read the current Worker bindings (D1, KV, etc.). Update aborted so they are not lost.' }, 400);
+    }
+    const bindings = settingsData.result.bindings;
 
     const DEFAULT_UPDATE_URL = 'https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/worker.js';
     let scriptUrl = workerUrl || DEFAULT_UPDATE_URL;
@@ -8447,7 +8692,14 @@ async function loadMcpSession(db, sessionKey) {
 async function saveMcpSession(db, sessionKey, messages, keep) {
     if (!db || !sessionKey || keep <= 0) return;
     try {
-        let capped = messages.slice(-(keep * 2));
+        // Persist only user/assistant turns with content. Tool-call metadata is
+        // transient: keeping it across turns can leave orphaned `role:"tool"`
+        // entries after truncation (when the cap lands mid-turn), and providers
+        // reject those with "tool message without matching tool_call".
+        const cleaned = (messages || [])
+            .filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string' && m.content.length)
+            .map(m => ({ role: m.role, content: m.content }));
+        let capped = cleaned.slice(-(keep * 2));
         let json = JSON.stringify(capped);
         if (json.length > 64000) {
             capped = capped.slice(-Math.max(2, Math.floor(keep / 2) * 2));
@@ -8756,6 +9008,7 @@ function getMcpToolDefinitions(categories) {
             content: { type: 'string', description: 'Message content (Telegram HTML allowed).' },
             media_url: { type: 'string', description: 'Photo URL when response_type is photo.' },
             is_admin_only: { type: 'boolean' },
+            access_level: { type: 'string', enum: ['everyone','moderator','admin'], description: 'Who can run the command. Overrides is_admin_only when set.' },
             enabled: { type: 'boolean', description: 'Default true.' },
             buttons: {
                 type: 'object',
@@ -8782,6 +9035,7 @@ function getMcpToolDefinitions(categories) {
             content: { type: 'string' },
             media_url: { type: 'string' },
             is_admin_only: { type: 'boolean' },
+            access_level: { type: 'string', enum: ['everyone','moderator','admin'], description: 'Who can run the command. Overrides is_admin_only when set.' },
             enabled: { type: 'boolean' },
             buttons: {
                 type: 'object',
@@ -8934,12 +9188,12 @@ async function executeMcpTool(name, args, env, categories) {
         case 'list_commands': {
             requireRead();
             const rows = await env.DB.prepare(
-                'SELECT command, parent, response_type, content, enabled, is_admin_only, buttons_json, show_reply_keyboard FROM commands ORDER BY order_idx, command'
+                'SELECT command, parent, response_type, content, enabled, is_admin_only, access_level, buttons_json, show_reply_keyboard FROM commands ORDER BY order_idx, command'
             ).all();
             const commands = (rows.results || []).map(r => ({
                 command: r.command, parent: r.parent || null,
                 response_type: r.response_type || 'text',
-                enabled: r.enabled !== 0, is_admin_only: !!r.is_admin_only,
+                enabled: r.enabled !== 0, is_admin_only: !!r.is_admin_only, access_level: effectiveCommandAccess(r),
                 has_buttons: !!r.buttons_json, has_reply_keyboard: !!r.show_reply_keyboard,
                 content_preview: (r.content || '').slice(0, 120),
             }));
@@ -8959,7 +9213,7 @@ async function executeMcpTool(name, args, env, categories) {
                 command: row.command, parent: row.parent || null,
                 response_type: row.response_type || 'text',
                 content: row.content || '', media_url: row.media_url || '',
-                is_admin_only: !!row.is_admin_only, enabled: row.enabled !== 0,
+                is_admin_only: !!row.is_admin_only, access_level: effectiveCommandAccess(row), enabled: row.enabled !== 0,
                 show_reply_keyboard: !!row.show_reply_keyboard,
                 buttons, reply_keyboard: replyKb,
             };
@@ -9031,6 +9285,7 @@ async function executeMcpTool(name, args, env, categories) {
                 content,
                 media_url: args.media_url || '',
                 is_admin_only: args.is_admin_only ? 1 : 0,
+                access_level: args.access_level || (args.is_admin_only ? 'admin' : 'everyone'),
                 enabled: args.enabled !== undefined ? (args.enabled ? 1 : 0) : 1,
             };
             const bp = buildButtonPayloads(args);
@@ -9054,6 +9309,7 @@ async function executeMcpTool(name, args, env, categories) {
                 content: args.content !== undefined ? String(args.content) : (existing.content || ''),
                 media_url: args.media_url !== undefined ? String(args.media_url) : (existing.media_url || ''),
                 is_admin_only: args.is_admin_only !== undefined ? (args.is_admin_only ? 1 : 0) : (existing.is_admin_only ? 1 : 0),
+                access_level: args.access_level || effectiveCommandAccess(existing),
                 enabled: args.enabled !== undefined ? (args.enabled ? 1 : 0) : (existing.enabled !== 0 ? 1 : 0),
                 buttons_json: existing.buttons_json || '',
                 reply_keyboard_json: existing.reply_keyboard_json || '',
@@ -10143,8 +10399,13 @@ async function getBotUsername(env, BOT_TOKEN) {
     if (stored) { botUsernameCache.username = stored; botUsernameCache.fetchedAt = now; return stored; }
     try {
         const info = await tgFetchJson(`https://api.telegram.org/bot${BOT_TOKEN}/getMe`);
-        if (info && info.ok && info.result && info.result.username) { botUsernameCache.username = info.result.username; botUsernameCache.fetchedAt = now; return botUsernameCache.username; }
-    } catch (e) {}
+        if (info && info.ok && info.result && info.result.username) {
+            botUsernameCache.username = info.result.username;
+            botUsernameCache.fetchedAt = now;
+            try { await setSetting(env.DB, 'bot_username', info.result.username); } catch (e) {}
+            return info.result.username;
+        }
+    } catch (e) { console.error('getBotUsername failed:', e.message); }
     return '';
 }
 const TG_API_BASE = 'https://api.telegram.org';
@@ -10266,6 +10527,44 @@ const BOT_STRINGS = {
 function botStrings() { return BOT_STRINGS.en; }
 function isBackWord(text) { return (text || '').trim().toLowerCase() === 'back'; }
 function aiEnabledFor(chatType) { return chatType === 'private' || chatType === 'group' || chatType === 'supergroup'; }
+// A group's own trigger wins over the global default. "inherit" falls through
+// to the AI tab's group trigger, then to the legacy mention flag.
+function resolveGroupAiTrigger(aiSettings, groupSettings) {
+    const override = groupSettings && groupSettings.ai_trigger ? groupSettings.ai_trigger : 'inherit';
+    if (GROUP_AI_TRIGGERS.includes(override) && override !== 'inherit') return override;
+    const global = aiSettings.ai_group_trigger;
+    if (GROUP_AI_TRIGGERS.includes(global) && global !== 'inherit') return global;
+    return aiSettings.ai_group_mention === '0' ? 'none' : 'mention';
+}
+async function groupAiShouldReply(aiSettings, groupSettings, msg, env, BOT_TOKEN) {
+    const gs = groupSettings || {};
+    if (gs.ai === 'off') return false;
+    if (gs.ai !== 'on' && aiSettings.ai_group_reply === '0') return false;
+    const mode = resolveGroupAiTrigger(aiSettings, gs);
+    if (mode === 'none') return true;
+    const botUsername = (await getBotUsername(env, BOT_TOKEN) || '').toLowerCase();
+    const text = String(msg.text || '');
+    let mentioned = false;
+    if (botUsername) {
+        mentioned = text.toLowerCase().indexOf('@' + botUsername) >= 0;
+        if (!mentioned && Array.isArray(msg.entities)) {
+            for (const ent of msg.entities) {
+                if (ent.type === 'mention' || ent.type === 'text_mention') {
+                    const mt = text.slice(ent.offset, ent.offset + ent.length);
+                    if (mt.toLowerCase() === '@' + botUsername) { mentioned = true; break; }
+                }
+            }
+        }
+    }
+    const replyFrom = msg.reply_to_message && msg.reply_to_message.from;
+    const repliedToBot = !!(replyFrom && replyFrom.is_bot && botUsername
+        && String(replyFrom.username || '').toLowerCase() === botUsername);
+    if (mode === 'mention') return mentioned;
+    if (mode === 'reply') return repliedToBot;
+    if (mode === 'either') return mentioned || repliedToBot;
+    if (mode === 'both') return mentioned && repliedToBot;
+    return true;
+}
 async function handleTelegramWebhook(request, env, ctx) {
     if (!env.DB) return new Response('DB not available', { status: 500 });
     const runWithAck = (p) => {
@@ -10356,8 +10655,11 @@ async function processTelegramUpdate(update, env) {
             }
             if (isGroup && msg.from && !msg.from.is_bot) {
                 if (groupSettings && groupSettings.link_filter && msg.text && /https?:\/\/|t\.me\//i.test(msg.text)) {
-                    const role = await env.DB.prepare('SELECT role FROM users WHERE id = ?').bind(msg.from.id).first();
-                    if (!role || role.role !== 'admin') { await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id }); return; }
+                    const u = await env.DB.prepare('SELECT role FROM users WHERE id = ?').bind(msg.from.id).first();
+                    const role = u ? u.role : 'user';
+                    const lvl = groupSettings.link_filter_level || 'admins';
+                    const exempt = role === 'admin' || (lvl === 'admins_moderators' && role === 'moderator');
+                    if (!exempt) { await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id }); return; }
                 }
                 if (groupSettings && groupSettings.anti_flood) {
                     const minute = Math.floor(Date.now() / 60000);
@@ -10373,7 +10675,7 @@ async function processTelegramUpdate(update, env) {
                     }
                 }
                 if (msg.text && msg.text.split('@')[0].trim() === '/rules' && groupSettings && groupSettings.rules_text) {
-                    if (!await checkPermission(env, msg.from.id, 'rules_command')) {
+                    if (!await checkPermissionForChat(env, msg.from.id, 'rules_command', chatId, msg.chat.type)) {
                         await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: escapeTelegramHTML(botStrings().unauthorized), parse_mode: 'HTML' });
                         return;
                     }
@@ -10424,13 +10726,11 @@ async function processTelegramUpdate(update, env) {
                                 return;
                             }
 
-                            // --- Admin-only guard (per-command, applies to all kinds) ---
-                            if (feat.admin_only) {
-                                const u = await env.DB.prepare('SELECT role FROM users WHERE id = ?').bind(userId).first();
-                                if (!u || u.role !== 'admin') {
-                                    await sendMessage(chatId, botStrings().unauthorized, BOT_TOKEN, 'HTML');
-                                    return;
-                                }
+                            // --- Access-level guard (per-command, applies to all kinds) ---
+                            const featAccess = feat.access_level || (feat.admin_only ? 'admin' : 'everyone');
+                            if (featAccess !== 'everyone' && !await canUseCommandAccess(env, userId, featAccess)) {
+                                await sendMessage(chatId, botStrings().unauthorized, BOT_TOKEN, 'HTML');
+                                return;
                             }
 
                             // --- MCP kind ---
@@ -10522,27 +10822,49 @@ async function processTelegramUpdate(update, env) {
                     }
                 }
 
-                // Figure out the AI decision up front so we know whether we should
-                // write the incoming message into dm_messages.
+                // Resolve the command that this message will run (regular
+                // command, reply-keyboard shortcut, or "back") BEFORE the AI
+                // decision, so the `no_command` AI trigger can defer to it.
+                let targetCommand = null;
+                if (text.startsWith('/')) {
+                    const bare = text.split('@')[0].split('?')[0].split(' ')[0];
+                    const cmdRecord = await env.DB.prepare('SELECT command FROM commands WHERE command = ? AND enabled = 1').bind(bare).first();
+                    if (cmdRecord) targetCommand = cmdRecord.command;
+                }
+                if (!targetCommand && isBackWord(text)) {
+                    const session = await env.DB.prepare("SELECT command FROM sessions WHERE user_id = ? AND token LIKE 'bot-%'").bind(userId).first();
+                    if (session && session.command) {
+                        const parentCmd = await env.DB.prepare('SELECT parent FROM commands WHERE command = ?').bind(session.command).first();
+                        if (parentCmd && parentCmd.parent) targetCommand = parentCmd.parent;
+                    }
+                }
+                if (!targetCommand && !text.startsWith('/')) {
+                    const map = await getReplyButtonMap(env.DB);
+                    if (map[text]) targetCommand = map[text];
+                    else { const globalActions = await getReplyActions(env.DB); if (globalActions[text]) targetCommand = globalActions[text]; }
+                }
+
+                // AI decision.
                 const aiSettings = await getAiSettingsFromDb(env);
                 let aiWillHandle = false;
                 if (aiSettings.ai_enabled === '1') {
                     let shouldReply = true;
                     const trigger = aiSettings.ai_trigger || 'no_command';
-                    if (trigger === 'contains_text') { const t = aiSettings.ai_trigger_text || ''; if (t && text.toLowerCase().indexOf(t.toLowerCase()) < 0) shouldReply = false; }
-                    else if (trigger !== 'no_command' && trigger !== 'all_messages') shouldReply = false;
+                    if (trigger === 'contains_text') {
+                        const t = aiSettings.ai_trigger_text || '';
+                        if (t && text.toLowerCase().indexOf(t.toLowerCase()) < 0) shouldReply = false;
+                    } else if (trigger === 'no_command') {
+                        // "Only when no command matches" — a resolved command wins.
+                        if (targetCommand) shouldReply = false;
+                    } else if (trigger !== 'all_messages') {
+                        shouldReply = false;
+                    }
                     if (shouldReply) {
                         if (!aiEnabledFor(msg.chat.type)) shouldReply = false;
                         if (isPrivate && aiSettings.ai_private_reply === '0') shouldReply = false;
-                        if (isGroup && aiSettings.ai_group_reply === '0') shouldReply = false;
                     }
-                    if (shouldReply && isGroup && groupSettings) {
-                        if (groupSettings.ai === 'off') shouldReply = false;
-                        if (groupSettings.mention === '1') { const bu = await getBotUsername(env, BOT_TOKEN); if (!bu || text.indexOf('@' + bu) < 0) shouldReply = false; }
-                        else if (groupSettings.mention === '0') {}
-                        else if (aiSettings.ai_group_mention === '1') { const bu = await getBotUsername(env, BOT_TOKEN); if (!bu || text.indexOf('@' + bu) < 0) shouldReply = false; }
-                    } else if (shouldReply && isGroup && aiSettings.ai_group_mention === '1') {
-                        const bu = await getBotUsername(env, BOT_TOKEN); if (!bu || text.indexOf('@' + bu) < 0) shouldReply = false;
+                    if (shouldReply && isGroup) {
+                        shouldReply = await groupAiShouldReply(aiSettings, groupSettings, msg, env, BOT_TOKEN);
                     }
                     if (shouldReply && aiSettings.ai_ignore_bots === '1' && msg.from.is_bot) shouldReply = false;
                     if (shouldReply && aiSettings.ai_ignore_forwarded === '1' && msg.forward_date) shouldReply = false;
@@ -10573,29 +10895,10 @@ async function processTelegramUpdate(update, env) {
                     return;
                 }
 
-                let targetCommand = null;
-                if (text.startsWith('/')) {
-                    const bare = text.split('@')[0].split('?')[0].split(' ')[0];
-                    const cmdRecord = await env.DB.prepare('SELECT command FROM commands WHERE command = ? AND enabled = 1').bind(bare).first();
-                    if (cmdRecord) targetCommand = cmdRecord.command;
-                }
-                if (!targetCommand && isBackWord(text)) {
-                    const session = await env.DB.prepare("SELECT command FROM sessions WHERE user_id = ? AND token LIKE 'bot-%'").bind(userId).first();
-                    if (session && session.command) {
-                        const parentCmd = await env.DB.prepare('SELECT parent FROM commands WHERE command = ?').bind(session.command).first();
-                        if (parentCmd && parentCmd.parent) targetCommand = parentCmd.parent;
-                    }
-                }
-                if (!targetCommand && !text.startsWith('/')) {
-                    const map = await getReplyButtonMap(env.DB);
-                    if (map[text]) targetCommand = map[text];
-                    else { const globalActions = await getReplyActions(env.DB); if (globalActions[text]) targetCommand = globalActions[text]; }
-                }
+                // Execute the resolved command (regular command, reply-keyboard shortcut, or "back").
                 if (targetCommand) {
                     const cmdRecord = await env.DB.prepare('SELECT * FROM commands WHERE command = ? AND enabled = 1').bind(targetCommand).first();
                     if (cmdRecord) {
-                        // Permission check now lives inside executeCommand() so it also
-                        // protects command execution from inline-button callbacks.
                         await executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, msg.chat.type);
                         return;
                     }
@@ -10706,14 +11009,15 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatTyp
         await sendMessage(chatId, strings.unauthorized, BOT_TOKEN, 'HTML');
         return;
     }
+    const access = effectiveCommandAccess(cmdRecord);
+    if (access !== 'everyone' && !await canUseCommandAccess(env, userId, access)) {
+        await sendMessage(chatId, strings.unauthorized, BOT_TOKEN, 'HTML');
+        return;
+    }
     await env.DB.prepare(`
         INSERT INTO sessions (token, user_id, command, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)
         ON CONFLICT(user_id) DO UPDATE SET token = excluded.token, command = excluded.command, updated_at = CURRENT_TIMESTAMP
     `).bind('bot-' + userId, userId, cmdRecord.command).run();
-    if (cmdRecord.is_admin_only) {
-        const user = await env.DB.prepare('SELECT role FROM users WHERE id = ?').bind(userId).first();
-        if (!user || user.role !== 'admin') { await sendMessage(chatId, strings.unauthorized, BOT_TOKEN, 'HTML'); return; }
-    }
     const built = cmdRecord.buttons_json ? buildReplyMarkup(cmdRecord.buttons_json) : null;
     const inlineMarkup = built && built.inlineMarkup ? built.inlineMarkup : null;
     let replySpec = (cmdRecord.show_reply_keyboard && cmdRecord.reply_keyboard_json) ? kbNormalizeReply(cmdRecord.reply_keyboard_json) : null;
@@ -10985,14 +11289,13 @@ async function processAiReply(chatId, userId, text, aiSettings, env, BOT_TOKEN, 
             await saveAiMessage(env.DB, chatId, 'assistant', rawReply);
             await trimAiMessages(env.DB, chatId, memoryLimit);
         }
-        let lastSent = null;
         if (!sentFinal) {
             if (streamMsgId !== null) await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: streamMsgId });
             const delay = parseInt(aiSettings.ai_response_delay) || 0;
             if (delay > 0) await new Promise(r => setTimeout(r, Math.min(delay, 5000)));
-            lastSent = await sendMessage(chatId, reply, BOT_TOKEN, 'HTML');
+            await sendMessage(chatId, reply, BOT_TOKEN, 'HTML');
         } else if (finalChunks.length) {
-            for (const extra of finalChunks) lastSent = await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: extra, parse_mode: 'HTML' });
+            for (const extra of finalChunks) await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: extra, parse_mode: 'HTML' });
         }
         if (aiSettings.ai_suggested_questions_enabled === '1') {
             try {

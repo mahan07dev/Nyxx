@@ -35,13 +35,13 @@ The wizard creates the Worker, creates and binds the D1 database, uploads the la
 - Text & photo responses, with automatic long-message splitting
 - Inline and reply keyboards built visually (no JSON)
 - Telegram menu commands and custom featured commands (DM / Buttons / MCP)
-- Admin-only commands and per-command role checks
+- Per-command access levels: everyone, moderator+, or admin only
 
 **Users & groups**
 - User management with roles (user / moderator / admin)
 - Block users entirely or only from the AI
 - Per-user direct messages (send / edit / delete) and AI memory (view / edit / delete)
-- Per-group settings: AI mode, memory, mention rules, welcome, rules, anti-flood, link filter, service-message cleanup, member tracking
+- Per-group settings: AI mode, AI trigger (mention / reply / either / both / every message), memory, welcome, rules, anti-flood, link filter, service-message cleanup, member tracking
 - Per-group permission overrides for commands, featured commands, AI, callbacks, and MCP
 - Broadcast with audience targeting, photos, keyboards, and delivery pacing
 
