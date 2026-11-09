@@ -3677,8 +3677,8 @@ async function openUser(idOrUser) {
         : '<button class="btn btn-gray btn-sm" onclick="checkUser(' + manageUser.id + ')"><i class="fa-solid fa-stethoscope"></i> Check reachable</button>' +
         '<button class="btn btn-gray btn-sm" onclick="promoteUser()" ' + (role === 'admin' ? 'disabled' : '') + '><i class="fa-solid fa-arrow-up"></i> ' + promoteLabel + '</button>' +
         '<button class="btn btn-gray btn-sm" onclick="demoteUser()" ' + (role === 'user' ? 'disabled' : '') + '><i class="fa-solid fa-arrow-down"></i> ' + demoteLabel + '</button>' +
-        '<button class="btn btn-gray btn-sm" onclick="toggleBlock(\'ai_only\')"><i class="fa-solid fa-robot"></i> ' + (manageUser.block_type === 'ai_only' ? 'Unblock AI' : 'Block AI') + '</button>' +
-        '<button class="btn btn-danger btn-sm" onclick="toggleBlock(\'full\')"><i class="fa-solid fa-ban"></i> ' + (manageUser.block_type === 'full' ? 'Unblock' : 'Block all') + '</button>';
+        '<button class="btn btn-gray btn-sm" onclick="toggleBlock(\\'ai_only\\')"><i class="fa-solid fa-robot"></i> ' + (manageUser.block_type === 'ai_only' ? 'Unblock AI' : 'Block AI') + '</button>' +
+        '<button class="btn btn-danger btn-sm" onclick="toggleBlock(\\'full\\')"><i class="fa-solid fa-ban"></i> ' + (manageUser.block_type === 'full' ? 'Unblock' : 'Block all') + '</button>';
     $('um-input').value = ''; $('um-photo').value = '';
     loadDmMessages(manageUser.id); loadAiMemory();
 }
@@ -4691,9 +4691,9 @@ function renderPermissions() {
         return '<div class="switch-row perm-row" style="margin-bottom:10px;">' +
             '<div class="perm-text" style="flex:1"><div class="sw-label">' + esc(meta.label) + '</div><div class="sw-sub">' + esc(meta.sub) + '</div></div>' +
             '<div class="segmented perm-seg" data-perm="' + k + '">' +
-            '<button data-v="everyone" class="' + (val === 'everyone' ? 'active' : '') + '" onclick="setPerm(\'' + k + '\',\'everyone\',this)">Everyone</button>' +
-            '<button data-v="moderator" class="' + (val === 'moderator' ? 'active' : '') + '" onclick="setPerm(\'' + k + '\',\'moderator\',this)">Moderator+</button>' +
-            '<button data-v="admin" class="' + (val === 'admin' ? 'active' : '') + '" onclick="setPerm(\'' + k + '\',\'admin\',this)">Admin only</button>' +
+            '<button data-v="everyone" class="' + (val === 'everyone' ? 'active' : '') + '" onclick="setPerm(\\'' + k + '\\',\\'everyone\\',this)">Everyone</button>' +
+            '<button data-v="moderator" class="' + (val === 'moderator' ? 'active' : '') + '" onclick="setPerm(\\'' + k + '\\',\\'moderator\\',this)">Moderator+</button>' +
+            '<button data-v="admin" class="' + (val === 'admin' ? 'active' : '') + '" onclick="setPerm(\\'' + k + '\\',\\'admin\\',this)">Admin only</button>' +
             '</div>' +
         '</div>';
     }).join('');
