@@ -1,8 +1,8 @@
 // ============================================================================
-// NYXX — v4.6.0
+// NYXX — v4.7.0-beta
 // Telegram bot builder + management dashboard for Cloudflare Workers + D1.
 // ============================================================================
-const VERSION = '4.6.0';
+const VERSION = '4.7.0-beta';
 
 const RELAY_BASE = 'https://nyxx-proxy.nova-06272b19.workers.dev';
 const RELAY_EXCHANGE_SECRET = 'SECRET_ULTRA_PRO_MAX'; // Must match proxy.js
@@ -312,9 +312,11 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
 .switch-row:last-child { margin-bottom: 0; }
 .switch-row .sw-label { font-size: var(--fs-callout); font-weight: 500; }
 .switch-row .sw-sub { font-size: var(--fs-caption); color: var(--text-4); margin-top: 2px; }
-.segmented { display: inline-flex; background: var(--fill-1); border-radius: var(--r-sm); padding: 3px; gap: 2px; }
-.segmented button { border: none; background: transparent; color: var(--text-2); font-size: var(--fs-footnote); font-weight: 600; padding: 7px 14px; border-radius: 8px; cursor: pointer; transition: background 0.16s, color 0.16s, box-shadow 0.16s; white-space: nowrap; }
-.segmented button.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
+.segmented { display: inline-flex; background: var(--fill-1); border-radius: var(--r-sm); padding: 3px; gap: 2px; transition: background 0.2s ease; }
+.segmented button { border: none; background: transparent; color: var(--text-2); font-size: var(--fs-footnote); font-weight: 600; padding: 7px 14px; border-radius: 8px; cursor: pointer; white-space: nowrap; transition: background 0.22s cubic-bezier(0.4, 0, 0.2, 1), color 0.18s ease, box-shadow 0.22s cubic-bezier(0.4, 0, 0.2, 1), transform 0.14s cubic-bezier(0.4, 0, 0.2, 1); }
+.segmented button:hover:not(.active) { color: var(--text); background: var(--fill-1); }
+.segmented button:active:not(.active) { transform: scale(0.94); }
+.segmented button.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.12); transform: scale(1.02); }
 .check { display: flex; align-items: center; gap: var(--s2); font-size: var(--fs-subhead); cursor: pointer; }
 .check input { width: 18px; height: 18px; accent-color: var(--accent); }
 .pw-wrap { position: relative; }
@@ -435,7 +437,9 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
 .kb-wrap { display: flex; flex-direction: column; gap: var(--s2); }
 .kb-rowchips { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; }
 .kb-rlabel { font-size: var(--fs-caption2); text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-4); font-weight: 600; min-width: 46px; }
-.kb-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--surface-2); border: 1px solid var(--hairline); border-radius: var(--r-sm); padding: 6px 8px; font-size: var(--fs-footnote); max-width: 100%; }
+.kb-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--surface-2); border: 1px solid var(--hairline); border-radius: var(--r-sm); padding: 6px 8px; font-size: var(--fs-footnote); max-width: 100%; transition: border-color 0.15s ease, background 0.15s ease; }
+.kb-chip:hover { border-color: var(--accent); }
+.kb-chip.editing { border-color: var(--accent); background: var(--accent-soft); }
 .kb-chip .lbl { max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
 .kb-chip .typ { font-size: var(--fs-caption2); color: var(--text-4); background: var(--fill-1); padding: 1px 6px; border-radius: var(--r-pill); }
 .kb-chip .arw { border: none; background: none; color: var(--text-4); cursor: pointer; font-size: 10px; padding: 2px 3px; border-radius: 4px; }
@@ -608,6 +612,13 @@ details.help > div { padding: 0 16px 14px; font-size: var(--fs-footnote); line-h
 .auth-actions .btn { flex: 0 0 auto; }
 .auth-help { text-align: center; font-size: var(--fs-caption); color: var(--text-4); margin-top: var(--s4); }
 
+.switch-row.perm-row { align-items: center; }
+.perm-seg { flex-shrink: 0; }
+@media (max-width: 720px) {
+    .switch-row.perm-row { flex-direction: column; align-items: stretch; gap: 12px; }
+    .perm-seg { width: 100%; display: flex; }
+    .perm-seg button { flex: 1 1 0; padding: 9px 4px; font-size: 12px; }
+}
 @media (min-width: 901px) {
     .app.sidebar-open .main { margin-left: 276px; }
     .app.sidebar-open .overlay-sidebar { display: none !important; }
@@ -705,8 +716,8 @@ body { overflow-x: hidden; }
         </nav>
         <nav class="nav-group">
             <div class="nav-label">Intelligence</div>
-            <button class="nav-item" data-page="ai" onclick="go('ai')"><i class="fa-solid fa-wand-magic-sparkles"></i><span>AI</span></button>
-            <button class="nav-item" data-page="mcp" onclick="go('mcp')"><i class="fa-solid fa-plug"></i><span>MCP</span></button>
+            <button class="nav-item" data-page="ai" onclick="go('ai')" title="Connect an AI provider and shape how the bot replies"><i class="fa-solid fa-wand-magic-sparkles"></i><span>AI</span></button>
+            <button class="nav-item" data-page="mcp" onclick="go('mcp')" title="Model Context Protocol — let AI manage the bot with tools"><i class="fa-solid fa-plug"></i><span>MCP</span></button>
         </nav>
         <nav class="nav-group">
             <div class="nav-label">Admin</div>
@@ -833,6 +844,17 @@ body { overflow-x: hidden; }
                     <div class="card-head"><div class="card-title"><i class="fa-solid fa-flag-checkered"></i> Getting started</div></div>
                     <ul id="ov-checklist" style="list-style:none;padding:0;margin:0;"></ul>
                 </div>
+                <div class="card">
+                    <div class="card-head"><div class="card-title"><i class="fa-solid fa-bolt"></i> Quick actions</div></div>
+                    <div class="grid grid-2" style="gap:10px;">
+                        <button class="btn btn-primary btn-block" onclick="openCommandModal()"><i class="fa-solid fa-plus"></i> New command</button>
+                        <button class="btn btn-gray btn-block" onclick="go('broadcast')"><i class="fa-solid fa-bullhorn"></i> Send broadcast</button>
+                        <button class="btn btn-gray btn-block" onclick="go('menu')"><i class="fa-solid fa-list"></i> Menu &amp; Featured</button>
+                        <button class="btn btn-gray btn-block" onclick="go('ai')"><i class="fa-solid fa-wand-magic-sparkles"></i> Configure AI</button>
+                        <button class="btn btn-gray btn-block" onclick="go('groups')"><i class="fa-solid fa-comments"></i> Manage groups</button>
+                        <button class="btn btn-gray btn-block" onclick="go('permissions')"><i class="fa-solid fa-shield-halved"></i> Permissions</button>
+                    </div>
+                </div>
             </section>
 
             <section class="page" id="page-commands">
@@ -927,6 +949,7 @@ body { overflow-x: hidden; }
                     <button class="chip" data-filter="blocked" onclick="setUserFilter('blocked')">Blocked</button>
                 </div>
                 <div id="users-list"></div>
+                <div id="users-pager" class="row" style="justify-content:center;gap:8px;margin-top:14px;"></div>
             </section>
 
             <section class="page" id="page-user-manage">
@@ -1155,7 +1178,17 @@ body { overflow-x: hidden; }
                 <div class="card">
                     <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-shield-halved"></i> Moderation</div></div>
                     <div class="switch-row"><div><div class="sw-label">Anti-flood</div><div class="sw-sub">Delete a member's messages after too many in a minute.</div></div><button class="switch" id="gm-flood-toggle" onclick="gmToggle('flood')"></button></div>
-                    <div class="field" id="gm-flood-limit-wrap"><label class="field-label">Messages per minute before deletion</label><input type="number" class="input" id="gm-flood-limit" min="2" max="60" value="6"><span class="field-hint">Bot must be an admin in the group for this to work.</span></div>
+                    <div class="field" id="gm-flood-limit-wrap">
+                        <label class="field-label">Messages per minute before deletion</label>
+                        <input type="number" class="input" id="gm-flood-limit" min="2" max="60" value="6">
+                        <span class="field-hint">Bot must be an admin in the group for this to work.</span>
+                    </div>
+                    <div class="field" id="gm-flood-mute-wrap">
+                        <label class="field-label">Auto-mute on flood</label>
+                        <input type="number" class="input" id="gm-flood-mute" min="0" max="1440" value="0">
+                        <span class="field-hint">Minutes to mute a user who keeps flooding after the deletion threshold. 0 = never mute. Requires the bot to have "Restrict members" permission.</span>
+                    </div>
+
                     <div class="switch-row"><div><div class="sw-label">Block links</div><div class="sw-sub">Delete messages containing URLs.</div></div><button class="switch" id="gm-link-toggle" onclick="gmToggle('link')"></button></div>
                     <div class="field hidden" id="gm-link-level-wrap" style="margin-top:4px;">
                         <label class="field-label">Who is exempt?</label>
@@ -1164,6 +1197,30 @@ body { overflow-x: hidden; }
                             <button data-v="admins_moderators" onclick="setSeg('gm-link-level','admins_moderators')">Admins + moderators</button>
                         </div>
                     </div>
+
+                    <div class="switch-row"><div><div class="sw-label">Block forwards</div><div class="sw-sub">Delete forwarded messages.</div></div><button class="switch" id="gm-forward-toggle" onclick="gmToggle('forward')"></button></div>
+                    <div class="field hidden" id="gm-forward-level-wrap" style="margin-top:4px;">
+                        <label class="field-label">Who is exempt?</label>
+                        <div class="segmented" id="gm-forward-level">
+                            <button data-v="admins" onclick="setSeg('gm-forward-level','admins')">Admins only</button>
+                            <button data-v="admins_moderators" onclick="setSeg('gm-forward-level','admins_moderators')">Admins + moderators</button>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label class="field-label">Blacklisted words</label>
+                        <textarea class="textarea" id="gm-blacklist" rows="2" placeholder="badword1, badword2, /spam/"></textarea>
+                        <span class="field-hint">Comma-separated. Any message containing one of these (case-insensitive) is deleted. Leave blank to disable.</span>
+                    </div>
+                    <div class="field">
+                        <label class="field-label">Who is exempt from the blacklist?</label>
+                        <div class="segmented" id="gm-blacklist-level">
+                            <button data-v="admins" onclick="setSeg('gm-blacklist-level','admins')">Admins only</button>
+                            <button data-v="admins_moderators" onclick="setSeg('gm-blacklist-level','admins_moderators')">Admins + moderators</button>
+                        </div>
+                    </div>
+
+                    <div class="switch-row"><div><div class="sw-label">Block other bots</div><div class="sw-sub">Delete messages posted by other bots.</div></div><button class="switch" id="gm-bot-toggle" onclick="gmToggle('bot')"></button></div>
                     <div class="switch-row"><div><div class="sw-label">Clean up service messages</div><div class="sw-sub">Delete "X joined", pinned notices and similar.</div></div><button class="switch" id="gm-service-toggle" onclick="gmToggle('service')"></button></div>
                     <div class="switch-row" style="margin-bottom:0;"><div><div class="sw-label">Track members in Users tab</div><div class="sw-sub">Off by default. When off, only members who DM the bot appear in Users.</div></div><button class="switch" id="gm-track-toggle" onclick="gmToggle('track')"></button></div>
                 </div>
@@ -1272,6 +1329,27 @@ body { overflow-x: hidden; }
                         <i class="fa-solid fa-circle-info"></i>
                         <div><b>AI memory</b> is governed by the value you set in the <a href="#" onclick="go('ai');return false;">AI</a> tab — it is kept in sync here. <b>Direct messages</b> are pruned by age using the unit you pick below. Off by default.</div>
                     </div>
+                    <div class="section-title" style="margin-top:0;">What gets saved</div>
+                    <div class="switch-row">
+                        <div>
+                            <div class="sw-label">Save regular private chats</div>
+                            <div class="sw-sub">Whether text messages a user DMs the bot are stored in the dashboard. Featured commands are controlled below.</div>
+                        </div>
+                        <select class="input" id="mem-dm-save" style="max-width:200px;" onchange="saveMemPolicies()">
+                            <option value="auto">Auto (only when AI is off)</option>
+                            <option value="always">Always</option>
+                            <option value="featured_only">Never (featured only)</option>
+                        </select>
+                    </div>
+                    <div class="switch-row" style="margin-bottom:0;">
+                        <div>
+                            <div class="sw-label">Save featured command messages</div>
+                            <div class="sw-sub">Texts users send through <code>/contact</code> (or any DM featured command).</div>
+                        </div>
+                        <button class="switch on" id="mem-save-featured" onclick="toggleMemSaveFeatured()"></button>
+                    </div>
+
+                    <div class="section-title">Auto-remove</div>
                     <div class="switch-row" style="margin-bottom:0;">
                         <div><div class="sw-label">Enable auto-remove</div><div class="sw-sub">Requires a Cron trigger in wrangler.toml, or use "Run now" in the Cleanup tab.</div></div>
                         <button class="switch" id="arm-enable" onclick="toggleAutoRemove()"></button>
@@ -1561,10 +1639,10 @@ body { overflow-x: hidden; }
                 <div class="card">
                     <div class="card-head"><div class="card-title c-purple"><i class="fa-solid fa-keyboard"></i> Quick replies</div></div>
                     <div class="switch-row"><div><div class="sw-label">One-time keyboard</div><div class="sw-sub">Telegram hides the keyboard after the user taps a button. It will re-appear on the next AI reply. Turn off to keep it always visible.</div></div><button class="switch on" id="ai-sq-once" onclick="toggleSwitch('ai-sq-once')"></button></div>
-                    <div class="row" style="margin-bottom:10px;">
-                        <input class="input" id="sq-label" placeholder="Button label" style="flex:1;">
-                        <input class="input" id="sq-value" placeholder="Text to send when tapped" style="flex:1;">
-                        <button class="btn btn-primary btn-sm" onclick="addSq()"><i class="fa-solid fa-plus"></i></button>
+                    <div class="row sq-builder-row" style="margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+                        <input class="input" id="sq-label" placeholder="Button label" style="flex:1 1 180px;min-width:0;">
+                        <input class="input" id="sq-value" placeholder="Text to send when tapped" style="flex:1 1 180px;min-width:0;">
+                        <button class="btn btn-primary btn-sm" onclick="addSq()" style="flex:0 0 auto;"><i class="fa-solid fa-plus"></i></button>
                     </div>
                     <div id="sq-list"></div>
                 </div>
@@ -1778,8 +1856,12 @@ body { overflow-x: hidden; }
 
                 <div class="card">
                     <div class="card-head"><div class="card-title c-purple"><i class="fa-solid fa-user-shield"></i> Administrators</div><div style="flex:1"></div><button class="btn btn-gray btn-sm" onclick="loadAdmins()" aria-label="Refresh admins"><i class="fa-solid fa-rotate"></i></button></div>
-                    <div class="row" style="margin-bottom:12px;">
-                        <input class="input" id="promote-user-id" placeholder="Telegram user ID" style="flex:1;max-width:240px;" type="number">
+                    <div class="hint-banner" style="margin-bottom:12px;">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <div>Quickest way to promote someone: open <a href="#" onclick="go('users');return false;"><b>Users</b></a> and click their name — you'll find fixed <b>Promote</b> / <b>Demote</b> buttons. Or paste their numeric ID here.</div>
+                    </div>
+                    <div class="row" style="margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+                        <input class="input" id="promote-user-id" placeholder="Telegram user ID" style="flex:1 1 200px;max-width:240px;" type="number">
                         <select class="input" id="promote-user-role" style="max-width:170px;">
                             <option value="moderator">Moderator</option>
                             <option value="admin" selected>Admin</option>
@@ -2047,25 +2129,28 @@ crons = ["0 3 * * *"]</code></pre>
                     </select>
                     <select class="input" id="kbCmd-inline-cmd" style="flex:1;"><option value="">Select…</option></select>
                     <input class="input hidden" id="kbCmd-inline-value" placeholder="Value / URL" style="flex:1;">
-                    <button class="btn btn-primary btn-sm" onclick="kbCmd.inlineAdd()"><i class="fa-solid fa-plus"></i></button>
+                    <button class="btn btn-primary btn-sm" id="kbCmd-inline-add-btn" onclick="kbCmd.inlineAdd()"><i class="fa-solid fa-plus"></i></button>
                 </div>
                 <div id="kbCmd-inline-list"></div>
             </div>
-            <div class="switch-row"><div><div class="sw-label">Reply keyboard</div><div class="sw-sub">Persistent buttons below the input box.</div></div><button class="switch" id="cmd-reply-toggle" onclick="toggleCmdSection('reply')"></button></div>
+            <div class="switch-row"><div><div class="sw-label">Reply keyboard</div><div class="sw-sub">Persistent buttons below the input box. Can be combined with an inline keyboard — Telegram will deliver the reply keyboard on a second, empty message.</div></div><button class="switch" id="cmd-reply-toggle" onclick="toggleCmdSection('reply')"></button></div>
             <div id="cmd-reply-section" class="hidden" style="margin-bottom:16px;">
                 <div class="row nowrap" style="margin-bottom:8px;">
                     <input class="input" id="kbCmd-reply-label" placeholder="Button text" style="flex:1.2;">
                     <select class="input" id="kbCmd-reply-cmd" style="flex:1;"><option value="">Run command…</option></select>
                     <input class="input" id="kbCmd-reply-value" placeholder="Or /custom" style="flex:1;">
-                    <button class="btn btn-primary btn-sm" onclick="kbCmd.replyAdd()"><i class="fa-solid fa-plus"></i></button>
+                    <button class="btn btn-primary btn-sm" id="kbCmd-reply-add-btn" onclick="kbCmd.replyAdd()"><i class="fa-solid fa-plus"></i></button>
                 </div>
                 <div id="kbCmd-reply-list"></div>
                 <div id="kbCmd-reply-preview" class="kb-preview"></div>
-                <div class="row" style="margin-top:8px;font-size:13px;color:var(--text-3);">
-                    <label class="check"><input type="checkbox" id="kbCmd-reply-resize" checked onchange="kbSettingChanged('kbCmd')"> Resize</label>
-                    <label class="check"><input type="checkbox" id="kbCmd-reply-onetime" onchange="kbSettingChanged('kbCmd')"> One-time</label>
-                    <label class="check"><input type="checkbox" id="kbCmd-reply-persistent" checked onchange="kbSettingChanged('kbCmd')"> Persistent</label>
-                    <input class="input" id="kbCmd-reply-placeholder" placeholder="Input placeholder" style="flex:1;min-width:140px;" oninput="kbSettingChanged('kbCmd')">
+                <div class="row" style="margin-top:8px;font-size:13px;color:var(--text-3);flex-wrap:wrap;gap:8px;">
+                    <label class="check" title="Shrink the buttons to fit their labels instead of stretching to the full width."><input type="checkbox" id="kbCmd-reply-resize" checked onchange="kbSettingChanged('kbCmd')"> Resize</label>
+                    <label class="check" title="Hide the keyboard the moment the user taps a button. You must re-send the keyboard next time."><input type="checkbox" id="kbCmd-reply-onetime" onchange="kbSettingChanged('kbCmd')"> One-time</label>
+                    <label class="check" title="Keep the keyboard visible when Telegram's own controls (like the back button) try to dismiss it."><input type="checkbox" id="kbCmd-reply-persistent" checked onchange="kbSettingChanged('kbCmd')"> Persistent</label>
+                    <input class="input" id="kbCmd-reply-placeholder" placeholder="Input placeholder" style="flex:1 1 140px;min-width:120px;" oninput="kbSettingChanged('kbCmd')">
+                </div>
+                <div class="field-hint" style="margin-top:6px;">
+                    <b>Resize</b> fits the keyboard to the button labels. <b>One-time</b> hides the keyboard after the user taps a button — you must resend it next time. <b>Persistent</b> keeps the keyboard visible when the user taps the Back button.
                 </div>
             </div>
             <div class="field">
@@ -2105,7 +2190,7 @@ crons = ["0 3 * * *"]</code></pre>
                         </select>
                         <select class="input" id="kbMe-inline-cmd" style="flex:1;"><option value="">Select…</option></select>
                         <input class="input hidden" id="kbMe-inline-value" placeholder="Value / URL" style="flex:1;">
-                        <button class="btn btn-primary btn-sm" onclick="kbMe.inlineAdd()"><i class="fa-solid fa-plus"></i></button>
+                    <button class="btn btn-primary btn-sm" id="kbMe-inline-add-btn" onclick="kbMe.inlineAdd()"><i class="fa-solid fa-plus"></i></button>
                     </div>
                     <div id="kbMe-inline-list"></div>
                 </div>
@@ -2115,15 +2200,18 @@ crons = ["0 3 * * *"]</code></pre>
                         <input class="input" id="kbMe-reply-label" placeholder="Button text" style="flex:1.2;">
                         <select class="input" id="kbMe-reply-cmd" style="flex:1;"><option value="">Run command…</option></select>
                         <input class="input" id="kbMe-reply-value" placeholder="Or /custom" style="flex:1;">
-                        <button class="btn btn-primary btn-sm" onclick="kbMe.replyAdd()"><i class="fa-solid fa-plus"></i></button>
+                        <button class="btn btn-primary btn-sm" id="kbMe-reply-add-btn" onclick="kbMe.replyAdd()"><i class="fa-solid fa-plus"></i></button>
                     </div>
                     <div id="kbMe-reply-list"></div>
                     <div id="kbMe-reply-preview" class="kb-preview"></div>
-                    <div class="row" style="margin-top:8px;font-size:13px;color:var(--text-3);">
-                        <label class="check"><input type="checkbox" id="kbMe-reply-resize" checked onchange="kbSettingChanged('kbMe')"> Resize</label>
-                        <label class="check"><input type="checkbox" id="kbMe-reply-onetime" onchange="kbSettingChanged('kbMe')"> One-time</label>
-                        <label class="check"><input type="checkbox" id="kbMe-reply-persistent" checked onchange="kbSettingChanged('kbMe')"> Persistent</label>
-                        <input class="input" id="kbMe-reply-placeholder" placeholder="Input placeholder" style="flex:1;min-width:140px;" oninput="kbSettingChanged('kbMe')">
+                    <div class="row" style="margin-top:8px;font-size:13px;color:var(--text-3);flex-wrap:wrap;gap:8px;">
+                        <label class="check" title="Shrink the buttons to fit their labels."><input type="checkbox" id="kbMe-reply-resize" checked onchange="kbSettingChanged('kbMe')"> Resize</label>
+                        <label class="check" title="Hide the keyboard after the user taps a button."><input type="checkbox" id="kbMe-reply-onetime" onchange="kbSettingChanged('kbMe')"> One-time</label>
+                        <label class="check" title="Keep the keyboard visible when Telegram tries to dismiss it."><input type="checkbox" id="kbMe-reply-persistent" checked onchange="kbSettingChanged('kbMe')"> Persistent</label>
+                        <input class="input" id="kbMe-reply-placeholder" placeholder="Input placeholder" style="flex:1 1 140px;min-width:120px;" oninput="kbSettingChanged('kbMe')">
+                    </div>
+                    <div class="field-hint" style="margin-top:6px;">
+                        <b>Resize</b> fits the keyboard to the button labels. <b>One-time</b> hides the keyboard after the user taps a button. <b>Persistent</b> keeps the keyboard visible when Telegram's own controls try to dismiss it.
                     </div>
                 </div>
             </div>
@@ -2235,6 +2323,29 @@ crons = ["0 3 * * *"]</code></pre>
         <div class="sheet-foot">
             <button class="btn btn-gray" onclick="closeTokenModal()">Cancel</button>
             <button class="btn btn-primary" onclick="saveToken()">Save</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal hidden" id="check-modal" role="dialog" aria-modal="true" aria-labelledby="check-title">
+    <div class="modal-bg"></div>
+    <div class="sheet small">
+        <div class="sheet-head"><div class="sheet-title" id="check-title">Checking users…</div></div>
+        <div class="sheet-body">
+            <div id="check-current" class="muted small" style="margin-bottom:12px;min-height:18px;">Starting…</div>
+            <div style="height:12px;background:var(--fill-1);border-radius:var(--r-pill);overflow:hidden;display:flex;">
+                <div id="check-bar-green" style="height:100%;background:var(--green);transition:width 0.25s ease;width:0%"></div>
+                <div id="check-bar-yellow" style="height:100%;background:var(--orange);transition:width 0.25s ease;width:0%"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:12px;gap:8px;flex-wrap:wrap;" class="small">
+                <span><b id="check-checked">0</b> / <span id="check-total">0</span> checked</span>
+                <span><span style="color:var(--green)"><b id="check-reachable">0</b> reachable</span> · <span style="color:var(--orange)"><b id="check-unreachable">0</b> unreachable</span></span>
+            </div>
+            <div id="check-remaining" class="muted small" style="margin-top:6px;">0 remaining</div>
+        </div>
+        <div class="sheet-foot">
+            <button class="btn btn-gray" id="check-cancel" onclick="cancelCheckUsers()">Cancel</button>
+            <button class="btn btn-primary hidden" id="check-done" onclick="closeCheckModal()">Done</button>
         </div>
     </div>
 </div>
@@ -3309,7 +3420,11 @@ async function deleteFeatured(id) {
    USERS
    ============================================================ */
 var users = [];
+var bcUsers = [];
 var userFilter = 'all';
+var usersPage = 1;
+var usersTotalPages = 1;
+var usersTotal = 0;
 var manageUser = null;
 var userTimer = null;
 var umCurrentTab = 'dm';
@@ -3319,11 +3434,26 @@ function umSetTab(tab) {
     document.querySelectorAll('.tabpane').forEach(function (p) { p.classList.remove('active'); });
     var pane = $('um-pane-' + tab); if (pane) pane.classList.add('active');
 }
-function debouncedUsers() { clearTimeout(userTimer); userTimer = setTimeout(function () { loadUsers(); }, 280); }
+function debouncedUsers() { clearTimeout(userTimer); userTimer = setTimeout(function () { usersPage = 1; loadUsers(); }, 280); }
 function setUserFilter(f) {
     userFilter = f;
+    usersPage = 1;
     document.querySelectorAll('#user-filters .chip').forEach(function (c) { c.classList.toggle('active', c.dataset.filter === f); });
     loadUsers();
+}
+function gotoUsersPage(p) {
+    if (p < 1 || p > usersTotalPages || p === usersPage) return;
+    usersPage = p;
+    loadUsers();
+}
+function renderUsersPager() {
+    var box = $('users-pager');
+    if (!box) return;
+    if (usersTotalPages <= 1) { box.innerHTML = ''; return; }
+    box.innerHTML =
+        '<button class="btn btn-gray btn-sm" onclick="gotoUsersPage(' + (usersPage - 1) + ')" ' + (usersPage <= 1 ? 'disabled' : '') + '><i class="fa-solid fa-chevron-left"></i> Prev</button>' +
+        '<span class="muted small" style="align-self:center;">Page ' + usersPage + ' of ' + usersTotalPages + ' · ' + usersTotal + ' total</span>' +
+        '<button class="btn btn-gray btn-sm" onclick="gotoUsersPage(' + (usersPage + 1) + ')" ' + (usersPage >= usersTotalPages ? 'disabled' : '') + '>Next <i class="fa-solid fa-chevron-right"></i></button>';
 }
 function userCircle(u) {
     var cls = u.private_started == 1 ? 'green' : 'yellow';
@@ -3338,8 +3468,13 @@ async function loadUsers(force) {
     box.innerHTML = skeletonRows(3);
     try {
         var q = $('user-search').value.trim();
-        var d = await api('GET', '/api/users?filter=' + userFilter + (q ? '&search=' + encodeURIComponent(q) : ''));
-        users = d.users || []; renderUsers();
+        var d = await api('GET', '/api/users?filter=' + userFilter + '&page=' + usersPage + (q ? '&search=' + encodeURIComponent(q) : ''));
+        users = d.users || [];
+        usersTotal = d.total || 0;
+        usersTotalPages = d.total_pages || 1;
+        if (usersPage > usersTotalPages) { usersPage = usersTotalPages; return loadUsers(true); }
+        renderUsers();
+        renderUsersPager();
     } catch (e) { box.innerHTML = errorState(e.message, 'loadUsers(true)'); }
 }
 function renderUsers() {
@@ -3376,24 +3511,126 @@ function renderUsers() {
     });
     box.innerHTML = html + '</div>';
 }
+var checkState = { active: false, cancelled: false, total: 0, checked: 0, reachable: 0, unreachable: 0 };
+function openCheckModal(total, title) {
+    checkState = { active: true, cancelled: false, total: total, checked: 0, reachable: 0, unreachable: 0 };
+    $('check-title').textContent = title || (total > 1 ? 'Checking reachability' : 'Checking user');
+    $('check-current').textContent = 'Starting…';
+    $('check-checked').textContent = '0';
+    $('check-total').textContent = String(total);
+    $('check-reachable').textContent = '0';
+    $('check-unreachable').textContent = '0';
+    $('check-remaining').textContent = total + ' remaining';
+    $('check-bar-green').style.width = '0%';
+    $('check-bar-yellow').style.width = '0%';
+    $('check-cancel').disabled = false;
+    $('check-cancel').textContent = 'Cancel';
+    show($('check-cancel'), true);
+    show($('check-done'), false);
+    $('check-modal').classList.remove('hidden');
+    trackModal('check-modal');
+}
+function updateCheckBar() {
+    var total = checkState.total || 1;
+    $('check-bar-green').style.width = ((checkState.reachable / total) * 100) + '%';
+    $('check-bar-yellow').style.width = ((checkState.unreachable / total) * 100) + '%';
+}
+function updateCheckProgress(u) {
+    checkState.checked++;
+    $('check-checked').textContent = String(checkState.checked);
+    $('check-reachable').textContent = String(checkState.reachable);
+    $('check-unreachable').textContent = String(checkState.unreachable);
+    $('check-remaining').textContent = Math.max(0, checkState.total - checkState.checked) + ' remaining';
+    $('check-current').textContent = u ? ('Now checking: ' + (u.first_name || 'User') + (u.username ? ' (@' + u.username + ')' : '')) : '';
+    updateCheckBar();
+}
+function finishCheckModal() {
+    checkState.active = false;
+    $('check-current').textContent = checkState.cancelled
+        ? 'Cancelled after ' + checkState.checked + ' of ' + checkState.total + '.'
+        : 'Complete.';
+    show($('check-cancel'), false);
+    show($('check-done'), true);
+}
+function cancelCheckUsers() {
+    checkState.cancelled = true;
+    $('check-cancel').disabled = true;
+    $('check-cancel').textContent = 'Cancelling…';
+}
+function closeCheckModal() {
+    if (checkState.active) checkState.cancelled = true;
+    $('check-modal').classList.add('hidden');
+    untrackModal('check-modal');
+    $('check-cancel').disabled = false;
+    $('check-cancel').textContent = 'Cancel';
+}
+
 async function checkUser(id) {
+    if (checkState.active) { toast('A check is already running.', 'error'); return; }
+    var u = users.find(function (x) { return sameId(x.id, id); }) || { id: id, first_name: 'User' };
+    openCheckModal(1, 'Checking user');
     try {
         var r = await api('POST', '/api/users/' + id + '/check_started', {});
-        if (r.can_message) toast('This user has started the bot — you can DM them.', 'success');
-        else toast('This user has not started the bot. You cannot DM them yet.', 'error');
-        loadUsers();
-    } catch (e) { toast(e.message, 'error'); }
-}
-async function checkAllUsers() {
-    var ok = await confirmDialog('Check every user in the list? This can take a few seconds.', 'Check all users', false);
-    if (!ok) return;
-    var loaded = 0;
-    for (var i = 0; i < users.length; i++) {
-        try { await api('POST', '/api/users/' + users[i].id + '/check_started', {}); loaded++; }
-        catch (e) { /* keep going */ }
+        if (r.can_message) checkState.reachable++; else checkState.unreachable++;
+    } catch (e) {
+        checkState.unreachable++;
     }
-    toast('Checked ' + loaded + ' users.');
+    updateCheckProgress(u);
+    finishCheckModal();
     loadUsers();
+}
+
+async function checkAllUsers() {
+    if (checkState.active) { toast('A check is already running.', 'error'); return; }
+    if (!users.length) { toast('No users to check.', 'error'); return; }
+    checkState.active = true; // Reserve the lock while we confirm/fetch
+    try {
+        var confirmMsg = null;
+        if (usersTotalPages > 1) {
+            confirmMsg = 'This will check all ' + usersTotal + ' users across ' + usersTotalPages + ' pages. It can take a few minutes. Continue?';
+        } else if (users.length > 5) {
+            confirmMsg = 'Check all ' + users.length + ' users on this page? This can take a few seconds.';
+        }
+        if (confirmMsg) {
+            var ok = await confirmDialog(confirmMsg, 'Check users', false);
+            if (!ok) { checkState.active = false; return; }
+        }
+        if (usersTotalPages > 1) {
+            try {
+                var all = [];
+                // usersTotalPages was computed with per_page=50, but this loop
+                // fetches per_page=200 — recompute the true number of pages.
+                var fetchPages = Math.max(1, Math.ceil(usersTotal / 200));
+                for (var p = 1; p <= fetchPages; p++) {
+                    var d = await api('GET', '/api/users?filter=' + userFilter + '&page=' + p + '&per_page=200');
+                    all = all.concat(d.users || []);
+                }
+                users = all;
+            } catch (e) { checkState.active = false; toast(e.message, 'error'); return; }
+        }
+        var total = users.length;
+        openCheckModal(total, 'Checking all users');
+        const CONCURRENCY = 3;
+        var idx = 0;
+        async function worker() {
+            while (idx < users.length && !checkState.cancelled) {
+                var u = users[idx++];
+                try {
+                    var r = await api('POST', '/api/users/' + u.id + '/check_started', {});
+                    if (r.can_message) checkState.reachable++; else checkState.unreachable++;
+                } catch (e) {
+                    checkState.unreachable++;
+                }
+                updateCheckProgress(u);
+            }
+        }
+        await Promise.all(Array.from({ length: Math.min(CONCURRENCY, total) }, function () { return worker(); }));
+        finishCheckModal();
+        loadUsers();
+    } catch (e) {
+        checkState.active = false;
+        toast(e.message, 'error');
+    }
 }
 async function deleteUnreachableUsers() {
     var ok = await confirmDialog(
@@ -3431,14 +3668,17 @@ async function openUser(idOrUser) {
         kvCard('Source', manageUser.private_started == 1 ? 'Started the bot' : 'Group only') +
         kvCard('Last active', fmtTime(manageUser.last_active)) +
         kvCard('Block status', manageUser.block_type === 'full' ? 'Blocked' : (manageUser.block_type === 'ai_only' ? 'AI disabled' : 'Active'));
-    var roleLabel = manageUser.role === 'admin' ? 'Demote' : (manageUser.role === 'moderator' ? 'Promote to Admin' : 'Promote');
+    var role = manageUser.role || 'user';
+    var promoteLabel = role === 'user' ? 'Promote to Moderator' : (role === 'moderator' ? 'Promote to Admin' : 'Already Admin');
+    var demoteLabel = role === 'admin' ? 'Demote to Moderator' : (role === 'moderator' ? 'Demote to User' : 'Already User');
     $('um-actions').innerHTML =
         manageUser.first_name === 'Unknown'
         ? '<div class="muted small">This user record no longer exists — actions unavailable.</div>'
         : '<button class="btn btn-gray btn-sm" onclick="checkUser(' + manageUser.id + ')"><i class="fa-solid fa-stethoscope"></i> Check reachable</button>' +
-        '<button class="btn btn-gray btn-sm" onclick="toggleRole()"><i class="fa-solid fa-user-shield"></i> ' + roleLabel + '</button>' +
-        '<button class="btn btn-gray btn-sm" onclick="toggleBlock(\\'ai_only\\')"><i class="fa-solid fa-robot"></i> ' + (manageUser.block_type === 'ai_only' ? 'Unblock AI' : 'Block AI') + '</button>' +
-        '<button class="btn btn-danger btn-sm" onclick="toggleBlock(\\'full\\')"><i class="fa-solid fa-ban"></i> ' + (manageUser.block_type === 'full' ? 'Unblock' : 'Block all') + '</button>';
+        '<button class="btn btn-gray btn-sm" onclick="promoteUser()" ' + (role === 'admin' ? 'disabled' : '') + '><i class="fa-solid fa-arrow-up"></i> ' + promoteLabel + '</button>' +
+        '<button class="btn btn-gray btn-sm" onclick="demoteUser()" ' + (role === 'user' ? 'disabled' : '') + '><i class="fa-solid fa-arrow-down"></i> ' + demoteLabel + '</button>' +
+        '<button class="btn btn-gray btn-sm" onclick="toggleBlock(\'ai_only\')"><i class="fa-solid fa-robot"></i> ' + (manageUser.block_type === 'ai_only' ? 'Unblock AI' : 'Block AI') + '</button>' +
+        '<button class="btn btn-danger btn-sm" onclick="toggleBlock(\'full\')"><i class="fa-solid fa-ban"></i> ' + (manageUser.block_type === 'full' ? 'Unblock' : 'Block all') + '</button>';
     $('um-input').value = ''; $('um-photo').value = '';
     loadDmMessages(manageUser.id); loadAiMemory();
 }
@@ -3451,6 +3691,34 @@ async function toggleRole() {
     try {
         await api('PUT', '/api/users/role', { userId: manageUser.id, role: next });
         toast('Role set to ' + next + '.');
+        manageUser.role = next;
+        openUser(manageUser);
+    } catch (e) { toast(e.message, 'error'); }
+}
+
+async function promoteUser() {
+    var current = manageUser.role || 'user';
+    if (current === 'admin') { toast('Already an admin.', 'info'); return; }
+    var next = current === 'user' ? 'moderator' : 'admin';
+    var label = next === 'admin' ? 'Promote to Admin' : 'Promote to Moderator';
+    if (!await confirmDialog('Set role to "' + next + '"?', label, false)) return;
+    try {
+        await api('PUT', '/api/users/role', { userId: manageUser.id, role: next });
+        toast('Promoted to ' + next + '.');
+        manageUser.role = next;
+        openUser(manageUser);
+    } catch (e) { toast(e.message, 'error'); }
+}
+
+async function demoteUser() {
+    var current = manageUser.role || 'user';
+    if (current === 'user') { toast('User is already a regular user.', 'info'); return; }
+    var next = current === 'admin' ? 'moderator' : 'user';
+    var label = next === 'moderator' ? 'Demote to Moderator' : 'Demote to User';
+    if (!await confirmDialog('Set role to "' + next + '"?', label, true)) return;
+    try {
+        await api('PUT', '/api/users/role', { userId: manageUser.id, role: next });
+        toast('Demoted to ' + next + '.');
         manageUser.role = next;
         openUser(manageUser);
     } catch (e) { toast(e.message, 'error'); }
@@ -3710,7 +3978,22 @@ async function loadAutoRemove() {
         $('arm-dm-value').value = d.dm_value || 30;
         $('arm-dm-unit').value = d.dm_unit || 'days';
         show($('arm-settings'), d.enabled === '1');
+        if (d.dm_save_private && $('mem-dm-save')) $('mem-dm-save').value = d.dm_save_private;
+        if ($('mem-save-featured')) toggleSwitch('mem-save-featured', d.dm_save_featured !== '0');
     } catch (e) { /* silent */ }
+}
+async function toggleMemSaveFeatured() { toggleSwitch('mem-save-featured'); saveMemPolicies(); }
+async function saveMemPolicies() {
+    try {
+        await api('POST', '/api/memory/auto_remove', {
+            enabled: sw('arm-enable') ? '1' : '0',
+            dm_value: parseInt($('arm-dm-value').value) || 30,
+            dm_unit: $('arm-dm-unit').value || 'days',
+            dm_save_private: $('mem-dm-save').value || 'auto',
+            dm_save_featured: sw('mem-save-featured') ? '1' : '0'
+        });
+        toast('Save policy updated.');
+    } catch (e) { toast(e.message, 'error'); }
 }
 async function saveAutoRemove() {
     var value = parseInt($('arm-dm-value').value);
@@ -3794,22 +4077,30 @@ function applyGroupSettings(s) {
     setSeg('gm-mcp-perm', s.mcp_telegram_permission || 'inherit');
     setSeg('gm-rules-perm', s.rules_command_permission || 'inherit');
     setSeg('gm-link-level', s.link_filter_level || 'admins');
+    setSeg('gm-forward-level', s.anti_forward_level || 'admins');
+    setSeg('gm-blacklist-level', s.blacklist_level || 'admins');
     $('gm-memory-select').value = s.memory === undefined ? 'inherit' : String(s.memory);
     $('gm-ai-trigger').value = s.ai_trigger || 'inherit';
     toggleSwitch('gm-welcome-toggle', !!s.welcome_enabled); $('gm-welcome-text').value = s.welcome_text || '';
     $('gm-rules').value = s.rules_text || '';
-    toggleSwitch('gm-flood-toggle', !!s.anti_flood); $('gm-flood-limit').value = s.flood_limit || 6;
+    toggleSwitch('gm-flood-toggle', !!s.anti_flood); $('gm-flood-limit').value = s.flood_limit || 6; $('gm-flood-mute').value = s.flood_mute_minutes || 0;
     toggleSwitch('gm-link-toggle', !!s.link_filter);
+    toggleSwitch('gm-forward-toggle', !!s.anti_forward);
+    toggleSwitch('gm-bot-toggle', !!s.anti_bot);
+    $('gm-blacklist').value = s.blacklist_words || '';
     toggleSwitch('gm-service-toggle', !!s.auto_delete_service);
     toggleSwitch('gm-track-toggle', !!s.track_members);
     show($('gm-flood-limit-wrap'), !!s.anti_flood);
+    show($('gm-flood-mute-wrap'), !!s.anti_flood);
     show($('gm-link-level-wrap'), !!s.link_filter);
+    show($('gm-forward-level-wrap'), !!s.anti_forward);
 }
 function gmToggle(key) {
-    var map = { welcome: 'gm-welcome-toggle', flood: 'gm-flood-toggle', link: 'gm-link-toggle', service: 'gm-service-toggle', track: 'gm-track-toggle' };
+    var map = { welcome: 'gm-welcome-toggle', flood: 'gm-flood-toggle', link: 'gm-link-toggle', forward: 'gm-forward-toggle', bot: 'gm-bot-toggle', service: 'gm-service-toggle', track: 'gm-track-toggle' };
     var on = toggleSwitch(map[key]);
-    if (key === 'flood') show($('gm-flood-limit-wrap'), on);
+    if (key === 'flood') { show($('gm-flood-limit-wrap'), on); show($('gm-flood-mute-wrap'), on); }
     if (key === 'link') show($('gm-link-level-wrap'), on);
+    if (key === 'forward') show($('gm-forward-level-wrap'), on);
 }
 function gmSet(k, v) { setSeg('gm-ai-mode', v); }
 async function saveGroupSettings() {
@@ -3822,10 +4113,15 @@ async function saveGroupSettings() {
         mcp_telegram_permission: getSeg('gm-mcp-perm') || 'inherit',
         rules_command_permission: getSeg('gm-rules-perm') || 'inherit',
         link_filter_level: getSeg('gm-link-level') || 'admins',
+        anti_forward_level: getSeg('gm-forward-level') || 'admins',
+        blacklist_level: getSeg('gm-blacklist-level') || 'admins',
         memory: $('gm-memory-select').value, ai_trigger: $('gm-ai-trigger').value,
         welcome_enabled: sw('gm-welcome-toggle'), welcome_text: $('gm-welcome-text').value, rules_text: $('gm-rules').value,
         anti_flood: sw('gm-flood-toggle'), flood_limit: parseInt($('gm-flood-limit').value) || 6,
-        link_filter: sw('gm-link-toggle'), auto_delete_service: sw('gm-service-toggle'), track_members: sw('gm-track-toggle')
+        flood_mute_minutes: parseInt($('gm-flood-mute').value) || 0,
+        link_filter: sw('gm-link-toggle'), auto_delete_service: sw('gm-service-toggle'), track_members: sw('gm-track-toggle'),
+        anti_forward: sw('gm-forward-toggle'), blacklist_words: $('gm-blacklist').value || '',
+        anti_bot: sw('gm-bot-toggle')
     };
     try { await api('POST', '/api/groups/' + manageGroup.id + '/settings', body); toast('Group settings saved.'); }
     catch (e) { toast(e.message, 'error'); }
@@ -3914,7 +4210,7 @@ async function clearGroupMemory() {
 var bcHistory = [];
 async function loadBroadcast() {
     loadBroadcastPacing(); loadBroadcastHistory();
-    try { var d = await api('GET', '/api/users?filter=all'); users = d.users || []; } catch (e) {}
+    try { var d = await api('GET', '/api/users?filter=all&per_page=1000'); bcUsers = d.users || []; } catch (e) { bcUsers = []; }
 }
 async function loadBroadcastPacing() {
     try {
@@ -3941,7 +4237,7 @@ function onBroadcastTargetChange() {
 }
 function renderBroadcastCustom() {
     var box = $('bc-custom-list');
-    box.innerHTML = users.map(function (u) {
+    box.innerHTML = bcUsers.map(function (u) {
         return '<label class="check" style="padding:6px 0;" data-name="' + esc((u.first_name || '') + ' ' + (u.username || '')) + '">' +
             '<input type="checkbox" class="bc-cb" value="' + u.id + '" checked onchange="updateBcCount()">' +
             '<span>' + esc(u.first_name || 'User') + (u.username ? ' <span class="muted">@' + esc(u.username) + '</span>' : '') + '</span></label>';
@@ -3956,7 +4252,7 @@ function getBroadcastIds() {
     var t = $('bc-target').value;
     if (t === 'specific') return $('bc-specific').value.split(/[^0-9]+/).map(Number).filter(Boolean);
     if (t === 'custom') return Array.from(document.querySelectorAll('.bc-cb:checked')).map(function (c) { return parseInt(c.value); });
-    return users.filter(function (u) {
+    return bcUsers.filter(function (u) {
         if (t === 'all' || t === 'private') return u.private_started == 1;
         if (t === 'only_ai_blocked') return u.block_type === 'ai_only';
         if (t === 'only_full_blocked') return u.block_type === 'full';
@@ -4030,6 +4326,10 @@ function openMsgEditor(mode, id) {
     if (mode === 'dm' || mode === 'broadcast') {
         var rec = mode === 'dm' ? (window.__dmCache || []).find(function (m) { return m.id === id; }) : bcHistory.find(function (h) { return h.id === id; });
         $('msg-title').textContent = 'Edit message';
+        // Telegram cannot convert a message between text and photo in place,
+        // so lock the photo field while editing an existing message.
+        $('msg-photo').disabled = true;
+        $('msg-photo').placeholder = '(photo cannot be changed on an existing message)';
         if (rec) {
             $('msg-text').value = rec.text || rec.message || '';
             $('msg-photo').value = rec.photo_url || '';
@@ -4050,6 +4350,11 @@ function openMsgEditor(mode, id) {
     } else if (mode === 'broadcast-new') {
         $('msg-title').textContent = 'Attach buttons';
         $('msg-text').value = $('bc-text').value; $('msg-photo').value = $('bc-photo').value;
+    }
+    // New messages can freely include or omit a photo.
+    if (mode === 'dm-new' || mode === 'group' || mode === 'broadcast-new') {
+        $('msg-photo').disabled = false;
+        $('msg-photo').placeholder = 'https://…';
     }
     kbMe.populateCommands();
     $('msg-modal').classList.remove('hidden');
@@ -4073,11 +4378,13 @@ async function saveMsgEditor() {
         await withBusy($('msg-save'), async function () {
             if (msgContext.mode === 'dm') {
                 var rec = (window.__dmCache || []).find(function (m) { return m.id === msgContext.id; });
-                await api('POST', '/api/users/message/edit', { chatId: rec.chat_id, messageId: rec.message_id, kind: rec.kind || 'text', text: text, photo_url: photo, buttons_json: buttons });
-                toast('Message updated.'); loadDmMessages(manageUser.id);
+                var resp = await api('POST', '/api/users/message/edit', { chatId: rec.chat_id, messageId: rec.message_id, text: text, photo_url: photo, buttons_json: buttons });
+                toast(resp && resp.converted ? 'Message re-sent (media type changed).' : 'Message updated.');
+                loadDmMessages(manageUser.id);
             } else if (msgContext.mode === 'broadcast') {
-                await api('POST', '/api/broadcast/edit', { broadcastId: msgContext.id, message: text, buttons_json: buttons, photo_url: photo });
-                toast('Broadcast updated.'); loadBroadcastHistory();
+                var bResp = await api('POST', '/api/broadcast/edit', { broadcastId: msgContext.id, message: text, buttons_json: buttons, photo_url: photo });
+                toast(bResp && bResp.converted ? 'Broadcast re-sent (media type changed) to ' + (bResp.updated || 0) + ' chats.' : 'Broadcast updated.');
+                loadBroadcastHistory();
             } else {
                 draftButtonsJson = buttons;
                 if (msgContext.mode === 'dm-new') { $('um-input').value = text; $('um-photo').value = photo; }
@@ -4097,28 +4404,35 @@ function createKeyboardBuilder(prefix, opts) {
     opts = opts || {};
     var inline = [];
     var reply = { rows: [], actions: {}, resize: true, one_time: false, persistent: true, placeholder: '' };
+    var editingInline = null; // {ri, bi} | null
+    var editingReply = null;  // {ri, bi} | null
+
     function el(id) { return $(prefix + '-' + id); }
+
     function renderInline() {
         var box = el('inline-list'); if (!box) return;
-        if (!inline.length) { box.innerHTML = '<div class="empty" style="padding:14px;"><i class="fa-regular fa-keyboard"></i>No buttons yet.</div>'; return; }
+        if (!inline.length) { box.innerHTML = '<div class="empty" style="padding:14px;"><i class="fa-regular fa-keyboard"></i>No inline buttons yet.</div>'; return; }
         var html = '<div class="kb-wrap">';
         inline.forEach(function (row, ri) {
             html += '<div class="kb-rowchips"><span class="kb-rlabel">Row ' + (ri + 1) + '</span>';
             row.forEach(function (b, bi) {
-                html += '<span class="kb-chip">' +
-                    '<span class="lbl">' + esc(b.text) + '</span>' +
+                var editing = editingInline && editingInline.ri === ri && editingInline.bi === bi;
+                html += '<span class="kb-chip' + (editing ? ' editing' : '') + '">' +
+                    '<span class="lbl" onclick="' + prefix + 'EditI(' + ri + ',' + bi + ')" title="Click to edit" style="cursor:pointer;">' + esc(b.text) + '</span>' +
                     '<span class="typ">' + esc(b.type) + (b.value ? ' · ' + esc(b.value.slice(0, 16)) : '') + '</span>' +
-                    '<button class="arw" onclick="' + prefix + 'MoveI(' + ri + ',' + bi + ',-1)" ' + (bi === 0 ? 'disabled' : '') + ' aria-label="Move left">&#171;</button>' +
-                    '<button class="arw" onclick="' + prefix + 'MoveI(' + ri + ',' + bi + ',1)" ' + (bi === row.length - 1 ? 'disabled' : '') + ' aria-label="Move right">&#187;</button>' +
-                    '<button class="arw" onclick="' + prefix + 'MoveIR(' + ri + ',-1)" ' + (ri === 0 ? 'disabled' : '') + ' aria-label="Move up">&#8593;</button>' +
-                    '<button class="arw" onclick="' + prefix + 'MoveIR(' + ri + ',1)" ' + (ri === inline.length - 1 ? 'disabled' : '') + ' aria-label="Move down">&#8595;</button>' +
-                    '<button class="arw del" onclick="' + prefix + 'DelI(' + ri + ',' + bi + ')" aria-label="Remove">&#10005;</button>' +
+                    '<button class="arw" onclick="' + prefix + 'EditI(' + ri + ',' + bi + ')" title="Edit" aria-label="Edit">&#9998;</button>' +
+                    '<button class="arw" onclick="' + prefix + 'MoveI(' + ri + ',' + bi + ',-1)" ' + (bi === 0 ? 'disabled' : '') + ' title="Move left">&#171;</button>' +
+                    '<button class="arw" onclick="' + prefix + 'MoveI(' + ri + ',' + bi + ',1)" ' + (bi === row.length - 1 ? 'disabled' : '') + ' title="Move right">&#187;</button>' +
+                    '<button class="arw" onclick="' + prefix + 'MoveIR(' + ri + ',-1)" ' + (ri === 0 ? 'disabled' : '') + ' title="Move up">&#8593;</button>' +
+                    '<button class="arw" onclick="' + prefix + 'MoveIR(' + ri + ',1)" ' + (ri === inline.length - 1 ? 'disabled' : '') + ' title="Move down">&#8595;</button>' +
+                    '<button class="arw del" onclick="' + prefix + 'DelI(' + ri + ',' + bi + ')" title="Remove">&#10005;</button>' +
                     '</span>';
             });
             html += '</div>';
         });
         box.innerHTML = html + '</div>';
     }
+
     function renderReply() {
         var box = el('reply-list'); if (!box) return;
         if (!reply.rows.length) { box.innerHTML = '<div class="empty" style="padding:14px;"><i class="fa-regular fa-keyboard"></i>No reply buttons yet.</div>'; }
@@ -4128,14 +4442,16 @@ function createKeyboardBuilder(prefix, opts) {
                 html += '<div class="kb-rowchips"><span class="kb-rlabel">Row ' + (ri + 1) + '</span>';
                 row.forEach(function (b, bi) {
                     var act = reply.actions[b.text] || '';
-                    html += '<span class="kb-chip">' +
-                        '<span class="lbl">' + esc(b.text) + '</span>' +
-                        '<span class="typ" style="cursor:pointer;" onclick="' + prefix + 'SetAct(' + ri + ',' + bi + ')">' + esc(act || 'no action') + '</span>' +
-                        '<button class="arw" onclick="' + prefix + 'MoveR(' + ri + ',' + bi + ',-1)" ' + (bi === 0 ? 'disabled' : '') + ' aria-label="Move left">&#171;</button>' +
-                        '<button class="arw" onclick="' + prefix + 'MoveR(' + ri + ',' + bi + ',1)" ' + (bi === row.length - 1 ? 'disabled' : '') + ' aria-label="Move right">&#187;</button>' +
-                        '<button class="arw" onclick="' + prefix + 'MoveRR(' + ri + ',-1)" ' + (ri === 0 ? 'disabled' : '') + ' aria-label="Move up">&#8593;</button>' +
-                        '<button class="arw" onclick="' + prefix + 'MoveRR(' + ri + ',1)" ' + (ri === reply.rows.length - 1 ? 'disabled' : '') + ' aria-label="Move down">&#8595;</button>' +
-                        '<button class="arw del" onclick="' + prefix + 'DelR(' + ri + ',' + bi + ')" aria-label="Remove">&#10005;</button>' +
+                    var editing = editingReply && editingReply.ri === ri && editingReply.bi === bi;
+                    html += '<span class="kb-chip' + (editing ? ' editing' : '') + '">' +
+                        '<span class="lbl" onclick="' + prefix + 'EditR(' + ri + ',' + bi + ')" title="Click to edit" style="cursor:pointer;">' + esc(b.text) + '</span>' +
+                        '<span class="typ" style="cursor:pointer;" onclick="' + prefix + 'SetAct(' + ri + ',' + bi + ')" title="Set action">' + esc(act || 'no action') + '</span>' +
+                        '<button class="arw" onclick="' + prefix + 'EditR(' + ri + ',' + bi + ')" title="Edit" aria-label="Edit">&#9998;</button>' +
+                        '<button class="arw" onclick="' + prefix + 'MoveR(' + ri + ',' + bi + ',-1)" ' + (bi === 0 ? 'disabled' : '') + ' title="Move left">&#171;</button>' +
+                        '<button class="arw" onclick="' + prefix + 'MoveR(' + ri + ',' + bi + ',1)" ' + (bi === row.length - 1 ? 'disabled' : '') + ' title="Move right">&#187;</button>' +
+                        '<button class="arw" onclick="' + prefix + 'MoveRR(' + ri + ',-1)" ' + (ri === 0 ? 'disabled' : '') + ' title="Move up">&#8593;</button>' +
+                        '<button class="arw" onclick="' + prefix + 'MoveRR(' + ri + ',1)" ' + (ri === reply.rows.length - 1 ? 'disabled' : '') + ' title="Move down">&#8595;</button>' +
+                        '<button class="arw del" onclick="' + prefix + 'DelR(' + ri + ',' + bi + ')" title="Remove">&#10005;</button>' +
                         '</span>';
                 });
                 html += '</div>';
@@ -4144,6 +4460,7 @@ function createKeyboardBuilder(prefix, opts) {
         }
         renderPreview();
     }
+
     function renderPreview() {
         var pv = el('reply-preview'); if (!pv) return;
         if (!reply.rows.length) { pv.innerHTML = ''; return; }
@@ -4151,6 +4468,7 @@ function createKeyboardBuilder(prefix, opts) {
             return '<div class="pvrow">' + row.map(function (b) { return '<span class="pvbtn">' + esc(b.text) + '</span>'; }).join('') + '</div>';
         }).join('');
     }
+
     function inlineAdd() {
         var lbl = el('inline-label').value.trim();
         var type = el('inline-type').value;
@@ -4158,24 +4476,74 @@ function createKeyboardBuilder(prefix, opts) {
         if (!lbl) { toast('Enter a label.', 'error'); return; }
         if (!val) { toast('Choose a command or enter a value.', 'error'); return; }
         if (type === 'command' && val.charAt(0) !== '/') val = '/' + val;
-        var last = inline.length ? inline[inline.length - 1] : null;
-        if (!last || last.length >= 3) { last = []; inline.push(last); }
-        last.push({ text: lbl, type: type, value: val });
+
+        if (editingInline) {
+            inline[editingInline.ri][editingInline.bi] = { text: lbl, type: type, value: val };
+            editingInline = null;
+            var addBtn = el('inline-add-btn');
+            if (addBtn) addBtn.innerHTML = '<i class="fa-solid fa-plus"></i>';
+        } else {
+            var last = inline.length ? inline[inline.length - 1] : null;
+            if (!last || last.length >= 3) { last = []; inline.push(last); }
+            last.push({ text: lbl, type: type, value: val });
+            var addBtn = el('inline-add-btn');
+            if (addBtn) addBtn.innerHTML = '<i class="fa-solid fa-plus"></i>';
+        }
         el('inline-label').value = ''; el('inline-value').value = ''; el('inline-cmd').value = '';
         renderInline();
     }
+
     function replyAdd() {
         var lbl = el('reply-label').value.trim();
         if (!lbl) { toast('Enter button text.', 'error'); return; }
         var act = el('reply-cmd').value || el('reply-value').value.trim();
         if (act && act.charAt(0) !== '/') act = '/' + act;
-        var last = reply.rows.length ? reply.rows[reply.rows.length - 1] : null;
-        if (!last || last.length >= 3) { last = []; reply.rows.push(last); }
-        last.push({ text: lbl, command: '' });
-        if (act) reply.actions[lbl] = act;
+
+        if (editingReply) {
+            var oldText = reply.rows[editingReply.ri][editingReply.bi].text;
+            reply.rows[editingReply.ri][editingReply.bi] = { text: lbl, command: '' };
+            if (oldText !== lbl) delete reply.actions[oldText];
+            if (act) reply.actions[lbl] = act;
+            editingReply = null;
+            var addBtn = el('reply-add-btn');
+            if (addBtn) addBtn.innerHTML = '<i class="fa-solid fa-plus"></i>';
+        } else {
+            var last = reply.rows.length ? reply.rows[reply.rows.length - 1] : null;
+            if (!last || last.length >= 3) { last = []; reply.rows.push(last); }
+            last.push({ text: lbl, command: '' });
+            if (act) reply.actions[lbl] = act;
+            var addBtn = el('reply-add-btn');
+            if (addBtn) addBtn.innerHTML = '<i class="fa-solid fa-plus"></i>';
+        }
         el('reply-label').value = ''; el('reply-value').value = ''; el('reply-cmd').value = '';
         renderReply();
     }
+
+    function editInline(ri, bi) {
+        var b = inline[ri][bi];
+        el('inline-label').value = b.text;
+        el('inline-type').value = b.type;
+        if (b.type === 'command') { el('inline-cmd').value = b.value; el('inline-value').value = ''; }
+        else { el('inline-value').value = b.value; el('inline-cmd').value = ''; }
+        if (typeof kbInlineTypeToggle === 'function') kbInlineTypeToggle(prefix);
+        editingInline = { ri: ri, bi: bi };
+        var addBtn = el('inline-add-btn');
+        if (addBtn) addBtn.innerHTML = '<i class="fa-solid fa-check"></i>';
+        renderInline();
+        try { el('inline-label').focus(); } catch (e) {}
+    }
+
+    function editReply(ri, bi) {
+        var b = reply.rows[ri][bi];
+        el('reply-label').value = b.text;
+        el('reply-value').value = reply.actions[b.text] || '';
+        editingReply = { ri: ri, bi: bi };
+        var addBtn = el('reply-add-btn');
+        if (addBtn) addBtn.innerHTML = '<i class="fa-solid fa-check"></i>';
+        renderReply();
+        try { el('reply-label').focus(); } catch (e) {}
+    }
+
     function setAct(ri, bi) {
         var b = reply.rows[ri][bi];
         var cur = reply.actions[b.text] || '';
@@ -4186,12 +4554,14 @@ function createKeyboardBuilder(prefix, opts) {
         else delete reply.actions[b.text];
         renderReply();
     }
+
     function moveI(ri, bi, d) { var row = inline[ri]; var j = bi + d; if (j < 0 || j >= row.length) return; var t = row.splice(bi, 1)[0]; row.splice(j, 0, t); renderInline(); }
     function moveIR(ri, d) { var j = ri + d; if (j < 0 || j >= inline.length) return; var t = inline.splice(ri, 1)[0]; inline.splice(j, 0, t); renderInline(); }
     function delI(ri, bi) { inline[ri].splice(bi, 1); if (!inline[ri].length) inline.splice(ri, 1); renderInline(); }
     function moveR(ri, bi, d) { var row = reply.rows[ri]; var j = bi + d; if (j < 0 || j >= row.length) return; var t = row.splice(bi, 1)[0]; row.splice(j, 0, t); renderReply(); }
     function moveRR(ri, d) { var j = ri + d; if (j < 0 || j >= reply.rows.length) return; var t = reply.rows.splice(ri, 1)[0]; reply.rows.splice(j, 0, t); renderReply(); }
     function delR(ri, bi) { var t = reply.rows[ri].splice(bi, 1)[0]; delete reply.actions[t.text]; if (!reply.rows[ri].length) reply.rows.splice(ri, 1); renderReply(); }
+
     function loadInline(raw) {
         inline = [];
         if (raw) {
@@ -4203,12 +4573,14 @@ function createKeyboardBuilder(prefix, opts) {
         }
         renderInline();
     }
+
     function updateSettingsUi() {
         if (el('reply-resize')) el('reply-resize').checked = reply.resize !== false;
         if (el('reply-onetime')) el('reply-onetime').checked = !!reply.one_time;
         if (el('reply-persistent')) el('reply-persistent').checked = reply.persistent !== false;
         if (el('reply-placeholder')) el('reply-placeholder').value = reply.placeholder || '';
     }
+
     function loadReply(raw) {
         reply = { rows: [], actions: {}, resize: true, one_time: false, persistent: true, placeholder: '' };
         if (raw) {
@@ -4228,12 +4600,24 @@ function createKeyboardBuilder(prefix, opts) {
         updateSettingsUi();
         renderReply();
     }
+
     function inlineJSON() { return inline.length ? { v: 2, inline: inline } : null; }
     function replyJSON() {
         if (!reply.rows.length) return null;
         return { v: 2, reply: { rows: reply.rows, actions: reply.actions, resize: reply.resize, one_time: reply.one_time, persistent: reply.persistent, placeholder: reply.placeholder } };
     }
-    function reset() { inline = []; reply = { rows: [], actions: {}, resize: true, one_time: false, persistent: true, placeholder: '' }; updateSettingsUi(); renderInline(); renderReply(); }
+    function reset() {
+        inline = [];
+        reply = { rows: [], actions: {}, resize: true, one_time: false, persistent: true, placeholder: '' };
+        editingInline = null;
+        editingReply = null;
+        const ib = el('inline-add-btn'); if (ib) ib.innerHTML = '<i class="fa-solid fa-plus"></i>';
+        const rb = el('reply-add-btn');  if (rb) rb.innerHTML = '<i class="fa-solid fa-plus"></i>';
+        updateSettingsUi();
+        renderInline();
+        renderReply();
+    }
+
     function populateCommands() {
         ['inline-cmd', 'reply-cmd'].forEach(function (id) {
             var sel = el(id); if (!sel) return;
@@ -4243,16 +4627,20 @@ function createKeyboardBuilder(prefix, opts) {
             if (cur) sel.value = cur;
         });
     }
+
     function syncSettings() {
         if (el('reply-resize')) reply.resize = el('reply-resize').checked;
         if (el('reply-onetime')) reply.one_time = el('reply-onetime').checked;
         if (el('reply-persistent')) reply.persistent = el('reply-persistent').checked;
         if (el('reply-placeholder')) reply.placeholder = el('reply-placeholder').value;
     }
+
     var api = { inlineAdd: inlineAdd, replyAdd: replyAdd, loadInline: loadInline, loadReply: loadReply, inlineJSON: inlineJSON, replyJSON: replyJSON, reset: reset, render: renderReply, populateCommands: populateCommands, syncSettings: syncSettings };
     window[prefix + 'MoveI'] = moveI; window[prefix + 'MoveIR'] = moveIR; window[prefix + 'DelI'] = delI;
     window[prefix + 'MoveR'] = moveR; window[prefix + 'MoveRR'] = moveRR; window[prefix + 'DelR'] = delR;
     window[prefix + 'SetAct'] = setAct;
+    window[prefix + 'EditI'] = editInline;
+    window[prefix + 'EditR'] = editReply;
     return api;
 }
 var kbCmd = createKeyboardBuilder('kbCmd');
@@ -4300,12 +4688,12 @@ function renderPermissions() {
     box.innerHTML = Object.keys(PERM_LABELS).map(function (k) {
         var meta = PERM_LABELS[k];
         var val = permState[k] || 'everyone';
-        return '<div class="switch-row" style="margin-bottom:10px;">' +
-            '<div style="flex:1"><div class="sw-label">' + esc(meta.label) + '</div><div class="sw-sub">' + esc(meta.sub) + '</div></div>' +
-            '<div class="segmented" data-perm="' + k + '">' +
-            '<button data-v="everyone" class="' + (val === 'everyone' ? 'active' : '') + '" onclick="setPerm(\\\'' + k + '\\\',\\\'everyone\\\',this)">Everyone</button>' +
-            '<button data-v="moderator" class="' + (val === 'moderator' ? 'active' : '') + '" onclick="setPerm(\\\'' + k + '\\\',\\\'moderator\\\',this)">Moderator+</button>' +
-            '<button data-v="admin" class="' + (val === 'admin' ? 'active' : '') + '" onclick="setPerm(\\\'' + k + '\\\',\\\'admin\\\',this)">Admin only</button>' +
+        return '<div class="switch-row perm-row" style="margin-bottom:10px;">' +
+            '<div class="perm-text" style="flex:1"><div class="sw-label">' + esc(meta.label) + '</div><div class="sw-sub">' + esc(meta.sub) + '</div></div>' +
+            '<div class="segmented perm-seg" data-perm="' + k + '">' +
+            '<button data-v="everyone" class="' + (val === 'everyone' ? 'active' : '') + '" onclick="setPerm(\'' + k + '\',\'everyone\',this)">Everyone</button>' +
+            '<button data-v="moderator" class="' + (val === 'moderator' ? 'active' : '') + '" onclick="setPerm(\'' + k + '\',\'moderator\',this)">Moderator+</button>' +
+            '<button data-v="admin" class="' + (val === 'admin' ? 'active' : '') + '" onclick="setPerm(\'' + k + '\',\'admin\',this)">Admin only</button>' +
             '</div>' +
         '</div>';
     }).join('');
@@ -4327,12 +4715,16 @@ async function loadAdmins() {
     try {
         var d = await api('GET', '/api/admins');
         var admins = d.admins || [];
-        if (!admins.length) { box.innerHTML = '<div class="muted small">No admins yet. Promote a user above.</div>'; return; }
+        if (!admins.length) { box.innerHTML = '<div class="muted small">No admins or moderators yet.</div>'; return; }
         box.innerHTML = '<div class="list">' + admins.map(function (a) {
+            var roleBadge = a.role === 'admin'
+                ? '<span class="badge purple"><i class="fa-solid fa-crown"></i> Admin</span>'
+                : '<span class="badge role-badge-moderator"><i class="fa-solid fa-shield"></i> Moderator</span>';
             return '<div class="list-row">' +
                 userCircle({ private_started: 1, first_name: a.first_name || '?', username: a.username || '' }) +
-                '<div class="lr-main"><div class="lr-title">' + esc(a.first_name || 'Admin') + (a.username ? ' <span class="muted">@' + esc(a.username) + '</span>' : '') + '</div>' +
+                '<div class="lr-main"><div class="lr-title">' + esc(a.first_name || 'User') + (a.username ? ' <span class="muted">@' + esc(a.username) + '</span>' : '') + '</div>' +
                 '<div class="lr-sub">ID ' + esc(a.id) + ' · last active ' + fmtTime(a.last_active) + '</div></div>' +
+                roleBadge +
                 '<button class="btn btn-gray btn-sm" onclick="demoteAdmin(' + a.id + ')"><i class="fa-solid fa-user-minus"></i> Demote</button>' +
             '</div>';
         }).join('') + '</div>';
@@ -4490,10 +4882,28 @@ function renderAlts() {
             '<select class="input" onchange="alts[' + i + '].provider=this.value">' + ['openai', 'gemini', 'deepseek', 'groq', 'openrouter', 'ollama'].map(function (p) { return '<option value="' + p + '"' + (a.provider === p ? ' selected' : '') + '>' + p + '</option>'; }).join('') + '</select>' +
             '<input class="input" type="password" value="' + esc(keyVal) + '" placeholder="' + esc(keyPlaceholder) + '" oninput="alts[' + i + '].apiKey=this.value">' +
             '<input class="input" value="' + esc(a.model || '') + '" placeholder="Model" oninput="alts[' + i + '].model=this.value">' +
-            '</div></div>';
+            '</div>' +
+            '<div class="row" style="margin-top:8px;gap:8px;flex-wrap:wrap;">' +
+                '<button class="btn btn-gray btn-sm" onclick="testAltProvider(' + i + ')"><i class="fa-solid fa-plug"></i> Test provider</button>' +
+                '<span class="small" id="alt-test-' + i + '" style="flex:1;min-width:120px;word-break:break-word;"></span>' +
+            '</div>' +
+        '</div>';
     }).join('');
     var btn = $('add-alt-provider-btn');
     if (btn) btn.disabled = alts.length >= 5;
+}
+async function testAltProvider(i) {
+    var res = $('alt-test-' + i);
+    if (res) res.innerHTML = '<span class="mini-spinner"></span> Testing…';
+    try {
+        var d = await api('POST', '/api/ai/test', { settings: collectAi(), provider: 'alt', altIndex: i });
+        if (res) {
+            if (d && d.success) res.innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> OK — ' + esc((d.message || '').slice(0, 80)) + '</span>';
+            else res.innerHTML = '<span style="color:var(--red)"><i class="fa-solid fa-circle-xmark"></i> ' + esc((d && d.error) || 'Failed') + '</span>';
+        }
+    } catch (e) {
+        if (res) res.innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>';
+    }
 }
 function addAltProvider() {
     if (alts.length >= 5) { toast('Maximum 5 fallback providers allowed.', 'error'); return; }
@@ -4885,25 +5295,36 @@ async function clearLogs() {
     await api('DELETE', '/api/logs'); toast('Cleared.'); loadLogs();
 }
 var latestVersion = null, updateAvailable = false, workerUrl = null;
-async function checkUpdate(force) {
-    $('up-latest').value = '…';
-    try {
-        var d = await api('GET', '/api/version' + (force ? '?force=1' : ''));
-        latestVersion = d.latest; workerUrl = d.worker_url;
-        $('up-latest').value = d.latest || 'unknown';
-        $('up-notes').textContent = d.released ? 'Released ' + d.released + (d.notes ? ' · ' + d.notes : '') : '';
-        var isLatestBeta = isBeta(d.latest);
-        var cmpResult = d.latest ? cmp(d.latest, d.current) : 0;
-        var versionChanged = !!(d.latest && d.latest !== d.current);
-        var stableUpgrade = cmpResult > 0 && !isLatestBeta;
-        updateAvailable = versionChanged;
+const UPDATE_CHECK_TTL_MS = 30 * 60 * 1000;
+function applyUpdateData(d) {
+    if (!d) return;
+    latestVersion = d.latest; workerUrl = d.worker_url;
+    if ($('up-latest')) $('up-latest').value = d.latest || 'unknown';
+    if ($('up-notes')) $('up-notes').textContent = d.released ? 'Released ' + d.released + (d.notes ? ' · ' + d.notes : '') : '';
+    var isLatestBeta = isBeta(d.latest);
+    var cmpResult = d.latest ? cmp(d.latest, d.current) : 0;
+    var versionChanged = !!(d.latest && d.latest !== d.current);
+    var stableUpgrade = cmpResult > 0 && !isLatestBeta;
+    updateAvailable = versionChanged;
+    if ($('up-btn')) {
         $('up-btn').disabled = !updateAvailable;
         $('up-btn').innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> ' + (stableUpgrade ? 'Update now' : 'Update (version changed)');
-        show($('update-pill'), stableUpgrade);
-        show($('up-beta-hint'), isLatestBeta);
-        var reBtn = $('up-reinstall-btn');
-        if (reBtn) reBtn.disabled = false;
-    } catch (e) { $('up-latest').value = 'error'; }
+    }
+    show($('update-pill'), stableUpgrade);
+    show($('up-beta-hint'), isLatestBeta);
+    var reBtn = $('up-reinstall-btn');
+    if (reBtn) reBtn.disabled = false;
+}
+async function checkUpdate(force, silent) {
+    if (!silent && $('up-latest')) $('up-latest').value = '…';
+    try {
+        var d = await api('GET', '/api/version' + (force ? '?force=1' : ''));
+        applyUpdateData(d);
+        try {
+            localStorage.setItem('nyxx-last-update-check', String(Date.now()));
+            localStorage.setItem('nyxx-update-cache', JSON.stringify(d));
+        } catch (e) {}
+    } catch (e) { if (!silent && $('up-latest')) $('up-latest').value = 'error'; }
 }
 function parseVersion(v) {
     var s = String(v || '').replace(/^v/i, '').replace(/_/g, '-');
@@ -4928,7 +5349,21 @@ function cmp(a, b) {
 function isBeta(v) {
     return /[-_.](beta|alpha|rc|dev|pre|canary|nightly)/i.test(String(v || ''));
 }
-function autoCheckUpdate() { checkUpdate(true); }
+function autoCheckUpdate() {
+    var last = 0;
+    try { last = parseInt(localStorage.getItem('nyxx-last-update-check') || '0', 10) || 0; } catch (e) {}
+    if (Date.now() - last < UPDATE_CHECK_TTL_MS) {
+        // Apply cached data so the update pill still shows correctly without a
+        // network call. Full refreshes happen every 30 min or when the user
+        // explicitly opens the Update tab.
+        try {
+            var cached = localStorage.getItem('nyxx-update-cache');
+            if (cached) applyUpdateData(JSON.parse(cached));
+        } catch (e) {}
+        return;
+    }
+    checkUpdate(true, true);
+}
 function openTokenGen() { window.open('https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22edit%22%7D%5D&accountId=*&zoneId=all&name=Nyxx%20Updater', '_blank'); }
 var cfMethod = 'oauth';
 var cfOAuthStatus = null;
@@ -5099,6 +5534,7 @@ document.addEventListener('keydown', function (e) {
         else if (top === 'backup-modal') closeCustomBackup();
         else if (top === 'about-modal') closeAboutModal();
         else if (top === 'token-modal') closeTokenModal();
+        else if (top === 'check-modal') closeCheckModal();
     }
     if (e.key === 'Escape') closeAllDropdowns();
 });
@@ -5665,7 +6101,7 @@ async function listAdminsHandler(env) {
     try {
         await initializeDatabase(env.DB);
         const rows = await env.DB.prepare(
-            "SELECT id, username, first_name, last_active FROM users WHERE role = 'admin' ORDER BY last_active DESC LIMIT 200"
+            "SELECT id, username, first_name, last_active, role FROM users WHERE role IN ('admin','moderator') ORDER BY (role = 'admin') DESC, last_active DESC LIMIT 300"
         ).all();
         return apiJson({ admins: rows.results || [] });
     } catch (err) { return internalError(err); }
@@ -6160,12 +6596,16 @@ async function getAutoRemoveSettings(env) {
         await initializeDatabase(env.DB);
         const cfg = await getAutoRemoveSettingsFromDb(env.DB);
         const aiMem = parseInt(await getSetting(env.DB, 'ai_memory')) || 0;
+        const dmSavePrivate = (await getSetting(env.DB, 'dm_save_private')) || 'auto';
+        const dmSaveFeatured = (await getSetting(env.DB, 'dm_save_featured')) !== '0' ? '1' : '0';
         return apiJson({
             success: true,
             enabled: cfg.enabled ? '1' : '0',
             dm_value: cfg.dm_value,
             dm_unit: cfg.dm_unit,
-            ai_value: aiMem
+            ai_value: aiMem,
+            dm_save_private: dmSavePrivate,
+            dm_save_featured: dmSaveFeatured
         });
     } catch (err) { return internalError(err); }
 }
@@ -6181,6 +6621,13 @@ async function saveAutoRemoveSettings(request, env) {
         await setSetting(env.DB, 'auto_remove_enabled', enabled);
         await setSetting(env.DB, 'auto_remove_dm_value', String(value));
         await setSetting(env.DB, 'auto_remove_dm_unit', unit);
+        if (body.dm_save_private !== undefined) {
+            const mode = ['auto', 'always', 'featured_only'].includes(body.dm_save_private) ? body.dm_save_private : 'auto';
+            await setSetting(env.DB, 'dm_save_private', mode);
+        }
+        if (body.dm_save_featured !== undefined) {
+            await setSetting(env.DB, 'dm_save_featured', (body.dm_save_featured === '1' || body.dm_save_featured === true || body.dm_save_featured === 1) ? '1' : '0');
+        }
         await logAction(env.DB, null, 'Auto-remove memory settings updated');
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
@@ -6696,20 +7143,45 @@ function stripOuterQuotes(s) {
     return s;
 }
 function parseButtonsCommandArgs(args) {
-    // Expected: "<message>" {label}(value) {label}(value) ...
+    // Supported syntaxes:
+    //   Advanced:  /menu "Hi there!" {Google}(https://google.com){Say hi}(Hi!)
+    //   Simple:    /menu Hi there! | Google:https://google.com | Say hi:Hi!
     const result = { message: '', buttons: [] };
     let working = String(args || '').trim();
     if (!working) return result;
-    const msgMatch = working.match(/^"((?:[^"\\]|\\.)*)"/);
-    if (msgMatch) {
-        result.message = msgMatch[1].replace(/\\"/g, '"');
-        working = working.slice(msgMatch[0].length).trim();
+
+    // Advanced syntax wins if any {label}(value) is present.
+    if (/\{[^{}]*\}\([^()]*\)/.test(working)) {
+        const msgMatch = working.match(/^"((?:[^"\\]|\\.)*)"/);
+        if (msgMatch) {
+            result.message = msgMatch[1].replace(/\\"/g, '"');
+            working = working.slice(msgMatch[0].length).trim();
+        }
+        const re = /\{([^{}]*)\}\(([^()]*)\)/g;
+        let m;
+        while ((m = re.exec(working))) {
+            const label = stripOuterQuotes(m[1]);
+            const value = stripOuterQuotes(m[2]);
+            if (!label || !value) continue;
+            let type = 'text';
+            if (/^https?:\/\//i.test(value)) type = 'url';
+            else if (value.startsWith('/')) type = 'command';
+            result.buttons.push({ text: label, type, value });
+        }
+        return result;
     }
-    const re = /\{([^{}]*)\}\(([^()]*)\)/g;
-    let m;
-    while ((m = re.exec(working))) {
-        const label = stripOuterQuotes(m[1]);
-        const value = stripOuterQuotes(m[2]);
+
+    // Simple pipe-separated syntax: message | Label:value | Label:value
+    const parts = working.split('|').map(p => p.trim());
+    if (!parts.length) return result;
+    result.message = stripOuterQuotes(parts[0] || '');
+    for (let i = 1; i < parts.length; i++) {
+        const part = parts[i];
+        if (!part) continue;
+        const colonIdx = part.indexOf(':');
+        if (colonIdx <= 0) continue;
+        const label = stripOuterQuotes(part.slice(0, colonIdx).trim());
+        const value = stripOuterQuotes(part.slice(colonIdx + 1).trim());
         if (!label || !value) continue;
         let type = 'text';
         if (/^https?:\/\//i.test(value)) type = 'url';
@@ -6763,7 +7235,6 @@ async function getUsers(env, url) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
-        let query = 'SELECT u.id, u.username, u.first_name, u.role, u.is_premium, u.private_started, u.last_active, b.block_type FROM users u LEFT JOIN blocked_users b ON u.id = b.user_id';
         const where = []; const params = [];
         const filter = url.searchParams.get('filter') || 'all';
         const search = (url.searchParams.get('search') || '').trim();
@@ -6772,10 +7243,21 @@ async function getUsers(env, url) {
         else if (filter === 'admin') where.push("u.role = 'admin'");
         else if (filter === 'blocked') where.push('b.block_type IS NOT NULL');
         if (search) { where.push('(u.username LIKE ? OR u.first_name LIKE ?)'); params.push('%' + search + '%', '%' + search + '%'); }
-        if (where.length) query += ' WHERE ' + where.join(' AND ');
-        query += ' ORDER BY u.last_active DESC LIMIT 300';
-        const result = await env.DB.prepare(query).bind(...params).all();
-        return apiJson({ users: result.results || [] });
+        const whereSql = where.length ? ' WHERE ' + where.join(' AND ') : '';
+
+        const page = Math.max(1, parseInt(url.searchParams.get('page')) || 1);
+        const perPage = Math.min(Math.max(parseInt(url.searchParams.get('per_page')) || 50, 1), 1000);
+        const offset = (page - 1) * perPage;
+
+        const countRow = await env.DB.prepare(
+            'SELECT COUNT(*) as n FROM users u LEFT JOIN blocked_users b ON u.id = b.user_id' + whereSql
+        ).bind(...params).first();
+        const total = countRow ? countRow.n : 0;
+        const totalPages = Math.max(1, Math.ceil(total / perPage));
+
+        const query = 'SELECT u.id, u.username, u.first_name, u.role, u.is_premium, u.private_started, u.last_active, b.block_type FROM users u LEFT JOIN blocked_users b ON u.id = b.user_id' + whereSql + ' ORDER BY u.last_active DESC LIMIT ? OFFSET ?';
+        const result = await env.DB.prepare(query).bind(...params, perPage, offset).all();
+        return apiJson({ users: result.results || [], total, page, per_page: perPage, total_pages: totalPages });
     } catch (err) { return internalError(err); }
 }
 async function updateUserRole(request, env) {
@@ -7002,33 +7484,72 @@ async function sendUserPrivateMessage(request, env) {
 async function editSentMessage(request, env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
-        const { chatId, messageId, kind, text, photo_url: photoUrl, buttons_json: buttonsJson } = await request.json();
+        const { chatId, messageId, text, photo_url: photoUrl, buttons_json: buttonsJson } = await request.json();
         if (!chatId || !messageId) return apiJson({ error: 'Missing chatId or messageId.' }, 400);
         await initializeDatabase(env.DB);
         const token = await getSetting(env.DB, 'bot_token');
         if (!token) return apiJson({ error: 'Bot token is not set.' }, 400);
+
+        // Detect text↔photo conversions and photo URL changes so we can
+        // delete the old message and send a fresh one — Telegram cannot
+        // change a message's media type in place.
+        const stored = await env.DB.prepare('SELECT kind, photo_url FROM dm_messages WHERE chat_id = ? AND message_id = ?').bind(chatId, messageId).first();
+        const storedKind = stored ? (stored.kind || 'text') : null;
+        const storedPhoto = stored ? (stored.photo_url || null) : null;
+        const newKind = photoUrl ? 'photo' : 'text';
+        const typeChanged = storedKind && storedKind !== newKind;
+        const photoChanged = storedKind === 'photo' && newKind === 'photo' && photoUrl && storedPhoto !== photoUrl;
+
         const built = buttonsJson ? buildReplyMarkup(buttonsJson) : null;
         const inlineMarkup = built && built.inlineMarkup ? built.inlineMarkup : null;
-        const isPhoto = kind === 'photo' || !!photoUrl;
+
+        if (typeChanged || photoChanged) {
+            await tgCall(token, 'deleteMessage', { chat_id: chatId, message_id: messageId }, { retry: false });
+            const payload = { chat_id: chatId };
+            if (photoUrl) { payload.photo = photoUrl; if (text) { payload.caption = text; payload.parse_mode = 'HTML'; } }
+            else { payload.text = text || ' '; payload.parse_mode = 'HTML'; }
+            if (inlineMarkup) payload.reply_markup = inlineMarkup;
+            const method = photoUrl ? 'sendPhoto' : 'sendMessage';
+            let resp = await tgCall(token, method, payload);
+            if ((!resp || !resp.ok) && isHtmlParseError(resp)) {
+                const plain = Object.assign({}, payload); delete plain.parse_mode;
+                if (photoUrl) { if (text) plain.caption = htmlToPlain(text); } else plain.text = htmlToPlain(text || ' ');
+                resp = await tgCall(token, method, plain);
+            }
+            if (!resp || !resp.ok) return apiJson({ error: (resp && resp.description) || 'Telegram error' }, 500);
+            const newMessageId = resp.result && resp.result.message_id;
+            if (built && built.both && built.replyMarkup) {
+                await tgCall(token, 'sendMessage', { chat_id: chatId, text: ' ', reply_markup: JSON.stringify(built.replyMarkup) });
+            }
+            if (built && built.replySpec && built.replySpec.actions) await mergeReplyActions(env.DB, built.replySpec.actions);
+            // Replace the row so future edits target the new message ID.
+            await env.DB.prepare('DELETE FROM dm_messages WHERE chat_id = ? AND message_id = ?').bind(chatId, messageId).run();
+            await logDm(env.DB, chatId, 'out', 'admin', newKind, text || '', photoUrl || null, newMessageId, buttonsJson || null);
+            await env.DB.prepare('UPDATE dm_messages SET edited_at = CURRENT_TIMESTAMP WHERE chat_id = ? AND message_id = ?').bind(chatId, newMessageId).run();
+            await logAction(env.DB, chatId, 'Direct message replaced (' + (storedKind || 'unknown') + ' → ' + newKind + ')');
+            return apiJson({ success: true, message_id: newMessageId, converted: true });
+        }
+
+        const isPhoto = newKind === 'photo';
         const method = isPhoto ? 'editMessageCaption' : 'editMessageText';
         const payload = { chat_id: chatId, message_id: messageId };
         if (isPhoto) { if (text) payload.caption = text; } else payload.text = text || ' ';
         payload.reply_markup = inlineMarkup || { inline_keyboard: [] };
         payload.parse_mode = 'HTML';
-        let resp = await tgFetchJson(`https://api.telegram.org/bot${token}/${method}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        let resp = await tgCall(token, method, payload);
         if (!resp.ok && isHtmlParseError(resp)) {
             const plain = Object.assign({}, payload); delete plain.parse_mode;
             if (isPhoto) { if (text) plain.caption = htmlToPlain(text); } else plain.text = htmlToPlain(text || ' ');
-            resp = await tgFetchJson(`https://api.telegram.org/bot${token}/${method}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(plain) });
+            resp = await tgCall(token, method, plain);
         }
         if (!resp.ok) return apiJson({ error: (resp && resp.description) || 'Telegram error' }, 500);
         if (built && built.replyMarkup) {
-            await tgFetchJson(`https://api.telegram.org/bot${token}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: ' ', reply_markup: JSON.stringify(built.replyMarkup) }) });
+            await tgCall(token, 'sendMessage', { chat_id: chatId, text: ' ', reply_markup: JSON.stringify(built.replyMarkup) });
         }
         if (built && built.replySpec && built.replySpec.actions) await mergeReplyActions(env.DB, built.replySpec.actions);
         try {
-            await env.DB.prepare('UPDATE dm_messages SET text = ?, buttons_json = ?, photo_url = ?, edited_at = CURRENT_TIMESTAMP WHERE chat_id = ? AND message_id = ?')
-                .bind(text || '', buttonsJson || null, photoUrl || null, chatId, messageId).run();
+            await env.DB.prepare('UPDATE dm_messages SET text = ?, buttons_json = ?, photo_url = ?, kind = ?, edited_at = CURRENT_TIMESTAMP WHERE chat_id = ? AND message_id = ?')
+                .bind(text || '', buttonsJson || null, photoUrl || null, newKind, chatId, messageId).run();
         } catch (e) {}
         await logAction(env.DB, chatId, 'Direct message edited');
         return apiJson({ success: true });
@@ -7058,7 +7579,11 @@ const GROUP_AI_TRIGGERS = ['inherit', 'mention', 'reply', 'either', 'both', 'non
 const GROUP_DEFAULT_SETTINGS = {
     ai: 'inherit', ai_trigger: 'inherit', memory: 'inherit', mention: 'inherit',
     welcome_enabled: false, welcome_text: '', rules_text: '',
-    anti_flood: false, flood_limit: 6, link_filter: false, link_filter_level: 'admins',
+    anti_flood: false, flood_limit: 6, flood_mute_minutes: 0,
+    link_filter: false, link_filter_level: 'admins',
+    anti_forward: false, anti_forward_level: 'admins',
+    blacklist_words: '', blacklist_level: 'admins',
+    anti_bot: false,
     auto_delete_service: false, track_members: false,
     commands_permission: 'inherit',
     featured_commands_permission: 'inherit',
@@ -7080,14 +7605,21 @@ function normalizeGroupSettings(raw) {
         out.memory = Number.isFinite(n) && n > 0 ? String(n) : '0';
     }
     if (!['admins', 'admins_moderators'].includes(out.link_filter_level)) out.link_filter_level = 'admins';
+    if (!['admins', 'admins_moderators'].includes(out.anti_forward_level)) out.anti_forward_level = 'admins';
+    if (!['admins', 'admins_moderators'].includes(out.blacklist_level)) out.blacklist_level = 'admins';
     if (!['inherit', 'everyone', 'moderator', 'admin'].includes(out.rules_command_permission)) out.rules_command_permission = 'inherit';
     out.welcome_enabled = !!out.welcome_enabled;
     out.anti_flood = !!out.anti_flood;
     out.link_filter = !!out.link_filter;
+    out.anti_forward = !!out.anti_forward;
+    out.anti_bot = !!out.anti_bot;
     out.auto_delete_service = !!out.auto_delete_service;
     out.track_members = !!out.track_members;
+    out.blacklist_words = String(out.blacklist_words || '').slice(0, 2000);
     const limit = parseInt(out.flood_limit, 10);
     out.flood_limit = Number.isFinite(limit) ? Math.min(Math.max(limit, 2), 60) : 6;
+    const muteMin = parseInt(out.flood_mute_minutes, 10);
+    out.flood_mute_minutes = Number.isFinite(muteMin) && muteMin > 0 ? Math.min(muteMin, 1440) : 0;
     return out;
 }
 async function getGroups(env) {
@@ -7344,7 +7876,7 @@ async function editBroadcastMessage(request, env) {
         await initializeDatabase(env.DB);
         const token = await getSetting(env.DB, 'bot_token');
         if (!token) return apiJson({ error: 'Bot token is not set.' }, 400);
-        const hist = await env.DB.prepare('SELECT kind, buttons_json FROM broadcast_history WHERE id = ?').bind(broadcastId).first();
+        const hist = await env.DB.prepare('SELECT kind, buttons_json, photo_url FROM broadcast_history WHERE id = ?').bind(broadcastId).first();
         if (!hist) return apiJson({ error: 'Broadcast not found.' }, 404);
         const effectiveButtons = buttonsJson !== undefined ? buttonsJson : hist.buttons_json;
         const built = effectiveButtons ? buildReplyMarkup(effectiveButtons) : null;
@@ -7352,11 +7884,57 @@ async function editBroadcastMessage(request, env) {
         const settings = await getBroadcastSettings(env);
         const recRows = await env.DB.prepare('SELECT chat_id, message_id FROM broadcast_recipients WHERE broadcast_id = ?').bind(broadcastId).all();
         const recipients = recRows.results || [];
-        const isPhoto = hist.kind === 'photo' || !!photoUrl;
-        const method = isPhoto ? 'editMessageCaption' : 'editMessageText';
-        let updated = 0, failed = 0;
+
+        const originalKind = hist.kind || 'text';
+        const newKind = photoUrl ? 'photo' : 'text';
+        const typeChanged = originalKind !== newKind;
+        const photoChanged = originalKind === 'photo' && newKind === 'photo' && photoUrl && photoUrl !== (hist.photo_url || '');
+
         const chunks = [];
         for (let i = 0; i < recipients.length; i += settings.batch_size) chunks.push(recipients.slice(i, i + settings.batch_size));
+
+        let updated = 0, failed = 0;
+
+        if (typeChanged || photoChanged) {
+            // Delete old messages and send fresh ones with the new media type.
+            const newRecipients = [];
+            for (let ci = 0; ci < chunks.length; ci++) {
+                const results = await Promise.allSettled(chunks[ci].map(async (row) => {
+                    try {
+                        // Best-effort delete: if the old message is gone, still
+                        // send the replacement so the chat ends up correct.
+                        await tgCall(token, 'deleteMessage', { chat_id: row.chat_id, message_id: row.message_id }, { timeoutMs: settings.timeout_ms, retry: false });
+                        const payload = { chat_id: row.chat_id };
+                        if (photoUrl) { payload.photo = photoUrl; if (message) { payload.caption = message; payload.parse_mode = 'HTML'; } }
+                        else { payload.text = message || ' '; payload.parse_mode = 'HTML'; }
+                        if (inlineMarkup) payload.reply_markup = inlineMarkup;
+                        const method = photoUrl ? 'sendPhoto' : 'sendMessage';
+                        const resp = await tgCall(token, method, payload, { timeoutMs: settings.timeout_ms });
+                        if (!resp || !resp.ok) return null;
+                        return { chat_id: row.chat_id, message_id: resp.result && resp.result.message_id };
+                    } catch (e) { return null; }
+                }));
+                for (const r of results) {
+                    if (r.status === 'fulfilled' && r.value) { newRecipients.push(r.value); updated++; }
+                    else failed++;
+                }
+                if (settings.delay_ms > 0 && ci < chunks.length - 1) await sleepMs(settings.delay_ms);
+            }
+            await env.DB.prepare('DELETE FROM broadcast_recipients WHERE broadcast_id = ?').bind(broadcastId).run();
+            if (newRecipients.length) {
+                await runBatchChunks(env.DB, newRecipients.map(r =>
+                    env.DB.prepare('INSERT OR IGNORE INTO broadcast_recipients (broadcast_id, chat_id, message_id) VALUES (?, ?, ?)')
+                        .bind(broadcastId, r.chat_id, r.message_id)
+                ), 100);
+            }
+            await env.DB.prepare('UPDATE broadcast_history SET message = ?, buttons_json = ?, kind = ?, photo_url = ?, sent_count = ? WHERE id = ?')
+                .bind(message || '', effectiveButtons || null, newKind, photoUrl || null, updated, broadcastId).run();
+            await logAction(env.DB, null, `Broadcast #${broadcastId} converted ${originalKind}→${newKind} (${updated}/${recipients.length})`);
+            return apiJson({ success: true, updated, failed, total: recipients.length, converted: true });
+        }
+
+        const isPhoto = newKind === 'photo';
+        const method = isPhoto ? 'editMessageCaption' : 'editMessageText';
         for (let ci = 0; ci < chunks.length; ci++) {
             const results = await Promise.allSettled(chunks[ci].map(async (row) => {
                 const payload = { chat_id: row.chat_id, message_id: row.message_id, parse_mode: 'HTML' };
@@ -7486,9 +8064,16 @@ async function saveAiSettings(request, env) {
                 const current = JSON.parse(await getSetting(env.DB, 'ai_alt_providers') || '[]');
                 const byProvider = {};
                 for (const a of current) if (a && a.provider) byProvider[String(a.provider)] = a.apiKey || '';
-                incoming.forEach(a => {
-                    if ((a.apiKey === KEEP_SENTINEL || !a.apiKey) && byProvider[a.provider]) {
-                        a.apiKey = byProvider[a.provider];
+                incoming.forEach((a, i) => {
+                    if (a.apiKey === KEEP_SENTINEL || !a.apiKey) {
+                        // Prefer the key at the same index when the provider
+                        // hasn't changed — this lets two fallbacks of the same
+                        // provider keep their own keys.
+                        if (current[i] && current[i].provider === a.provider && current[i].apiKey) {
+                            a.apiKey = current[i].apiKey;
+                        } else if (a.provider && byProvider[a.provider]) {
+                            a.apiKey = byProvider[a.provider];
+                        }
                     }
                     delete a.apiKeyMasked;
                 });
@@ -7538,13 +8123,18 @@ async function resolveAiSettingsForApi(env, incoming) {
         try {
             const alts = JSON.parse(resolved.ai_alt_providers);
             const storedAlts = JSON.parse(await getSetting(env.DB, 'ai_alt_providers') || '[]');
-            // Match by provider NAME (not index) — reordering or inserting a
-            // provider in the UI must never hand it another provider's key.
+            // Prefer index match (same provider in the same slot) so duplicate
+            // providers keep their own keys; fall back to name match for
+            // reorders.
             const storedByProvider = {};
             for (const a of storedAlts) if (a && a.provider) storedByProvider[String(a.provider)] = a.apiKey || '';
-            alts.forEach(function (a) {
-                if ((a.apiKey === KEEP_SENTINEL || !a.apiKey) && a.provider && storedByProvider[a.provider]) {
-                    a.apiKey = storedByProvider[a.provider];
+            alts.forEach(function (a, i) {
+                if (a.apiKey === KEEP_SENTINEL || !a.apiKey) {
+                    if (storedAlts[i] && storedAlts[i].provider === a.provider && storedAlts[i].apiKey) {
+                        a.apiKey = storedAlts[i].apiKey;
+                    } else if (a.provider && storedByProvider[a.provider]) {
+                        a.apiKey = storedByProvider[a.provider];
+                    }
                 }
                 delete a.apiKeyMasked;
             });
@@ -7816,11 +8406,23 @@ async function handleAiTest(request, env) {
         if (!env.DB) return apiJson({ success: false, error: 'Database is not connected.' }, 200);
         const body = await request.json();
         const settings = await resolveAiSettingsForApi(env, body.settings || {});
-        const provider = settings.ai_provider;
-        if (!provider || provider === 'none') return apiJson({ success: false, error: 'No AI provider is selected.' }, 200);
-        if (!settings.ai_api_key) return apiJson({ success: false, error: 'No API key is saved yet. Paste one above and save first.' }, 200);
+        const providerType = body.provider === 'alt' ? 'alt' : 'main';
+        const altIndex = parseInt(body.altIndex) || 0;
+
+        if (providerType === 'main') {
+            const provider = settings.ai_provider;
+            if (!provider || provider === 'none') return apiJson({ success: false, error: 'No AI provider is selected.' }, 200);
+            if (!settings.ai_api_key) return apiJson({ success: false, error: 'No API key is saved yet. Paste one above and save first.' }, 200);
+        } else {
+            let altList = [];
+            try { altList = JSON.parse(settings.ai_alt_providers || '[]'); } catch (e) {}
+            const alt = altList[altIndex];
+            if (!alt || !alt.provider) return apiJson({ success: false, error: 'Fallback provider not configured.' }, 200);
+            if (!alt.apiKey || alt.apiKey === KEEP_SENTINEL) return apiJson({ success: false, error: 'Add an API key for this fallback provider first.' }, 200);
+        }
+
         const ctx = { bot_name: settings.ai_display_name || 'Nyxx AI', user_first_name: 'Test' };
-        const response = await callAiCompletion(settings, [], 'Hello! Confirm the connection.', ctx, 'main');
+        const response = await callAiCompletion(settings, [], 'Hello! Confirm the connection.', ctx, providerType, altIndex);
         return apiJson({ success: true, message: response });
     } catch (err) { return apiJson({ success: false, error: err.message }, 200); }
 }
@@ -9158,6 +9760,8 @@ async function executeMcpTool(name, args, env, categories) {
             const q = new URLSearchParams();
             if (args.filter) q.set('filter', String(args.filter));
             if (args.search) q.set('search', String(args.search));
+            q.set('per_page', String(Math.min(Math.max(parseInt(args.limit) || 100, 1), 1000)));
+            if (args.page) q.set('page', String(Math.max(1, parseInt(args.page) || 1)));
             const url = new URL('http://localhost/api/users?' + q.toString());
             return await callApi({ path: url.pathname + url.search, method: 'GET', handler: async (r, e) => await getUsers(e, url) });
         }
@@ -10542,23 +11146,44 @@ async function groupAiShouldReply(aiSettings, groupSettings, msg, env, BOT_TOKEN
     if (gs.ai !== 'on' && aiSettings.ai_group_reply === '0') return false;
     const mode = resolveGroupAiTrigger(aiSettings, gs);
     if (mode === 'none') return true;
-    const botUsername = (await getBotUsername(env, BOT_TOKEN) || '').toLowerCase();
+
+    const rawUsername = (await getBotUsername(env, BOT_TOKEN) || '').trim();
+    const botUsername = rawUsername.toLowerCase().replace(/^@+/, '');
     const text = String(msg.text || '');
+
     let mentioned = false;
     if (botUsername) {
-        mentioned = text.toLowerCase().indexOf('@' + botUsername) >= 0;
+        const lowerText = text.toLowerCase();
+        const needle = '@' + botUsername;
+        // Strategy 1: direct substring match.
+        if (lowerText.indexOf(needle) >= 0) mentioned = true;
+        // Strategy 2: walk Telegram entities.
         if (!mentioned && Array.isArray(msg.entities)) {
             for (const ent of msg.entities) {
-                if (ent.type === 'mention' || ent.type === 'text_mention') {
-                    const mt = text.slice(ent.offset, ent.offset + ent.length);
-                    if (mt.toLowerCase() === '@' + botUsername) { mentioned = true; break; }
+                if (!ent) continue;
+                if (ent.type === 'mention') {
+                    const slice = text.slice(ent.offset, ent.offset + ent.length).toLowerCase();
+                    if (slice === needle) { mentioned = true; break; }
+                } else if (ent.type === 'text_mention' && ent.user) {
+                    if (ent.user.is_bot && String(ent.user.username || '').toLowerCase().replace(/^@+/, '') === botUsername) {
+                        mentioned = true; break;
+                    }
                 }
             }
         }
+        // Strategy 3: word-boundary regex (safety net).
+        if (!mentioned) {
+            try {
+                const escaped = botUsername.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                if (new RegExp('@' + escaped + '(?:[\\s,.!?;:]|$)', 'i').test(text)) mentioned = true;
+            } catch (e) {}
+        }
     }
+
     const replyFrom = msg.reply_to_message && msg.reply_to_message.from;
     const repliedToBot = !!(replyFrom && replyFrom.is_bot && botUsername
-        && String(replyFrom.username || '').toLowerCase() === botUsername);
+        && String(replyFrom.username || '').toLowerCase().replace(/^@+/, '') === botUsername);
+
     if (mode === 'mention') return mentioned;
     if (mode === 'reply') return repliedToBot;
     if (mode === 'either') return mentioned || repliedToBot;
@@ -10653,23 +11278,72 @@ async function processTelegramUpdate(update, env) {
                 if (groupSettings && groupSettings.auto_delete_service) await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id });
                 return;
             }
+            // Anti-bot: delete messages posted by other bots.
+            // MUST live outside the `!msg.from.is_bot` guard below, otherwise
+            // bot messages never reach it and the toggle is a no-op.
+            if (isGroup && msg.from && msg.from.is_bot && groupSettings && groupSettings.anti_bot) {
+                await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id });
+                return;
+            }
             if (isGroup && msg.from && !msg.from.is_bot) {
-                if (groupSettings && groupSettings.link_filter && msg.text && /https?:\/\/|t\.me\//i.test(msg.text)) {
-                    const u = await env.DB.prepare('SELECT role FROM users WHERE id = ?').bind(msg.from.id).first();
-                    const role = u ? u.role : 'user';
-                    const lvl = groupSettings.link_filter_level || 'admins';
-                    const exempt = role === 'admin' || (lvl === 'admins_moderators' && role === 'moderator');
-                    if (!exempt) { await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id }); return; }
+                const userRowForMod = await env.DB.prepare('SELECT role FROM users WHERE id = ?').bind(msg.from.id).first();
+                const modRole = userRowForMod ? userRowForMod.role : 'user';
+                const levelExempt = (lvl) => modRole === 'admin' || (lvl === 'admins_moderators' && modRole === 'moderator');
+
+                // Anti-forward: delete forwarded messages.
+                if (groupSettings && groupSettings.anti_forward && (msg.forward_date || msg.forward_from || msg.forward_from_chat)) {
+                    if (!levelExempt(groupSettings.anti_forward_level || 'admins')) {
+                        await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id });
+                        return;
+                    }
                 }
+                // Blacklist words.
+                if (groupSettings && groupSettings.blacklist_words && msg.text) {
+                    const words = groupSettings.blacklist_words.split(',').map(w => w.trim().toLowerCase()).filter(Boolean);
+                    if (words.length) {
+                        const lower = msg.text.toLowerCase();
+                        if (words.some(w => lower.indexOf(w) >= 0)) {
+                            if (!levelExempt(groupSettings.blacklist_level || 'admins')) {
+                                await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id });
+                                return;
+                            }
+                        }
+                    }
+                }
+                // Link filter.
+                if (groupSettings && groupSettings.link_filter && msg.text && /https?:\/\/|t\.me\//i.test(msg.text)) {
+                    if (!levelExempt(groupSettings.link_filter_level || 'admins')) {
+                        await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id });
+                        return;
+                    }
+                }
+                // Anti-flood + optional auto-mute.
                 if (groupSettings && groupSettings.anti_flood) {
                     const minute = Math.floor(Date.now() / 60000);
                     await env.DB.prepare('INSERT INTO group_flood (chat_id, user_id, minute, count) VALUES (?, ?, ?, 1) ON CONFLICT(chat_id, user_id, minute) DO UPDATE SET count = count + 1').bind(chatId, msg.from.id, minute).run();
                     const row = await env.DB.prepare('SELECT count FROM group_flood WHERE chat_id = ? AND user_id = ? AND minute = ?').bind(chatId, msg.from.id, minute).first();
                     if (row && row.count > (groupSettings.flood_limit || 6)) {
-                        const role = await env.DB.prepare('SELECT role FROM users WHERE id = ?').bind(msg.from.id).first();
-                        if (!role || role.role !== 'admin') {
+                        if (modRole !== 'admin') {
                             await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id });
-                            if (row.count === (groupSettings.flood_limit || 6) + 1) await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: '⚠️ Please slow down.' });
+                            if (row.count === (groupSettings.flood_limit || 6) + 1) {
+                                const muteMin = parseInt(groupSettings.flood_mute_minutes) || 0;
+                                if (muteMin > 0) {
+                                    const until = Math.floor(Date.now() / 1000) + muteMin * 60;
+                                    const muteRes = await tgCall(BOT_TOKEN, 'restrictChatMember', {
+                                        chat_id: chatId,
+                                        user_id: msg.from.id,
+                                        permissions: { can_send_messages: false },
+                                        until_date: until
+                                    });
+                                    if (muteRes && muteRes.ok) {
+                                        await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: '🔇 User muted for ' + muteMin + ' minute(s) for flooding.' });
+                                    } else {
+                                        await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: '⚠️ Please slow down.' });
+                                    }
+                                } else {
+                                    await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: '⚠️ Please slow down.' });
+                                }
+                            }
                             return;
                         }
                     }
@@ -10702,9 +11376,14 @@ async function processTelegramUpdate(update, env) {
                 // reach the AI, and Buttons commands never write anywhere except
                 // (optionally) dm_messages on a button tap.
                 if (text.startsWith('/')) {
-                    const firstSpace = text.indexOf(' ');
-                    const cmdPart = firstSpace >= 0 ? text.slice(0, firstSpace) : text;
-                    const args = firstSpace >= 0 ? text.slice(firstSpace + 1) : '';
+                    // Split on the first whitespace character — space OR newline.
+                    // A user can send "/contact\nhello\nworld" and Telegram
+                    // passes the newline through, so this correctly exposes
+                    // multi-line arguments instead of treating the newline as
+                    // part of the command.
+                    const wsIdx = text.search(/\s/);
+                    const cmdPart = wsIdx >= 0 ? text.slice(0, wsIdx) : text;
+                    const args = wsIdx >= 0 ? text.slice(wsIdx + 1) : '';
                     const bare = cmdPart.split('@')[0].trim();
                     if (bare) {
                         const feat = await env.DB.prepare('SELECT * FROM featured_replies WHERE command = ? AND enabled = 1').bind(bare).first();
@@ -10812,7 +11491,10 @@ async function processTelegramUpdate(update, env) {
                                 return;
                             }
                             try {
-                                await logDm(env.DB, userId, 'in', 'featured', 'text', argsTrimmed, null, null, null);
+                                const saveFeatured = (await getSetting(env.DB, 'dm_save_featured')) !== '0';
+                                if (saveFeatured) {
+                                    await logDm(env.DB, userId, 'in', 'featured', 'text', argsTrimmed, null, null, null);
+                                }
                                 if (feat.success_text) await sendRichText(BOT_TOKEN, chatId, feat.success_text);
                             } catch (err) {
                                 if (feat.failure_text) await sendRichText(BOT_TOKEN, chatId, feat.failure_text);
@@ -10827,7 +11509,9 @@ async function processTelegramUpdate(update, env) {
                 // decision, so the `no_command` AI trigger can defer to it.
                 let targetCommand = null;
                 if (text.startsWith('/')) {
-                    const bare = text.split('@')[0].split('?')[0].split(' ')[0];
+                    const wsIdx = text.search(/\s/);
+                    const cmdRaw = wsIdx >= 0 ? text.slice(0, wsIdx) : text;
+                    const bare = cmdRaw.split('@')[0].trim();
                     const cmdRecord = await env.DB.prepare('SELECT command FROM commands WHERE command = ? AND enabled = 1').bind(bare).first();
                     if (cmdRecord) targetCommand = cmdRecord.command;
                 }
@@ -10879,7 +11563,14 @@ async function processTelegramUpdate(update, env) {
                 // If AI is enabled but the message won't reach it (rate-limit
                 // aside — we don't know yet), still skip the DM write. The rule is
                 // simply: AI enabled → text goes to AI's domain, not the DM log.
-                const shouldLogToDm = isPrivate && aiSettings.ai_enabled !== '1';
+                // Memory save policy (set in the Memory tab).
+                //   'auto' (default)  → save regular private texts only when AI is off
+                //   'always'         → always save, even when AI is on
+                //   'featured_only'  → never save regular texts (only featured commands are kept)
+                const saveMode = (await getSetting(env.DB, 'dm_save_private')) || 'auto';
+                const shouldLogToDm = isPrivate && saveMode !== 'featured_only' && (
+                    saveMode === 'always' || aiSettings.ai_enabled !== '1'
+                );
                 if (shouldLogToDm) {
                     await logDm(env.DB, userId, 'in', 'user', 'text', text, null, msg.message_id, null);
                 }
