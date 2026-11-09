@@ -841,10 +841,6 @@ body { overflow-x: hidden; }
                 </div>
                 <div class="stats" id="ov-stats"></div>
                 <div class="card">
-                    <div class="card-head"><div class="card-title"><i class="fa-solid fa-flag-checkered"></i> Getting started</div></div>
-                    <ul id="ov-checklist" style="list-style:none;padding:0;margin:0;"></ul>
-                </div>
-                <div class="card">
                     <div class="card-head"><div class="card-title"><i class="fa-solid fa-bolt"></i> Quick actions</div></div>
                     <div class="grid grid-2" style="gap:10px;">
                         <button class="btn btn-primary btn-block" onclick="openCommandModal()"><i class="fa-solid fa-plus"></i> New command</button>
@@ -854,6 +850,10 @@ body { overflow-x: hidden; }
                         <button class="btn btn-gray btn-block" onclick="go('groups')"><i class="fa-solid fa-comments"></i> Manage groups</button>
                         <button class="btn btn-gray btn-block" onclick="go('permissions')"><i class="fa-solid fa-shield-halved"></i> Permissions</button>
                     </div>
+                </div>
+                <div class="card">
+                    <div class="card-head"><div class="card-title"><i class="fa-solid fa-flag-checkered"></i> Getting started</div></div>
+                    <ul id="ov-checklist" style="list-style:none;padding:0;margin:0;"></ul>
                 </div>
             </section>
 
@@ -4477,18 +4477,24 @@ function createKeyboardBuilder(prefix, opts) {
         if (!val) { toast('Choose a command or enter a value.', 'error'); return; }
         if (type === 'command' && val.charAt(0) !== '/') val = '/' + val;
 
-        if (editingInline) {
+        // Guard: only treat as an edit if the target button still exists.
+        // If the user deleted the button they were editing (or its row got
+        // removed), fall back to adding a new one instead of crashing.
+        var editingValid = editingInline
+            && inline[editingInline.ri]
+            && inline[editingInline.ri][editingInline.bi];
+
+        if (editingValid) {
             inline[editingInline.ri][editingInline.bi] = { text: lbl, type: type, value: val };
             editingInline = null;
-            var addBtn = el('inline-add-btn');
-            if (addBtn) addBtn.innerHTML = '<i class="fa-solid fa-plus"></i>';
         } else {
+            editingInline = null;
             var last = inline.length ? inline[inline.length - 1] : null;
             if (!last || last.length >= 3) { last = []; inline.push(last); }
             last.push({ text: lbl, type: type, value: val });
-            var addBtn = el('inline-add-btn');
-            if (addBtn) addBtn.innerHTML = '<i class="fa-solid fa-plus"></i>';
         }
+        var addBtn = el('inline-add-btn');
+        if (addBtn) addBtn.innerHTML = '<i class="fa-solid fa-plus"></i>';
         el('inline-label').value = ''; el('inline-value').value = ''; el('inline-cmd').value = '';
         renderInline();
     }
@@ -4499,22 +4505,28 @@ function createKeyboardBuilder(prefix, opts) {
         var act = el('reply-cmd').value || el('reply-value').value.trim();
         if (act && act.charAt(0) !== '/') act = '/' + act;
 
-        if (editingReply) {
+        // Guard: only treat as an edit if the target button still exists.
+        // If the user deleted the button they were editing, fall back to
+        // adding a new one instead of crashing.
+        var editingValid = editingReply
+            && reply.rows[editingReply.ri]
+            && reply.rows[editingReply.ri][editingReply.bi];
+
+        if (editingValid) {
             var oldText = reply.rows[editingReply.ri][editingReply.bi].text;
             reply.rows[editingReply.ri][editingReply.bi] = { text: lbl, command: '' };
             if (oldText !== lbl) delete reply.actions[oldText];
             if (act) reply.actions[lbl] = act;
             editingReply = null;
-            var addBtn = el('reply-add-btn');
-            if (addBtn) addBtn.innerHTML = '<i class="fa-solid fa-plus"></i>';
         } else {
+            editingReply = null;
             var last = reply.rows.length ? reply.rows[reply.rows.length - 1] : null;
             if (!last || last.length >= 3) { last = []; reply.rows.push(last); }
             last.push({ text: lbl, command: '' });
             if (act) reply.actions[lbl] = act;
-            var addBtn = el('reply-add-btn');
-            if (addBtn) addBtn.innerHTML = '<i class="fa-solid fa-plus"></i>';
         }
+        var addBtn = el('reply-add-btn');
+        if (addBtn) addBtn.innerHTML = '<i class="fa-solid fa-plus"></i>';
         el('reply-label').value = ''; el('reply-value').value = ''; el('reply-cmd').value = '';
         renderReply();
     }
@@ -4557,10 +4569,49 @@ function createKeyboardBuilder(prefix, opts) {
 
     function moveI(ri, bi, d) { var row = inline[ri]; var j = bi + d; if (j < 0 || j >= row.length) return; var t = row.splice(bi, 1)[0]; row.splice(j, 0, t); renderInline(); }
     function moveIR(ri, d) { var j = ri + d; if (j < 0 || j >= inline.length) return; var t = inline.splice(ri, 1)[0]; inline.splice(j, 0, t); renderInline(); }
-    function delI(ri, bi) { inline[ri].splice(bi, 1); if (!inline[ri].length) inline.splice(ri, 1); renderInline(); }
+    function delI(ri, bi) {
+        inline[ri].splice(bi, 1);
+        var rowRemoved = !inline[ri].length;
+        if (rowRemoved) inline.splice(ri, 1);
+        if (editingInline) {
+            if (rowRemoved) {
+                if (editingInline.ri === ri) editingInline = null;
+                else if (editingInline.ri > ri) editingInline.ri--;
+            } else if (editingInline.ri === ri) {
+                if (editingInline.bi === bi) editingInline = null;
+                else if (editingInline.bi > bi) editingInline.bi--;
+            }
+        }
+        if (editingInline && (!inline[editingInline.ri] || !inline[editingInline.ri][editingInline.bi])) {
+            editingInline = null;
+        }
+        var addBtn = el('inline-add-btn');
+        if (addBtn) addBtn.innerHTML = '<i class="fa-solid fa-plus"></i>';
+        renderInline();
+    }
     function moveR(ri, bi, d) { var row = reply.rows[ri]; var j = bi + d; if (j < 0 || j >= row.length) return; var t = row.splice(bi, 1)[0]; row.splice(j, 0, t); renderReply(); }
     function moveRR(ri, d) { var j = ri + d; if (j < 0 || j >= reply.rows.length) return; var t = reply.rows.splice(ri, 1)[0]; reply.rows.splice(j, 0, t); renderReply(); }
-    function delR(ri, bi) { var t = reply.rows[ri].splice(bi, 1)[0]; delete reply.actions[t.text]; if (!reply.rows[ri].length) reply.rows.splice(ri, 1); renderReply(); }
+    function delR(ri, bi) {
+        var t = reply.rows[ri].splice(bi, 1)[0];
+        delete reply.actions[t.text];
+        var rowRemoved = !reply.rows[ri].length;
+        if (rowRemoved) reply.rows.splice(ri, 1);
+        if (editingReply) {
+            if (rowRemoved) {
+                if (editingReply.ri === ri) editingReply = null;
+                else if (editingReply.ri > ri) editingReply.ri--;
+            } else if (editingReply.ri === ri) {
+                if (editingReply.bi === bi) editingReply = null;
+                else if (editingReply.bi > bi) editingReply.bi--;
+            }
+        }
+        if (editingReply && (!reply.rows[editingReply.ri] || !reply.rows[editingReply.ri][editingReply.bi])) {
+            editingReply = null;
+        }
+        var addBtn = el('reply-add-btn');
+        if (addBtn) addBtn.innerHTML = '<i class="fa-solid fa-plus"></i>';
+        renderReply();
+    }
 
     function loadInline(raw) {
         inline = [];
