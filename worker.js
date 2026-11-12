@@ -5021,7 +5021,9 @@ function toggleMsgSection(which) {
     if (on && which === 'reply') kbMe.render();
 }
 function toggleMsgMedia() {
-    var t = $('msg-type').value || 'text';
+    var typeEl = $('msg-type');
+    if (!typeEl) { show($('msg-media-wrap'), false); return; }
+    var t = typeEl.value || 'text';
     show($('msg-media-wrap'), t !== 'text');
     var label = $('msg-text-label');
     if (label) label.textContent = t === 'text' ? 'Text' : 'Caption';
@@ -5055,57 +5057,73 @@ async function uploadMsgMedia() {
 function openMsgEditor(mode, id) {
     msgContext = { mode: mode, id: id };
     draftMedia = null;
-    $('msg-error').classList.remove('show');
+
+    // Defensive helpers — if the served HTML is missing an element we
+    // log a warning instead of crashing the whole editor.
+    var _g  = function (elId) { return document.getElementById(elId); };
+    var _sv = function (elId, val) { var el = _g(elId); if (el) el.value = val; else console.warn('[msg-editor] missing #' + elId); };
+    var _sh = function (elId, val) { var el = _g(elId); if (el) el.innerHTML = val; else console.warn('[msg-editor] missing #' + elId); };
+
+    var _err = _g('msg-error'); if (_err) _err.classList.remove('show');
     kbMe.reset();
-    toggleSwitch('msg-kb-toggle', false); show($('msg-kb-section'), false);
-    toggleSwitch('msg-inline-toggle', false); show($('msg-inline-section'), false);
-    toggleSwitch('msg-reply-toggle', false); show($('msg-reply-section'), false);
-    $('msg-photo').value = ''; $('msg-text').value = '';
-    $('msg-file-id').value = ''; $('msg-media-meta').value = '';
-    $('msg-media-file').value = ''; $('msg-media-file-status').innerHTML = '';
-    $('msg-type').disabled = false;
+    toggleSwitch('msg-kb-toggle', false);     show(_g('msg-kb-section'), false);
+    toggleSwitch('msg-inline-toggle', false); show(_g('msg-inline-section'), false);
+    toggleSwitch('msg-reply-toggle', false);  show(_g('msg-reply-section'), false);
+    _sv('msg-photo', '');
+    _sv('msg-text', '');
+    _sv('msg-file-id', '');
+    _sv('msg-media-meta', '');
+    _sv('msg-media-file', '');
+    _sh('msg-media-file-status', '');
+    var _typeEl = _g('msg-type'); if (_typeEl) _typeEl.disabled = false;
     setSeg('msg-media-source', 'url');
+
     if (mode === 'dm' || mode === 'broadcast') {
-        var rec = mode === 'dm' ? (window.__dmCache || []).find(function (m) { return m.id === id; }) : bcHistory.find(function (h) { return h.id === id; });
-        $('msg-title').textContent = 'Edit message';
+        var rec = mode === 'dm'
+            ? (window.__dmCache || []).find(function (m) { return m.id === id; })
+            : bcHistory.find(function (h) { return h.id === id; });
+        var _title = _g('msg-title'); if (_title) _title.textContent = 'Edit message';
         if (rec) {
             var curType = normalizeClientMediaType(rec.kind || rec.media_type || (rec.photo_url ? 'photo' : 'text'));
-            $('msg-type').value = curType;
-            $('msg-type').disabled = false;
-            $('msg-text').value = rec.text || rec.message || '';
-            $('msg-photo').value = rec.photo_url || '';
-            $('msg-file-id').value = rec.file_id || '';
-            $('msg-media-meta').value = rec.media_meta || '';
+            if (_typeEl) { _typeEl.value = curType; _typeEl.disabled = false; }
+            _sv('msg-text', rec.text || rec.message || '');
+            _sv('msg-photo', rec.photo_url || '');
+            _sv('msg-file-id', rec.file_id || '');
+            _sv('msg-media-meta', rec.media_meta || '');
             setSeg('msg-media-source', rec.file_id ? 'file' : 'url');
-            var tHint = $('msg-type-hint');
+            var tHint = _g('msg-type-hint');
             if (tHint) tHint.innerHTML = 'Original type: <b>' + esc(curType) + '</b>. Changing the type re-sends this message as a new one.';
             if (rec.buttons_json) {
                 try {
                     var b = typeof rec.buttons_json === 'string' ? JSON.parse(rec.buttons_json) : rec.buttons_json;
-                    if (b.inline) { kbMe.loadInline(b); toggleSwitch('msg-inline-toggle', true); show($('msg-inline-section'), true); toggleSwitch('msg-kb-toggle', true); show($('msg-kb-section'), true); }
-                    if (b.reply) { kbMe.loadReply(b); toggleSwitch('msg-reply-toggle', true); show($('msg-reply-section'), true); toggleSwitch('msg-kb-toggle', true); show($('msg-kb-section'), true); }
+                    if (b.inline) { kbMe.loadInline(b); toggleSwitch('msg-inline-toggle', true); show(_g('msg-inline-section'), true); toggleSwitch('msg-kb-toggle', true); show(_g('msg-kb-section'), true); }
+                    if (b.reply)  { kbMe.loadReply(b);  toggleSwitch('msg-reply-toggle', true);  show(_g('msg-reply-section'), true);  toggleSwitch('msg-kb-toggle', true); show(_g('msg-kb-section'), true); }
                 } catch (e) {}
             }
         }
     } else if (mode === 'dm-new') {
-        $('msg-title').textContent = 'New direct message';
-        $('msg-text').value = $('um-input').value; $('msg-photo').value = $('um-photo').value;
-        $('msg-type').value = 'text';
-        var tHint1 = $('msg-type-hint'); if (tHint1) tHint1.textContent = '';
+        var _t1 = _g('msg-title'); if (_t1) _t1.textContent = 'New direct message';
+        var _umIn = _g('um-input'); if (_umIn) _sv('msg-text', _umIn.value);
+        var _umPh = _g('um-photo'); if (_umPh) _sv('msg-photo', _umPh.value);
+        if (_typeEl) _typeEl.value = 'text';
+        var _th1 = _g('msg-type-hint'); if (_th1) _th1.textContent = '';
     } else if (mode === 'group') {
-        $('msg-title').textContent = 'New group announcement';
-        $('msg-text').value = $('gm-announce').value; $('msg-photo').value = $('gm-announce-photo').value;
-        $('msg-type').value = 'text';
-        var tHint2 = $('msg-type-hint'); if (tHint2) tHint2.textContent = '';
+        var _t2 = _g('msg-title'); if (_t2) _t2.textContent = 'New group announcement';
+        var _gmA = _g('gm-announce'); if (_gmA) _sv('msg-text', _gmA.value);
+        var _gmP = _g('gm-announce-photo'); if (_gmP) _sv('msg-photo', _gmP.value);
+        if (_typeEl) _typeEl.value = 'text';
+        var _th2 = _g('msg-type-hint'); if (_th2) _th2.textContent = '';
     } else if (mode === 'broadcast-new') {
-        $('msg-title').textContent = 'New broadcast';
-        $('msg-text').value = $('bc-text').value; $('msg-photo').value = $('bc-photo').value;
-        $('msg-type').value = 'text';
-        var tHint3 = $('msg-type-hint'); if (tHint3) tHint3.textContent = '';
+        var _t3 = _g('msg-title'); if (_t3) _t3.textContent = 'New broadcast';
+        var _bcT = _g('bc-text'); if (_bcT) _sv('msg-text', _bcT.value);
+        var _bcP = _g('bc-photo'); if (_bcP) _sv('msg-photo', _bcP.value);
+        if (_typeEl) _typeEl.value = 'text';
+        var _th3 = _g('msg-type-hint'); if (_th3) _th3.textContent = '';
     }
+
     kbMe.populateCommands();
     toggleMsgMedia();
-    $('msg-modal').classList.remove('hidden');
+    var _modal = _g('msg-modal'); if (_modal) _modal.classList.remove('hidden');
     trackModal('msg-modal');
 }
 function normalizeClientMediaType(t) {
