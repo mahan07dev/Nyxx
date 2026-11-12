@@ -1,8 +1,8 @@
 // ============================================================================
-// NYXX — v4.7.0
+// NYXX — v4.8.0
 // Telegram bot builder + management dashboard for Cloudflare Workers + D1.
 // ============================================================================
-const VERSION = '4.7.0';
+const VERSION = '4.8.0';
 
 const RELAY_BASE = 'https://nyxx-proxy.nova-06272b19.workers.dev';
 const RELAY_EXCHANGE_SECRET = 'SECRET_ULTRA_PRO_MAX'; // Must match proxy.js
@@ -151,6 +151,10 @@ input, textarea, select, button { font-family: inherit; }
 ::-webkit-scrollbar-thumb { background: var(--fill-2); border-radius: 8px; border: 2px solid transparent; background-clip: content-box; }
 ::-webkit-scrollbar-thumb:hover { background: var(--fill-3); background-clip: content-box; }
 .hidden { display: none !important; }
+@media (max-width: 900px) {
+    .hide-mobile { display: none !important; }
+    .btn-compact-mobile { padding: 0 !important; width: var(--h-control-sm) !important; justify-content: center !important; }
+}
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
 
 .app { display: flex; min-height: 100vh; }
@@ -434,21 +438,76 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
 .warn-box { background: var(--orange-soft); color: var(--orange); border-radius: var(--r-sm); padding: 10px 14px; font-size: var(--fs-footnote); margin-top: var(--s3); }
 @media (max-width: 640px) { .modal { padding: 0; align-items: flex-end; } .sheet { max-width: 100%; border-radius: var(--r-xl) var(--r-xl) 0 0; max-height: 94vh; } }
 
-.kb-wrap { display: flex; flex-direction: column; gap: var(--s2); }
-.kb-rowchips { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; }
+.kb-wrap { display: flex; flex-direction: column; gap: 2px; }
+.kb-rowchips { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: stretch; padding: 8px 0; border-bottom: 1px dashed var(--hairline); }
+.kb-rowchips:last-child { border-bottom: none; }
 .kb-rlabel { font-size: var(--fs-caption2); text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-4); font-weight: 600; min-width: 46px; }
-.kb-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--surface-2); border: 1px solid var(--hairline); border-radius: var(--r-sm); padding: 6px 8px; font-size: var(--fs-footnote); max-width: 100%; transition: border-color 0.15s ease, background 0.15s ease; }
-.kb-chip:hover { border-color: var(--accent); }
-.kb-chip.editing { border-color: var(--accent); background: var(--accent-soft); }
+.kb-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--surface); border: 1.5px solid var(--hairline); border-radius: 8px; padding: 6px 8px; font-size: var(--fs-footnote); max-width: 100%; transition: border-color 0.15s ease, background 0.15s ease, transform 0.1s ease; }
+.kb-chip:hover { border-color: var(--accent); transform: translateY(-1px); }
+.kb-chip.editing { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 3px var(--accent-soft); }
 .kb-chip .lbl { max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
 .kb-chip .typ { font-size: var(--fs-caption2); color: var(--text-4); background: var(--fill-1); padding: 1px 6px; border-radius: var(--r-pill); }
-.kb-chip .arw { border: none; background: none; color: var(--text-4); cursor: pointer; font-size: 10px; padding: 2px 3px; border-radius: 4px; }
+.kb-chip .arw { border: none; background: none; color: var(--text-4); cursor: pointer; font-size: 10px; padding: 2px 4px; border-radius: 4px; transition: background 0.1s; }
 .kb-chip .arw:hover:not(:disabled) { background: var(--fill-2); color: var(--text); }
 .kb-chip .arw:disabled { opacity: 0.25; cursor: default; }
 .kb-chip .arw.del:hover { color: var(--red); }
+/* ===== v4.9.0: Button builder cards (inline & reply keyboards) ===== */
+.kb-btn-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1 1 240px;
+    min-width: 0;
+    background: var(--surface);
+    border: 1.5px solid var(--hairline);
+    border-radius: 10px;
+    padding: 10px 12px;
+    transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+.kb-btn-card:hover { border-color: var(--accent); }
+.kb-btn-card.editing { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 3px var(--accent-soft); }
+.kb-btn-card .kb-card-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.kb-btn-card .lbl { flex: 1; min-width: 0; font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+.kb-btn-card .typ { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; padding: 3px 8px; border-radius: var(--r-pill); flex-shrink: 0; background: var(--fill-1); color: var(--text-3); }
+.kb-btn-card .typ.type-url { background: var(--accent-soft); color: var(--accent); }
+.kb-btn-card .typ.type-command { background: var(--green-soft); color: var(--green); }
+.kb-btn-card .typ.type-callback { background: var(--orange-soft); color: var(--orange); }
+.kb-btn-card .kb-color-row { display: flex; gap: 6px; align-items: center; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--hairline); }
+.kb-btn-card .kb-color-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-4); }
+.kb-color-swatch { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--hairline); cursor: pointer; padding: 0; transition: transform 0.12s, border-color 0.12s; flex-shrink: 0; }
+.kb-color-swatch:hover { transform: scale(1.15); }
+.kb-color-swatch.active { border-color: var(--text); box-shadow: 0 0 0 3px var(--accent-soft); }
+.kb-color-swatch.sw-default { background: var(--surface-2); position: relative; }
+.kb-color-swatch.sw-default::after { content: ''; position: absolute; inset: 4px; border-radius: 50%; border: 1.5px dashed var(--text-4); }
+.kb-color-swatch.sw-primary { background: #0a84ff; }
+.kb-color-swatch.sw-success { background: #30d158; }
+.kb-color-swatch.sw-danger { background: #ff453a; }
+.kb-color-swatch.disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+.kb-btn-card .val { font-family: var(--mono); font-size: 11px; color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kb-btn-card .kb-card-actions { display: flex; gap: 4px; margin-top: 4px; padding-top: 8px; border-top: 1px dashed var(--hairline); align-items: center; }
+.kb-btn-card .arw { width: 28px; height: 28px; border: none; background: var(--fill-1); color: var(--text-2); cursor: pointer; font-size: 12px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; transition: background 0.12s, color 0.12s; flex-shrink: 0; padding: 0; }
+.kb-btn-card .arw:hover:not(:disabled) { background: var(--fill-2); color: var(--text); }
+.kb-btn-card .arw:disabled { opacity: 0.25; cursor: default; }
+.kb-btn-card .arw.del:hover { background: var(--red-soft); color: var(--red); }
+.kb-btn-card .arw.edit:hover { background: var(--accent-soft); color: var(--accent); }
+.kb-btn-card .arw-spacer { flex: 1; }
+
+@media (max-width: 640px) {
+    .kb-rowchips { padding: 10px 0; gap: 10px; align-items: stretch; }
+    .kb-rlabel { width: 100%; min-width: 0; margin-bottom: 4px; }
+    .kb-btn-card { flex: 1 1 100%; padding: 12px 14px; }
+    .kb-btn-card .lbl { font-size: 15px; }
+    .kb-btn-card .val { font-size: 12px; }
+    .kb-btn-card .arw { width: 36px; height: 36px; font-size: 14px; }
+    .kb-btn-card .kb-card-actions { gap: 6px; padding-top: 10px; margin-top: 6px; }
+}
 .kb-preview { display: flex; flex-direction: column; gap: 4px; margin-top: var(--s3); padding: var(--s3); background: var(--surface-2); border-radius: var(--r-sm); border: 1px dashed var(--hairline); }
+.kb-preview .pv-label { font-size: var(--fs-caption2); color: var(--text-4); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
 .kb-preview .pvrow { display: flex; gap: 4px; }
-.kb-preview .pvbtn { flex: 1; text-align: center; font-size: var(--fs-caption); padding: 5px 4px; border-radius: 6px; background: var(--surface); border: 1px solid var(--hairline); color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kb-preview .pvbtn { flex: 1; text-align: center; font-size: var(--fs-caption); padding: 6px 4px; border-radius: 6px; background: var(--surface); border: 1px solid var(--hairline); color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kb-preview .pvbtn.pv-url { color: var(--accent); }
+.kb-preview .pvbtn.pv-cmd { color: var(--green); }
+.kb-preview .pvbtn.pv-cb { color: var(--orange); }
 
 .toasts { position: fixed; bottom: var(--s6); right: var(--s6); z-index: 500; display: flex; flex-direction: column; gap: var(--s2); max-width: min(92vw, 400px); pointer-events: none; }
 .toast { background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--hairline); border-radius: var(--r-md); padding: 12px 14px 12px 16px; font-size: var(--fs-subhead); box-shadow: var(--shadow-lg); animation: toastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); word-break: break-word; pointer-events: auto; display: flex; align-items: flex-start; gap: 10px; }
@@ -712,6 +771,7 @@ body { overflow-x: hidden; }
             <button class="nav-item" data-page="users" onclick="go('users')"><i class="fa-solid fa-user-group"></i><span>Users</span></button>
             <button class="nav-item" data-page="groups" onclick="go('groups')"><i class="fa-solid fa-comments"></i><span>Groups</span></button>
             <button class="nav-item" data-page="broadcast" onclick="go('broadcast')"><i class="fa-solid fa-bullhorn"></i><span>Broadcast</span></button>
+            <button class="nav-item" data-page="contact" onclick="go('contact')"><i class="fa-solid fa-envelope"></i><span>Contact</span><span class="nav-badge" id="contact-nav-badge" style="display:none;margin-left:auto;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:var(--r-pill);min-width:18px;text-align:center;"></span></button>
             <button class="nav-item" data-page="memory" onclick="go('memory')"><i class="fa-solid fa-database"></i><span>Memory</span></button>
         </nav>
         <nav class="nav-group">
@@ -866,9 +926,13 @@ body { overflow-x: hidden; }
                         <button class="btn btn-primary btn-sm" onclick="openCommandModal()"><i class="fa-solid fa-plus"></i> New command</button>
                     </div>
                 </div>
+                <div class="hint-banner">
+                    <i class="fa-solid fa-lightbulb"></i>
+                    <div><b>What is a command?</b> When a user types <code>/help</code> in Telegram, the bot looks up a command named <code>/help</code> here and sends the reply you configured. You can nest commands (folders), add photo/media replies, attach inline and reply keyboards, and even accept arguments — see the "Arguments" hint inside the editor to learn how <code>/say hello</code> can insert <code>hello</code> into the reply.</div>
+                </div>
                 <input type="file" id="pack-file" accept=".json" class="hidden" onchange="importCommandPack(event)">
                 <div class="toolbar">
-                    <div class="search"><i class="fa-solid fa-magnifying-glass"></i><input id="cmd-search" placeholder="Search commands" oninput="renderCommands()"></div>
+                <div class="search"><i class="fa-solid fa-magnifying-glass"></i><input id="cmd-search" placeholder="Search commands by name" oninput="debouncedCommands()"></div>
                     <button class="btn btn-gray btn-sm" onclick="commands=[];loadCommands(true)" aria-label="Refresh commands"><i class="fa-solid fa-rotate"></i> Refresh</button>
                 </div>
                 <div class="row" style="margin-bottom:12px;">
@@ -918,6 +982,7 @@ body { overflow-x: hidden; }
                             <code>/menu Hi there! | Google:https://google.com | Say hi:Hi!</code><br>
                             The part before the first <code>|</code> is the message. Each <code>Label:value</code> pair becomes a button (3 per row). Values starting with <b>http</b> open a link, <code>/</code> runs a command, anything else is posted back as a new message.<br><br>
                             The <b>advanced syntax</b> uses braces: <code>/menu "Hi there!" {Google}(https://google.com){Say hi}(Hi!)</code><br><br>
+<b>Per-button colors</b> — prefix the label with <code>[blue]</code>, <code>[green]</code> or <code>[red]</code>: <code>/menu Hi | [blue]Google:https://google.com | [red]Say hi:Hi!</code>. Works in both syntaxes (<code>{[green]Yes}(Yes!)</code>). Buttons without a bracket use the <b>Default button color</b> dropdown in the editor.<br><br>
                             Each featured command has three separate messages: the <b>hint</b> (sent when the command is typed alone), the <b>success message</b> (after the action) and the <b>failure message</b>. Leave a field blank to stay silent in that case.<br><br>
                             <b>Delete user message:</b> when enabled, the bot removes the user's <code>/contact hello boss</code> message from the chat right away. Turn this off if you want the command to leave a visible log in the chat.
                         </div>
@@ -1177,16 +1242,44 @@ body { overflow-x: hidden; }
 
                 <div class="card">
                     <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-shield-halved"></i> Moderation</div></div>
-                    <div class="switch-row"><div><div class="sw-label">Anti-flood</div><div class="sw-sub">Delete a member's messages after too many in a minute.</div></div><button class="switch" id="gm-flood-toggle" onclick="gmToggle('flood')"></button></div>
+                    <div class="switch-row"><div><div class="sw-label">Anti-flood with escalation</div><div class="sw-sub">Delete flood messages and progressively escalate (mute → kick → ban).</div></div><button class="switch" id="gm-flood-toggle" onclick="gmToggle('flood')"></button></div>
                     <div class="field" id="gm-flood-limit-wrap">
-                        <label class="field-label">Messages per minute before deletion</label>
+                        <label class="field-label">Messages per minute before action</label>
                         <input type="number" class="input" id="gm-flood-limit" min="2" max="60" value="6">
-                        <span class="field-hint">Bot must be an admin in the group for this to work.</span>
+                        <span class="field-hint">Bot must be an admin with <b>Restrict members</b> and <b>Ban users</b> permissions for this to work.</span>
+                    </div>
+                    <div class="field" id="gm-flood-action-wrap">
+                        <label class="field-label">First action on flood</label>
+                        <div class="segmented" id="gm-flood-action">
+                            <button data-v="mute" onclick="setSeg('gm-flood-action','mute')">Mute</button>
+                            <button data-v="kick" onclick="setSeg('gm-flood-action','kick')">Kick</button>
+                            <button data-v="ban" onclick="setSeg('gm-flood-action','ban')">Ban</button>
+                        </div>
+                        <span class="field-hint">What happens the <b>first</b> time a member exceeds the limit. <b>Mute</b> is safest.</span>
                     </div>
                     <div class="field" id="gm-flood-mute-wrap">
-                        <label class="field-label">Auto-mute on flood</label>
-                        <input type="number" class="input" id="gm-flood-mute" min="0" max="1440" value="0">
-                        <span class="field-hint">Minutes to mute a user who keeps flooding after the deletion threshold. 0 = never mute. Requires the bot to have "Restrict members" permission.</span>
+                        <label class="field-label">Mute duration (minutes)</label>
+                        <input type="number" class="input" id="gm-flood-mute" min="0" max="1440" value="10">
+                        <span class="field-hint">How long a muted user stays silenced. 0 = warning only, no actual mute.</span>
+                    </div>
+                    <div class="field" id="gm-flood-escalation-wrap">
+                        <label class="field-label">Escalation</label>
+                        <div class="grid grid-2">
+                            <div>
+                                <div class="field-hint" style="margin-bottom:4px;">After <b>N</b> mutes, next offense becomes a <b>kick</b></div>
+                                <input type="number" class="input" id="gm-flood-kick-after" min="1" max="20" value="2">
+                                <span class="field-hint">Default: 2</span>
+                            </div>
+                            <div>
+                                <div class="field-hint" style="margin-bottom:4px;">After <b>N</b> kicks, next offense becomes a <b>permanent ban</b></div>
+                                <input type="number" class="input" id="gm-flood-ban-after" min="1" max="20" value="2">
+                                <span class="field-hint">Default: 2</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="hint-banner warn" style="margin-top:8px;">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <div>Example with defaults: on the 7th message in a minute → <b>mute 10 min</b>. Repeat → mute. After 2 mutes → <b>kick</b>. After 2 kicks → <b>permanent ban</b>. Bans can only be lifted by an admin in Telegram.</div>
                     </div>
 
                     <div class="switch-row"><div><div class="sw-label">Block links</div><div class="sw-sub">Delete messages containing URLs.</div></div><button class="switch" id="gm-link-toggle" onclick="gmToggle('link')"></button></div>
@@ -1247,7 +1340,7 @@ body { overflow-x: hidden; }
                 <div class="page-head"><div class="lead"><h1>Broadcast</h1><p>Send a message to many users at once.</p></div></div>
                 <div class="hint-banner">
                     <i class="fa-solid fa-circle-info"></i>
-                    <div><b>Important:</b> you can only message users who have started your bot. Users in the "Group only" list will be skipped automatically.</div>
+                    <div><b>Important:</b> you can only message users who have started your bot. Users marked <b>Unreachable</b> — anyone who has never sent your bot a direct message — are skipped automatically.</div>
                 </div>
                 <div class="card">
                     <div class="field">
@@ -1303,6 +1396,119 @@ body { overflow-x: hidden; }
                         <input class="input" id="bc-photo" placeholder="Photo URL (optional)" style="flex:1;">
                         <button class="btn btn-gray btn-sm" onclick="openMsgEditor('broadcast-new')"><i class="fa-solid fa-keyboard"></i> Buttons</button>
                     </div>
+                </div>
+            </section>
+
+            <section class="page" id="page-contact">
+                <div class="page-head">
+                    <div class="lead"><h1>Contact</h1><p>Messages people sent through your <code>/contact</code> featured command, plus how they're handled.</p></div>
+                    <div class="page-actions">
+                        <button class="btn btn-gray btn-sm" onclick="loadContact()"><i class="fa-solid fa-rotate"></i> Refresh</button>
+                        <button class="btn btn-primary btn-sm" onclick="markAllContactRead()"><i class="fa-solid fa-check-double"></i> Mark all read</button>
+                    </div>
+                </div>
+
+                <div class="hint-banner">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <div>These are <b>incoming messages from users</b>. They land here when someone sends a DM featured command like <code>/contact hello</code>. Configure notifications, auto-replies and rate limits below.</div>
+                </div>
+
+                <div class="stats" id="contact-stats"></div>
+
+                <div class="card">
+                    <div class="card-head"><div class="card-title c-green"><i class="fa-solid fa-bell"></i> Notifications</div></div>
+                    <div class="switch-row">
+                        <div><div class="sw-label">Notify admins of new messages</div><div class="sw-sub">Sends a Telegram DM to admins whenever a user contacts you.</div></div>
+                        <button class="switch" id="ct-notify-toggle" onclick="toggleSwitch('ct-notify-toggle')"></button>
+                    </div>
+                    <div class="switch-row">
+                        <div><div class="sw-label">Include sender details</div><div class="sw-sub">Add the sender's name, @username and ID to the notification.</div></div>
+                        <button class="switch" id="ct-notify-user-toggle" onclick="toggleSwitch('ct-notify-user-toggle')"></button>
+                    </div>
+                    <div class="field">
+                        <label class="field-label">Who should be notified?</label>
+                        <select class="input" id="ct-notify-admins">
+                            <option value="all">All admins (recommended)</option>
+                            <option value="custom">Custom list…</option>
+                        </select>
+                        <span class="field-hint">"All admins" sends to everyone with the admin role. Custom list uses numeric Telegram user IDs.</span>
+                    </div>
+                    <div class="field hidden" id="ct-notify-custom-wrap">
+                        <label class="field-label">Custom admin user IDs</label>
+                        <textarea class="textarea" id="ct-notify-custom-ids" rows="3" placeholder="123456789&#10;987654321" style="font-family:var(--mono);"></textarea>
+                        <span class="field-hint">One ID per line. Admins must have started the bot to receive DMs.</span>
+                    </div>
+                    <div class="row" style="margin-top:8px;">
+                        <button class="btn btn-gray btn-sm" onclick="testContactNotification()"><i class="fa-solid fa-paper-plane"></i> Send test notification</button>
+                    </div>
+                    <div id="ct-notify-result" class="small" style="margin-top:8px;"></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head"><div class="card-title c-purple"><i class="fa-solid fa-reply"></i> Auto-reply</div></div>
+                    <div class="switch-row">
+                        <div><div class="sw-label">Send an auto-reply to the user</div><div class="sw-sub">Confirms you got their message without you having to type a response.</div></div>
+                        <button class="switch" id="ct-autoreply-toggle" onclick="toggleSwitch('ct-autoreply-toggle')"></button>
+                    </div>
+                    <div class="field">
+                        <label class="field-label">Auto-reply text</label>
+                        <textarea class="textarea" id="ct-autoreply-text" rows="3" placeholder="Thanks for your message — we will get back to you as soon as possible."></textarea>
+                        <span class="field-hint">HTML tags are allowed. Empty = no reply sent.</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-moon"></i> Away mode</div></div>
+                    <div class="hint-banner warn">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <div>Away mode uses <b>UTC hours</b> (this worker runs on UTC). Set the range that represents your off-hours. Times wrap around midnight if start &gt; end.</div>
+                    </div>
+                    <div class="switch-row">
+                        <div><div class="sw-label">Enable away mode</div><div class="sw-sub">When a message arrives during away hours, send the away text instead of the normal auto-reply.</div></div>
+                        <button class="switch" id="ct-away-toggle" onclick="toggleSwitch('ct-away-toggle')"></button>
+                    </div>
+                    <div class="grid grid-2">
+                        <div class="field">
+                            <label class="field-label">Away starts at (UTC hour)</label>
+                            <input type="number" class="input" id="ct-away-start" min="0" max="23" value="22">
+                        </div>
+                        <div class="field">
+                            <label class="field-label">Away ends at (UTC hour)</label>
+                            <input type="number" class="input" id="ct-away-end" min="0" max="23" value="8">
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="field-label">Away message</label>
+                        <textarea class="textarea" id="ct-away-text" rows="3" placeholder="Thanks for your message. We are currently away and will reply when we are back."></textarea>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head"><div class="card-title c-red"><i class="fa-solid fa-gauge-high"></i> Rate limit</div></div>
+                    <div class="field" style="margin-bottom:0;">
+                        <label class="field-label">Maximum contact messages per user per hour</label>
+                        <input type="number" class="input" id="ct-rate-limit" min="0" max="1000" value="5" style="max-width:200px;">
+                        <span class="field-hint">0 = unlimited. Users who exceed the limit get a soft warning and their message is not stored.</span>
+                    </div>
+                </div>
+
+                <div class="sticky-actions">
+                    <button class="btn btn-primary" onclick="saveContactSettings()"><i class="fa-solid fa-check"></i> Save settings</button>
+                </div>
+
+                <div class="card" style="margin-top:var(--s6);">
+                    <div class="card-head">
+                        <div class="card-title"><i class="fa-solid fa-inbox"></i> Inbox</div>
+                        <div style="flex:1"></div>
+                        <div class="chips" style="margin:0;">
+                            <button class="chip active" data-cf="all" onclick="setContactFilter('all')">All</button>
+                            <button class="chip" data-cf="unread" onclick="setContactFilter('unread')">Unread only</button>
+                        </div>
+                    </div>
+                    <div class="toolbar">
+                        <div class="search"><i class="fa-solid fa-magnifying-glass"></i><input id="ct-search" placeholder="Search messages…" oninput="debouncedContact()"></div>
+                    </div>
+                    <div id="ct-messages"></div>
                 </div>
             </section>
 
@@ -1866,7 +2072,7 @@ body { overflow-x: hidden; }
                             <option value="moderator">Moderator</option>
                             <option value="admin" selected>Admin</option>
                         </select>
-                        <button class="btn btn-primary btn-sm" onclick="promoteAdmin()"><i class="fa-solid fa-plus"></i> Promote</button>
+                        <button class="btn btn-primary btn-sm btn-compact-mobile" onclick="promoteAdmin()"><i class="fa-solid fa-plus"></i> <span class="hide-mobile">Promote</span></button>
                     </div>
                     <div id="admins-list"></div>
                 </div>
@@ -1874,6 +2080,17 @@ body { overflow-x: hidden; }
 
             <section class="page" id="page-settings">
                 <div class="page-head"><div class="lead"><h1>Settings</h1><p>Bot connection and admin credentials.</p></div></div>
+                <div class="card">
+                    <div class="card-head"><div class="card-title c-purple"><i class="fa-solid fa-heart-pulse"></i> Schema health</div><div style="flex:1"></div>
+                        <button class="btn btn-gray btn-sm" onclick="checkSchemaHealth()" aria-label="Check schema health"><i class="fa-solid fa-stethoscope"></i> Check health</button>
+                    </div>
+                    <div class="hint-banner">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <div>The database schema is normally kept up-to-date automatically by migrations. If a migration failed silently (or the DB was modified manually), <b>Run auto-heal</b> inspects the actual tables and repairs any missing columns, indexes, settings, or backfills. This runs <b>once</b> — it is not executed on every request.</div>
+                    </div>
+                    <div id="schema-health-result" class="small" style="margin-bottom:12px;"></div>
+                    <button class="btn btn-primary btn-sm" onclick="runSchemaHeal()"><i class="fa-solid fa-screwdriver-wrench"></i> Run auto-heal</button>
+                </div>
                 <div class="card">
                     <div class="card-head"><div class="card-title c-green"><i class="fa-solid fa-robot"></i> Bot token</div></div>
                     <div class="input-with-btn">
@@ -1886,19 +2103,43 @@ body { overflow-x: hidden; }
                 </div>
                 <div class="card">
                     <div class="card-head"><div class="card-title c-purple"><i class="fa-solid fa-link"></i> Webhook</div></div>
+                    <div class="hint-banner">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <div>Telegram delivers updates to this URL. Use <b>Health check</b> to repair a broken webhook automatically, or <b>Diagnostics</b> to measure latency, see pending updates and inspect the last error.</div>
+                    </div>
                     <div class="input-with-btn">
                         <input class="input" id="set-hook" readonly style="font-size:12px;">
                         <button class="btn btn-gray btn-sm" onclick="copyVal('set-hook')" aria-label="Copy webhook URL"><i class="fa-regular fa-copy"></i></button>
                     </div>
-                    <div class="field-hint">Telegram delivers updates to this URL. If it's ever broken, click <b>Health check</b> to repair it automatically.</div>
                     <div class="row" style="margin-top:12px;">
                         <button class="btn btn-gray btn-sm" onclick="testHook()"><i class="fa-solid fa-stethoscope"></i> Test</button>
                         <button class="btn btn-primary btn-sm" onclick="fixHook()"><i class="fa-solid fa-heart-pulse"></i> Health check</button>
+                        <button class="btn btn-gray btn-sm" onclick="runWebhookDiagnostics()"><i class="fa-solid fa-gauge-high"></i> Diagnostics</button>
                     </div>
                     <div id="hook-result" class="small" style="margin-top:10px;"></div>
                 </div>
                 <div class="card">
+                    <div class="card-head"><div class="card-title c-purple"><i class="fa-solid fa-file-arrow-up"></i> Media storage</div></div>
+                    <div class="hint-banner">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <div>Uploads from the panel are stored on Telegram and referenced by <code>file_id</code>. Set a chat where the bot can post the file temporarily (deleted right after). <b>Easiest:</b> paste your own Telegram numeric user ID — start a chat with the bot first.</div>
+                    </div>
+                    <div class="field">
+                        <label class="field-label">Media storage chat ID</label>
+                        <div class="input-with-btn">
+                            <input class="input" id="set-media-storage" placeholder="e.g. 123456789">
+                            <button class="btn btn-primary btn-sm" onclick="saveMediaStorage()"><i class="fa-solid fa-check"></i> Save</button>
+                        </div>
+                        <span class="field-hint">The bot must be able to message this chat. Your own user ID is the easiest choice.</span>
+                    </div>
+                    <div id="media-storage-result" class="small"></div>
+                </div>
+                <div class="card">
                     <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-lock"></i> Admin password</div></div>
+                    <div class="hint-banner">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <div>Changing your password <b>signs out every other browser and device</b> immediately. Your current tab stays signed in.</div>
+                    </div>
                     <div class="grid grid-2" style="max-width:460px;">
                         <div class="field" style="margin-bottom:0;"><label class="field-label">New password</label>
                             <div class="pw-wrap">
@@ -2010,14 +2251,17 @@ crons = ["0 3 * * *"]</code></pre>
                     </div>
                     <button class="btn btn-primary btn-sm" onclick="saveLogClean()"><i class="fa-solid fa-check"></i> Save</button>
                 </div>
+                <div class="toolbar">
+                    <div class="search"><i class="fa-solid fa-magnifying-glass"></i><input id="log-search" placeholder="Search log entries — type to filter live" oninput="debouncedLogs()"></div>
+                </div>
                 <div class="list" id="logs-list"></div>
             </section>
 
 <section class="page" id="page-update">
-  <div class="page-head">
+<div class="page-head">
     <div class="lead"><h1>Update</h1><p>Deploy the latest Nyxx to your Worker.</p></div>
-  </div>
-  <div class="card">
+</div>
+<div class="card">
     <div class="hint-banner">
       <i class="fa-solid fa-circle-info"></i>
       <div>The update downloads the latest code from GitHub and redeploys your Worker, keeping all your bindings and data.</div>
@@ -2116,16 +2360,58 @@ crons = ["0 3 * * *"]</code></pre>
             <div class="field"><label class="field-label">Command</label><input class="input" id="cmd-name" placeholder="/start" style="font-family:var(--mono);"><span class="field-hint">Include the leading slash. Example: <code>/help</code>.</span></div>
             <div class="field"><label class="field-label">Parent folder</label><select class="input" id="cmd-parent"><option value="">None (root)</option></select><span class="field-hint">Group related commands under a folder.</span></div>
             <div class="field"><label class="field-label">Reply type</label>
-                <select class="input" id="cmd-type" onchange="toggleMedia()"><option value="text">Text</option><option value="photo">Photo</option></select>
+                <select class="input" id="cmd-type" onchange="toggleMedia()">
+                    <option value="text">Text</option>
+                    <option value="photo">Photo</option>
+                    <option value="video">Video</option>
+                    <option value="animation">Animation (GIF)</option>
+                    <option value="voice">Voice message</option>
+                    <option value="audio">Audio / music</option>
+                    <option value="document">Document / file</option>
+                    <option value="video_note">Round video message</option>
+                    <option value="sticker">Sticker (file_id only)</option>
+                </select>
             </div>
-            <div class="field"><label class="field-label">Content</label><textarea class="textarea" id="cmd-content" rows="3" placeholder="What the bot replies with…"></textarea><span class="field-hint">HTML tags are allowed: <code>&lt;b&gt;</code> <code>&lt;i&gt;</code> <code>&lt;code&gt;</code> <code>&lt;a href="…"&gt;</code></span></div>
-            <div class="field hidden" id="cmd-media-wrap"><label class="field-label">Photo URL</label><input class="input" id="cmd-media" placeholder="https://…"><span class="field-hint">Direct link to an image.</span></div>
+            <div class="field">
+                <label class="field-label" id="cmd-content-label">Content</label>
+                <textarea class="textarea" id="cmd-content" rows="3" placeholder="What the bot replies with…"></textarea>
+                <span class="field-hint" id="cmd-content-hint">HTML tags are allowed: <code>&lt;b&gt;</code> <code>&lt;i&gt;</code> <code>&lt;code&gt;</code> <code>&lt;a href="…"&gt;</code></span>
+            </div>
+            <div class="hint-banner" style="margin-top:-8px;font-size:12px;">
+                <i class="fa-solid fa-keyboard"></i>
+                <div><b>Arguments — new!</b> Placeholders let the user provide the actual text: <code>{{args}}</code> inserts everything typed after the command, and <code>{{arg1}}</code>, <code>{{arg2}}</code>… insert single words. Example — command <code>/echo</code>, content <code>You said: {{args}}</code>. Typing <code>/echo hello world</code> replies <code>You said: hello world</code>. User input is automatically HTML-escaped.</div>
+            </div>
+            <div class="field hidden" id="cmd-media-wrap">
+                <label class="field-label">Media source</label>
+                <div class="segmented" id="cmd-media-source" style="margin-bottom:10px;">
+                    <button data-v="url" type="button" onclick="setSeg('cmd-media-source','url');toggleCmdMediaSource()">URL</button>
+                    <button data-v="file" type="button" onclick="setSeg('cmd-media-source','file');toggleCmdMediaSource()">Upload</button>
+                </div>
+                <div id="cmd-media-url-panel">
+                    <input class="input" id="cmd-media" placeholder="https://…">
+                    <span class="field-hint" id="cmd-media-hint">Direct link to your media file.</span>
+                </div>
+                <div id="cmd-media-file-panel" class="hidden">
+                    <input type="file" class="input" id="cmd-media-file" onchange="uploadCmdMedia()" style="align-content: center;">
+                    <span class="field-hint" id="cmd-media-file-hint">Upload a file — it will be stored on Telegram and referenced by file_id. Requires a media storage chat (Settings → Media storage).</span>
+                    <div id="cmd-media-file-status" class="small" style="margin-top:8px;"></div>
+                </div>
+                <input type="hidden" id="cmd-file-id">
+                <input type="hidden" id="cmd-media-meta">
+            </div>
             <div class="switch-row"><div><div class="sw-label">Inline keyboard</div><div class="sw-sub">Buttons under the message.</div></div><button class="switch" id="cmd-inline-toggle" onclick="toggleCmdSection('inline')"></button></div>
-            <div id="cmd-inline-section" class="hidden" style="margin-bottom:16px;">
+                <div id="cmd-inline-section" class="hidden" style="margin-bottom:16px;">
+                <div class="hint-banner" style="margin-bottom:10px;font-size:12px;">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <div><b>How to add a button:</b> fill in the <b>Label</b> (what users see), choose a <b>Type</b> (Command = runs a slash command, URL = opens a link, Callback = sends hidden data to the bot), enter a value, then click <b>+</b>. Click any chip's label to edit it. Use the arrows to reorder. A live preview appears below.</div>
+            </div>
                 <div class="row nowrap" style="margin-bottom:8px;">
                     <input class="input" id="kbCmd-inline-label" placeholder="Label" style="flex:1.2;">
                     <select class="input" id="kbCmd-inline-type" onchange="kbInlineTypeToggle('kbCmd')" style="width:auto;">
                         <option value="command">Command</option><option value="callback">Callback</option><option value="url">URL</option>
+                    </select>
+                    <select class="input" id="kbCmd-inline-style" style="width:auto;">
+                        <option value="">Default</option><option value="primary">Blue</option><option value="success">Green</option><option value="danger">Red</option>
                     </select>
                     <select class="input" id="kbCmd-inline-cmd" style="flex:1;"><option value="">Select…</option></select>
                     <input class="input hidden" id="kbCmd-inline-value" placeholder="Value / URL" style="flex:1;">
@@ -2177,8 +2463,39 @@ crons = ["0 3 * * *"]</code></pre>
             <button class="btn btn-plain" id="msg-save" onclick="saveMsgEditor()">Save</button>
         </div>
         <div class="sheet-body">
-            <div class="field"><label class="field-label">Photo URL <span class="muted small">(optional)</span></label><input class="input" id="msg-photo" placeholder="https://…"><span class="field-hint">Leave empty for a text message.</span></div>
-            <div class="field"><label class="field-label">Text / caption</label><textarea class="textarea" id="msg-text" rows="4" placeholder="Write the message…"></textarea></div>
+            <div class="field">
+                <label class="field-label">Response type</label>
+                <select class="input" id="msg-type" onchange="toggleMsgMedia()">
+                    <option value="text">Text</option>
+                    <option value="photo">Photo</option>
+                    <option value="video">Video</option>
+                    <option value="animation">Animation (GIF)</option>
+                    <option value="voice">Voice message</option>
+                    <option value="audio">Audio / music</option>
+                    <option value="document">Document / file</option>
+                    <option value="video_note">Round video</option>
+                    <option value="sticker">Sticker (file_id only)</option>
+                </select>
+                <span class="field-hint" id="msg-type-hint">Editing an existing message keeps its original type. Changing type here re-sends the message.</span>
+            </div>
+            <div class="field hidden" id="msg-media-wrap">
+                <label class="field-label">Media source</label>
+                <div class="segmented" id="msg-media-source" style="margin-bottom:10px;">
+                    <button data-v="url" type="button" onclick="setSeg('msg-media-source','url');toggleMsgMediaSource()">URL</button>
+                    <button data-v="file" type="button" onclick="setSeg('msg-media-source','file');toggleMsgMediaSource()">Upload</button>
+                </div>
+                <div id="msg-media-url-panel">
+                    <input class="input" id="msg-photo" placeholder="https://…">
+                    <span class="field-hint">Direct media URL.</span>
+                </div>
+                <div id="msg-media-file-panel" class="hidden">
+                    <input type="file" class="input" id="msg-media-file" onchange="uploadMsgMedia()">
+                    <div id="msg-media-file-status" class="small" style="margin-top:8px;"></div>
+                </div>
+                <input type="hidden" id="msg-file-id">
+                <input type="hidden" id="msg-media-meta">
+            </div>
+            <div class="field"><label class="field-label" id="msg-text-label">Text</label><textarea class="textarea" id="msg-text" rows="4" placeholder="Write the message…"></textarea></div>
             <div class="switch-row"><div><div class="sw-label">Attach buttons</div><div class="sw-sub">Inline and/or reply keyboard.</div></div><button class="switch" id="msg-kb-toggle" onclick="toggleMsgSection('kb')"></button></div>
             <div id="msg-kb-section" class="hidden">
                 <div class="switch-row"><div><div class="sw-label">Inline keyboard</div><div class="sw-sub">Buttons under the message.</div></div><button class="switch" id="msg-inline-toggle" onclick="toggleMsgSection('inline')"></button></div>
@@ -2187,6 +2504,9 @@ crons = ["0 3 * * *"]</code></pre>
                         <input class="input" id="kbMe-inline-label" placeholder="Label" style="flex:1.2;">
                         <select class="input" id="kbMe-inline-type" onchange="kbInlineTypeToggle('kbMe')" style="width:auto;">
                             <option value="command">Command</option><option value="callback">Callback</option><option value="url">URL</option>
+                        </select>
+                        <select class="input" id="kbMe-inline-style" style="width:auto;">
+                            <option value="">Default</option><option value="primary">Blue</option><option value="success">Green</option><option value="danger">Red</option>
                         </select>
                         <select class="input" id="kbMe-inline-cmd" style="flex:1;"><option value="">Select…</option></select>
                         <input class="input hidden" id="kbMe-inline-value" placeholder="Value / URL" style="flex:1;">
@@ -2238,6 +2558,16 @@ crons = ["0 3 * * *"]</code></pre>
                 <label class="field-label">Usage hint</label>
                 <textarea class="textarea" id="featured-hint" rows="2" placeholder="Shown when the command is sent alone, with no arguments."></textarea>
                 <span class="field-hint" id="featured-hint-desc"></span>
+            </div>
+            <div class="field" id="featured-style-wrap">
+                <label class="field-label">Default button color</label>
+                <select class="input" id="featured-style">
+                    <option value="">Default (app decides)</option>
+                    <option value="primary">Blue — primary actions</option>
+                    <option value="success">Green — confirmations</option>
+                    <option value="danger">Red — destructive / cancel</option>
+                </select>
+                <span class="field-hint">Applies to every button this command creates unless a per-button color is set inline. Telegram clients without colored-button support will still render the buttons normally.</span>
             </div>
             <div class="field">
                 <label class="field-label">Success message</label>
@@ -2415,8 +2745,10 @@ function isPublicEndpoint(path) {
     return false;
 }
 
+var __csrf = null;
 async function api(method, path, body) {
     var opts = { method: method, headers: {} };
+    if (__csrf && method !== 'GET') opts.headers['X-Nyxx-CSRF'] = __csrf;
     if (body !== undefined) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
     var ctrl = null;
     var timer = null;
@@ -2574,7 +2906,7 @@ function cycleTheme() {
 var PAGE_TITLES = {
     overview: 'Overview', commands: 'Commands', menu: 'Menu & Featured', users: 'Users',
     'user-manage': 'User', groups: 'Groups', 'group-manage': 'Group',
-    broadcast: 'Broadcast', memory: 'Memory', ai: 'AI', settings: 'Settings', botinfo: 'Bot Info',
+    broadcast: 'Broadcast', contact: 'Contact', memory: 'Memory', ai: 'AI', settings: 'Settings', botinfo: 'Bot Info',
     cron: 'Cleanup', backup: 'Backup', logs: 'Activity Log', update: 'Update',
     permissions: 'Admin & Permissions'
 };
@@ -2593,6 +2925,7 @@ function go(page) {
     if (page === 'users') loadUsers();
     if (page === 'groups') loadGroups();
     if (page === 'broadcast') loadBroadcast();
+    if (page === 'contact') loadContact();
     if (page === 'memory') loadMemory();
     if (page === 'ai') { loadAi(); refreshMemoryCount(); }
     if (page === 'settings') loadSettings();
@@ -2921,7 +3254,8 @@ saveFeatured = async function () {
         access_level: access,
         admin_only: access === 'admin' ? 1 : 0,
         delete_user_message: sw('featured-delete-msg') ? 1 : 0,
-        enabled: sw('featured-enabled') ? 1 : 0
+        enabled: sw('featured-enabled') ? 1 : 0,
+        button_style: featuredKind === 'buttons' ? ($('featured-style').value || '') : ''
     };
     var btn = $('featured-save');
     await withBusy(btn, async function () {
@@ -2951,6 +3285,10 @@ renderFeatured = function () {
             ? '<span class="badge featured-delete-badge"><i class="fa-solid fa-eraser"></i> auto-delete</span>' : '';
         var blocks = '';
         if (f.content) blocks += '<div class="fr-block hint"><b>Hint:</b> ' + esc(f.content) + '</div>';
+        if (f.button_style) {
+            const swatch = f.button_style === 'primary' ? '#0a84ff' : (f.button_style === 'success' ? '#30d158' : '#ff453a');
+            blocks += '<div class="fr-block hint"><b>Button color:</b> <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + swatch + ';margin-right:4px;vertical-align:middle;"></span>' + esc(f.button_style) + '</div>';
+        }
         if (f.success_text) blocks += '<div class="fr-block success"><b style="color:var(--green)">Success:</b> ' + esc(f.success_text) + '</div>';
         if (f.failure_text) blocks += '<div class="fr-block failure"><b style="color:var(--red)">Failure:</b> ' + esc(f.failure_text) + '</div>';
         return '<div class="featured-reply ' + (f.enabled ? '' : 'disabled') + '">' +
@@ -2996,7 +3334,7 @@ async function checkStatus() {
             __setupDone = true;
             try {
                 var s = await api('GET', '/api/check_session');
-                if (s.logged_in) enterDashboard(); else showStep('step-login');
+                if (s.logged_in) { __csrf = s.csrf || null; enterDashboard(); } else showStep('step-login');
             } catch (e) { showStep('step-login'); }
             return;
         } catch (e) {
@@ -3031,6 +3369,7 @@ function enterDashboard() {
   loadFeatured();
   loadSettings(true);
   autoCheckUpdate();
+  updateContactBadge();
 
   // After the OAuth callback we land here with ?oauth=success.
   // loadUpdateTab() handles the toast and clearing the URL parameter.
@@ -3064,13 +3403,15 @@ async function submitLogin() {
     if (btn && btn.classList.contains('loading')) return;
     await withBusy(btn, async function () {
         try {
-            await api('POST', '/api/login', { password: $('login-password').value });
+            var r = await api('POST', '/api/login', { password: $('login-password').value });
+            __csrf = r && r.csrf ? r.csrf : null;
             enterDashboard();
         } catch (e) { err.textContent = e.message; err.classList.add('show'); }
     });
 }
 async function logout() {
     try { await api('POST', '/api/logout'); } catch (e) {}
+    __csrf = null;
     showStep('step-login');
 }
 
@@ -3165,7 +3506,7 @@ function renderCommands() {
             '<i class="fa-regular ' + (kids ? 'fa-folder tag-folder' : 'fa-file') + '"></i>' +
             '<div class="lr-main" onclick="' + (kids ? 'enterFolder(\\'' + cmdEsc + '\\')' : 'editCommand(\\'' + cmdEsc + '\\')') + '" style="cursor:pointer;">' +
                 '<div class="lr-title mono">' + esc(c.command) + '</div>' +
-                '<div class="lr-sub">' + (c.response_type === 'photo' ? 'Photo' : 'Text') + (kids ? ' · ' + kids + ' sub-command' + (kids > 1 ? 's' : '') : '') + '</div>' +
+                '<div class="lr-sub">' + (function(){ var t = c.response_type || 'text'; return t.charAt(0).toUpperCase() + t.slice(1).replace('_',' '); })() + (kids ? ' · ' + kids + ' sub-command' + (kids > 1 ? 's' : '') : '') + '</div>' +
             '</div>' +
             '<span class="badge ' + (c.enabled == 1 ? 'green' : 'red') + '">' + (c.enabled == 1 ? 'On' : 'Off') + '</span>' +
             (commandAccessLevel(c) === 'admin' ? '<span class="badge purple">Admin</span>' : (commandAccessLevel(c) === 'moderator' ? '<span class="badge purple">Mod+</span>' : '')) +
@@ -3207,7 +3548,57 @@ async function moveCmd(index, dir) {
     try { await api('POST', '/api/commands/reorder', { order: order }); loadCommands(true); }
     catch (e) { toast(e.message, 'error'); }
 }
-function toggleMedia() { show($('cmd-media-wrap'), $('cmd-type').value === 'photo'); }
+function toggleMedia() {
+    var t = $('cmd-type').value || 'text';
+    var isMedia = t !== 'text';
+    show($('cmd-media-wrap'), isMedia);
+    if (!isMedia) return;
+    var label = $('cmd-content-label');
+    if (label) label.textContent = 'Caption';
+    var hint = $('cmd-content-hint');
+    if (hint) hint.innerHTML = 'Caption shown under the media. HTML tags are allowed.';
+    var urlHint = $('cmd-media-hint');
+    var hints = {
+        photo: 'Direct image URL (or use Upload below).',
+        video: 'Direct video URL (or upload). MP4 recommended.',
+        animation: 'Direct GIF/MP4 URL (or upload). Telegram will loop it.',
+        voice: 'Direct OGG/OPUS URL. Use Upload for best results.',
+        audio: 'Direct MP3/M4A URL (or upload).',
+        document: 'Direct URL to any file (or upload).',
+        video_note: 'Direct MP4 URL — must be square and ≤1 minute (or upload).',
+        sticker: 'Stickers must be uploaded — Telegram does not fetch sticker URLs. Use Upload.'
+    };
+    if (urlHint) urlHint.textContent = hints[t] || 'Direct media URL.';
+    if (t === 'sticker') setSeg('cmd-media-source', 'file');
+    toggleCmdMediaSource();
+}
+function toggleCmdMediaSource() {
+    var src = getSeg('cmd-media-source') || 'url';
+    show($('cmd-media-url-panel'), src === 'url');
+    show($('cmd-media-file-panel'), src === 'file');
+}
+async function uploadCmdMedia() {
+    var input = $('cmd-media-file');
+    var status = $('cmd-media-file-status');
+    if (!input || !input.files || !input.files[0]) return;
+    var file = input.files[0];
+    if (file.size > 45 * 1024 * 1024) { status.innerHTML = '<span style="color:var(--red)">File is larger than 45MB.</span>'; return; }
+    status.innerHTML = '<span class="mini-spinner"></span> Uploading…';
+    try {
+        var fd = new FormData();
+        fd.append('file', file);
+        fd.append('media_type', $('cmd-type').value);
+        var res = await fetch('/api/upload_media', { method: 'POST', body: fd, credentials: 'same-origin', headers: __csrf ? { 'X-Nyxx-CSRF': __csrf } : {} });
+        var data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) throw new Error(data.error || 'Upload failed.');
+        $('cmd-file-id').value = data.file_id || '';
+        $('cmd-media-meta').value = JSON.stringify(data.media_meta || {});
+        $('cmd-media').value = '';
+        status.innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Uploaded. file_id stored.</span>';
+    } catch (e) {
+        status.innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>';
+    }
+}
 function toggleCmdSection(which) {
     var id = which === 'inline' ? 'cmd-inline-toggle' : 'cmd-reply-toggle';
     var sec = which === 'inline' ? 'cmd-inline-section' : 'cmd-reply-section';
@@ -3229,12 +3620,18 @@ async function openCommandModal(cmd, parent) {
     toggleSwitch('cmd-inline-toggle', false);
     toggleSwitch('cmd-reply-toggle', false);
     show($('cmd-inline-section'), false); show($('cmd-reply-section'), false);
+    $('cmd-file-id').value = ''; $('cmd-media-meta').value = '';
+    $('cmd-media-file').value = '';
+    $('cmd-media-file-status').innerHTML = '';
     if (editingCmd) {
         $('cmd-modal-title').textContent = 'Edit command';
         $('cmd-name').value = editingCmd.command;
         $('cmd-type').value = editingCmd.response_type || 'text';
         $('cmd-content').value = editingCmd.content || '';
         $('cmd-media').value = editingCmd.media_url || '';
+        $('cmd-file-id').value = editingCmd.file_id || '';
+        $('cmd-media-meta').value = editingCmd.media_meta || '';
+        setSeg('cmd-media-source', editingCmd.file_id ? 'file' : 'url');
         parentSel.value = editingCmd.parent || '';
         setSeg('cmd-access', commandAccessLevel(editingCmd));
         toggleSwitch('cmd-enabled', editingCmd.enabled != 0);
@@ -3244,9 +3641,12 @@ async function openCommandModal(cmd, parent) {
         $('cmd-modal-title').textContent = 'New command';
         $('cmd-name').value = ''; $('cmd-type').value = 'text';
         $('cmd-content').value = ''; $('cmd-media').value = '';
+        setSeg('cmd-media-source', 'url');
         parentSel.value = parent || currentParent || '';
         setSeg('cmd-access', 'everyone'); toggleSwitch('cmd-enabled', true);
     }
+    var label = $('cmd-content-label');
+    if (label) label.textContent = $('cmd-type').value === 'text' ? 'Content' : 'Caption';
     toggleMedia();
     $('cmd-modal').classList.remove('hidden');
     trackModal('cmd-modal');
@@ -3259,12 +3659,26 @@ function editCommand(name) {
 async function saveCommand() {
     var err = $('cmd-error'); err.classList.remove('show');
     var accessLevel = getSeg('cmd-access') || 'everyone';
+    var mediaType = $('cmd-type').value || 'text';
+    var mediaSource = getSeg('cmd-media-source') || 'url';
+    var mediaUrl = $('cmd-media').value.trim();
+    var fileId = $('cmd-file-id').value.trim();
+    if (mediaType !== 'text') {
+        if (mediaSource === 'url' && !mediaUrl) { err.textContent = 'Enter a media URL or switch to Upload.'; err.classList.add('show'); return; }
+        if (mediaSource === 'file' && !fileId) { err.textContent = 'Upload a file first, or switch to URL.'; err.classList.add('show'); return; }
+        if (mediaSource === 'url') fileId = '';
+        if (mediaSource === 'file') mediaUrl = '';
+    } else {
+        mediaUrl = ''; fileId = '';
+    }
     var payload = {
         command: $('cmd-name').value.trim(),
         parent: $('cmd-parent').value || null,
-        response_type: $('cmd-type').value,
+        response_type: mediaType,
         content: $('cmd-content').value.trim(),
-        media_url: $('cmd-media').value.trim(),
+        media_url: mediaUrl,
+        file_id: fileId,
+        media_meta: mediaType !== 'text' ? ($('cmd-media-meta').value || '') : '',
         access_level: accessLevel,
         is_admin_only: accessLevel === 'admin' ? 1 : 0,
         enabled: sw('cmd-enabled') ? 1 : 0,
@@ -3272,7 +3686,9 @@ async function saveCommand() {
         show_reply_keyboard: sw('cmd-reply-toggle') ? 1 : 0,
         reply_keyboard_json: kbCmd.replyJSON() ? JSON.stringify(kbCmd.replyJSON()) : ''
     };
-    if (!payload.command || !payload.content) { err.textContent = 'Command and content are required.'; err.classList.add('show'); return; }
+    if (!payload.command) { err.textContent = 'Command is required.'; err.classList.add('show'); return; }
+    if (mediaType === 'text' && !payload.content) { err.textContent = 'Content is required for text responses.'; err.classList.add('show'); return; }
+    if (mediaType !== 'text' && !payload.content && !payload.media_url && !payload.file_id) { err.textContent = 'Provide a caption, a media URL, or upload a file.'; err.classList.add('show'); return; }
     var btn = $('cmd-save');
     await withBusy(btn, async function () {
         try {
@@ -3300,10 +3716,37 @@ function importCommandPack(ev) {
         try {
             var parsed = JSON.parse(r.result);
             if (!parsed || parsed.app !== 'nyxx-command-pack') throw new Error('Not a command pack.');
-            var merge = await confirmDialog('Import ' + parsed.commands.length + ' commands? Existing commands with the same name are overwritten.', 'Merge import', false);
+            var incoming = parsed.commands || [];
+            var current = [];
+            try { var d = await api('GET', '/api/commands'); current = d.commands || []; } catch (e) {}
+            var currentSet = new Set(current.map(c => c.command));
+            var incomingSet = new Set(incoming.map(c => c.command));
+            var willCreate = incoming.filter(c => !currentSet.has(c.command));
+            var willOverwrite = incoming.filter(c => currentSet.has(c.command));
+            var willKeep = current.filter(c => !incomingSet.has(c.command));
+            var html = '<div style="text-align:left;max-height:340px;overflow:auto;font-size:13px;">';
+            html += '<p style="margin:0 0 8px;"><b>' + incoming.length + '</b> commands in this pack.</p>';
+            if (willCreate.length) {
+                html += '<div style="margin-top:10px;"><b style="color:var(--green)">Create (' + willCreate.length + '):</b><ul style="margin:4px 0 0 16px;padding:0;">';
+                willCreate.slice(0, 15).forEach(c => html += '<li><code>' + esc(c.command) + '</code></li>');
+                if (willCreate.length > 15) html += '<li>…and ' + (willCreate.length - 15) + ' more</li>';
+                html += '</ul></div>';
+            }
+            if (willOverwrite.length) {
+                html += '<div style="margin-top:10px;"><b style="color:var(--orange)">Overwrite (' + willOverwrite.length + '):</b><ul style="margin:4px 0 0 16px;padding:0;">';
+                willOverwrite.slice(0, 15).forEach(c => html += '<li><code>' + esc(c.command) + '</code></li>');
+                if (willOverwrite.length > 15) html += '<li>…and ' + (willOverwrite.length - 15) + ' more</li>';
+                html += '</ul></div>';
+            }
+            if (willKeep.length) {
+                html += '<div style="margin-top:10px;"><b>Kept unchanged (' + willKeep.length + '):</b> existing commands not in the pack will not be touched.</div>';
+            }
+            html += '</div>';
+            var merge = await confirmDialog('Review what will change before importing.', 'Review import', false, html);
             if (!merge) return;
             await api('POST', '/api/commands/import', { data: parsed, mode: 'merge' });
-            toast('Commands imported.'); commands = []; loadCommands(true);
+            toast('Imported: ' + willCreate.length + ' created, ' + willOverwrite.length + ' overwritten.');
+            commands = []; loadCommands(true);
         } catch (e) { toast(e.message, 'error'); }
         ev.target.value = '';
     };
@@ -3389,13 +3832,15 @@ function openFeaturedModal(kind, item) {
     $('featured-hint').value = item ? (item.content || '') : '';
     $('featured-success').value = item ? (item.success_text || '') : '';
     $('featured-failure').value = item ? (item.failure_text || '') : '';
+    if ($('featured-style')) $('featured-style').value = item ? (item.button_style || '') : '';
     toggleSwitch('featured-enabled', item ? !!item.enabled : true);
     // Default delete_user_message = ON for new items, preserve for edits.
     var delOn = item ? (item.delete_user_message === undefined || item.delete_user_message === null ? true : !!item.delete_user_message) : true;
     toggleSwitch('featured-delete-msg', delOn);
     var hintDesc = $('featured-hint-desc');
+    show($('featured-style-wrap'), kind === 'buttons');
     if (kind === 'buttons') {
-        if (hintDesc) hintDesc.innerHTML = 'Shown when sent alone. Simple syntax: <code>/menu Hi there! | Google:https://google.com | Say hi:Hi!</code><br>Advanced: <code>/menu "Hi there!" {Google}(https://google.com){Say hi}(Hi!)</code>';
+        if (hintDesc) hintDesc.innerHTML = 'Shown when sent alone. Simple syntax: <code>/menu Hi there! | Google:https://google.com | Say hi:Hi!</code><br>Advanced: <code>/menu "Hi there!" {Google}(https://google.com){Say hi}(Hi!)</code><br><b>Per-button color:</b> prefix the label with <code>[blue]</code>, <code>[green]</code> or <code>[red]</code>: <code>/menu Hi | [blue]Google:https://google.com | [red]Say hi:Hi!</code>. Buttons without a bracket use the default color below.';
     } else {
         if (hintDesc) hintDesc.innerHTML = 'Shown when the command is sent alone. Example: <code>/contact hello boss</code>';
     }
@@ -3435,6 +3880,155 @@ function umSetTab(tab) {
     var pane = $('um-pane-' + tab); if (pane) pane.classList.add('active');
 }
 function debouncedUsers() { clearTimeout(userTimer); userTimer = setTimeout(function () { usersPage = 1; loadUsers(); }, 280); }
+var cmdSearchTimer = null;
+function debouncedCommands() { clearTimeout(cmdSearchTimer); cmdSearchTimer = setTimeout(renderCommands, 150); }
+var logSearchTimer = null;
+function debouncedLogs() { clearTimeout(logSearchTimer); logSearchTimer = setTimeout(loadLogs, 200); }
+var contactSearchTimer = null;
+function debouncedContact() { clearTimeout(contactSearchTimer); contactSearchTimer = setTimeout(loadContactMessages, 200); }
+
+/* ============================================================
+   CONTACT TAB
+   ============================================================ */
+var contactFilter = 'all';
+var contactSettings = {};
+function setContactFilter(f) {
+    contactFilter = f;
+    document.querySelectorAll('#page-contact .chip[data-cf]').forEach(function (c) { c.classList.toggle('active', c.dataset.cf === f); });
+    loadContactMessages();
+}
+async function loadContact() {
+    await loadContactSettings();
+    await loadContactStats();
+    await loadContactMessages();
+    updateContactBadge();
+}
+async function loadContactSettings() {
+    try {
+        var d = await api('GET', '/api/contact/settings');
+        contactSettings = d.settings || {};
+        toggleSwitch('ct-notify-toggle', contactSettings.contact_notify_enabled === '1');
+        toggleSwitch('ct-notify-user-toggle', contactSettings.contact_notify_include_user === '1');
+        var adminsRaw = contactSettings.contact_notify_admins || 'all';
+        if (adminsRaw === 'all') {
+            $('ct-notify-admins').value = 'all';
+            $('ct-notify-custom-ids').value = '';
+            show($('ct-notify-custom-wrap'), false);
+        } else {
+            $('ct-notify-admins').value = 'custom';
+            try {
+                var arr = JSON.parse(adminsRaw);
+                $('ct-notify-custom-ids').value = Array.isArray(arr) ? arr.join('\\n') : '';
+            } catch (e) { $('ct-notify-custom-ids').value = ''; }
+            show($('ct-notify-custom-wrap'), true);
+        }
+        toggleSwitch('ct-autoreply-toggle', contactSettings.contact_autoreply_enabled === '1');
+        $('ct-autoreply-text').value = contactSettings.contact_autoreply_text || '';
+        toggleSwitch('ct-away-toggle', contactSettings.contact_away_enabled === '1');
+        $('ct-away-text').value = contactSettings.contact_away_text || '';
+        $('ct-away-start').value = contactSettings.contact_away_start_hour || '22';
+        $('ct-away-end').value = contactSettings.contact_away_end_hour || '8';
+        $('ct-rate-limit').value = contactSettings.contact_rate_limit || '5';
+    } catch (e) { toast(e.message, 'error'); }
+}
+$('ct-notify-admins').addEventListener('change', function () {
+    if (!this) return;
+});
+async function loadContactStats() {
+    try {
+        var d = await api('GET', '/api/contact/stats');
+        var box = $('contact-stats');
+        box.innerHTML =
+            '<div class="stat"><div class="st-ic red"><i class="fa-solid fa-envelope"></i></div><div class="st-val">' + (d.unread || 0) + '</div><div class="st-lbl">Unread</div></div>' +
+            '<div class="stat"><div class="st-ic blue"><i class="fa-solid fa-calendar-day"></i></div><div class="st-val">' + (d.today || 0) + '</div><div class="st-lbl">Today</div></div>' +
+            '<div class="stat"><div class="st-ic purple"><i class="fa-solid fa-calendar-week"></i></div><div class="st-val">' + (d.week || 0) + '</div><div class="st-lbl">Last 7 days</div></div>' +
+            '<div class="stat"><div class="st-ic green"><i class="fa-solid fa-inbox"></i></div><div class="st-val">' + (d.total || 0) + '</div><div class="st-lbl">Total received</div></div>';
+    } catch (e) { /* silent */ }
+}
+async function loadContactMessages() {
+    var box = $('ct-messages');
+    if (!box) return;
+    box.innerHTML = skeletonRows(3);
+    try {
+        var q = ($('ct-search') && $('ct-search').value || '').trim();
+        var qs = '?limit=100' + (contactFilter === 'unread' ? '&unread=1' : '') + (q ? '&search=' + encodeURIComponent(q) : '');
+        var d = await api('GET', '/api/contact/messages' + qs);
+        var messages = d.messages || [];
+        if (!messages.length) {
+            box.innerHTML = emptyState('fa-regular fa-envelope', q ? 'No messages match your search.' : 'No contact messages yet.', 'When someone sends a DM featured command like /contact, it will appear here.');
+            return;
+        }
+        box.innerHTML = '<div class="list">' + messages.map(function (m) {
+            var unreadDot = m.is_unread ? '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);margin-right:6px;"></span>' : '';
+            var nameEsc = esc(m.first_name || 'Unknown');
+            var userLine = nameEsc + (m.username ? ' <span class="muted">@' + esc(m.username) + '</span>' : '');
+            var text = esc(m.text || '');
+            if (text.length > 200) text = text.slice(0, 200) + '…';
+            return '<div class="list-row" style="flex-direction:column;align-items:stretch;gap:8px;">' +
+                '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+                    unreadDot +
+                    '<span class="lr-title">' + userLine + '</span>' +
+                    '<span class="muted tiny">ID ' + esc(m.userId) + '</span>' +
+                    '<span class="muted tiny">·</span>' +
+                    '<span class="muted tiny">' + fmtTime(m.created_at) + '</span>' +
+                    '<div style="flex:1"></div>' +
+                    '<button class="btn btn-gray btn-sm" onclick="openUser(' + m.userId + ')" title="Open user profile"><i class="fa-solid fa-user"></i> Open</button>' +
+                    (m.is_unread
+                        ? '<button class="btn btn-primary btn-sm" onclick="markContactUserRead(' + m.userId + ', this)" title="Mark all messages from this user as read"><i class="fa-solid fa-envelope-open"></i> Mark read</button>'
+                        : '<span class="badge green" style="align-self:center;"><i class="fa-solid fa-check"></i> Read</span>') +
+                '</div>' +
+                '<div style="padding-left:' + (m.is_unread ? '14px' : '0') + ';font-size:13px;line-height:1.55;color:var(--text-2);white-space:pre-wrap;word-break:break-word;">' + text + '</div>' +
+                '</div>';
+        }).join('') + '</div>';
+    } catch (e) { box.innerHTML = errorState(e.message, 'loadContactMessages()'); }
+}
+async function saveContactSettings() {
+    var adminsValue = $('ct-notify-admins').value;
+    var notifyAdmins;
+    if (adminsValue === 'all') {
+        notifyAdmins = 'all';
+    } else {
+        var ids = $('ct-notify-custom-ids').value.split(/[^0-9]+/).map(Number).filter(Boolean);
+        if (!ids.length) { toast('Enter at least one admin user ID or switch to "All admins".', 'error'); return; }
+        notifyAdmins = JSON.stringify(ids);
+    }
+    var body = {
+        notify_enabled: sw('ct-notify-toggle') ? '1' : '0',
+        notify_include_user: sw('ct-notify-user-toggle') ? '1' : '0',
+        notify_admins: notifyAdmins,
+        autoreply_enabled: sw('ct-autoreply-toggle') ? '1' : '0',
+        autoreply_text: $('ct-autoreply-text').value,
+        away_enabled: sw('ct-away-toggle') ? '1' : '0',
+        away_text: $('ct-away-text').value,
+        away_start_hour: parseInt($('ct-away-start').value) || 0,
+        away_end_hour: parseInt($('ct-away-end').value) || 0,
+        rate_limit: parseInt($('ct-rate-limit').value) || 0
+    };
+    try {
+        await api('POST', '/api/contact/settings', body);
+        toast('Contact settings saved.');
+    } catch (e) { toast(e.message, 'error'); }
+}
+async function testContactNotification() {
+    $('ct-notify-result').innerHTML = '<span class="mini-spinner"></span> Sending…';
+    try {
+        var d = await api('POST', '/api/contact/test_notify');
+        $('ct-notify-result').innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Sent to ' + (d.sent || 0) + ' admin(s).' + (d.failed ? ' ' + d.failed + ' failed (not reachable).' : '') + '</span>';
+    } catch (e) { $('ct-notify-result').innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
+}
+async function markAllContactRead() {
+    try { await api('POST', '/api/contact/mark_read'); toast('Inbox marked as read.'); loadContact(); }
+    catch (e) { toast(e.message, 'error'); }
+}
+async function updateContactBadge() {
+    try {
+        var d = await api('GET', '/api/contact/stats');
+        var badge = $('contact-nav-badge');
+        if (!badge) return;
+        if (d.unread > 0) { badge.textContent = d.unread > 99 ? '99+' : String(d.unread); badge.style.display = 'inline-block'; }
+        else { badge.style.display = 'none'; }
+    } catch (e) { /* silent */ }
+}
 function setUserFilter(f) {
     userFilter = f;
     usersPage = 1;
@@ -3484,8 +4078,8 @@ function renderUsers() {
     users.forEach(function (u) {
         var status = u.block_type === 'full' ? '<span class="badge red">Blocked</span>' :
             (u.block_type === 'ai_only' ? '<span class="badge orange">AI off</span>' : '');
-        var role = u.role === 'admin' ? '<span class="badge purple">Admin</span>'
-                 : u.role === 'moderator' ? '<span class="badge role-badge-moderator">Moderator</span>' : '';
+        var role = u.role === 'admin' ? '<span class="badge purple"><i class="fa-solid fa-crown"></i> <span class="hide-mobile">Admin</span></span>'
+                 : u.role === 'moderator' ? '<span class="badge role-badge-moderator"><i class="fa-solid fa-shield"></i> <span class="hide-mobile">Moderator</span></span>' : '';
         var nameEsc = esc(u.first_name || '').replace(/'/g, '');
         html += '<div class="list-row">' +
             userCircle(u) +
@@ -3657,6 +4251,15 @@ async function openUser(idOrUser) {
         if (!manageUser && typeof memoryUsers !== 'undefined') {
             manageUser = memoryUsers.find(function (u) { return sameId(u.id, idOrUser); });
         }
+        // Fall back to a direct server fetch. This is what makes "Open" work
+        // from the Contact inbox (or any future place) without requiring the
+        // Users or Memory tabs to have been visited first.
+        if (!manageUser && idOrUser !== undefined && idOrUser !== null) {
+            try {
+                var r = await api('GET', '/api/users/' + encodeURIComponent(idOrUser));
+                if (r && r.user) manageUser = r.user;
+            } catch (e) { /* fall through to "not found" */ }
+        }
         if (!manageUser) { toast('User not found. Try refreshing.', 'error'); return; }
     }
     go('user-manage');
@@ -3665,7 +4268,7 @@ async function openUser(idOrUser) {
     $('um-sub').textContent = (manageUser.username ? '@' + manageUser.username + ' · ' : '') + 'ID ' + manageUser.id;
     $('um-cards').innerHTML =
         kvCard('Role', manageUser.role || 'user') +
-        kvCard('Source', manageUser.private_started == 1 ? 'Started the bot' : 'Group only') +
+        kvCard('Reachability', manageUser.private_started == 1 ? 'Reachable — started the bot' : 'Unreachable — never messaged the bot') +
         kvCard('Last active', fmtTime(manageUser.last_active)) +
         kvCard('Block status', manageUser.block_type === 'full' ? 'Blocked' : (manageUser.block_type === 'ai_only' ? 'AI disabled' : 'Active'));
     var role = manageUser.role || 'user';
@@ -3681,6 +4284,12 @@ async function openUser(idOrUser) {
         '<button class="btn btn-danger btn-sm" onclick="toggleBlock(\\'full\\')"><i class="fa-solid fa-ban"></i> ' + (manageUser.block_type === 'full' ? 'Unblock' : 'Block all') + '</button>';
     $('um-input').value = ''; $('um-photo').value = '';
     loadDmMessages(manageUser.id); loadAiMemory();
+}
+async function markContactUserRead(userId, btn) {
+    try {
+        await withBusy(btn, function () { return api('POST', '/api/contact/mark_user_read', { userId: userId }); });
+        await Promise.all([loadContactStats(), loadContactMessages(), updateContactBadge()]);
+    } catch (e) { toast(e.message, 'error'); }
 }
 function kvCard(k, v) { return '<div class="card compact" style="margin:0;"><div class="tiny muted">' + esc(k) + '</div><div style="font-weight:600;margin-top:4px;word-break:break-word;">' + esc(v) + '</div></div>'; }
 async function toggleRole() {
@@ -3744,6 +4353,32 @@ async function loadDmMessages(id) {
         renderDm(window.__dmCache);
     } catch (e) { box.innerHTML = errorState(e.message, 'loadDmMessages(' + id + ')'); }
 }
+function renderMediaAttachment(m) {
+    var kind = (m.kind || m.media_type || (m.photo_url ? 'photo' : 'text')).toLowerCase();
+    if (kind === 'text') return '';
+    var fileId = m.file_id || '';
+    var url = m.photo_url || '';
+    var src = url || (fileId ? '/api/file/' + encodeURIComponent(fileId) : '');
+    if (!src) return '<div class="muted small">(media missing)</div>';
+    var meta = {};
+    try { meta = m.media_meta ? (typeof m.media_meta === 'string' ? JSON.parse(m.media_meta) : m.media_meta) : {}; } catch (e) {}
+    if (kind === 'photo') return '<div class="m-media"><img src="' + esc(src) + '" alt="" style="max-width:100%;border-radius:12px;max-height:260px;object-fit:cover;"></div>';
+    if (kind === 'video') return '<div class="m-media"><video src="' + esc(src) + '" controls preload="metadata" style="max-width:100%;border-radius:12px;max-height:260px;"></video></div>';
+    if (kind === 'animation') return '<div class="m-media"><video src="' + esc(src) + '" autoplay loop muted playsinline style="max-width:100%;border-radius:12px;max-height:260px;"></video></div>';
+    if (kind === 'video_note') return '<div class="m-media"><video src="' + esc(src) + '" controls playsinline style="width:200px;height:200px;border-radius:50%;object-fit:cover;display:block;"></video></div>';
+    if (kind === 'voice') return '<div class="m-media"><audio src="' + esc(src) + '" controls preload="metadata" style="width:100%;max-width:280px;"></audio></div>';
+    if (kind === 'audio') {
+        var t = meta.title || meta.file_name || 'Audio';
+        var p = meta.performer ? ' · ' + esc(meta.performer) : '';
+        return '<div class="m-media"><div class="small" style="font-weight:600;margin-bottom:4px;">' + esc(t) + p + '</div><audio src="' + esc(src) + '" controls preload="metadata" style="width:100%;max-width:320px;"></audio></div>';
+    }
+    if (kind === 'document') {
+        var fn = meta.file_name || 'Document';
+        return '<div class="m-media"><a class="btn btn-gray btn-sm" href="' + esc(src) + '" target="_blank" rel="noopener"><i class="fa-regular fa-file"></i> ' + esc(fn) + '</a></div>';
+    }
+    if (kind === 'sticker') return '<div class="m-media"><img src="' + esc(src) + '" alt="sticker" style="max-width:160px;max-height:160px;"></div>';
+    return '<div class="muted small">(' + esc(kind) + ')</div>';
+}
 function renderDm(msgs) {
     var box = $('um-chat');
     msgs = msgs || [];
@@ -3762,9 +4397,26 @@ function renderDm(msgs) {
         if (m.source === 'featured') sourceTag = ' · DM command';
         else if (m.source === 'featured_button') sourceTag = ' · button tap';
         else if (m.source === 'ai') sourceTag = ' · AI';
+        var kind = (m.kind || 'text').toLowerCase();
+        var kindBadge = kind !== 'text' ? '<span class="photo-tag" style="text-transform:capitalize;"><i class="fa-regular fa-circle-play"></i> ' + esc(kind) + '</span><br>' : '';
+        var buttonChips = '';
+        if (m.buttons_json) {
+            try {
+                var b = typeof m.buttons_json === 'string' ? JSON.parse(m.buttons_json) : m.buttons_json;
+                var labels = [];
+                var inl = b.inline || (b.inline_keyboard ? b.inline_keyboard : null);
+                if (inl) for (var r of inl) for (var btn of r) if (btn.text) labels.push(btn.text);
+                if (b.reply && b.reply.rows) for (var rr of b.reply.rows) for (var bb of rr) if (bb.text) labels.push(bb.text);
+                if (labels.length) {
+                    buttonChips = '<div class="small" style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap;">' + labels.slice(0, 8).map(function (l) { return '<span class="badge">' + esc(l) + '</span>'; }).join('') + '</div>';
+                }
+            } catch (e) {}
+        }
         return '<div class="bubble ' + (out ? 'out' : 'in') + '" dir="auto">' +
-            (m.photo_url ? '<span class="photo-tag"><i class="fa-regular fa-image"></i> photo</span><br>' : '') +
-            esc(m.text || '') +
+            kindBadge +
+            renderMediaAttachment(m) +
+            (m.text ? '<div style="margin-top:' + (kind !== 'text' ? '6px' : '0') + ';">' + esc(m.text) + '</div>' : '') +
+            buttonChips +
             '<div class="b-meta">' + fmtTime(m.created_at) + (m.edited_at ? ' · edited' : '') + sourceTag + '</div>' +
             actions + '</div>';
     }).join('');
@@ -3774,14 +4426,22 @@ async function sendUserMessage() {
     if (!manageUser) return;
     var text = $('um-input').value.trim();
     var photo = $('um-photo').value.trim();
-    if (!text && !photo) { toast('Type a message first.', 'error'); return; }
+    var hasDraftMedia = draftMedia && draftMedia.media_type && draftMedia.media_type !== 'text' && (draftMedia.file_id || draftMedia.photo_url);
+    if (!text && !photo && !hasDraftMedia) { toast('Type a message first.', 'error'); return; }
     var body = { userId: manageUser.id, message: text };
     if (photo) body.photo_url = photo;
     if (draftButtonsJson) body.buttons_json = draftButtonsJson;
+    if (draftMedia) {
+        body.media_type = draftMedia.media_type;
+        body.file_id = draftMedia.file_id;
+        body.media_meta = draftMedia.media_meta;
+        if (draftMedia.media_type === 'text') { body.photo_url = ''; body.file_id = ''; body.media_meta = ''; }
+        else if (draftMedia.file_id) body.photo_url = '';
+    }
     try {
         await withBusy($('um-send'), function () { return api('POST', '/api/users/send_message', body); });
         $('um-input').value = ''; $('um-photo').value = '';
-        draftButtonsJson = null; toast('Sent.'); loadDmMessages(manageUser.id);
+        draftButtonsJson = null; draftMedia = null; toast('Sent.'); loadDmMessages(manageUser.id);
     } catch (e) { toast(e.message, 'error'); }
 }
 async function deleteDm(chatId, messageId) {
@@ -3895,7 +4555,7 @@ function renderMemory() {
                         '<div class="lr-title">' + esc(u.first_name || 'Unknown') + (u.username ? ' <span class="muted">@' + esc(u.username) + '</span>' : '') + '</div>' +
                         '<div class="lr-sub">ID ' + esc(u.id) + ' · ' + u.ai_count + ' AI · ' + u.dm_count + ' DM</div>' +
                     '</div>' +
-                    (u.role === 'admin' ? '<span class="badge purple">Admin</span>' : u.role === 'moderator' ? '<span class="badge role-badge-moderator">Mod</span>' : '') +
+                    (u.role === 'admin' ? '<span class="badge purple"><i class="fa-solid fa-crown"></i> <span class="hide-mobile">Admin</span></span>' : u.role === 'moderator' ? '<span class="badge role-badge-moderator"><i class="fa-solid fa-shield"></i> <span class="hide-mobile">Mod</span></span>' : '') +
                     (u.ai_count > 0 ? '<span class="badge purple mem-badge">' + u.ai_count + ' AI</span>' : '') +
                     (u.dm_count > 0 ? '<span class="badge blue mem-badge">' + u.dm_count + ' DM</span>' : '') +
                     '<div class="lr-actions">' +
@@ -4083,7 +4743,12 @@ function applyGroupSettings(s) {
     $('gm-ai-trigger').value = s.ai_trigger || 'inherit';
     toggleSwitch('gm-welcome-toggle', !!s.welcome_enabled); $('gm-welcome-text').value = s.welcome_text || '';
     $('gm-rules').value = s.rules_text || '';
-    toggleSwitch('gm-flood-toggle', !!s.anti_flood); $('gm-flood-limit').value = s.flood_limit || 6; $('gm-flood-mute').value = s.flood_mute_minutes || 0;
+    toggleSwitch('gm-flood-toggle', !!s.anti_flood);
+    $('gm-flood-limit').value = s.flood_limit || 6;
+    $('gm-flood-mute').value = s.flood_mute_minutes || 0;
+    setSeg('gm-flood-action', s.flood_action || 'mute');
+    $('gm-flood-kick-after').value = s.flood_kick_after || 2;
+    $('gm-flood-ban-after').value = s.flood_ban_after || 2;
     toggleSwitch('gm-link-toggle', !!s.link_filter);
     toggleSwitch('gm-forward-toggle', !!s.anti_forward);
     toggleSwitch('gm-bot-toggle', !!s.anti_bot);
@@ -4092,13 +4757,20 @@ function applyGroupSettings(s) {
     toggleSwitch('gm-track-toggle', !!s.track_members);
     show($('gm-flood-limit-wrap'), !!s.anti_flood);
     show($('gm-flood-mute-wrap'), !!s.anti_flood);
+    show($('gm-flood-action-wrap'), !!s.anti_flood);
+    show($('gm-flood-escalation-wrap'), !!s.anti_flood);
     show($('gm-link-level-wrap'), !!s.link_filter);
     show($('gm-forward-level-wrap'), !!s.anti_forward);
 }
 function gmToggle(key) {
     var map = { welcome: 'gm-welcome-toggle', flood: 'gm-flood-toggle', link: 'gm-link-toggle', forward: 'gm-forward-toggle', bot: 'gm-bot-toggle', service: 'gm-service-toggle', track: 'gm-track-toggle' };
     var on = toggleSwitch(map[key]);
-    if (key === 'flood') { show($('gm-flood-limit-wrap'), on); show($('gm-flood-mute-wrap'), on); }
+    if (key === 'flood') {
+        show($('gm-flood-limit-wrap'), on);
+        show($('gm-flood-mute-wrap'), on);
+        show($('gm-flood-action-wrap'), on);
+        show($('gm-flood-escalation-wrap'), on);
+    }
     if (key === 'link') show($('gm-link-level-wrap'), on);
     if (key === 'forward') show($('gm-forward-level-wrap'), on);
 }
@@ -4119,6 +4791,9 @@ async function saveGroupSettings() {
         welcome_enabled: sw('gm-welcome-toggle'), welcome_text: $('gm-welcome-text').value, rules_text: $('gm-rules').value,
         anti_flood: sw('gm-flood-toggle'), flood_limit: parseInt($('gm-flood-limit').value) || 6,
         flood_mute_minutes: parseInt($('gm-flood-mute').value) || 0,
+        flood_action: getSeg('gm-flood-action') || 'mute',
+        flood_kick_after: parseInt($('gm-flood-kick-after').value) || 2,
+        flood_ban_after: parseInt($('gm-flood-ban-after').value) || 2,
         link_filter: sw('gm-link-toggle'), auto_delete_service: sw('gm-service-toggle'), track_members: sw('gm-track-toggle'),
         anti_forward: sw('gm-forward-toggle'), blacklist_words: $('gm-blacklist').value || '',
         anti_bot: sw('gm-bot-toggle')
@@ -4129,14 +4804,22 @@ async function saveGroupSettings() {
 async function sendGroupAnnouncement() {
     var text = $('gm-announce').value.trim();
     var photo = $('gm-announce-photo').value.trim();
-    if (!text && !photo) { toast('Write a message first.', 'error'); return; }
+    var hasDraftMedia = draftMedia && draftMedia.media_type && draftMedia.media_type !== 'text' && (draftMedia.file_id || draftMedia.photo_url);
+    if (!text && !photo && !hasDraftMedia) { toast('Write a message first.', 'error'); return; }
     var body = { message: text };
     if (photo) body.photo_url = photo;
     if (draftButtonsJson) body.buttons_json = draftButtonsJson;
+    if (draftMedia) {
+        body.media_type = draftMedia.media_type;
+        body.file_id = draftMedia.file_id;
+        body.media_meta = draftMedia.media_meta;
+        if (draftMedia.media_type === 'text') { body.photo_url = ''; body.file_id = ''; body.media_meta = ''; }
+        else if (draftMedia.file_id) body.photo_url = '';
+    }
     try {
         await api('POST', '/api/groups/' + manageGroup.id + '/send', body);
         toast('Announcement sent.');
-        $('gm-announce').value = ''; $('gm-announce-photo').value = ''; draftButtonsJson = null;
+        $('gm-announce').value = ''; $('gm-announce-photo').value = ''; draftButtonsJson = null; draftMedia = null;
     } catch (e) { toast(e.message, 'error'); }
 }
 async function removeGroup() {
@@ -4260,21 +4943,34 @@ function getBroadcastIds() {
         return true;
     }).map(function (u) { return u.id; });
 }
-function updateBcCount() { $('bc-count').textContent = getBroadcastIds().length + ' recipient(s) will receive this message'; }
+function updateBcCount() {
+    var n = getBroadcastIds().length;
+    var warn = n > 40 ? ' — WARNING: Cloudflare caps subrequests per invocation (50 free / 1000 paid). Broadcasts this large may partially fail. Use "Specific user IDs" to split into batches of 40 or fewer.' : '';
+    $('bc-count').textContent = n + ' recipient(s) will receive this message' + warn;
+}
 async function sendBroadcast() {
     var text = $('bc-text').value.trim();
     var photo = $('bc-photo').value.trim();
+    var hasDraftMedia = draftMedia && draftMedia.media_type && draftMedia.media_type !== 'text' && (draftMedia.file_id || draftMedia.photo_url);
     var ids = getBroadcastIds();
     if (!ids.length) { toast('No recipients selected.', 'error'); return; }
-    if (!text && !photo) { toast('Write a message first.', 'error'); return; }
+    if (!text && !photo && !hasDraftMedia) { toast('Write a message first.', 'error'); return; }
     var body = { userIds: ids, message: text };
     if (photo) body.photo_url = photo;
     if (draftButtonsJson) body.buttons_json = draftButtonsJson;
+    if (draftMedia) {
+        body.media_type = draftMedia.media_type;
+        body.file_id = draftMedia.file_id;
+        body.media_meta = draftMedia.media_meta;
+        if (draftMedia.media_type === 'text') { body.photo_url = ''; body.file_id = ''; body.media_meta = ''; }
+        else if (draftMedia.file_id) body.photo_url = '';
+    }
     try {
         var d = await withBusy($('bc-send'), function () { return api('POST', '/api/broadcast', body); });
         toast('Delivered to ' + d.sent + ' user(s).');
+        if (d.warning) toast(d.warning, 'info');
         $('bc-text').value = ''; $('bc-photo').value = '';
-        draftButtonsJson = null;
+        draftButtonsJson = null; draftMedia = null;
         loadBroadcastHistory();
     } catch (e) { toast(e.message, 'error'); }
 }
@@ -4285,9 +4981,17 @@ async function loadBroadcastHistory() {
         bcHistory = d.history || [];
         if (!bcHistory.length) { box.innerHTML = emptyState('fa-regular fa-paper-plane', 'Nothing broadcast yet.'); return; }
         box.innerHTML = bcHistory.map(function (h) {
+            var kind = (h.kind || 'text').toLowerCase();
+            var kindLabel = kind !== 'text' ? ' · ' + esc(kind) : '';
+            var mediaHtml = '';
+            if (kind === 'photo' && (h.file_id || h.photo_url)) { var s = h.photo_url || ('/api/file/' + encodeURIComponent(h.file_id)); mediaHtml = '<div style="margin:6px 0;"><img src="' + esc(s) + '" style="max-width:100%;max-height:200px;border-radius:10px;object-fit:cover;"></div>'; }
+            else if (kind === 'video' || kind === 'animation') { var s2 = h.photo_url || ('/api/file/' + encodeURIComponent(h.file_id || '')); mediaHtml = '<div style="margin:6px 0;"><video src="' + esc(s2) + '" controls style="max-width:100%;max-height:200px;border-radius:10px;"></video></div>'; }
+            else if (kind === 'voice' || kind === 'audio') { var s3 = h.photo_url || ('/api/file/' + encodeURIComponent(h.file_id || '')); mediaHtml = '<div style="margin:6px 0;"><audio src="' + esc(s3) + '" controls style="width:100%;"></audio></div>'; }
+            else if (kind === 'document' && (h.file_id || h.photo_url)) { var s4 = h.photo_url || ('/api/file/' + encodeURIComponent(h.file_id)); mediaHtml = '<div style="margin:6px 0;"><a class="btn btn-gray btn-sm" href="' + esc(s4) + '" target="_blank"><i class="fa-regular fa-file"></i> Download</a></div>'; }
             return '<div class="bubble out" style="max-width:100%;" dir="auto">' +
-                '<div class="tiny" style="opacity:.8;margin-bottom:4px;">#' + h.id + ' · ' + fmtTime(h.sent_at) + ' · ' + (h.sent_count || 0) + '/' + (h.recipient_count || 0) + ' delivered' + (h.kind === 'photo' ? ' · photo' : '') + '</div>' +
-                esc(h.message || '') +
+                '<div class="tiny" style="opacity:.8;margin-bottom:4px;">#' + h.id + ' · ' + fmtTime(h.sent_at) + ' · ' + (h.sent_count || 0) + '/' + (h.recipient_count || 0) + ' delivered' + kindLabel + '</div>' +
+                mediaHtml +
+                (h.message ? esc(h.message) : '') +
                 '<div class="b-actions">' +
                     '<button onclick="openMsgEditor(\\'broadcast\\',' + h.id + ')"><i class="fa-regular fa-pen-to-square"></i> Edit</button>' +
                     '<button onclick="deleteBroadcast(' + h.id + ')"><i class="fa-regular fa-trash-can"></i> Delete</button>' +
@@ -4315,24 +5019,65 @@ function toggleMsgSection(which) {
     show($(m[1]), on);
     if (on && which === 'reply') kbMe.render();
 }
+function toggleMsgMedia() {
+    var t = $('msg-type').value || 'text';
+    show($('msg-media-wrap'), t !== 'text');
+    var label = $('msg-text-label');
+    if (label) label.textContent = t === 'text' ? 'Text' : 'Caption';
+    if (t === 'sticker') setSeg('msg-media-source', 'file');
+    toggleMsgMediaSource();
+}
+function toggleMsgMediaSource() {
+    var src = getSeg('msg-media-source') || 'url';
+    show($('msg-media-url-panel'), src === 'url');
+    show($('msg-media-file-panel'), src === 'file');
+}
+async function uploadMsgMedia() {
+    var input = $('msg-media-file');
+    var status = $('msg-media-file-status');
+    if (!input || !input.files || !input.files[0]) return;
+    var file = input.files[0];
+    if (file.size > 45 * 1024 * 1024) { status.innerHTML = '<span style="color:var(--red)">File is larger than 45MB.</span>'; return; }
+    status.innerHTML = '<span class="mini-spinner"></span> Uploading…';
+    try {
+        var fd = new FormData();
+        fd.append('file', file);
+        fd.append('media_type', $('msg-type').value);
+        var res = await fetch('/api/upload_media', { method: 'POST', body: fd, credentials: 'same-origin', headers: __csrf ? { 'X-Nyxx-CSRF': __csrf } : {} });
+        var data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) throw new Error(data.error || 'Upload failed.');
+        $('msg-file-id').value = data.file_id || '';
+        $('msg-media-meta').value = JSON.stringify(data.media_meta || {});
+        status.innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Uploaded.</span>';
+    } catch (e) { status.innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
+}
 function openMsgEditor(mode, id) {
     msgContext = { mode: mode, id: id };
+    draftMedia = null;
     $('msg-error').classList.remove('show');
     kbMe.reset();
     toggleSwitch('msg-kb-toggle', false); show($('msg-kb-section'), false);
     toggleSwitch('msg-inline-toggle', false); show($('msg-inline-section'), false);
     toggleSwitch('msg-reply-toggle', false); show($('msg-reply-section'), false);
     $('msg-photo').value = ''; $('msg-text').value = '';
+    $('msg-file-id').value = ''; $('msg-media-meta').value = '';
+    $('msg-media-file').value = ''; $('msg-media-file-status').innerHTML = '';
+    $('msg-type').disabled = false;
+    setSeg('msg-media-source', 'url');
     if (mode === 'dm' || mode === 'broadcast') {
         var rec = mode === 'dm' ? (window.__dmCache || []).find(function (m) { return m.id === id; }) : bcHistory.find(function (h) { return h.id === id; });
         $('msg-title').textContent = 'Edit message';
-        // Telegram cannot convert a message between text and photo in place,
-        // so lock the photo field while editing an existing message.
-        $('msg-photo').disabled = true;
-        $('msg-photo').placeholder = '(photo cannot be changed on an existing message)';
         if (rec) {
+            var curType = normalizeClientMediaType(rec.kind || rec.media_type || (rec.photo_url ? 'photo' : 'text'));
+            $('msg-type').value = curType;
+            $('msg-type').disabled = false;
             $('msg-text').value = rec.text || rec.message || '';
             $('msg-photo').value = rec.photo_url || '';
+            $('msg-file-id').value = rec.file_id || '';
+            $('msg-media-meta').value = rec.media_meta || '';
+            setSeg('msg-media-source', rec.file_id ? 'file' : 'url');
+            var tHint = $('msg-type-hint');
+            if (tHint) tHint.innerHTML = 'Original type: <b>' + esc(curType) + '</b>. Changing the type re-sends this message as a new one.';
             if (rec.buttons_json) {
                 try {
                     var b = typeof rec.buttons_json === 'string' ? JSON.parse(rec.buttons_json) : rec.buttons_json;
@@ -4342,23 +5087,30 @@ function openMsgEditor(mode, id) {
             }
         }
     } else if (mode === 'dm-new') {
-        $('msg-title').textContent = 'Attach buttons';
+        $('msg-title').textContent = 'New direct message';
         $('msg-text').value = $('um-input').value; $('msg-photo').value = $('um-photo').value;
+        $('msg-type').value = 'text';
+        var tHint1 = $('msg-type-hint'); if (tHint1) tHint1.textContent = '';
     } else if (mode === 'group') {
-        $('msg-title').textContent = 'Attach buttons';
+        $('msg-title').textContent = 'New group announcement';
         $('msg-text').value = $('gm-announce').value; $('msg-photo').value = $('gm-announce-photo').value;
+        $('msg-type').value = 'text';
+        var tHint2 = $('msg-type-hint'); if (tHint2) tHint2.textContent = '';
     } else if (mode === 'broadcast-new') {
-        $('msg-title').textContent = 'Attach buttons';
+        $('msg-title').textContent = 'New broadcast';
         $('msg-text').value = $('bc-text').value; $('msg-photo').value = $('bc-photo').value;
-    }
-    // New messages can freely include or omit a photo.
-    if (mode === 'dm-new' || mode === 'group' || mode === 'broadcast-new') {
-        $('msg-photo').disabled = false;
-        $('msg-photo').placeholder = 'https://…';
+        $('msg-type').value = 'text';
+        var tHint3 = $('msg-type-hint'); if (tHint3) tHint3.textContent = '';
     }
     kbMe.populateCommands();
+    toggleMsgMedia();
     $('msg-modal').classList.remove('hidden');
     trackModal('msg-modal');
+}
+function normalizeClientMediaType(t) {
+    var s = String(t || 'text').toLowerCase();
+    var allowed = ['text','photo','video','animation','voice','audio','document','video_note','sticker'];
+    return allowed.indexOf(s) >= 0 ? s : 'text';
 }
 function closeMsgEditor() { $('msg-modal').classList.add('hidden'); untrackModal('msg-modal'); }
 function collectButtons() {
@@ -4371,31 +5123,47 @@ function collectButtons() {
 async function saveMsgEditor() {
     var err = $('msg-error'); err.classList.remove('show');
     var text = $('msg-text').value.trim();
+    var mediaType = $('msg-type').value || 'text';
+    var mediaSource = getSeg('msg-media-source') || 'url';
     var photo = $('msg-photo').value.trim();
+    var fileId = $('msg-file-id').value.trim();
+    var mediaMeta = $('msg-media-meta').value || '';
     var buttons = collectButtons();
-    if (!text && !photo) { err.textContent = 'A message or photo is required.'; err.classList.add('show'); return; }
+    if (mediaType === 'text') {
+        photo = ''; fileId = ''; mediaMeta = '';
+    } else if (mediaSource === 'url') {
+        fileId = '';
+    } else if (mediaSource === 'file') {
+        photo = '';
+    }
+    if (mediaType === 'text' && !text) { err.textContent = 'A message text is required.'; err.classList.add('show'); return; }
+    if (mediaType !== 'text' && !photo && !fileId) { err.textContent = 'Attach media (URL or upload).'; err.classList.add('show'); return; }
     try {
         await withBusy($('msg-save'), async function () {
+            var payload = { text: text, buttons_json: buttons, media_type: mediaType, file_id: fileId, photo_url: photo, media_meta: mediaMeta };
             if (msgContext.mode === 'dm') {
                 var rec = (window.__dmCache || []).find(function (m) { return m.id === msgContext.id; });
-                var resp = await api('POST', '/api/users/message/edit', { chatId: rec.chat_id, messageId: rec.message_id, text: text, photo_url: photo, buttons_json: buttons });
+                var resp = await api('POST', '/api/users/message/edit', { chatId: rec.chat_id, messageId: rec.message_id, ...payload });
                 toast(resp && resp.converted ? 'Message re-sent (media type changed).' : 'Message updated.');
                 loadDmMessages(manageUser.id);
             } else if (msgContext.mode === 'broadcast') {
-                var bResp = await api('POST', '/api/broadcast/edit', { broadcastId: msgContext.id, message: text, buttons_json: buttons, photo_url: photo });
+                var bResp = await api('POST', '/api/broadcast/edit', { broadcastId: msgContext.id, ...payload });
                 toast(bResp && bResp.converted ? 'Broadcast re-sent (media type changed) to ' + (bResp.updated || 0) + ' chats.' : 'Broadcast updated.');
                 loadBroadcastHistory();
             } else {
+                // Stash on the input fields so sendUserMessage / sendGroupAnnouncement / sendBroadcast pick them up.
                 draftButtonsJson = buttons;
+                draftMedia = { media_type: mediaType, file_id: fileId, photo_url: photo, media_meta: mediaMeta };
                 if (msgContext.mode === 'dm-new') { $('um-input').value = text; $('um-photo').value = photo; }
                 if (msgContext.mode === 'group') { $('gm-announce').value = text; $('gm-announce-photo').value = photo; }
                 if (msgContext.mode === 'broadcast-new') { $('bc-text').value = text; $('bc-photo').value = photo; }
-                toast('Buttons attached.');
+                toast('Message composed. Send it when ready.');
             }
             closeMsgEditor();
         });
     } catch (e) { err.textContent = e.message; err.classList.add('show'); }
 }
+var draftMedia = null;
 
 /* ============================================================
    KEYBOARD BUILDER
@@ -4411,31 +5179,50 @@ function createKeyboardBuilder(prefix, opts) {
 
     function renderInline() {
         var box = el('inline-list'); if (!box) return;
-        if (!inline.length) { box.innerHTML = '<div class="empty" style="padding:14px;"><i class="fa-regular fa-keyboard"></i>No inline buttons yet.</div>'; return; }
+        if (!inline.length) { box.innerHTML = '<div class="empty" style="padding:14px;"><i class="fa-regular fa-keyboard"></i>No inline buttons yet.<div class="empty-hint">Add one above using the label + type + value fields.</div></div>'; return; }
         var html = '<div class="kb-wrap">';
         inline.forEach(function (row, ri) {
             html += '<div class="kb-rowchips"><span class="kb-rlabel">Row ' + (ri + 1) + '</span>';
             row.forEach(function (b, bi) {
                 var editing = editingInline && editingInline.ri === ri && editingInline.bi === bi;
-                html += '<span class="kb-chip' + (editing ? ' editing' : '') + '">' +
-                    '<span class="lbl" onclick="' + prefix + 'EditI(' + ri + ',' + bi + ')" title="Click to edit" style="cursor:pointer;">' + esc(b.text) + '</span>' +
-                    '<span class="typ">' + esc(b.type) + (b.value ? ' · ' + esc(b.value.slice(0, 16)) : '') + '</span>' +
-                    '<button class="arw" onclick="' + prefix + 'EditI(' + ri + ',' + bi + ')" title="Edit" aria-label="Edit">&#9998;</button>' +
-                    '<button class="arw" onclick="' + prefix + 'MoveI(' + ri + ',' + bi + ',-1)" ' + (bi === 0 ? 'disabled' : '') + ' title="Move left">&#171;</button>' +
-                    '<button class="arw" onclick="' + prefix + 'MoveI(' + ri + ',' + bi + ',1)" ' + (bi === row.length - 1 ? 'disabled' : '') + ' title="Move right">&#187;</button>' +
-                    '<button class="arw" onclick="' + prefix + 'MoveIR(' + ri + ',-1)" ' + (ri === 0 ? 'disabled' : '') + ' title="Move up">&#8593;</button>' +
-                    '<button class="arw" onclick="' + prefix + 'MoveIR(' + ri + ',1)" ' + (ri === inline.length - 1 ? 'disabled' : '') + ' title="Move down">&#8595;</button>' +
-                    '<button class="arw del" onclick="' + prefix + 'DelI(' + ri + ',' + bi + ')" title="Remove">&#10005;</button>' +
-                    '</span>';
+                var typeClass = b.type === 'url' ? 'type-url' : (b.type === 'command' ? 'type-command' : 'type-callback');
+                html += '<div class="kb-btn-card' + (editing ? ' editing' : '') + '">' +
+                    '<div class="kb-card-head">' +
+                        '<span class="lbl" onclick="' + prefix + 'EditI(' + ri + ',' + bi + ')" title="Click to edit this button">' + esc(b.text) + '</span>' +
+                        '<span class="typ ' + typeClass + '">' + esc(b.type) + '</span>' +
+                    '</div>' +
+                    (b.value ? '<div class="val" title="' + esc(b.value) + '">' + esc(b.value) + '</div>' : '') +
+                    '<div class="kb-card-actions">' +
+                        '<button type="button" class="arw" onclick="' + prefix + 'MoveI(' + ri + ',' + bi + ',-1)" ' + (bi === 0 ? 'disabled' : '') + ' title="Move left" aria-label="Move left"><i class="fa-solid fa-arrow-left"></i></button>' +
+                        '<button type="button" class="arw" onclick="' + prefix + 'MoveI(' + ri + ',' + bi + ',1)" ' + (bi === row.length - 1 ? 'disabled' : '') + ' title="Move right" aria-label="Move right"><i class="fa-solid fa-arrow-right"></i></button>' +
+                        '<button type="button" class="arw" onclick="' + prefix + 'MoveIR(' + ri + ',-1)" ' + (ri === 0 ? 'disabled' : '') + ' title="Move up a row" aria-label="Move up a row"><i class="fa-solid fa-arrow-up"></i></button>' +
+                        '<button type="button" class="arw" onclick="' + prefix + 'MoveIR(' + ri + ',1)" ' + (ri === inline.length - 1 ? 'disabled' : '') + ' title="Move down a row" aria-label="Move down a row"><i class="fa-solid fa-arrow-down"></i></button>' +
+                        '<div class="arw-spacer"></div>' +
+                        '<button type="button" class="arw edit" onclick="' + prefix + 'EditI(' + ri + ',' + bi + ')" title="Edit" aria-label="Edit"><i class="fa-regular fa-pen-to-square"></i></button>' +
+                        '<button type="button" class="arw del" onclick="' + prefix + 'DelI(' + ri + ',' + bi + ')" title="Remove" aria-label="Remove"><i class="fa-regular fa-trash-can"></i></button>' +
+                    '</div>' +
+                '</div>';
             });
             html += '</div>';
         });
-        box.innerHTML = html + '</div>';
+        html += '</div>';
+        // Live Telegram-style preview
+        var preview = '<div class="kb-preview" style="margin-top:12px;"><div class="pv-label"><i class="fa-brands fa-telegram"></i> Live Telegram preview</div>';
+        inline.forEach(function (row) {
+            preview += '<div class="pvrow">';
+            row.forEach(function (b) {
+                var cls = b.type === 'url' ? 'pv-url' : (b.type === 'command' ? 'pv-cmd' : 'pv-cb');
+                preview += '<span class="pvbtn ' + cls + '">' + esc(b.text) + '</span>';
+            });
+            preview += '</div>';
+        });
+        preview += '</div>';
+        box.innerHTML = html + preview;
     }
 
     function renderReply() {
         var box = el('reply-list'); if (!box) return;
-        if (!reply.rows.length) { box.innerHTML = '<div class="empty" style="padding:14px;"><i class="fa-regular fa-keyboard"></i>No reply buttons yet.</div>'; }
+        if (!reply.rows.length) { box.innerHTML = '<div class="empty" style="padding:14px;"><i class="fa-regular fa-keyboard"></i>No reply buttons yet.<div class="empty-hint">Add one above using the button text + action fields.</div></div>'; }
         else {
             var html = '<div class="kb-wrap">';
             reply.rows.forEach(function (row, ri) {
@@ -4443,16 +5230,24 @@ function createKeyboardBuilder(prefix, opts) {
                 row.forEach(function (b, bi) {
                     var act = reply.actions[b.text] || '';
                     var editing = editingReply && editingReply.ri === ri && editingReply.bi === bi;
-                    html += '<span class="kb-chip' + (editing ? ' editing' : '') + '">' +
-                        '<span class="lbl" onclick="' + prefix + 'EditR(' + ri + ',' + bi + ')" title="Click to edit" style="cursor:pointer;">' + esc(b.text) + '</span>' +
-                        '<span class="typ" style="cursor:pointer;" onclick="' + prefix + 'SetAct(' + ri + ',' + bi + ')" title="Set action">' + esc(act || 'no action') + '</span>' +
-                        '<button class="arw" onclick="' + prefix + 'EditR(' + ri + ',' + bi + ')" title="Edit" aria-label="Edit">&#9998;</button>' +
-                        '<button class="arw" onclick="' + prefix + 'MoveR(' + ri + ',' + bi + ',-1)" ' + (bi === 0 ? 'disabled' : '') + ' title="Move left">&#171;</button>' +
-                        '<button class="arw" onclick="' + prefix + 'MoveR(' + ri + ',' + bi + ',1)" ' + (bi === row.length - 1 ? 'disabled' : '') + ' title="Move right">&#187;</button>' +
-                        '<button class="arw" onclick="' + prefix + 'MoveRR(' + ri + ',-1)" ' + (ri === 0 ? 'disabled' : '') + ' title="Move up">&#8593;</button>' +
-                        '<button class="arw" onclick="' + prefix + 'MoveRR(' + ri + ',1)" ' + (ri === reply.rows.length - 1 ? 'disabled' : '') + ' title="Move down">&#8595;</button>' +
-                        '<button class="arw del" onclick="' + prefix + 'DelR(' + ri + ',' + bi + ')" title="Remove">&#10005;</button>' +
-                        '</span>';
+                    html += '<div class="kb-btn-card' + (editing ? ' editing' : '') + '">' +
+                        '<div class="kb-card-head">' +
+                            '<span class="lbl" onclick="' + prefix + 'EditR(' + ri + ',' + bi + ')" title="Click to edit this button">' + esc(b.text) + '</span>' +
+                            '<span class="typ ' + (act ? 'type-command' : '') + '" style="cursor:pointer;" onclick="' + prefix + 'SetAct(' + ri + ',' + bi + ')" title="Click to set the command this button runs">' + (act ? 'Action' : 'No action') + '</span>' +
+                        '</div>' +
+                        (act
+                            ? '<div class="val" title="' + esc(act) + '" style="cursor:pointer;" onclick="' + prefix + 'SetAct(' + ri + ',' + bi + ')">' + esc(act) + '</div>'
+                            : '<div class="val" style="cursor:pointer;color:var(--text-4);font-style:italic;" onclick="' + prefix + 'SetAct(' + ri + ',' + bi + ')">Click to set action…</div>') +
+                        '<div class="kb-card-actions">' +
+                            '<button type="button" class="arw" onclick="' + prefix + 'MoveR(' + ri + ',' + bi + ',-1)" ' + (bi === 0 ? 'disabled' : '') + ' title="Move left" aria-label="Move left"><i class="fa-solid fa-arrow-left"></i></button>' +
+                            '<button type="button" class="arw" onclick="' + prefix + 'MoveR(' + ri + ',' + bi + ',1)" ' + (bi === row.length - 1 ? 'disabled' : '') + ' title="Move right" aria-label="Move right"><i class="fa-solid fa-arrow-right"></i></button>' +
+                            '<button type="button" class="arw" onclick="' + prefix + 'MoveRR(' + ri + ',-1)" ' + (ri === 0 ? 'disabled' : '') + ' title="Move up a row" aria-label="Move up a row"><i class="fa-solid fa-arrow-up"></i></button>' +
+                            '<button type="button" class="arw" onclick="' + prefix + 'MoveRR(' + ri + ',1)" ' + (ri === reply.rows.length - 1 ? 'disabled' : '') + ' title="Move down a row" aria-label="Move down a row"><i class="fa-solid fa-arrow-down"></i></button>' +
+                            '<div class="arw-spacer"></div>' +
+                            '<button type="button" class="arw edit" onclick="' + prefix + 'EditR(' + ri + ',' + bi + ')" title="Edit" aria-label="Edit"><i class="fa-regular fa-pen-to-square"></i></button>' +
+                            '<button type="button" class="arw del" onclick="' + prefix + 'DelR(' + ri + ',' + bi + ')" title="Remove" aria-label="Remove"><i class="fa-regular fa-trash-can"></i></button>' +
+                        '</div>' +
+                    '</div>';
                 });
                 html += '</div>';
             });
@@ -4473,6 +5268,7 @@ function createKeyboardBuilder(prefix, opts) {
         var lbl = el('inline-label').value.trim();
         var type = el('inline-type').value;
         var val = type === 'command' ? el('inline-cmd').value : el('inline-value').value.trim();
+        var style = el('inline-style') ? el('inline-style').value : '';
         if (!lbl) { toast('Enter a label.', 'error'); return; }
         if (!val) { toast('Choose a command or enter a value.', 'error'); return; }
         if (type === 'command' && val.charAt(0) !== '/') val = '/' + val;
@@ -4485,17 +5281,18 @@ function createKeyboardBuilder(prefix, opts) {
             && inline[editingInline.ri][editingInline.bi];
 
         if (editingValid) {
-            inline[editingInline.ri][editingInline.bi] = { text: lbl, type: type, value: val };
+            inline[editingInline.ri][editingInline.bi] = { text: lbl, type: type, value: val, style: style || '' };
             editingInline = null;
         } else {
             editingInline = null;
             var last = inline.length ? inline[inline.length - 1] : null;
             if (!last || last.length >= 3) { last = []; inline.push(last); }
-            last.push({ text: lbl, type: type, value: val });
+            last.push({ text: lbl, type: type, value: val, style: style || '' });
         }
         var addBtn = el('inline-add-btn');
         if (addBtn) addBtn.innerHTML = '<i class="fa-solid fa-plus"></i>';
         el('inline-label').value = ''; el('inline-value').value = ''; el('inline-cmd').value = '';
+        if (el('inline-style')) el('inline-style').value = '';
         renderInline();
     }
 
@@ -4503,6 +5300,7 @@ function createKeyboardBuilder(prefix, opts) {
         var lbl = el('reply-label').value.trim();
         if (!lbl) { toast('Enter button text.', 'error'); return; }
         var act = el('reply-cmd').value || el('reply-value').value.trim();
+        var style = el('reply-style') ? el('reply-style').value : '';
         if (act && act.charAt(0) !== '/') act = '/' + act;
 
         // Guard: only treat as an edit if the target button still exists.
@@ -4514,7 +5312,7 @@ function createKeyboardBuilder(prefix, opts) {
 
         if (editingValid) {
             var oldText = reply.rows[editingReply.ri][editingReply.bi].text;
-            reply.rows[editingReply.ri][editingReply.bi] = { text: lbl, command: '' };
+            reply.rows[editingReply.ri][editingReply.bi] = { text: lbl, command: '', style: style || '' };
             if (oldText !== lbl) delete reply.actions[oldText];
             if (act) reply.actions[lbl] = act;
             editingReply = null;
@@ -4522,12 +5320,13 @@ function createKeyboardBuilder(prefix, opts) {
             editingReply = null;
             var last = reply.rows.length ? reply.rows[reply.rows.length - 1] : null;
             if (!last || last.length >= 3) { last = []; reply.rows.push(last); }
-            last.push({ text: lbl, command: '' });
+            last.push({ text: lbl, command: '', style: style || '' });
             if (act) reply.actions[lbl] = act;
         }
         var addBtn = el('reply-add-btn');
         if (addBtn) addBtn.innerHTML = '<i class="fa-solid fa-plus"></i>';
         el('reply-label').value = ''; el('reply-value').value = ''; el('reply-cmd').value = '';
+        if (el('reply-style')) el('reply-style').value = '';
         renderReply();
     }
 
@@ -4537,6 +5336,7 @@ function createKeyboardBuilder(prefix, opts) {
         el('inline-type').value = b.type;
         if (b.type === 'command') { el('inline-cmd').value = b.value; el('inline-value').value = ''; }
         else { el('inline-value').value = b.value; el('inline-cmd').value = ''; }
+        if (el('inline-style')) el('inline-style').value = b.style || '';
         if (typeof kbInlineTypeToggle === 'function') kbInlineTypeToggle(prefix);
         editingInline = { ri: ri, bi: bi };
         var addBtn = el('inline-add-btn');
@@ -4549,6 +5349,7 @@ function createKeyboardBuilder(prefix, opts) {
         var b = reply.rows[ri][bi];
         el('reply-label').value = b.text;
         el('reply-value').value = reply.actions[b.text] || '';
+        if (el('reply-style')) el('reply-style').value = b.style || '';
         editingReply = { ri: ri, bi: bi };
         var addBtn = el('reply-add-btn');
         if (addBtn) addBtn.innerHTML = '<i class="fa-solid fa-check"></i>';
@@ -4618,7 +5419,7 @@ function createKeyboardBuilder(prefix, opts) {
         if (raw) {
             try {
                 var o = typeof raw === 'string' ? JSON.parse(raw) : raw;
-                if (o.v === 2 && o.inline) inline = o.inline.map(function (r) { return r.map(function (b) { return { text: b.text, type: b.type || 'callback', value: b.value || '' }; }); });
+                if (o.v === 2 && o.inline) inline = o.inline.map(function (r) { return r.map(function (b) { return { text: b.text, type: b.type || 'callback', value: b.value || '', style: b.style || '' }; }); });
                 else if (o.inline_keyboard) inline = o.inline_keyboard.map(function (r) { return r.map(function (b) { return { text: b.text, type: b.url ? 'url' : 'command', value: b.url || b.callback_data || '' }; }); });
             } catch (e) {}
         }
@@ -4639,7 +5440,7 @@ function createKeyboardBuilder(prefix, opts) {
                 var o = typeof raw === 'string' ? JSON.parse(raw) : raw;
                 var rep = (o.v === 2 && o.reply) ? o.reply : (o.keyboard ? { rows: o.keyboard, actions: {}, resize: o.resize_keyboard, one_time: o.one_time_keyboard, persistent: o.is_persistent, placeholder: o.input_field_placeholder } : o);
                 if (rep && rep.rows) {
-                    reply.rows = rep.rows.map(function (r) { return (Array.isArray(r) ? r : [r]).map(function (b) { return { text: typeof b === 'string' ? b : b.text, command: typeof b === 'object' ? (b.command || '') : '' }; }); });
+                reply.rows = rep.rows.map(function (r) { return (Array.isArray(r) ? r : [r]).map(function (b) { return { text: typeof b === 'string' ? b : b.text, command: typeof b === 'object' ? (b.command || '') : '', style: typeof b === 'object' ? (b.style || '') : '' }; }); });
                     reply.actions = rep.actions || {};
                     if (typeof rep.resize === 'boolean') reply.resize = rep.resize;
                     if (typeof rep.one_time === 'boolean') reply.one_time = rep.one_time;
@@ -4768,9 +5569,9 @@ async function loadAdmins() {
         var admins = d.admins || [];
         if (!admins.length) { box.innerHTML = '<div class="muted small">No admins or moderators yet.</div>'; return; }
         box.innerHTML = '<div class="list">' + admins.map(function (a) {
-            var roleBadge = a.role === 'admin'
-                ? '<span class="badge purple"><i class="fa-solid fa-crown"></i> Admin</span>'
-                : '<span class="badge role-badge-moderator"><i class="fa-solid fa-shield"></i> Moderator</span>';
+        var roleBadge = a.role === 'admin'
+            ? '<span class="badge purple"><i class="fa-solid fa-crown"></i> <span class="hide-mobile">Admin</span></span>'
+            : '<span class="badge role-badge-moderator"><i class="fa-solid fa-shield"></i> <span class="hide-mobile">Moderator</span></span>';
             return '<div class="list-row">' +
                 userCircle({ private_started: 1, first_name: a.first_name || '?', username: a.username || '' }) +
                 '<div class="lr-main"><div class="lr-title">' + esc(a.first_name || 'User') + (a.username ? ' <span class="muted">@' + esc(a.username) + '</span>' : '') + '</div>' +
@@ -4904,7 +5705,12 @@ function onProviderChange() {
     if (defs[p]) $('ai-model-hint').textContent = 'Recommended: ' + defs[p];
 }
 function onTriggerChange() { show($('ai-trigger-text-wrap'), $('ai-trigger').value === 'contains_text'); }
-document.addEventListener('change', function (e) { if (e.target && e.target.id === 'ai-trigger') onTriggerChange(); });
+document.addEventListener('change', function (e) {
+    if (e.target && e.target.id === 'ai-trigger') onTriggerChange();
+    if (e.target && e.target.id === 'ct-notify-admins') {
+        show($('ct-notify-custom-wrap'), e.target.value === 'custom');
+    }
+});
 function renderKbs() {
     var box = $('kb-list');
     if (!kbs.length) { box.innerHTML = '<div class="empty" style="padding:14px;">No knowledge bases yet.</div>'; return; }
@@ -5104,9 +5910,20 @@ async function loadSettings(force) {
         $('set-token').value = d.bot_token_masked || '';
         $('set-token').type = 'password';
         $('set-hook').value = d.webhook_url || '';
+        if ($('set-media-storage')) $('set-media-storage').value = d.media_storage_chat_id || '';
         window.__botTokenSet = d.bot_token_set;
         if (d.cf_token_set) $('up-token').placeholder = 'Token already stored — click Generate to replace';
     } catch (e) { /* silent */ }
+}
+async function saveMediaStorage() {
+    var id = $('set-media-storage').value.trim();
+    var out = $('media-storage-result');
+    out.innerHTML = '<span class="mini-spinner"></span> Saving…';
+    try {
+        await api('POST', '/api/settings/media_storage', { chatId: id });
+        out.innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Saved.</span>';
+        toast('Media storage chat saved.');
+    } catch (e) { out.innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
 }
 async function revealToken() {
     if (!window.__botTokenSet) { toast('No bot token stored yet.', 'error'); return; }
@@ -5155,14 +5972,87 @@ async function fixHook() {
         else $('hook-result').innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Webhook is already healthy.</span>';
     } catch (e) { $('hook-result').innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
 }
+async function runWebhookDiagnostics() {
+    $('hook-result').innerHTML = '<span class="mini-spinner"></span> Running diagnostics…';
+    try {
+        var d = await api('POST', '/api/settings/webhook-diagnostics');
+        var html = '<div style="display:grid;gap:6px;font-size:13px;margin-top:4px;">';
+        html += '<div><b>Telegram API reachable:</b> ' + (d.getMeOk ? '<span style="color:var(--green)">✅ yes</span>' : '<span style="color:var(--red)">❌ no</span>') + '</div>';
+        html += '<div><b>getMe latency:</b> ' + (d.getMeMs >= 0 ? d.getMeMs + ' ms' : '<span style="color:var(--red)">failed</span>') + '</div>';
+        html += '<div><b>getWebhookInfo latency:</b> ' + (d.webhookMs >= 0 ? d.webhookMs + ' ms' : '<span style="color:var(--red)">failed</span>') + '</div>';
+        html += '<div><b>Registered URL:</b> <code>' + esc(d.webhookUrl || '(none)') + '</code></div>';
+        html += '<div><b>Expected URL:</b> <code>' + esc(d.expectedUrl || '(none)') + '</code></div>';
+        html += '<div><b>URL matches:</b> ' + (d.urlMatches ? '<span style="color:var(--green)">✅ yes</span>' : '<span style="color:var(--orange)">⚠️ no — click Health check</span>') + '</div>';
+        html += '<div><b>Pending updates:</b> ' + (d.pendingUpdates || 0) + '</div>';
+        if (d.lastErrorMessage) html += '<div style="color:var(--red)"><b>Last error:</b> ' + esc(d.lastErrorMessage) + '</div>';
+        html += '</div>';
+        $('hook-result').innerHTML = html;
+    } catch (e) { $('hook-result').innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
+}
+async function checkSchemaHealth() {
+    var box = $('schema-health-result');
+    box.innerHTML = '<span class="mini-spinner"></span> Checking…';
+    try {
+        var d = await api('GET', '/api/schema/health');
+        var drift = d.drift || {};
+        if (d.healthy) {
+            box.innerHTML = '<div style="color:var(--green);font-weight:600;"><i class="fa-solid fa-circle-check"></i> Schema is healthy. Version ' + drift.currentVersion + ' matches expected ' + drift.expectedVersion + '.</div>';
+            return;
+        }
+        var html = '<div style="color:var(--orange);font-weight:600;margin-bottom:6px;"><i class="fa-solid fa-triangle-exclamation"></i> Schema drift detected.</div>';
+        html += '<div class="small" style="margin-bottom:8px;">Version ' + drift.currentVersion + ' (expected ' + drift.expectedVersion + ')</div>';
+        if (drift.missingTables && drift.missingTables.length) {
+            html += '<div><b>Missing tables:</b> <code>' + drift.missingTables.map(esc).join('</code> <code>') + '</code></div>';
+        }
+        if (drift.missingColumns && drift.missingColumns.length) {
+            html += '<div style="margin-top:6px;"><b>Missing columns:</b> <code>' + drift.missingColumns.map(esc).join('</code> <code>') + '</code></div>';
+        }
+        html += '<div style="margin-top:8px;">Click <b>Run auto-heal</b> to fix all of these.</div>';
+        box.innerHTML = html;
+    } catch (e) { box.innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
+}
+
+async function runSchemaHeal() {
+    var ok = await confirmDialog(
+        'Run auto-heal? This will inspect the database and create any missing tables, columns, indexes and settings. It is safe to run multiple times. It will not delete any data.',
+        'Run schema auto-heal', false);
+    if (!ok) return;
+    var box = $('schema-health-result');
+    box.innerHTML = '<span class="mini-spinner"></span> Healing…';
+    try {
+        var d = await api('POST', '/api/schema/heal');
+        var r = d.result || {};
+        var summary = [];
+        if (r.tablesCreated && r.tablesCreated.length) summary.push('<b>' + r.tablesCreated.length + '</b> table(s) created: ' + r.tablesCreated.map(t => '<code>' + esc(t) + '</code>').join(', '));
+        if (r.columnsAdded && r.columnsAdded.length) summary.push('<b>' + r.columnsAdded.length + '</b> column(s) added: ' + r.columnsAdded.map(c => '<code>' + esc(c) + '</code>').join(', '));
+        if (r.settingsInserted && r.settingsInserted.length) summary.push('<b>' + r.settingsInserted.length + '</b> setting(s) inserted: ' + r.settingsInserted.map(s => '<code>' + esc(s) + '</code>').join(', '));
+        var cleanedCount = r.cleanedRows ? Object.values(r.cleanedRows).reduce(function (a, b) { return a + b; }, 0) : 0;
+        if (cleanedCount > 0) {
+            var breakdown = Object.entries(r.cleanedRows).map(function (kv) { return kv[0].replace(/_/g, ' ') + ': ' + kv[1]; }).join(', ');
+            summary.push('<b>' + cleanedCount + '</b> stale / orphaned row(s) deleted (' + esc(breakdown) + ')');
+        }
+        if (r.versionBefore !== null && r.versionAfter !== null && r.versionBefore !== r.versionAfter) {
+            summary.push('Schema version: <b>' + r.versionBefore + '</b> → <b>' + r.versionAfter + '</b>');
+        }
+        if (r.warnings && r.warnings.length) summary.push('<div style="color:var(--orange);margin-top:6px;"><b>Warnings:</b><ul style="margin:4px 0 0 16px;padding:0;">' + r.warnings.map(w => '<li>' + esc(w) + '</li>').join('') + '</ul></div>');
+        if (!summary.length) {
+            box.innerHTML = '<div style="color:var(--green);font-weight:600;"><i class="fa-solid fa-circle-check"></i> Nothing to heal — the schema is already up-to-date.</div>';
+        } else {
+            box.innerHTML = '<div style="color:var(--green);font-weight:600;margin-bottom:6px;"><i class="fa-solid fa-circle-check"></i> Auto-heal complete.</div><div style="font-size:13px;line-height:1.6;">' + summary.join('<br>') + '</div>';
+        }
+        toast('Schema auto-heal finished.', 'success');
+    } catch (e) { box.innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
+}
+
 async function changePassword() {
     $('pw-result').innerHTML = '';
     if ($('pw1').value !== $('pw2').value) { $('pw-result').innerHTML = '<span style="color:var(--red)">Passwords do not match.</span>'; return; }
     if ($('pw1').value.length < 6) { $('pw-result').innerHTML = '<span style="color:var(--red)">Password must be at least 6 characters.</span>'; return; }
     $('pw-result').innerHTML = '<span class="mini-spinner"></span> Updating…';
     try {
-        await api('POST', '/api/change_password', { newPassword: $('pw1').value });
-        $('pw-result').innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Password updated.</span>';
+        var r = await api('POST', '/api/change_password', { newPassword: $('pw1').value });
+        if (r && r.csrf) __csrf = r.csrf;
+        $('pw-result').innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Password updated. Every other browser/device is now signed out.</span>';
         $('pw1').value = ''; $('pw2').value = '';
     } catch (e) { $('pw-result').innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
 }
@@ -5295,8 +6185,30 @@ function restoreBackup(ev) {
     r.onload = async function () {
         try {
             var parsed = JSON.parse(r.result);
-            var what = parsed.custom ? 'the sections inside this custom backup' : 'everything';
-            var ok = await confirmDialog('Restore will overwrite ' + what + '. Continue?', 'Restore backup');
+            if (!parsed || parsed.app !== 'nyxx') throw new Error('Not a valid Nyxx backup.');
+            var sections = [
+                ['Commands', Array.isArray(parsed.commands) ? parsed.commands.length : 0],
+                ['Featured commands', Array.isArray(parsed.featured) ? parsed.featured.length : 0],
+                ['Users', Array.isArray(parsed.users) ? parsed.users.length : 0],
+                ['Groups', Array.isArray(parsed.groups) ? parsed.groups.length : 0],
+                ['AI memory', Array.isArray(parsed.ai_messages) ? parsed.ai_messages.length : 0],
+                ['Direct messages', Array.isArray(parsed.dm_messages) ? parsed.dm_messages.length : 0],
+                ['Block list', Array.isArray(parsed.blocked_users) ? parsed.blocked_users.length : 0],
+                ['Broadcast history', Array.isArray(parsed.broadcast_history) ? parsed.broadcast_history.length : 0],
+                ['Settings keys', parsed.settings ? Object.keys(parsed.settings).length : 0],
+            ].filter(x => x[1] > 0);
+            var html = '<div style="text-align:left;font-size:13px;">';
+            html += '<p style="margin:0 0 8px;">Backup from <b>' + esc(parsed.exported_at || 'unknown date') + '</b> (v' + esc(parsed.version || '?') + ').</p>';
+            if (parsed.custom && Array.isArray(parsed.selected)) {
+                html += '<p style="margin:0 0 8px;color:var(--orange)"><b>Partial backup</b> — only listed sections will be touched.</p>';
+            }
+            html += '<div style="margin-top:8px;"><b>Will replace:</b><ul style="margin:4px 0 0 16px;padding:0;">';
+            sections.forEach(s => html += '<li>' + s[0] + ': <b>' + s[1] + '</b></li>');
+            if (!sections.length) html += '<li>(empty backup)</li>';
+            html += '</ul></div>';
+            html += '<p style="margin-top:10px;color:var(--orange)"><b>Warning:</b> existing data in these sections will be replaced.</p>';
+            html += '</div>';
+            var ok = await confirmDialog('This cannot be undone.', 'Review restore', true, html);
             if (!ok) return;
             await api('POST', '/api/backup/restore', { data: parsed });
             toast('Restored.'); commands = []; loadCommands(true); loadUsers(true); loadFeatured();
@@ -5309,9 +6221,10 @@ async function loadLogs() {
     var box = $('logs-list');
     box.innerHTML = skeletonRows(4);
     try {
-        var d = await api('GET', '/api/logs?limit=200');
+        var q = ($('log-search') && $('log-search').value || '').trim();
+        var d = await api('GET', '/api/logs?limit=200' + (q ? '&search=' + encodeURIComponent(q) : ''));
         var logs = d.logs || [];
-        if (!logs.length) { box.innerHTML = emptyState('fa-solid fa-clipboard-list', 'No activity yet.'); return; }
+        if (!logs.length) { box.innerHTML = emptyState('fa-solid fa-clipboard-list', q ? 'No log entries match your search.' : 'No activity yet.'); return; }
         box.innerHTML = logs.map(function (l) {
             return '<div class="list-row"><div class="lr-main"><div class="lr-title" style="font-weight:500;">' + esc(l.action) + '</div>' +
                 '<div class="lr-sub">' + fmtTime(l.timestamp) + (l.user_id ? ' · user ' + l.user_id : '') + '</div></div></div>';
@@ -5630,7 +6543,15 @@ const JSON_HEADERS = {
 function apiJson(body, status = 200) { return new Response(JSON.stringify(body), { status, headers: JSON_HEADERS }); }
 function internalError(err) {
     console.error('API error:', err);
-    return apiJson({ error: 'Internal server error — please try again.' }, 500);
+    const msg = String((err && err.message) || err || 'Internal server error');
+    if (/no such column|no such table|has no column named/i.test(msg)) {
+        return apiJson({
+            error: 'Database schema is out of date. Open Settings → Schema health → Run auto-heal, then try again.',
+            schemaError: true,
+        }, 500);
+    }
+    const safe = msg.length < 300 ? msg : 'Internal server error — please try again.';
+    return apiJson({ error: safe }, 500);
 }
 
 const PASSWORD_PREFIX = 'sha256$';
@@ -5738,7 +6659,9 @@ export default {
             }
             if (request.method === 'GET' && url.pathname === '/api/check_session') {
                 const s = await getSession(request, env);
-                return apiJson({ logged_in: !!s });
+                if (!s) return apiJson({ logged_in: false });
+                const csrf = await getSessionCsrf(env, s);
+                return apiJson({ logged_in: true, csrf });
             }
             if (request.method === 'POST' && url.pathname === '/webhook') return await handleTelegramWebhook(request, env, ctx);
             // MCP — bearer-token auth, no session cookie required.
@@ -5746,6 +6669,16 @@ export default {
 
             const session = await getSession(request, env);
             if (!session) return apiJson({ error: 'Please sign in again.' }, 401);
+
+            // CSRF: every mutating dashboard API call must carry the token that
+            // was minted at login and returned via /api/check_session.
+            if (request.method !== 'GET') {
+                const csrfHeader = request.headers.get('X-Nyxx-CSRF') || '';
+                const storedCsrf = await getSessionCsrf(env, session);
+                if (!storedCsrf || !csrfHeader || !timingSafeEqual(csrfHeader, storedCsrf)) {
+                    return apiJson({ error: 'CSRF check failed. Please reload the dashboard and try again.' }, 403);
+                }
+            }
 
             if (request.method === 'POST' && url.pathname === '/api/logout') return await handleLogout(request, env);
 
@@ -5771,12 +6704,21 @@ export default {
                 if (request.method === 'DELETE') return await deleteFeatured(env, url);
             }
 
+            if (request.method === 'GET'  && url.pathname === '/api/contact/settings')   return await getContactSettings(env);
+            if (request.method === 'POST' && url.pathname === '/api/contact/settings')   return await saveContactSettings(request, env);
+            if (request.method === 'GET'  && url.pathname === '/api/contact/messages')   return await getContactMessages(env, url);
+            if (request.method === 'POST' && url.pathname === '/api/contact/mark_read') return await markContactRead(env);
+            if (request.method === 'POST' && url.pathname === '/api/contact/mark_user_read') return await markContactUserRead(request, env);
+            if (request.method === 'GET'  && url.pathname === '/api/contact/stats')      return await getContactStats(env);
+            if (request.method === 'POST' && url.pathname === '/api/contact/test_notify') return await testContactNotify(env);
+
             if (request.method === 'GET' && url.pathname === '/api/memory/overview') return await getMemoryOverview(env);
             if (request.method === 'POST' && url.pathname === '/api/memory/clear') return await handleMemoryClear(request, env);
                         if (request.method === 'GET'  && url.pathname === '/api/memory/auto_remove') return await getAutoRemoveSettings(env);
             if (request.method === 'POST' && url.pathname === '/api/memory/auto_remove') return await saveAutoRemoveSettings(request, env);
 
             if (request.method === 'GET' && url.pathname === '/api/users') return await getUsers(env, url);
+            if (request.method === 'GET' && /^\/api\/users\/[0-9]+$/.test(url.pathname)) return await getUserById(env, url);
             if (request.method === 'PUT' && url.pathname === '/api/users/role') return await updateUserRole(request, env);
             if (request.method === 'POST' && url.pathname === '/api/users/send_message') return await sendUserPrivateMessage(request, env);
             if (request.method === 'POST' && url.pathname === '/api/users/message/edit') return await editSentMessage(request, env);
@@ -5830,13 +6772,19 @@ export default {
             if (request.method === 'POST' && url.pathname === '/api/settings/reveal_bot_token') return await revealBotToken(env);
             if (request.method === 'POST' && url.pathname === '/api/settings/token') return await updateBotToken(request, env, url.origin);
             if (request.method === 'POST' && url.pathname === '/api/settings/webhook-test') return await handleWebhookTest(env);
+            if (request.method === 'POST' && url.pathname === '/api/settings/media_storage') return await saveMediaStorageChat(request, env);
             if (request.method === 'POST' && url.pathname === '/api/settings/webhook-fix') return await handleWebhookFix(env, url.origin);
+            if (request.method === 'POST' && url.pathname === '/api/settings/webhook-diagnostics') return await handleWebhookDiagnostics(env);
+            if (request.method === 'GET'  && url.pathname === '/api/schema/health') return await handleSchemaHealth(env);
+            if (request.method === 'POST' && url.pathname === '/api/schema/heal')   return await handleSchemaHeal(env);
             if (request.method === 'POST' && url.pathname === '/api/change_password') return await changeAdminPassword(request, env);
 
             if (request.method === 'GET' && url.pathname === '/api/bot_info') return await getBotInfo(env);
             if (request.method === 'POST' && url.pathname === '/api/bot_info') return await setBotInfo(request, env);
 
             if (request.method === 'GET' && url.pathname === '/api/stats') return await getStats(env);
+            if (request.method === 'POST' && url.pathname === '/api/upload_media') return await handleUploadMedia(request, env);
+            if (request.method === 'GET' && url.pathname.startsWith('/api/file/')) return await handleFileProxy(request, env, url);
             // ---- MCP dashboard API ----
             if (request.method === 'GET'  && url.pathname === '/api/mcp/settings') return await getMcpSettings(request, env);
             if (request.method === 'POST' && url.pathname === '/api/mcp/settings') return await saveMcpSettings(request, env);
@@ -6187,7 +7135,7 @@ async function demoteAdminHandler(request, env) {
 // DATABASE
 // ============================================================================
 const dbInitCache = new WeakMap();
-const SCHEMA_VERSION = 12;
+const SCHEMA_VERSION = 17;
 
 const MIGRATIONS = {
     2: [
@@ -6212,7 +7160,13 @@ const MIGRATIONS = {
         `CREATE INDEX IF NOT EXISTS idx_dm_messages_chat ON dm_messages(chat_id)`,
         `CREATE INDEX IF NOT EXISTS idx_groups_active ON groups(is_active)`,
         `INSERT INTO dm_messages (chat_id, message_id, direction, source, kind, text, buttons_json, created_at)
-         SELECT chat_id, message_id, 'out', 'admin', kind, text, buttons_json, created_at FROM admin_messages`,
+         SELECT chat_id, message_id, 'out', 'admin', kind, text, buttons_json, created_at FROM admin_messages
+         WHERE NOT EXISTS (
+             SELECT 1 FROM dm_messages d
+             WHERE d.chat_id = admin_messages.chat_id
+               AND d.message_id = admin_messages.message_id
+               AND d.source = 'admin'
+         )`,
     ],
     5: [
         `CREATE TABLE IF NOT EXISTS featured_replies (id INTEGER PRIMARY KEY AUTOINCREMENT, command TEXT UNIQUE NOT NULL, kind TEXT DEFAULT 'text', content TEXT, buttons_json TEXT, enabled BOOLEAN DEFAULT 1, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
@@ -6263,7 +7217,466 @@ const MIGRATIONS = {
         `ALTER TABLE featured_replies ADD COLUMN access_level TEXT DEFAULT 'everyone'`,
         `UPDATE featured_replies SET access_level = 'admin' WHERE admin_only = 1 AND (access_level IS NULL OR access_level = 'everyone')`,
     ],
+    13: [
+        `ALTER TABLE commands ADD COLUMN file_id TEXT DEFAULT ''`,
+        `ALTER TABLE commands ADD COLUMN media_meta TEXT DEFAULT ''`,
+        `ALTER TABLE dm_messages ADD COLUMN file_id TEXT DEFAULT ''`,
+        `ALTER TABLE dm_messages ADD COLUMN media_meta TEXT DEFAULT ''`,
+        `ALTER TABLE broadcast_history ADD COLUMN file_id TEXT DEFAULT ''`,
+        `ALTER TABLE broadcast_history ADD COLUMN media_meta TEXT DEFAULT ''`,
+    ],
+    14: [
+        `ALTER TABLE sessions ADD COLUMN csrf_token TEXT DEFAULT ''`,
+        `ALTER TABLE sessions ADD COLUMN password_version TEXT DEFAULT ''`,
+        `INSERT INTO settings (key, value) VALUES ('password_version', '') ON CONFLICT(key) DO NOTHING`,
+        `CREATE TABLE IF NOT EXISTS group_strikes (
+            chat_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            mute_count INTEGER DEFAULT 0,
+            kick_count INTEGER DEFAULT 0,
+            banned INTEGER DEFAULT 0,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (chat_id, user_id)
+            )`,
+            `CREATE INDEX IF NOT EXISTS idx_group_strikes_chat ON group_strikes(chat_id)`,
+        ],
+    15: [
+        `ALTER TABLE featured_replies ADD COLUMN button_style TEXT DEFAULT ''`,
+    ],
+    16: [
+        `INSERT INTO settings (key, value) VALUES ('contact_notify_enabled', '1') ON CONFLICT(key) DO NOTHING`,
+        `INSERT INTO settings (key, value) VALUES ('contact_notify_admins', 'all') ON CONFLICT(key) DO NOTHING`,
+        `INSERT INTO settings (key, value) VALUES ('contact_notify_include_user', '1') ON CONFLICT(key) DO NOTHING`,
+        `INSERT INTO settings (key, value) VALUES ('contact_autoreply_enabled', '0') ON CONFLICT(key) DO NOTHING`,
+        `INSERT INTO settings (key, value) VALUES ('contact_autoreply_text', 'Thanks for your message — we will get back to you as soon as possible.') ON CONFLICT(key) DO NOTHING`,
+        `INSERT INTO settings (key, value) VALUES ('contact_away_enabled', '0') ON CONFLICT(key) DO NOTHING`,
+        `INSERT INTO settings (key, value) VALUES ('contact_away_text', 'Thanks for your message. We are currently away and will reply when we are back.') ON CONFLICT(key) DO NOTHING`,
+        `INSERT INTO settings (key, value) VALUES ('contact_away_start_hour', '22') ON CONFLICT(key) DO NOTHING`,
+        `INSERT INTO settings (key, value) VALUES ('contact_away_end_hour', '8') ON CONFLICT(key) DO NOTHING`,
+        `INSERT INTO settings (key, value) VALUES ('contact_rate_limit', '5') ON CONFLICT(key) DO NOTHING`,
+        `INSERT INTO settings (key, value) VALUES ('contact_last_read_at', '') ON CONFLICT(key) DO NOTHING`,
+    ],
+    17: [
+        `ALTER TABLE dm_messages ADD COLUMN read_at DATETIME`,
+        // Backfill from the old single-watermark so existing read state carries over
+        `UPDATE dm_messages SET read_at = created_at
+           WHERE source = 'featured' AND direction = 'in' AND read_at IS NULL
+             AND created_at <= COALESCE((SELECT value FROM settings WHERE key = 'contact_last_read_at'), '')`,
+    ],
 };
+
+// ============================================================================
+// AUTO-HEALING SCHEMA (v4.8.0+)
+// ============================================================================
+// Introspection-based healing. Runs after the historical migration loop and
+// repairs any drift between the actual DB and DESIRED_SCHEMA. It never trusts
+// schema_version — it inspects real state. Handles:
+//   • Missing tables       → CREATE TABLE IF NOT EXISTS
+//   • Missing columns      → PRAGMA table_info + ALTER TABLE ADD COLUMN
+//   • Missing indexes      → CREATE INDEX IF NOT EXISTS
+//   • Missing settings     → INSERT … ON CONFLICT DO NOTHING
+//   • Missing data fixes   → idempotent UPDATEs
+// Safe to run on every cold start. Every operation is idempotent.
+
+const DESIRED_SCHEMA = {
+    settings: { columns: {
+        key: { type: 'TEXT', primary: true },
+        value: { type: 'TEXT' }
+    }},
+    users: { columns: {
+        id: { type: 'INTEGER', primary: true },
+        username: { type: 'TEXT' },
+        first_name: { type: 'TEXT' },
+        role: { type: 'TEXT', default: "'user'" },
+        is_premium: { type: 'BOOLEAN', default: '0' },
+        private_started: { type: 'BOOLEAN', default: '0' },
+        last_group_id: { type: 'INTEGER' },
+        last_active: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' }
+    }},
+    commands: { columns: {
+        command: { type: 'TEXT', primary: true },
+        parent: { type: 'TEXT' },
+        response_type: { type: 'TEXT', default: "'text'" },
+        content: { type: 'TEXT' },
+        media_url: { type: 'TEXT' },
+        buttons_json: { type: 'TEXT' },
+        is_admin_only: { type: 'BOOLEAN', default: '0' },
+        access_level: { type: 'TEXT', default: "'everyone'" },
+        enabled: { type: 'BOOLEAN', default: '1' },
+        show_reply_keyboard: { type: 'BOOLEAN', default: '0' },
+        reply_keyboard_json: { type: 'TEXT' },
+        order_idx: { type: 'INTEGER', default: '0' },
+        file_id: { type: 'TEXT', default: "''" },
+        media_meta: { type: 'TEXT', default: "''" },
+        read_at: { type: 'DATETIME' }
+    }},
+    sessions: { columns: {
+        token: { type: 'TEXT', primary: true },
+        user_id: { type: 'INTEGER', unique: true },
+        command: { type: 'TEXT' },
+        created_at: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' },
+        updated_at: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' },
+        csrf_token: { type: 'TEXT', default: "''" },
+        password_version: { type: 'TEXT', default: "''" }
+    }},
+    logs: { columns: {
+        id: { type: 'INTEGER', primary: true },
+        user_id: { type: 'INTEGER' },
+        action: { type: 'TEXT' },
+        timestamp: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' }
+    }},
+    ai_messages: { columns: {
+        id: { type: 'INTEGER', primary: true },
+        chat_id: { type: 'INTEGER' },
+        role: { type: 'TEXT' },
+        content: { type: 'TEXT' },
+        timestamp: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' }
+    }},
+    dm_messages: { columns: {
+        id: { type: 'INTEGER', primary: true },
+        chat_id: { type: 'INTEGER' },
+        message_id: { type: 'INTEGER' },
+        direction: { type: 'TEXT' },
+        source: { type: 'TEXT' },
+        kind: { type: 'TEXT', default: "'text'" },
+        text: { type: 'TEXT' },
+        photo_url: { type: 'TEXT' },
+        buttons_json: { type: 'TEXT' },
+        created_at: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' },
+        edited_at: { type: 'DATETIME' },
+        file_id: { type: 'TEXT', default: "''" },
+        media_meta: { type: 'TEXT', default: "''" }
+    }},
+    ai_rate_limits: { columns: {
+        user_id: { type: 'INTEGER', primary: true },
+        minute: { type: 'INTEGER', primary: true },
+        count: { type: 'INTEGER', default: '1' }
+    }},
+    blocked_users: { columns: {
+        user_id: { type: 'INTEGER', primary: true },
+        block_type: { type: 'TEXT', default: "'full'" },
+        blocked_at: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' }
+    }},
+    login_attempts: { columns: {
+        minute: { type: 'INTEGER', primary: true },
+        count: { type: 'INTEGER', default: '0' }
+    }},
+    broadcast_history: { columns: {
+        id: { type: 'INTEGER', primary: true },
+        message: { type: 'TEXT' },
+        photo_url: { type: 'TEXT' },
+        kind: { type: 'TEXT', default: "'text'" },
+        buttons_json: { type: 'TEXT' },
+        recipient_count: { type: 'INTEGER' },
+        sent_count: { type: 'INTEGER' },
+        sent_at: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' },
+        file_id: { type: 'TEXT', default: "''" },
+        media_meta: { type: 'TEXT', default: "''" }
+    }},
+    broadcast_recipients: { columns: {
+        broadcast_id: { type: 'INTEGER', primary: true },
+        chat_id: { type: 'INTEGER', primary: true },
+        message_id: { type: 'INTEGER' }
+    }},
+    groups: { columns: {
+        id: { type: 'INTEGER', primary: true },
+        title: { type: 'TEXT' },
+        type: { type: 'TEXT' },
+        username: { type: 'TEXT' },
+        added_at: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' },
+        last_active: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' },
+        is_active: { type: 'BOOLEAN', default: '1' },
+        settings_json: { type: 'TEXT' },
+        member_count: { type: 'INTEGER', default: '0' }
+    }},
+    group_flood: { columns: {
+        chat_id: { type: 'INTEGER', primary: true },
+        user_id: { type: 'INTEGER', primary: true },
+        minute: { type: 'INTEGER', primary: true },
+        count: { type: 'INTEGER', default: '0' }
+    }},
+    featured_replies: { columns: {
+        id: { type: 'INTEGER', primary: true },
+        command: { type: 'TEXT' },
+        kind: { type: 'TEXT', default: "'text'" },
+        content: { type: 'TEXT' },
+        buttons_json: { type: 'TEXT' },
+        success_text: { type: 'TEXT', default: "''" },
+        failure_text: { type: 'TEXT', default: "''" },
+        enabled: { type: 'BOOLEAN', default: '1' },
+        access_level: { type: 'TEXT', default: "'everyone'" },
+        created_at: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' },
+        admin_only: { type: 'INTEGER', default: '0' },
+        delete_user_message: { type: 'INTEGER', default: '1' },
+        button_style: { type: 'TEXT', default: "''" }
+    }},
+    mcp_tokens: { columns: {
+        id: { type: 'INTEGER', primary: true },
+        label: { type: 'TEXT', default: "'default'" },
+        token_hash: { type: 'TEXT' },
+        token_prefix: { type: 'TEXT' },
+        created_at: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' },
+        last_used_at: { type: 'DATETIME' }
+    }},
+    mcp_sessions: { columns: {
+        session_key: { type: 'TEXT', primary: true },
+        messages_json: { type: 'TEXT', default: "'[]'" },
+        size_bytes: { type: 'INTEGER', default: '0' },
+        title: { type: 'TEXT', default: "''" },
+        created_at: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' },
+        updated_at: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' }
+    }},
+    mcp_rate_limits: { columns: {
+        session_key: { type: 'TEXT', primary: true },
+        minute: { type: 'INTEGER', primary: true },
+        count: { type: 'INTEGER', default: '1' }
+    }},
+    group_strikes: { columns: {
+        chat_id: { type: 'INTEGER', primary: true },
+        user_id: { type: 'INTEGER', primary: true },
+        mute_count: { type: 'INTEGER', default: '0' },
+        kick_count: { type: 'INTEGER', default: '0' },
+        banned: { type: 'INTEGER', default: '0' },
+        updated_at: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' }
+    }}
+};
+
+const SCHEMA_INDEXES = [
+    'CREATE INDEX IF NOT EXISTS idx_commands_parent ON commands(parent)',
+    'CREATE INDEX IF NOT EXISTS idx_ai_messages_chat ON ai_messages(chat_id)',
+    'CREATE INDEX IF NOT EXISTS idx_dm_messages_chat ON dm_messages(chat_id)',
+    'CREATE INDEX IF NOT EXISTS idx_logs_user ON logs(user_id)',
+    'CREATE INDEX IF NOT EXISTS idx_groups_active ON groups(is_active)',
+    'CREATE INDEX IF NOT EXISTS idx_featured_command ON featured_replies(command)',
+    'CREATE INDEX IF NOT EXISTS idx_mcp_sessions_updated ON mcp_sessions(updated_at)',
+    'CREATE INDEX IF NOT EXISTS idx_group_strikes_chat ON group_strikes(chat_id)'
+];
+
+// Safe, idempotent cleanups that remove expired and orphaned rows.
+// These run as part of the manual heal only — never on cold start.
+// Each entry deletes only data that can no longer be used (older than a
+// use window, or whose parent record no longer exists).
+const SCHEMA_CLEANUPS = [
+    // Time-based — anything older than these windows is dead data
+    {
+        name: 'expired_dashboard_sessions',
+        sql: "DELETE FROM sessions WHERE user_id IS NULL AND created_at <= datetime('now', '-1 day')",
+        description: 'Dashboard login sessions older than 1 day',
+    },
+    {
+        name: 'stale_login_attempts',
+        sql: "DELETE FROM login_attempts WHERE minute < (CAST(strftime('%s','now') AS INTEGER) / 60 - 120)",
+        description: 'Login attempt counters older than 2 hours',
+    },
+    {
+        name: 'stale_ai_rate_limits',
+        sql: "DELETE FROM ai_rate_limits WHERE minute < (CAST(strftime('%s','now') AS INTEGER) / 60 - 120)",
+        description: 'AI rate-limit counters older than 2 hours',
+    },
+    {
+        name: 'stale_group_flood',
+        sql: "DELETE FROM group_flood WHERE minute < (CAST(strftime('%s','now') AS INTEGER) / 60 - 120)",
+        description: 'Group flood counters older than 2 hours',
+    },
+    {
+        name: 'stale_mcp_rate_limits',
+        sql: "DELETE FROM mcp_rate_limits WHERE minute < (CAST(strftime('%s','now') AS INTEGER) / 60 - 60)",
+        description: 'MCP rate-limit counters older than 1 hour',
+    },
+    {
+        name: 'expired_mcp_sessions',
+        sql: "DELETE FROM mcp_sessions WHERE updated_at <= datetime('now', '-24 hours')",
+        description: 'MCP sessions idle for over 24 hours',
+    },
+    // Orphaned — parent record no longer exists
+    {
+        name: 'orphaned_broadcast_recipients',
+        sql: 'DELETE FROM broadcast_recipients WHERE broadcast_id NOT IN (SELECT id FROM broadcast_history)',
+        description: 'Broadcast recipient rows whose broadcast was deleted',
+    },
+    {
+        name: 'orphaned_blocked_users',
+        sql: 'DELETE FROM blocked_users WHERE user_id NOT IN (SELECT id FROM users)',
+        description: 'Block records for users that no longer exist',
+    },
+    {
+        name: 'orphaned_dm_messages',
+        sql: 'DELETE FROM dm_messages WHERE chat_id > 0 AND chat_id NOT IN (SELECT id FROM users)',
+        description: 'Direct-message history for deleted users',
+    },
+    {
+        name: 'orphaned_ai_messages_user',
+        sql: 'DELETE FROM ai_messages WHERE chat_id > 0 AND chat_id NOT IN (SELECT id FROM users)',
+        description: 'AI memory for deleted users',
+    },
+    {
+        name: 'orphaned_ai_messages_group',
+        sql: 'DELETE FROM ai_messages WHERE chat_id < 0 AND chat_id NOT IN (SELECT id FROM groups)',
+        description: 'AI memory for groups removed from the DB',
+    },
+    {
+        name: 'orphaned_bot_sessions',
+        sql: "DELETE FROM sessions WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users)",
+        description: 'Bot session rows for deleted users',
+    },
+];
+
+// Every UPDATE/INSERT here is idempotent — safe to run on every cold start.
+const IDEMPOTENT_DATA_MIGRATIONS = [
+    // v2: legacy session rows where user_id is set but token isn't bot-prefixed.
+    `INSERT OR REPLACE INTO sessions (token, user_id, command, created_at, updated_at)
+     SELECT 'bot-' || user_id, user_id, command, created_at, updated_at
+     FROM sessions WHERE user_id IS NOT NULL AND (token IS NULL OR token NOT LIKE 'bot-%')`,
+    `DELETE FROM sessions WHERE user_id IS NOT NULL AND (token IS NULL OR token NOT LIKE 'bot-%')`,
+    // v11: backfill commands.access_level from is_admin_only
+    `UPDATE commands SET access_level = 'admin' WHERE is_admin_only = 1 AND (access_level IS NULL OR access_level = 'everyone')`,
+    // v12: backfill featured_replies.access_level from admin_only
+    `UPDATE featured_replies SET access_level = 'admin' WHERE admin_only = 1 AND (access_level IS NULL OR access_level = 'everyone')`
+];
+
+const REQUIRED_SETTINGS = {
+    password_version: '',
+    contact_notify_enabled: '1',
+    contact_notify_admins: 'all',
+    contact_notify_include_user: '1',
+    contact_autoreply_enabled: '0',
+    contact_autoreply_text: 'Thanks for your message — we will get back to you as soon as possible.',
+    contact_away_enabled: '0',
+    contact_away_text: 'Thanks for your message. We are currently away and will reply when we are back.',
+    contact_away_start_hour: '22',
+    contact_away_end_hour: '8',
+    contact_rate_limit: '5',
+    contact_last_read_at: ''
+};
+
+function buildCreateTableSql(tableName, spec) {
+    const inlineCols = [];
+    const pkCols = [];
+    const pkCount = Object.values(spec.columns).filter(c => c.primary).length;
+    for (const [colName, colSpec] of Object.entries(spec.columns)) {
+        const parts = [colName, colSpec.type || 'TEXT'];
+        if (colSpec.primary && pkCount === 1) {
+            parts.push('PRIMARY KEY');
+        } else if (colSpec.primary) {
+            pkCols.push(colName);
+        }
+        if (colSpec.unique && !colSpec.primary) parts.push('UNIQUE');
+        if (colSpec.default !== undefined) parts.push('DEFAULT ' + colSpec.default);
+        inlineCols.push(parts.join(' '));
+    }
+    if (pkCols.length) inlineCols.push('PRIMARY KEY (' + pkCols.join(', ') + ')');
+    return `CREATE TABLE IF NOT EXISTS ${tableName} (${inlineCols.join(', ')})`;
+}
+
+async function autoHealSchema(db) {
+    const result = {
+        tablesCreated: [], columnsAdded: [], indexesCreated: 0,
+        settingsInserted: [], backfillsRun: 0, warnings: [],
+        cleanedRows: {},       // NEW: which cleanup deleted how many rows
+        versionBefore: null,   // NEW
+        versionAfter: null,    // NEW
+    };
+
+    // Read the current version BEFORE touching anything.
+    try {
+        const verRow = await db.prepare("SELECT value FROM settings WHERE key = 'schema_version'").first();
+        result.versionBefore = verRow ? parseInt(verRow.value) || 0 : 0;
+    } catch (e) { result.versionBefore = 0; }
+
+    let healed = 0;
+    for (const [tableName, spec] of Object.entries(DESIRED_SCHEMA)) {
+        try {
+            const exists = await db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").bind(tableName).first();
+            await db.prepare(buildCreateTableSql(tableName, spec)).run();
+            if (!exists) result.tablesCreated.push(tableName);
+        } catch (e) {
+            console.log(`[heal] CREATE ${tableName} skipped: ${e.message}`);
+            result.warnings.push('CREATE ' + tableName + ' failed: ' + e.message);
+        }
+
+        let actualNames;
+        try {
+            const info = await db.prepare(`PRAGMA table_info(${tableName})`).all();
+            actualNames = new Set((info.results || []).map(c => c.name));
+        } catch (e) {
+            console.log(`[heal] PRAGMA ${tableName} failed: ${e.message}`);
+            continue;
+        }
+
+        for (const [colName, colSpec] of Object.entries(spec.columns)) {
+            if (actualNames.has(colName)) continue;
+            if (colSpec.primary) {
+                const msg = `${tableName}.${colName} is a PRIMARY KEY but missing — table needs manual rebuild`;
+                console.log('[heal] ' + msg);
+                result.warnings.push(msg);
+                continue;
+            }
+            const parts = [colName, colSpec.type || 'TEXT'];
+            if (colSpec.default !== undefined) parts.push('DEFAULT ' + colSpec.default);
+            try {
+                await db.prepare(`ALTER TABLE ${tableName} ADD COLUMN ${parts.join(' ')}`).run();
+                console.log(`[heal] Added column ${tableName}.${colName}`);
+                result.columnsAdded.push(tableName + '.' + colName);
+                healed++;
+            } catch (e) {
+                console.log(`[heal] ALTER ${tableName}.${colName} failed: ${e.message}`);
+                result.warnings.push('ALTER ' + tableName + '.' + colName + ' failed: ' + e.message);
+            }
+        }
+    }
+
+    // Indexes
+    for (const sql of SCHEMA_INDEXES) {
+        try { await db.prepare(sql).run(); result.indexesCreated++; } catch (e) { /* ignore */ }
+    }
+
+    // Required settings rows
+    for (const [k, v] of Object.entries(REQUIRED_SETTINGS)) {
+        try {
+            const ins = await db.prepare("INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO NOTHING").bind(k, v).run();
+            if (ins && ins.meta && ins.meta.changes > 0) result.settingsInserted.push(k);
+        } catch (e) { /* ignore */ }
+    }
+
+    // Idempotent data backfills
+    for (const sql of IDEMPOTENT_DATA_MIGRATIONS) {
+        try { await db.prepare(sql).run(); result.backfillsRun++; } catch (e) {
+            console.log(`[heal] data migration skipped: ${e.message}`);
+        }
+    }
+
+    // NEW: clean up expired and orphaned rows
+    for (const c of SCHEMA_CLEANUPS) {
+        try {
+            const r = await db.prepare(c.sql).run();
+            const n = (r && r.meta && r.meta.changes) || 0;
+            if (n > 0) {
+                result.cleanedRows[c.name] = n;
+                console.log(`[heal] cleaned ${n} row(s): ${c.description}`);
+            }
+        } catch (e) {
+            console.log(`[heal] cleanup ${c.name} skipped: ${e.message}`);
+        }
+    }
+
+    // NEW: sync schema_version. Only bump if healing produced no warnings,
+    // so that a broken heal leaves the marker where it was and the admin
+    // knows to investigate.
+    if (result.warnings.length === 0) {
+        try {
+            await db.prepare("INSERT INTO settings (key, value) VALUES ('schema_version', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(String(SCHEMA_VERSION)).run();
+            result.versionAfter = SCHEMA_VERSION;
+        } catch (e) {
+            result.warnings.push('Could not bump schema_version: ' + e.message);
+            result.versionAfter = result.versionBefore;
+        }
+    } else {
+        result.versionAfter = result.versionBefore;
+    }
+
+    if (healed > 0) console.log(`[heal] auto-healed ${healed} column(s)`);
+    return result;
+}
 
 async function initializeDatabase(db) {
     if (dbInitCache.has(db)) return dbInitCache.get(db);
@@ -6310,10 +7723,71 @@ async function initializeDatabase(db) {
                 try { await db.prepare(sql).run(); }
                 catch (e) { console.log(`Migration v${v} skipped: ${e.message}`); }
             }
-            try {
-                await db.prepare("INSERT INTO settings (key, value) VALUES ('schema_version', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(String(v)).run();
-            } catch (e) { console.error(`Failed to bump schema_version to ${v}:`, e.message); }
         }
+
+        // NOTE: no auto-healing here. If the migrations above left the DB in
+        // an inconsistent state (e.g. a vN migration silently failed and
+        // schema_version already advanced), the admin must click
+        // Settings → Schema Health → "Run auto-heal". This keeps cold starts
+        // fast (~1 schema read) and makes every DDL change deliberate.
+        try {
+            await db.prepare("INSERT INTO settings (key, value) VALUES ('schema_version', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(String(SCHEMA_VERSION)).run();
+        } catch (e) { console.error(`Failed to bump schema_version to ${SCHEMA_VERSION}:`, e.message); }
+
+        // ── Defensive schema healing ─────────────────────────────────────
+        // Migrations can silently fail (e.g. when schema_version was bumped
+        // without the ALTERs actually running). This loop re-applies every
+        // "ADD COLUMN" that later INSERT/UPDATE statements depend on. Each
+        // ALTER either succeeds or fails with "duplicate column" — both are
+        // fine. So even if schema_version is wrong, missing columns get
+        // created here. Cheap: 12 no-op statements on a healthy DB.
+        const SCHEMA_HEALS = [
+            // commands — added by v11 & v13
+            `ALTER TABLE commands ADD COLUMN access_level TEXT DEFAULT 'everyone'`,
+            `ALTER TABLE commands ADD COLUMN file_id TEXT DEFAULT ''`,
+            `ALTER TABLE commands ADD COLUMN media_meta TEXT DEFAULT ''`,
+            // dm_messages — added by v13
+            `ALTER TABLE dm_messages ADD COLUMN file_id TEXT DEFAULT ''`,
+            `ALTER TABLE dm_messages ADD COLUMN media_meta TEXT DEFAULT ''`,
+            // broadcast_history — added by v13
+            `ALTER TABLE broadcast_history ADD COLUMN file_id TEXT DEFAULT ''`,
+            `ALTER TABLE broadcast_history ADD COLUMN media_meta TEXT DEFAULT ''`,
+            // sessions — added by v14
+            `ALTER TABLE sessions ADD COLUMN csrf_token TEXT DEFAULT ''`,
+            `ALTER TABLE sessions ADD COLUMN password_version TEXT DEFAULT ''`,
+            // featured_replies — added by v7, v10, v12
+            `ALTER TABLE featured_replies ADD COLUMN admin_only INTEGER DEFAULT 0`,
+            `ALTER TABLE featured_replies ADD COLUMN delete_user_message INTEGER DEFAULT 1`,
+            `ALTER TABLE featured_replies ADD COLUMN access_level TEXT DEFAULT 'everyone'`,
+            // users — added by v4
+            `ALTER TABLE users ADD COLUMN private_started BOOLEAN DEFAULT 0`,
+            `ALTER TABLE users ADD COLUMN last_group_id INTEGER`,
+            // mcp_sessions — added by v9
+            `ALTER TABLE mcp_sessions ADD COLUMN title TEXT DEFAULT ''`,
+        ];
+        for (const sql of SCHEMA_HEALS) {
+            try { await db.prepare(sql).run(); }
+            catch (e) { /* column already exists, or table missing entirely — both fine */ }
+        }
+
+        // Ensure the password_version setting exists (the getSession JOIN
+        // depends on this row being present, even if empty).
+        try {
+            await db.prepare("INSERT INTO settings (key, value) VALUES ('password_version', '') ON CONFLICT(key) DO NOTHING").run();
+        } catch (e) { /* ignore */ }
+
+        // Ensure group_strikes table exists (used by flood escalation).
+        try {
+            await db.prepare(`CREATE TABLE IF NOT EXISTS group_strikes (
+                chat_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                mute_count INTEGER DEFAULT 0,
+                kick_count INTEGER DEFAULT 0,
+                banned INTEGER DEFAULT 0,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (chat_id, user_id)
+            )`).run();
+        } catch (e) { /* ignore */ }
     })();
     dbInitCache.set(db, p);
     try { await p; } catch (e) { dbInitCache.delete(db); throw e; }
@@ -6330,7 +7804,7 @@ async function logAction(db, userId, action) {
 // SESSIONS
 // ============================================================================
 const sessionCache = new Map();
-const SESSION_CACHE_TTL = 30000;
+const SESSION_CACHE_TTL = 5000;
 async function getSession(request, env) {
     if (!env.DB) return null;
     const cookie = request.headers.get('Cookie') || '';
@@ -6341,9 +7815,25 @@ async function getSession(request, env) {
     const cached = sessionCache.get(token);
     if (cached && (Date.now() - cached) < SESSION_CACHE_TTL) return token;
     await initializeDatabase(env.DB);
-    const result = await env.DB.prepare('SELECT token FROM sessions WHERE token = ? AND user_id IS NULL AND created_at > datetime("now", "-1 day")').bind(token).first();
+    // The password_version comparison is the distributed-session-invalidation
+    // mechanism: bumping password_version in settings makes every session row
+    // on every isolate fail this WHERE clause.
+    const result = await env.DB.prepare(`
+        SELECT s.token FROM sessions s
+        JOIN settings st ON st.key = 'password_version'
+        WHERE s.token = ? AND s.user_id IS NULL
+          AND s.created_at > datetime('now', '-1 day')
+          AND COALESCE(s.password_version, '') = COALESCE(st.value, '')
+    `).bind(token).first();
     if (result) { sessionCache.set(token, Date.now()); return token; }
     return null;
+}
+async function getSessionCsrf(env, sessionToken) {
+    if (!env.DB || !sessionToken) return '';
+    try {
+        const row = await env.DB.prepare('SELECT csrf_token FROM sessions WHERE token = ?').bind(sessionToken).first();
+        return row && row.csrf_token ? row.csrf_token : '';
+    } catch (e) { return ''; }
 }
 function invalidateSessionCache(token) { if (token) sessionCache.delete(token); else sessionCache.clear(); }
 function sessionCookie(token, secure) { return `session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400` + (secure ? '; Secure' : ''); }
@@ -6413,10 +7903,12 @@ async function handleLogin(request, env) {
     await env.DB.prepare('DELETE FROM login_attempts').run();
     await logAction(env.DB, null, 'Dashboard login successful');
     const token = crypto.randomUUID();
-    await env.DB.prepare('INSERT INTO sessions (token, user_id) VALUES (?, NULL)').bind(token).run();
+    const csrf = crypto.randomUUID().replace(/-/g, '');
+    const pv = (await getSetting(env.DB, 'password_version')) || '';
+    await env.DB.prepare('INSERT INTO sessions (token, user_id, csrf_token, password_version) VALUES (?, NULL, ?, ?)').bind(token, csrf, pv).run();
     await env.DB.prepare("DELETE FROM sessions WHERE user_id IS NULL AND created_at <= datetime('now', '-1 day')").run();
     const secure = new URL(request.url).protocol === 'https:';
-    return new Response(JSON.stringify({ success: true }), { status: 200, headers: { 'Set-Cookie': sessionCookie(token, secure), ...JSON_HEADERS } });
+    return new Response(JSON.stringify({ success: true, csrf }), { status: 200, headers: { 'Set-Cookie': sessionCookie(token, secure), ...JSON_HEADERS } });
 }
 async function handleLogout(request, env) {
     const cookie = request.headers.get('Cookie') || '';
@@ -6498,7 +7990,13 @@ async function getAuditLogs(env, url) {
     try {
         await initializeDatabase(env.DB);
         const limit = Math.min(parseInt(url.searchParams.get('limit')) || 100, 500);
-        const rows = await env.DB.prepare('SELECT id, user_id, action, timestamp FROM logs ORDER BY id DESC LIMIT ?').bind(limit).all();
+        const search = (url.searchParams.get('search') || '').trim();
+        let query = 'SELECT id, user_id, action, timestamp FROM logs';
+        const params = [];
+        if (search) { query += ' WHERE action LIKE ?'; params.push('%' + search + '%'); }
+        query += ' ORDER BY id DESC LIMIT ?';
+        params.push(limit);
+        const rows = await env.DB.prepare(query).bind(...params).all();
         return apiJson({ logs: rows.results || [] });
     } catch (err) { return internalError(err); }
 }
@@ -6515,20 +8013,258 @@ async function clearAuditLogs(env) {
 // ============================================================================
 // MEMORY MANAGEMENT
 // ============================================================================
+// ============================================================================
+// CONTACT MESSAGES (features from /contact featured command)
+// ============================================================================
+const CONTACT_KEYS = [
+    'contact_notify_enabled', 'contact_notify_admins', 'contact_notify_include_user',
+    'contact_autoreply_enabled', 'contact_autoreply_text',
+    'contact_away_enabled', 'contact_away_text', 'contact_away_start_hour', 'contact_away_end_hour',
+    'contact_rate_limit', 'contact_last_read_at'
+];
+async function getContactSettingsFromDb(db) {
+    const placeholders = CONTACT_KEYS.map(() => '?').join(', ');
+    const rows = await db.prepare(`SELECT key, value FROM settings WHERE key IN (${placeholders})`).bind(...CONTACT_KEYS).all();
+    const out = {};
+    for (const k of CONTACT_KEYS) out[k] = '';
+    for (const row of (rows.results || [])) out[row.key] = row.value;
+    return out;
+}
+async function getContactSettings(env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        const s = await getContactSettingsFromDb(env.DB);
+        return apiJson({ success: true, settings: s });
+    } catch (err) { return internalError(err); }
+}
+async function saveContactSettings(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const body = await request.json();
+        await initializeDatabase(env.DB);
+        const writes = [];
+        const push = (k, v) => { if (v !== undefined && v !== null) writes.push([k, String(v)]); };
+
+        push('contact_notify_enabled', (body.notify_enabled === '1' || body.notify_enabled === true || body.notify_enabled === 1) ? '1' : (body.notify_enabled === undefined ? undefined : '0'));
+        push('contact_notify_include_user', (body.notify_include_user === '1' || body.notify_include_user === true || body.notify_include_user === 1) ? '1' : (body.notify_include_user === undefined ? undefined : '0'));
+        if (body.notify_admins !== undefined) {
+            const v = String(body.notify_admins || 'all');
+            push('contact_notify_admins', v === 'all' ? 'all' : v); // v should be JSON array string when not 'all'
+        }
+        push('contact_autoreply_enabled', (body.autoreply_enabled === '1' || body.autoreply_enabled === true || body.autoreply_enabled === 1) ? '1' : (body.autoreply_enabled === undefined ? undefined : '0'));
+        if (body.autoreply_text !== undefined) push('contact_autoreply_text', String(body.autoreply_text).slice(0, 3000));
+        push('contact_away_enabled', (body.away_enabled === '1' || body.away_enabled === true || body.away_enabled === 1) ? '1' : (body.away_enabled === undefined ? undefined : '0'));
+        if (body.away_text !== undefined) push('contact_away_text', String(body.away_text).slice(0, 3000));
+        if (body.away_start_hour !== undefined) {
+            const n = parseInt(body.away_start_hour); if (!isNaN(n)) push('contact_away_start_hour', String(Math.min(Math.max(n, 0), 23)));
+        }
+        if (body.away_end_hour !== undefined) {
+            const n = parseInt(body.away_end_hour); if (!isNaN(n)) push('contact_away_end_hour', String(Math.min(Math.max(n, 0), 23)));
+        }
+        if (body.rate_limit !== undefined) {
+            const n = parseInt(body.rate_limit); if (!isNaN(n)) push('contact_rate_limit', String(Math.min(Math.max(n, 0), 1000)));
+        }
+        for (const [k, v] of writes) await setSetting(env.DB, k, v);
+        await logAction(env.DB, null, 'Contact settings updated');
+        return apiJson({ success: true, settings: await getContactSettingsFromDb(env.DB) });
+    } catch (err) { return internalError(err); }
+}
+async function getContactMessages(env, url) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        const limit = Math.min(parseInt(url.searchParams.get('limit')) || 50, 200);
+        const search = (url.searchParams.get('search') || '').trim();
+        const unreadOnly = url.searchParams.get('unread') === '1';
+        let where = "source = 'featured' AND direction = 'in'";
+        const params = [];
+        if (unreadOnly) where += ' AND read_at IS NULL';
+        if (search) { where += ' AND text LIKE ?'; params.push('%' + search + '%'); }
+        const rows = await env.DB.prepare(
+            `SELECT id, chat_id, text, created_at, read_at FROM dm_messages WHERE ${where} ORDER BY id DESC LIMIT ?`
+        ).bind(...params, limit).all();
+        const messages = rows.results || [];
+        const userIds = [...new Set(messages.map(m => m.chat_id))];
+        const userMap = {};
+        if (userIds.length) {
+            const ph = userIds.map(() => '?').join(', ');
+            const users = await env.DB.prepare(`SELECT id, first_name, username, role FROM users WHERE id IN (${ph})`).bind(...userIds).all();
+            for (const u of (users.results || [])) userMap[u.id] = u;
+        }
+        const out = messages.map(m => {
+            const u = userMap[m.chat_id] || {};
+            return {
+                id: m.id, userId: m.chat_id, text: m.text || '', created_at: m.created_at,
+                first_name: u.first_name || 'Unknown', username: u.username || '',
+                is_unread: (m.read_at === null || m.read_at === undefined),
+            };
+        });
+        return apiJson({ success: true, messages: out });
+    } catch (err) { return internalError(err); }
+}
+async function markContactRead(env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        const r = await env.DB.prepare(
+            "UPDATE dm_messages SET read_at = CURRENT_TIMESTAMP WHERE source = 'featured' AND direction = 'in' AND read_at IS NULL"
+        ).run();
+        return apiJson({ success: true, marked: (r && r.meta && r.meta.changes) || 0 });
+    } catch (err) { return internalError(err); }
+}
+async function markContactUserRead(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const body = await request.json();
+        const userId = parseInt(body.userId);
+        if (!userId) return apiJson({ error: 'Invalid userId.' }, 400);
+        await initializeDatabase(env.DB);
+        const r = await env.DB.prepare(
+            "UPDATE dm_messages SET read_at = CURRENT_TIMESTAMP WHERE chat_id = ? AND source = 'featured' AND direction = 'in' AND read_at IS NULL"
+        ).bind(userId).run();
+        return apiJson({ success: true, userId, marked: (r && r.meta && r.meta.changes) || 0 });
+    } catch (err) { return internalError(err); }
+}
+async function getContactStats(env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        const [unreadRow, todayRow, weekRow, totalRow] = await Promise.all([
+            env.DB.prepare("SELECT COUNT(*) as n FROM dm_messages WHERE source = 'featured' AND direction = 'in' AND read_at IS NULL").first(),
+            env.DB.prepare("SELECT COUNT(*) as n FROM dm_messages WHERE source = 'featured' AND direction = 'in' AND created_at > datetime('now', '-1 day')").first(),
+            env.DB.prepare("SELECT COUNT(*) as n FROM dm_messages WHERE source = 'featured' AND direction = 'in' AND created_at > datetime('now', '-7 day')").first(),
+            env.DB.prepare("SELECT COUNT(*) as n FROM dm_messages WHERE source = 'featured' AND direction = 'in'").first(),
+        ]);
+        return apiJson({
+            success: true,
+            unread: unreadRow ? unreadRow.n : 0,
+            today: todayRow ? todayRow.n : 0,
+            week: weekRow ? weekRow.n : 0,
+            total: totalRow ? totalRow.n : 0
+        });
+    } catch (err) { return internalError(err); }
+}
+async function getContactNotifyAdmins(env) {
+    const raw = (await getSetting(env.DB, 'contact_notify_admins')) || 'all';
+    if (raw === 'all') {
+        const rows = await env.DB.prepare("SELECT id FROM users WHERE role = 'admin'").all();
+        return (rows.results || []).map(r => r.id);
+    }
+    try {
+        const arr = JSON.parse(raw);
+        return Array.isArray(arr) ? arr.filter(x => Number.isFinite(Number(x))).map(Number) : [];
+    } catch (e) { return []; }
+}
+async function testContactNotify(env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        const token = await getSetting(env.DB, 'bot_token');
+        if (!token) return apiJson({ error: 'Bot token is not set.' }, 400);
+        const adminIds = await getContactNotifyAdmins(env);
+        if (!adminIds.length) return apiJson({ error: 'No admins to notify. Promote someone first or set notify_admins to "all".' }, 400);
+        const body = '🧪 <b>Test notification</b>\n\nThis is a test. Your contact notifications are working.';
+        let sent = 0, failed = 0;
+        for (const adminId of adminIds) {
+            const resp = await sendRichText(token, adminId, body);
+            if (resp && resp.ok) sent++; else failed++;
+        }
+        return apiJson({ success: true, sent, failed, total: adminIds.length });
+    } catch (err) { return internalError(err); }
+}
+async function handleContactMessage(env, BOT_TOKEN, chatId, userId, userInfo, message, feat) {
+    try {
+        // 1. Rate limit
+        const rateLimit = parseInt(await getSetting(env.DB, 'contact_rate_limit')) || 0;
+        if (rateLimit > 0) {
+            const row = await env.DB.prepare(
+                "SELECT COUNT(*) as n FROM dm_messages WHERE chat_id = ? AND source = 'featured' AND direction = 'in' AND created_at > datetime('now', '-1 hour')"
+            ).bind(userId).first();
+            if (row && row.n >= rateLimit) {
+                await sendRichText(BOT_TOKEN, chatId, '⏳ You have sent too many messages in the last hour. Please wait before sending another.');
+                return;
+            }
+        }
+
+        // 2. Store the message
+        const saveFeatured = (await getSetting(env.DB, 'dm_save_featured')) !== '0';
+        if (saveFeatured) {
+            await logDm(env.DB, userId, 'in', 'featured', 'text', message, null, null, null);
+        }
+
+        // 3. Away mode (UTC hours)
+        const awayEnabled = (await getSetting(env.DB, 'contact_away_enabled')) === '1';
+        const currentHour = new Date().getUTCHours();
+        const awayStart = parseInt(await getSetting(env.DB, 'contact_away_start_hour')) || 22;
+        const awayEnd = parseInt(await getSetting(env.DB, 'contact_away_end_hour')) || 8;
+        let inAway = false;
+        if (awayEnabled && awayStart !== awayEnd) {
+            if (awayStart < awayEnd) inAway = currentHour >= awayStart && currentHour < awayEnd;
+            else inAway = currentHour >= awayStart || currentHour < awayEnd;
+        }
+
+        // 4. Respond to user
+        let responseText = '';
+        if (inAway) {
+            responseText = (await getSetting(env.DB, 'contact_away_text')) || 'Thanks for your message. We are currently away.';
+        } else if ((await getSetting(env.DB, 'contact_autoreply_enabled')) === '1') {
+            responseText = (await getSetting(env.DB, 'contact_autoreply_text')) || '';
+        } else if (feat.success_text) {
+            responseText = feat.success_text;
+        }
+        if (responseText) await sendRichText(BOT_TOKEN, chatId, responseText);
+
+        // 5. Notify admins
+        if ((await getSetting(env.DB, 'contact_notify_enabled')) === '1') {
+            const adminIds = await getContactNotifyAdmins(env);
+            const includeUser = (await getSetting(env.DB, 'contact_notify_include_user')) !== '0';
+            const preview = message.length > 500 ? message.slice(0, 500) + '…' : message;
+            let header = '📬 <b>New contact message</b>';
+            if (includeUser && userInfo) {
+                header += '\nFrom: <b>' + escapeTelegramHTML(userInfo.first_name || 'User') + '</b>';
+                if (userInfo.username) header += ' (@' + escapeTelegramHTML(userInfo.username) + ')';
+                header += '\nID: <code>' + escapeTelegramHTML(String(userInfo.id)) + '</code>';
+            }
+            const body = '\n\n' + escapeTelegramHTML(preview);
+            for (const adminId of adminIds) {
+                if (Number(adminId) === Number(userId)) continue; // don't notify the sender
+                const resp = await sendRichText(BOT_TOKEN, adminId, header + body);
+                if (!resp || !resp.ok) {
+                    await logAction(env.DB, null, 'Contact notify failed for admin ' + adminId);
+                }
+            }
+        }
+    } catch (e) {
+        console.error('handleContactMessage error:', e);
+        await logAction(env.DB, null, 'Contact handler error: ' + String(e.message || e).slice(0, 200));
+    }
+}
+
 async function getMemoryOverview(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
-        const [aiRows, dmRows, groupAiRows] = await Promise.all([
-            env.DB.prepare('SELECT chat_id, COUNT(*) as n FROM ai_messages WHERE chat_id > 0 GROUP BY chat_id').all(),
-            env.DB.prepare('SELECT chat_id, COUNT(*) as n FROM dm_messages WHERE chat_id > 0 GROUP BY chat_id').all(),
-            env.DB.prepare('SELECT chat_id, COUNT(*) as n FROM ai_messages WHERE chat_id < 0 GROUP BY chat_id').all(),
-        ]);
+        // Single UNION ALL round-trip instead of three parallel D1 queries.
+        const combined = await env.DB.prepare(`
+            SELECT 'user_ai' as kind, chat_id, COUNT(*) as n
+              FROM ai_messages WHERE chat_id > 0 GROUP BY chat_id
+            UNION ALL
+            SELECT 'user_dm' as kind, chat_id, COUNT(*) as n
+              FROM dm_messages WHERE chat_id > 0 GROUP BY chat_id
+            UNION ALL
+            SELECT 'group_ai' as kind, chat_id, COUNT(*) as n
+              FROM ai_messages WHERE chat_id < 0 GROUP BY chat_id
+        `).all();
+        const allRows = combined.results || [];
+        const aiRows = { results: allRows.filter(r => r.kind === 'user_ai') };
+        const dmRows = { results: allRows.filter(r => r.kind === 'user_dm') };
+        const groupAiRows = { results: allRows.filter(r => r.kind === 'group_ai') };
         const aiMap = {};
         const dmMap = {};
         const idSet = new Set();
-        for (const r of (aiRows.results || [])) { aiMap[r.chat_id] = r.n; idSet.add(r.chat_id); }
-        for (const r of (dmRows.results || [])) { dmMap[r.chat_id] = r.n; idSet.add(r.chat_id); }
+        for (const r of aiRows.results) { aiMap[r.chat_id] = r.n; idSet.add(r.chat_id); }
+        for (const r of dmRows.results) { dmMap[r.chat_id] = r.n; idSet.add(r.chat_id); }
         const ids = Array.from(idSet).filter(id => id > 0);
         const userMap = {};
         const blockMap = {};
@@ -6749,7 +8485,7 @@ function kbNormalizeInline(raw) {
         rows = (Array.isArray(obj.inline) ? obj.inline : []).map(row =>
             (Array.isArray(row) ? row : [row]).map(b => {
                 const type = b.type === 'url' ? 'url' : (b.type === 'command' || String(b.value || '').startsWith('/') ? 'command' : 'callback');
-                return { text: String(b.text || ''), type, value: String(b.value || '') };
+                return { text: String(b.text || ''), type, value: String(b.value || ''), style: b.style || '' };
             }).filter(b => b.text)
         ).filter(row => row.length);
     } else if (Array.isArray(obj.inline_keyboard)) {
@@ -6772,7 +8508,7 @@ function kbNormalizeReply(raw) {
     const spec = { rows: [], actions: {}, resize: true, one_time: false, persistent: true, placeholder: '' };
     const readItem = (item) => {
         if (typeof item === 'string') return { text: item, command: '' };
-        if (item && typeof item === 'object') return { text: String(item.text || ''), command: String(item.command || item.value || '') };
+        if (item && typeof item === 'object') return { text: String(item.text || ''), command: String(item.command || item.value || ''), style: item.style || '' };
         return null;
     };
     if (obj.v === 2 && obj.reply) {
@@ -6802,11 +8538,19 @@ function kbNormalizeReply(raw) {
 }
 function kbInlineMarkup(rows) {
     if (!rows || !rows.length) return null;
-    return { inline_keyboard: rows.map(row => row.map(b => b.type === 'url' ? { text: b.text, url: b.value } : { text: b.text, callback_data: b.value })) };
+    return { inline_keyboard: rows.map(row => row.map(b => {
+        const btn = b.type === 'url' ? { text: b.text, url: b.value } : { text: b.text, callback_data: b.value };
+        if (b.style) btn.style = b.style;
+        return btn;
+    })) };
 }
 function kbReplyMarkup(spec) {
     if (!spec || !spec.rows || !spec.rows.length) return null;
-    const markup = { keyboard: spec.rows.map(row => row.map(b => ({ text: b.text }))) };
+    const markup = { keyboard: spec.rows.map(row => row.map(b => {
+        const btn = { text: b.text };
+        if (b.style) btn.style = b.style;
+        return btn;
+    })) };
     markup.resize_keyboard = spec.resize !== false;
     markup.one_time_keyboard = !!spec.one_time;
     if (spec.persistent) markup.is_persistent = true;
@@ -6913,8 +8657,11 @@ async function createCommand(request, env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         const body = await request.json();
-        const { command, parent, response_type, content, media_url, is_admin_only, enabled, buttons_json, show_reply_keyboard, reply_keyboard_json } = body;
-        if (!command || !content) return apiJson({ error: 'Please fill in both the command and its content.' }, 400);
+        const { command, parent, response_type, content, media_url, is_admin_only, enabled, buttons_json, show_reply_keyboard, reply_keyboard_json, file_id, media_meta } = body;
+        if (!command) return apiJson({ error: 'Command is required.' }, 400);
+        const rtype = normalizeMediaType(response_type);
+        if (rtype === 'text' && !content) return apiJson({ error: 'Content is required for text responses.' }, 400);
+        if (rtype !== 'text' && !content && !media_url && !file_id) return apiJson({ error: 'Provide a caption, media URL, or uploaded file.' }, 400);
         if (parent && parent === command) return apiJson({ error: 'A command cannot be its own parent.' }, 400);
         await initializeDatabase(env.DB);
         if (parent && await commandIsDescendant(env.DB, command, parent)) return apiJson({ error: 'You cannot nest a command inside its own child.' }, 400);
@@ -6922,9 +8669,18 @@ async function createCommand(request, env) {
         const maxOrder = await env.DB.prepare('SELECT MAX(order_idx) as max FROM commands').first();
         const orderIdx = (maxOrder && maxOrder.max !== null) ? maxOrder.max + 1 : 0;
         try {
-            await env.DB.prepare(`INSERT INTO commands (command, parent, response_type, content, media_url, buttons_json, is_admin_only, access_level, enabled, show_reply_keyboard, reply_keyboard_json, order_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-                .bind(command, parent || null, response_type || 'text', content, media_url || '', buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', orderIdx).run();
-        } catch (e) { if (String(e.message || '').includes('UNIQUE')) return apiJson({ error: `A command named "${command}" already exists.` }, 400); throw e; }
+            await env.DB.prepare(`INSERT INTO commands (command, parent, response_type, content, media_url, file_id, media_meta, buttons_json, is_admin_only, access_level, enabled, show_reply_keyboard, reply_keyboard_json, order_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+                .bind(command, parent || null, rtype, content || '', media_url || '', file_id || '', media_meta || '', buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', orderIdx).run();
+        } catch (e) {
+            const m = String(e.message || '');
+            console.error('createCommand INSERT failed:', m);
+            console.error('createCommand payload:', { command, parent, rtype, content, media_url, file_id, media_meta, buttons_json, accessLevel, enabled, show_reply_keyboard, reply_keyboard_json, orderIdx });
+            if (m.includes('UNIQUE')) return apiJson({ error: `A command named "${command}" already exists.` }, 400);
+            if (m.includes('no such column') || m.includes('has no column named')) {
+                return apiJson({ error: 'Database schema is out of date. Open Settings → Schema health → Run auto-heal, then try again.' }, 500);
+            }
+            throw e;
+        }
         invalidateReplyButtonMap();
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
@@ -6951,8 +8707,11 @@ async function updateCommand(request, env) {
         const url = new URL(request.url);
         const oldCommand = decodeURIComponent(url.pathname.split('/').pop());
         const body = await request.json();
-        const { command, parent, response_type, content, media_url, is_admin_only, enabled, buttons_json, show_reply_keyboard, reply_keyboard_json } = body;
-        if (!command || !content) return apiJson({ error: 'Please fill in both the command and its content.' }, 400);
+        const { command, parent, response_type, content, media_url, is_admin_only, enabled, buttons_json, show_reply_keyboard, reply_keyboard_json, file_id, media_meta } = body;
+        if (!command) return apiJson({ error: 'Command is required.' }, 400);
+        const rtype = normalizeMediaType(response_type);
+        if (rtype === 'text' && !content) return apiJson({ error: 'Content is required for text responses.' }, 400);
+        if (rtype !== 'text' && !content && !media_url && !file_id) return apiJson({ error: 'Provide a caption, media URL, or uploaded file.' }, 400);
         if (parent && parent === command) return apiJson({ error: 'A command cannot be its own parent.' }, 400);
         await initializeDatabase(env.DB);
         const existing = await env.DB.prepare('SELECT access_level, is_admin_only FROM commands WHERE command = ?').bind(oldCommand).first();
@@ -6961,8 +8720,8 @@ async function updateCommand(request, env) {
             const clash = await env.DB.prepare('SELECT command FROM commands WHERE command = ?').bind(command).first();
             if (clash) return apiJson({ error: `A command named "${command}" already exists.` }, 400);
             if (parent && await commandIsDescendant(env.DB, command, parent)) return apiJson({ error: 'You cannot nest a command inside its own child.' }, 400);
-            await env.DB.prepare(`UPDATE commands SET command = ?, parent = ?, response_type = ?, content = ?, media_url = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ? WHERE command = ?`)
-                .bind(command, parent || null, response_type || 'text', content, media_url || '', buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', oldCommand).run();
+            await env.DB.prepare(`UPDATE commands SET command = ?, parent = ?, response_type = ?, content = ?, media_url = ?, file_id = ?, media_meta = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ? WHERE command = ?`)
+                .bind(command, parent || null, rtype, content || '', media_url || '', file_id || '', media_meta || '', buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', oldCommand).run();
             await env.DB.prepare('UPDATE commands SET parent = ? WHERE parent = ?').bind(command, oldCommand).run();
             const refRows = await env.DB.prepare('SELECT command, buttons_json, reply_keyboard_json FROM commands WHERE buttons_json LIKE ? OR reply_keyboard_json LIKE ?').bind(`%${oldCommand}%`, `%${oldCommand}%`).all();
             for (const row of refRows.results) {
@@ -6974,8 +8733,8 @@ async function updateCommand(request, env) {
             }
         } else {
             if (parent && await commandIsDescendant(env.DB, command, parent)) return apiJson({ error: 'You cannot nest a command inside its own child.' }, 400);
-            await env.DB.prepare(`UPDATE commands SET parent = ?, response_type = ?, content = ?, media_url = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ? WHERE command = ?`)
-                .bind(parent || null, response_type || 'text', content, media_url || '', buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', command).run();
+            await env.DB.prepare(`UPDATE commands SET parent = ?, response_type = ?, content = ?, media_url = ?, file_id = ?, media_meta = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ? WHERE command = ?`)
+                .bind(parent || null, rtype, content || '', media_url || '', file_id || '', media_meta || '', buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', command).run();
         }
         invalidateReplyButtonMap();
         return apiJson({ success: true });
@@ -7020,7 +8779,7 @@ async function exportCommandPack(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
-        const commands = await env.DB.prepare('SELECT command, parent, response_type, content, media_url, buttons_json, is_admin_only, access_level, enabled, show_reply_keyboard, reply_keyboard_json FROM commands ORDER BY order_idx, command').all();
+        const commands = await env.DB.prepare('SELECT command, parent, response_type, content, media_url, file_id, media_meta, buttons_json, is_admin_only, access_level, enabled, show_reply_keyboard, reply_keyboard_json FROM commands ORDER BY order_idx, command').all();
         let menu = [];
         const raw = await getSetting(env.DB, 'menu_commands');
         if (raw) { try { menu = JSON.parse(raw); } catch (e) {} }
@@ -7042,14 +8801,15 @@ async function importCommandPack(request, env) {
         const stmts = valid.map((c, i) => {
             const access = effectiveCommandAccess(c);
             return env.DB.prepare(`
-            INSERT INTO commands (command, parent, response_type, content, media_url, buttons_json, is_admin_only, access_level, enabled, show_reply_keyboard, reply_keyboard_json, order_idx)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO commands (command, parent, response_type, content, media_url, file_id, media_meta, buttons_json, is_admin_only, access_level, enabled, show_reply_keyboard, reply_keyboard_json, order_idx)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(command) DO UPDATE SET
                 parent = excluded.parent, response_type = excluded.response_type, content = excluded.content,
-                media_url = excluded.media_url, buttons_json = excluded.buttons_json,
+                media_url = excluded.media_url, file_id = excluded.file_id, media_meta = excluded.media_meta,
+                buttons_json = excluded.buttons_json,
                 is_admin_only = excluded.is_admin_only, access_level = excluded.access_level, enabled = excluded.enabled,
                 show_reply_keyboard = excluded.show_reply_keyboard, reply_keyboard_json = excluded.reply_keyboard_json
-        `).bind(c.command, c.parent || null, c.response_type || 'text', c.content || '', c.media_url || '', c.buttons_json || '', access === 'admin' ? 1 : 0, access, c.enabled != 0 ? 1 : 0, c.show_reply_keyboard ? 1 : 0, c.reply_keyboard_json || '', i);
+        `).bind(c.command, c.parent || null, c.response_type || 'text', c.content || '', c.media_url || '', c.file_id || '', c.media_meta || '', c.buttons_json || '', access === 'admin' ? 1 : 0, access, c.enabled != 0 ? 1 : 0, c.show_reply_keyboard ? 1 : 0, c.reply_keyboard_json || '', i);
         });
         await runBatchChunks(env.DB, stmts);
         if (Array.isArray(data.menu) && data.menu.length) {
@@ -7121,6 +8881,7 @@ async function createFeatured(request, env) {
         const failureText = String(body.failure_text || '').trim();
         const kind = (body.kind === 'buttons' || body.kind === 'mcp') ? body.kind : 'text';
         const enabled = body.enabled ? 1 : 0;
+        const buttonStyle = ['primary', 'success', 'danger'].includes(String(body.button_style || '').trim()) ? String(body.button_style).trim() : '';
         let access = 'everyone';
         if (body.access_level !== undefined && ['everyone', 'moderator', 'admin'].includes(String(body.access_level).trim())) {
             access = String(body.access_level).trim();
@@ -7131,8 +8892,8 @@ async function createFeatured(request, env) {
         const deleteTrigger = body.delete_user_message !== undefined ? (body.delete_user_message ? 1 : 0) : 1;
         await initializeDatabase(env.DB);
         try {
-            await env.DB.prepare('INSERT INTO featured_replies (command, kind, content, buttons_json, success_text, failure_text, admin_only, access_level, delete_user_message, enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-                .bind(command, kind, content, null, successText, failureText, adminOnly, access, deleteTrigger, enabled).run();
+            await env.DB.prepare('INSERT INTO featured_replies (command, kind, content, buttons_json, success_text, failure_text, admin_only, access_level, delete_user_message, enabled, button_style) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+                .bind(command, kind, content, null, successText, failureText, adminOnly, access, deleteTrigger, enabled, buttonStyle).run();
         } catch (e) {
             if (String(e.message || '').includes('UNIQUE')) return apiJson({ error: `A featured command with the command "${command}" already exists.` }, 400);
             throw e;
@@ -7154,6 +8915,9 @@ async function updateFeatured(request, env, url) {
         const failureText = body.failure_text !== undefined ? String(body.failure_text).trim() : (existing.failure_text || '');
         const kind = body.kind !== undefined ? ((body.kind === 'buttons' || body.kind === 'mcp') ? body.kind : 'text') : existing.kind;
         const enabled = body.enabled !== undefined ? (body.enabled ? 1 : 0) : existing.enabled;
+        const buttonStyle = body.button_style !== undefined
+            ? (['primary', 'success', 'danger'].includes(String(body.button_style || '').trim()) ? String(body.button_style).trim() : '')
+            : (existing.button_style || '');
         let access = null;
         if (body.access_level !== undefined && ['everyone', 'moderator', 'admin'].includes(String(body.access_level).trim())) {
             access = String(body.access_level).trim();
@@ -7168,8 +8932,8 @@ async function updateFeatured(request, env, url) {
         const deleteTrigger = body.delete_user_message !== undefined
             ? (body.delete_user_message ? 1 : 0)
             : (existing.delete_user_message !== undefined && existing.delete_user_message !== null ? (existing.delete_user_message ? 1 : 0) : 1);
-        await env.DB.prepare('UPDATE featured_replies SET command = ?, kind = ?, content = ?, buttons_json = NULL, success_text = ?, failure_text = ?, admin_only = ?, access_level = ?, delete_user_message = ?, enabled = ? WHERE id = ?')
-            .bind(command, kind, content, successText, failureText, adminOnly, access, deleteTrigger, enabled, id).run();
+        await env.DB.prepare('UPDATE featured_replies SET command = ?, kind = ?, content = ?, buttons_json = NULL, success_text = ?, failure_text = ?, admin_only = ?, access_level = ?, delete_user_message = ?, enabled = ?, button_style = ? WHERE id = ?')
+            .bind(command, kind, content, successText, failureText, adminOnly, access, deleteTrigger, enabled, buttonStyle, id).run();
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
 }
@@ -7193,6 +8957,21 @@ function stripOuterQuotes(s) {
     }
     return s;
 }
+const STYLE_ALIASES = {
+    blue: 'primary', primary: 'primary',
+    green: 'success', success: 'success',
+    red: 'danger', danger: 'danger'
+};
+// Extracts an optional [color] prefix from a button label.
+// "[blue]Google" → { label: "Google", style: "primary" }
+// "Google"       → { label: "Google", style: "" }
+function extractStylePrefix(label) {
+    const m = String(label || '').match(/^\s*\[([a-zA-Z]+)\]\s*(.+)$/);
+    if (!m) return { label: label, style: '' };
+    const style = STYLE_ALIASES[m[1].toLowerCase()];
+    if (!style) return { label: label, style: '' };
+    return { label: m[2].trim(), style };
+}
 function parseButtonsCommandArgs(args) {
     // Supported syntaxes:
     //   Advanced:  /menu "Hi there!" {Google}(https://google.com){Say hi}(Hi!)
@@ -7211,13 +8990,15 @@ function parseButtonsCommandArgs(args) {
         const re = /\{([^{}]*)\}\(([^()]*)\)/g;
         let m;
         while ((m = re.exec(working))) {
-            const label = stripOuterQuotes(m[1]);
+            const rawLabel = stripOuterQuotes(m[1]);
             const value = stripOuterQuotes(m[2]);
-            if (!label || !value) continue;
+            if (!rawLabel || !value) continue;
+            const parsed = extractStylePrefix(rawLabel);
+            const label = parsed.label || rawLabel;
             let type = 'text';
             if (/^https?:\/\//i.test(value)) type = 'url';
             else if (value.startsWith('/')) type = 'command';
-            result.buttons.push({ text: label, type, value });
+            result.buttons.push({ text: label, type, value, style: parsed.style || '' });
         }
         return result;
     }
@@ -7231,13 +9012,15 @@ function parseButtonsCommandArgs(args) {
         if (!part) continue;
         const colonIdx = part.indexOf(':');
         if (colonIdx <= 0) continue;
-        const label = stripOuterQuotes(part.slice(0, colonIdx).trim());
+        const rawLabel = stripOuterQuotes(part.slice(0, colonIdx).trim());
         const value = stripOuterQuotes(part.slice(colonIdx + 1).trim());
-        if (!label || !value) continue;
+        if (!rawLabel || !value) continue;
+        const parsed = extractStylePrefix(rawLabel);
+        const label = parsed.label || rawLabel;
         let type = 'text';
         if (/^https?:\/\//i.test(value)) type = 'url';
         else if (value.startsWith('/')) type = 'command';
-        result.buttons.push({ text: label, type, value });
+        result.buttons.push({ text: label, type, value, style: parsed.style || '' });
     }
     return result;
 }
@@ -7258,11 +9041,12 @@ async function decodeTextCallback(db, data) {
     }
     return rest;
 }
-async function buildFeaturedInlineKeyboard(db, buttons) {
+async function buildFeaturedInlineKeyboard(db, buttons, defaultStyle) {
     if (!buttons || !buttons.length) return null;
     const rows = [];
     let current = [];
     for (const b of buttons) {
+        /** @type {{ text: string, url?: string, callback_data?: string, style?: string }} */
         let tgBtn;
         if (b.type === 'url') {
             tgBtn = { text: b.text, url: b.value };
@@ -7272,6 +9056,8 @@ async function buildFeaturedInlineKeyboard(db, buttons) {
             const cb = await encodeTextCallback(db, b.value);
             tgBtn = { text: b.text, callback_data: cb };
         }
+        const btnStyle = b.style || defaultStyle;
+        if (btnStyle) tgBtn.style = btnStyle;
         current.push(tgBtn);
         if (current.length >= 3) { rows.push(current); current = []; }
     }
@@ -7300,17 +9086,38 @@ async function getUsers(env, url) {
         const perPage = Math.min(Math.max(parseInt(url.searchParams.get('per_page')) || 50, 1), 1000);
         const offset = (page - 1) * perPage;
 
-        const countRow = await env.DB.prepare(
-            'SELECT COUNT(*) as n FROM users u LEFT JOIN blocked_users b ON u.id = b.user_id' + whereSql
-        ).bind(...params).first();
-        const total = countRow ? countRow.n : 0;
-        const totalPages = Math.max(1, Math.ceil(total / perPage));
-
-        const query = 'SELECT u.id, u.username, u.first_name, u.role, u.is_premium, u.private_started, u.last_active, b.block_type FROM users u LEFT JOIN blocked_users b ON u.id = b.user_id' + whereSql + ' ORDER BY u.last_active DESC LIMIT ? OFFSET ?';
+        // Window function returns rows and total count in one round-trip.
+        const query = 'SELECT u.id, u.username, u.first_name, u.role, u.is_premium, u.private_started, u.last_active, b.block_type, COUNT(*) OVER () as __total FROM users u LEFT JOIN blocked_users b ON u.id = b.user_id' + whereSql + ' ORDER BY u.last_active DESC LIMIT ? OFFSET ?';
         const result = await env.DB.prepare(query).bind(...params, perPage, offset).all();
-        return apiJson({ users: result.results || [], total, page, per_page: perPage, total_pages: totalPages });
+        const rows = result.results || [];
+        let total;
+        if (rows.length > 0) {
+            total = rows[0].__total || 0;
+            for (const r of rows) delete r.__total;
+        } else {
+            const countRow = await env.DB.prepare(
+                'SELECT COUNT(*) as n FROM users u LEFT JOIN blocked_users b ON u.id = b.user_id' + whereSql
+            ).bind(...params).first();
+            total = countRow ? countRow.n : 0;
+        }
+        const totalPages = Math.max(1, Math.ceil(total / perPage));
+        return apiJson({ users: rows, total, page, per_page: perPage, total_pages: totalPages });
     } catch (err) { return internalError(err); }
 }
+async function getUserById(env, url) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const id = parseInt(url.pathname.split('/').pop());
+        if (!id) return apiJson({ error: 'Invalid user ID.' }, 400);
+        await initializeDatabase(env.DB);
+        const row = await env.DB.prepare(
+            'SELECT u.id, u.username, u.first_name, u.role, u.is_premium, u.private_started, u.last_active, b.block_type FROM users u LEFT JOIN blocked_users b ON u.id = b.user_id WHERE u.id = ?'
+        ).bind(id).first();
+        if (!row) return apiJson({ error: 'User not found.' }, 404);
+        return apiJson({ success: true, user: row });
+    } catch (err) { return internalError(err); }
+}
+
 async function updateUserRole(request, env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
@@ -7431,10 +9238,11 @@ async function isUserBlocked(env, userId) {
 // ============================================================================
 // DM MESSAGES
 // ============================================================================
-async function logDm(db, chatId, direction, source, kind, text, photoUrl, messageId, buttonsJson) {
+async function logDm(db, chatId, direction, source, kind, text, mediaUrl, messageId, buttonsJson, fileId, mediaMeta) {
     try {
-        await db.prepare('INSERT INTO dm_messages (chat_id, message_id, direction, source, kind, text, photo_url, buttons_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-            .bind(chatId, messageId || null, direction, source || null, kind || 'text', text || '', photoUrl || null, buttonsJson || null).run();
+        const metaStr = mediaMeta ? (typeof mediaMeta === 'string' ? mediaMeta : JSON.stringify(mediaMeta)) : null;
+        await db.prepare('INSERT INTO dm_messages (chat_id, message_id, direction, source, kind, text, photo_url, buttons_json, file_id, media_meta) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+            .bind(chatId, messageId || null, direction, source || null, kind || 'text', text || '', mediaUrl || null, buttonsJson || null, fileId || null, metaStr).run();
     } catch (e) {}
 }
 async function getUserDmMessages(env, url) {
@@ -7496,46 +9304,53 @@ async function sendUserPrivateMessage(request, env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         const body = await request.json();
-        const { userId, message, photo_url: photoUrl, buttons_json: buttonsJson } = body;
-        if (!userId || (!message && !photoUrl)) return apiJson({ error: 'Please provide a userId and a message or photo.' }, 400);
+        const { userId, message, photo_url: photoUrl, buttons_json: buttonsJson,
+                media_type: mediaTypeRaw, file_id: fileIdRaw, media_meta: mediaMetaRaw } = body;
+        const mediaType = normalizeMediaType(mediaTypeRaw || (photoUrl ? 'photo' : 'text'));
+        const fileId = fileIdRaw ? String(fileIdRaw).trim() : '';
+        const mediaMeta = parseMediaMeta(mediaMetaRaw);
+        if (!userId) return apiJson({ error: 'Missing userId.' }, 400);
+        if (!message && !photoUrl && !fileId) return apiJson({ error: 'Please provide a message, media URL, or uploaded file.' }, 400);
         await initializeDatabase(env.DB);
         const token = await getSetting(env.DB, 'bot_token');
         if (!token) return apiJson({ error: 'Bot token is not set. Please add it in Settings.' }, 400);
         const built = buttonsJson ? buildReplyMarkup(buttonsJson) : null;
-        const markup = built && built.markup ? JSON.stringify(built.markup) : null;
-        const kind = photoUrl ? 'photo' : 'text';
-        const payload = { chat_id: userId };
-        if (photoUrl) { payload.photo = photoUrl; if (message) { payload.caption = message; payload.parse_mode = 'HTML'; } }
-        else { payload.text = message; payload.parse_mode = 'HTML'; }
-        if (markup) payload.reply_markup = markup;
-        const method = photoUrl ? 'sendPhoto' : 'sendMessage';
-        let resp = await tgFetchJson(`https://api.telegram.org/bot${token}/${method}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-        if (!resp.ok && isHtmlParseError(resp)) {
-            const plain = Object.assign({}, payload);
-            if (photoUrl) { if (message) plain.caption = htmlToPlain(message); delete plain.parse_mode; }
-            else { plain.text = htmlToPlain(message); delete plain.parse_mode; }
-            resp = await tgFetchJson(`https://api.telegram.org/bot${token}/${method}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(plain) });
+        const markup = built && built.markup ? built.markup : null;
+        const mediaPayload = fileId || photoUrl || '';
+        let resp;
+        if (mediaType === 'text') {
+            resp = await sendRichText(token, userId, message || '', markup ? { reply_markup: markup } : {});
+        } else {
+            resp = await sendMediaMessage(token, userId, mediaType, mediaPayload, message || '', markup, mediaMeta);
         }
-        if (!resp.ok) {
+        if (!resp || !resp.ok) {
             const desc = (resp && resp.description) || 'Telegram error';
-            const friendly = /blocked|not started|chat not found|user not found|bot can't initiate/i.test(desc) ?
+            const isUnreachable = /blocked|not started|chat not found|user not found|bot can't initiate|deactivated|kicked/i.test(desc);
+            if (isUnreachable) {
+                // Telegram told us the user is gone — reflect that in D1 so the
+                // Reachability / Unreachable filters stay accurate without a
+                // manual "Check reachable" pass.
+                try { await env.DB.prepare('UPDATE users SET private_started = 0 WHERE id = ?').bind(userId).run(); } catch (e) {}
+            }
+            const friendly = isUnreachable ?
                 'This user has not started the bot or has blocked it, so we can\'t send them a message.' : desc;
             return apiJson({ error: friendly }, 500);
         }
         const messageId = resp.result && resp.result.message_id;
         if (built && built.both && built.replyMarkup) {
-            await tgFetchJson(`https://api.telegram.org/bot${token}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: userId, text: ' ', reply_markup: JSON.stringify(built.replyMarkup) }) });
+            await tgCall(token, 'sendMessage', { chat_id: userId, text: ' ', reply_markup: built.replyMarkup });
         }
         if (built && built.replySpec && built.replySpec.actions) await mergeReplyActions(env.DB, built.replySpec.actions);
-        await logDm(env.DB, userId, 'out', 'admin', kind, message || '', photoUrl || null, messageId, buttonsJson || null);
+        await logDm(env.DB, userId, 'out', 'admin', mediaType, message || '', photoUrl || null, messageId, buttonsJson || null, fileId || null, mediaMeta);
         await logAction(env.DB, userId, 'Direct message sent');
-        return apiJson({ success: true, message_id: messageId });
+        return apiJson({ success: true, message_id: messageId, media_type: mediaType });
     } catch (err) { return internalError(err); }
 }
 async function editSentMessage(request, env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
-        const { chatId, messageId, text, photo_url: photoUrl, buttons_json: buttonsJson } = await request.json();
+        const body = await request.json();
+        const { chatId, messageId, text, photo_url: photoUrl, buttons_json: buttonsJson } = body;
         if (!chatId || !messageId) return apiJson({ error: 'Missing chatId or messageId.' }, 400);
         await initializeDatabase(env.DB);
         const token = await getSetting(env.DB, 'bot_token');
@@ -7544,28 +9359,26 @@ async function editSentMessage(request, env) {
         // Detect text↔photo conversions and photo URL changes so we can
         // delete the old message and send a fresh one — Telegram cannot
         // change a message's media type in place.
-        const stored = await env.DB.prepare('SELECT kind, photo_url FROM dm_messages WHERE chat_id = ? AND message_id = ?').bind(chatId, messageId).first();
+        const stored = await env.DB.prepare('SELECT kind, photo_url, file_id, media_meta FROM dm_messages WHERE chat_id = ? AND message_id = ?').bind(chatId, messageId).first();
         const storedKind = stored ? (stored.kind || 'text') : null;
-        const storedPhoto = stored ? (stored.photo_url || null) : null;
-        const newKind = photoUrl ? 'photo' : 'text';
+        const storedMediaRef = stored ? (stored.file_id || stored.photo_url || null) : null;
+        const newKind = normalizeMediaType(body.media_type || (photoUrl ? 'photo' : 'text'));
+        const newFileId = body.file_id ? String(body.file_id).trim() : '';
+        const newMediaRef = newFileId || photoUrl || '';
+        const newMediaMeta = parseMediaMeta(body.media_meta);
         const typeChanged = storedKind && storedKind !== newKind;
-        const photoChanged = storedKind === 'photo' && newKind === 'photo' && photoUrl && storedPhoto !== photoUrl;
+        const mediaChanged = newKind !== 'text' && newMediaRef && storedMediaRef !== newMediaRef;
 
         const built = buttonsJson ? buildReplyMarkup(buttonsJson) : null;
         const inlineMarkup = built && built.inlineMarkup ? built.inlineMarkup : null;
 
-        if (typeChanged || photoChanged) {
+        if (typeChanged || mediaChanged) {
             await tgCall(token, 'deleteMessage', { chat_id: chatId, message_id: messageId }, { retry: false });
-            const payload = { chat_id: chatId };
-            if (photoUrl) { payload.photo = photoUrl; if (text) { payload.caption = text; payload.parse_mode = 'HTML'; } }
-            else { payload.text = text || ' '; payload.parse_mode = 'HTML'; }
-            if (inlineMarkup) payload.reply_markup = inlineMarkup;
-            const method = photoUrl ? 'sendPhoto' : 'sendMessage';
-            let resp = await tgCall(token, method, payload);
-            if ((!resp || !resp.ok) && isHtmlParseError(resp)) {
-                const plain = Object.assign({}, payload); delete plain.parse_mode;
-                if (photoUrl) { if (text) plain.caption = htmlToPlain(text); } else plain.text = htmlToPlain(text || ' ');
-                resp = await tgCall(token, method, plain);
+            let resp;
+            if (newKind === 'text') {
+                resp = await sendRichText(token, chatId, text || ' ', inlineMarkup ? { reply_markup: inlineMarkup } : {});
+            } else {
+                resp = await sendMediaMessage(token, chatId, newKind, newMediaRef, text || '', inlineMarkup, newMediaMeta);
             }
             if (!resp || !resp.ok) return apiJson({ error: (resp && resp.description) || 'Telegram error' }, 500);
             const newMessageId = resp.result && resp.result.message_id;
@@ -7573,24 +9386,23 @@ async function editSentMessage(request, env) {
                 await tgCall(token, 'sendMessage', { chat_id: chatId, text: ' ', reply_markup: JSON.stringify(built.replyMarkup) });
             }
             if (built && built.replySpec && built.replySpec.actions) await mergeReplyActions(env.DB, built.replySpec.actions);
-            // Replace the row so future edits target the new message ID.
             await env.DB.prepare('DELETE FROM dm_messages WHERE chat_id = ? AND message_id = ?').bind(chatId, messageId).run();
-            await logDm(env.DB, chatId, 'out', 'admin', newKind, text || '', photoUrl || null, newMessageId, buttonsJson || null);
+            await logDm(env.DB, chatId, 'out', 'admin', newKind, text || '', photoUrl || null, newMessageId, buttonsJson || null, newFileId || null, newMediaMeta);
             await env.DB.prepare('UPDATE dm_messages SET edited_at = CURRENT_TIMESTAMP WHERE chat_id = ? AND message_id = ?').bind(chatId, newMessageId).run();
             await logAction(env.DB, chatId, 'Direct message replaced (' + (storedKind || 'unknown') + ' → ' + newKind + ')');
             return apiJson({ success: true, message_id: newMessageId, converted: true });
         }
 
-        const isPhoto = newKind === 'photo';
-        const method = isPhoto ? 'editMessageCaption' : 'editMessageText';
+        const isMedia = newKind !== 'text';
+        const method = isMedia ? 'editMessageCaption' : 'editMessageText';
         const payload = { chat_id: chatId, message_id: messageId };
-        if (isPhoto) { if (text) payload.caption = text; } else payload.text = text || ' ';
+        if (isMedia) { if (text) payload.caption = text; } else payload.text = text || ' ';
         payload.reply_markup = inlineMarkup || { inline_keyboard: [] };
         payload.parse_mode = 'HTML';
         let resp = await tgCall(token, method, payload);
         if (!resp.ok && isHtmlParseError(resp)) {
             const plain = Object.assign({}, payload); delete plain.parse_mode;
-            if (isPhoto) { if (text) plain.caption = htmlToPlain(text); } else plain.text = htmlToPlain(text || ' ');
+            if (isMedia) { if (text) plain.caption = htmlToPlain(text); } else plain.text = htmlToPlain(text || ' ');
             resp = await tgCall(token, method, plain);
         }
         if (!resp.ok) return apiJson({ error: (resp && resp.description) || 'Telegram error' }, 500);
@@ -7599,8 +9411,8 @@ async function editSentMessage(request, env) {
         }
         if (built && built.replySpec && built.replySpec.actions) await mergeReplyActions(env.DB, built.replySpec.actions);
         try {
-            await env.DB.prepare('UPDATE dm_messages SET text = ?, buttons_json = ?, photo_url = ?, kind = ?, edited_at = CURRENT_TIMESTAMP WHERE chat_id = ? AND message_id = ?')
-                .bind(text || '', buttonsJson || null, photoUrl || null, newKind, chatId, messageId).run();
+            await env.DB.prepare('UPDATE dm_messages SET text = ?, buttons_json = ?, photo_url = ?, file_id = ?, media_meta = ?, kind = ?, edited_at = CURRENT_TIMESTAMP WHERE chat_id = ? AND message_id = ?')
+                .bind(text || '', buttonsJson || null, photoUrl || null, newFileId || null, JSON.stringify(newMediaMeta || {}), newKind, chatId, messageId).run();
         } catch (e) {}
         await logAction(env.DB, chatId, 'Direct message edited');
         return apiJson({ success: true });
@@ -7631,6 +9443,7 @@ const GROUP_DEFAULT_SETTINGS = {
     ai: 'inherit', ai_trigger: 'inherit', memory: 'inherit', mention: 'inherit',
     welcome_enabled: false, welcome_text: '', rules_text: '',
     anti_flood: false, flood_limit: 6, flood_mute_minutes: 0,
+    flood_action: 'mute', flood_kick_after: 2, flood_ban_after: 2,
     link_filter: false, link_filter_level: 'admins',
     anti_forward: false, anti_forward_level: 'admins',
     blacklist_words: '', blacklist_level: 'admins',
@@ -7671,6 +9484,11 @@ function normalizeGroupSettings(raw) {
     out.flood_limit = Number.isFinite(limit) ? Math.min(Math.max(limit, 2), 60) : 6;
     const muteMin = parseInt(out.flood_mute_minutes, 10);
     out.flood_mute_minutes = Number.isFinite(muteMin) && muteMin > 0 ? Math.min(muteMin, 1440) : 0;
+    if (!['mute', 'kick', 'ban'].includes(out.flood_action)) out.flood_action = 'mute';
+    const kickAfter = parseInt(out.flood_kick_after, 10);
+    out.flood_kick_after = Number.isFinite(kickAfter) && kickAfter > 0 ? Math.min(kickAfter, 20) : 2;
+    const banAfter = parseInt(out.flood_ban_after, 10);
+    out.flood_ban_after = Number.isFinite(banAfter) && banAfter > 0 ? Math.min(banAfter, 20) : 2;
     return out;
 }
 async function getGroups(env) {
@@ -7782,19 +9600,25 @@ async function sendGroupMessage(request, env, url) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         const id = parseInt(url.pathname.split('/')[3]);
-        const { message, photo_url: photoUrl, buttons_json: buttonsJson } = await request.json();
-        if (!message && !photoUrl) return apiJson({ error: 'Please write a message or set a photo.' }, 400);
+        const body = await request.json();
+        const { message, photo_url: photoUrl, buttons_json: buttonsJson,
+                media_type: mediaTypeRaw, file_id: fileIdRaw, media_meta: mediaMetaRaw } = body;
+        const mediaType = normalizeMediaType(mediaTypeRaw || (photoUrl ? 'photo' : 'text'));
+        const fileId = fileIdRaw ? String(fileIdRaw).trim() : '';
+        const mediaMeta = parseMediaMeta(mediaMetaRaw);
+        if (!message && !photoUrl && !fileId) return apiJson({ error: 'Please write a message or attach media.' }, 400);
         await initializeDatabase(env.DB);
         const token = await getSetting(env.DB, 'bot_token');
         if (!token) return apiJson({ error: 'Bot token is not set.' }, 400);
         const built = buttonsJson ? buildReplyMarkup(buttonsJson) : null;
         const markup = built && built.markup ? built.markup : null;
-        const payload = { chat_id: id };
-        if (photoUrl) { payload.photo = photoUrl; if (message) { payload.caption = message; payload.parse_mode = 'HTML'; } }
-        else { payload.text = message; payload.parse_mode = 'HTML'; }
-        if (markup) payload.reply_markup = markup;
-        const method = photoUrl ? 'sendPhoto' : 'sendMessage';
-        const resp = await tgCall(token, method, payload);
+        const mediaPayload = fileId || photoUrl || '';
+        let resp;
+        if (mediaType === 'text') {
+            resp = await sendRichText(token, id, message || '', markup ? { reply_markup: markup } : {});
+        } else {
+            resp = await sendMediaMessage(token, id, mediaType, mediaPayload, message || '', markup, mediaMeta);
+        }
         if (!resp || !resp.ok) return apiJson({ error: (resp && resp.description) || 'Telegram error' }, 500);
         if (built && built.both && built.replyMarkup) await tgCall(token, 'sendMessage', { chat_id: id, text: ' ', reply_markup: built.replyMarkup });
         if (built && built.replySpec && built.replySpec.actions) await mergeReplyActions(env.DB, built.replySpec.actions);
@@ -7821,6 +9645,66 @@ async function upsertGroup(db, chat, isActive) {
         `).bind(chat.id, chat.title || '', chat.type || 'group', chat.username || '', isActive ? 1 : 0).run();
     } catch (e) {}
 }
+async function applyFloodEscalation(env, BOT_TOKEN, chatId, userId, groupSettings) {
+    // Escalation ladder — mute first (N times), then kick (M times), then ban.
+    const strikes = (await env.DB.prepare('SELECT mute_count, kick_count, banned FROM group_strikes WHERE chat_id = ? AND user_id = ?').bind(chatId, userId).first()) || { mute_count: 0, kick_count: 0, banned: 0 };
+    if (strikes.banned) return { action: 'skip' };
+
+    const firstAction = groupSettings.flood_action || 'mute';
+    const kickAfter = groupSettings.flood_kick_after || 2;
+    const banAfter = groupSettings.flood_ban_after || 2;
+    let action = 'mute';
+
+    if (firstAction === 'ban') {
+        action = 'ban';
+    } else if (firstAction === 'kick') {
+        action = (strikes.kick_count || 0) >= banAfter ? 'ban' : 'kick';
+    } else {
+        if ((strikes.mute_count || 0) >= kickAfter) {
+            action = (strikes.kick_count || 0) >= banAfter ? 'ban' : 'kick';
+        } else {
+            action = 'mute';
+        }
+    }
+
+    const nowSec = Math.floor(Date.now() / 1000);
+    if (action === 'ban') {
+        const res = await tgCall(BOT_TOKEN, 'banChatMember', { chat_id: chatId, user_id: userId });
+        if (res && res.ok) {
+            await env.DB.prepare('INSERT INTO group_strikes (chat_id, user_id, banned, updated_at) VALUES (?, ?, 1, CURRENT_TIMESTAMP) ON CONFLICT(chat_id, user_id) DO UPDATE SET banned = 1, updated_at = CURRENT_TIMESTAMP').bind(chatId, userId).run();
+            await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: '🚫 User banned for repeated flooding.' });
+        } else {
+            await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: '⚠️ Please slow down. (Could not ban — the bot may lack "Ban users" permission.)' });
+        }
+    } else if (action === 'kick') {
+        const res = await tgCall(BOT_TOKEN, 'banChatMember', { chat_id: chatId, user_id: userId });
+        if (res && res.ok) {
+            await tgCall(BOT_TOKEN, 'unbanChatMember', { chat_id: chatId, user_id: userId, only_if_banned: true });
+            await env.DB.prepare('INSERT INTO group_strikes (chat_id, user_id, kick_count, updated_at) VALUES (?, ?, 1, CURRENT_TIMESTAMP) ON CONFLICT(chat_id, user_id) DO UPDATE SET kick_count = kick_count + 1, updated_at = CURRENT_TIMESTAMP').bind(chatId, userId).run();
+            await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: '👢 User kicked for repeated flooding.' });
+        } else {
+            await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: '⚠️ Please slow down. (Could not kick — the bot may lack "Ban users" permission.)' });
+        }
+    } else {
+        const muteMin = parseInt(groupSettings.flood_mute_minutes) || 0;
+        if (muteMin > 0) {
+            const res = await tgCall(BOT_TOKEN, 'restrictChatMember', {
+                chat_id: chatId, user_id: userId,
+                permissions: { can_send_messages: false },
+                until_date: nowSec + muteMin * 60,
+            });
+            if (res && res.ok) {
+                await env.DB.prepare('INSERT INTO group_strikes (chat_id, user_id, mute_count, updated_at) VALUES (?, ?, 1, CURRENT_TIMESTAMP) ON CONFLICT(chat_id, user_id) DO UPDATE SET mute_count = mute_count + 1, updated_at = CURRENT_TIMESTAMP').bind(chatId, userId).run();
+                await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: '🔇 User muted for ' + muteMin + ' minute(s) for flooding.' });
+            } else {
+                await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: '⚠️ Please slow down. (Could not mute — the bot may lack "Restrict members" permission.)' });
+            }
+        } else {
+            await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: '⚠️ Please slow down.' });
+        }
+    }
+    return { action };
+}
 
 // ============================================================================
 // BROADCAST
@@ -7832,7 +9716,12 @@ async function getBroadcastSettings(env) {
         getSetting(env.DB, 'broadcast_delay_ms'),
         getSetting(env.DB, 'broadcast_timeout_ms'),
     ]);
-    const clamp = (v, def, min, max) => Math.min(Math.max(parseInt(v) || def, min), max);
+    // `parseInt(v) || def` treats a valid 0 as falsy and swaps in `def`, which
+    // silently overwrites a user's explicit "0 ms" delay on every load.
+    const clamp = (v, def, min, max) => {
+        const n = parseInt(v);
+        return Math.min(Math.max(isNaN(n) ? def : n, min), max);
+    };
     return { batch_size: clamp(bs, BROADCAST_DEFAULTS.batch_size, 1, 100), delay_ms: clamp(dm, BROADCAST_DEFAULTS.delay_ms, 0, 60000), timeout_ms: clamp(tm, BROADCAST_DEFAULTS.timeout_ms, 2000, 60000) };
 }
 async function handleBroadcastSettings(request, env) {
@@ -7849,21 +9738,22 @@ async function handleBroadcastSettings(request, env) {
 }
 function sleepMs(ms) { return new Promise(r => setTimeout(r, ms)); }
 async function broadcastToUser(token, uid, built, markup, content, timeoutMs) {
-    if (content.kind === 'photo') {
-        const payload = { chat_id: uid, photo: content.photoUrl };
-        if (content.text) { payload.caption = content.text; payload.parse_mode = 'HTML'; }
-        if (markup) payload.reply_markup = markup;
-        let res = await tgCall(token, 'sendPhoto', payload, { timeoutMs });
-        if ((!res || !res.ok) && content.text && isHtmlParseError(res)) res = await tgCall(token, 'sendPhoto', Object.assign({}, payload, { caption: htmlToPlain(content.text) }), { timeoutMs });
-        if (!res || !res.ok) return { ok: false };
-        if (built && built.both && built.replyMarkup) await tgCall(token, 'sendMessage', { chat_id: uid, text: ' ', reply_markup: built.replyMarkup }, { timeoutMs });
-        return { ok: true, messageId: res.result && res.result.message_id };
+    let res;
+    if (content.mediaType === 'text' || !content.mediaType) {
+        const extra = markup ? { reply_markup: markup } : {};
+        res = await sendRichText(token, uid, content.text, extra);
+    } else {
+        res = await sendMediaMessage(token, uid, content.mediaType, content.mediaUrl, content.text || '', markup, content.mediaMeta);
     }
-    const extra = markup ? { reply_markup: markup } : {};
-    const res = await sendRichText(token, uid, content.text, extra);
-    if (!res || !res.ok) return { ok: false };
+    if (!res || !res.ok) {
+        const desc = String((res && res.description) || '');
+        const blocked = /blocked|deactivated|not started|chat not found|user not found|bot can't initiate|kicked/i.test(desc);
+        // Always return the same four keys so TypeScript (and any JS consumers)
+        // can narrow safely without union-property errors.
+        return { ok: false, blocked: !!blocked, skipped: false, messageId: null };
+    }
     if (built && built.both && built.replyMarkup) await tgCall(token, 'sendMessage', { chat_id: uid, text: ' ', reply_markup: built.replyMarkup }, { timeoutMs });
-    return { ok: true, messageId: res.result && res.result.message_id };
+    return { ok: true, blocked: false, skipped: false, messageId: res.result ? res.result.message_id : null };
 }
 async function handleBroadcast(request, env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
@@ -7871,12 +9761,25 @@ async function handleBroadcast(request, env) {
         await initializeDatabase(env.DB);
         const token = await getSetting(env.DB, 'bot_token');
         if (!token) return apiJson({ error: 'Bot token is not configured. Please add it in Settings.' }, 400);
-        const { userIds, message, photo_url: photoUrl, buttons_json: buttonsJson } = await request.json();
-        if ((!message || !String(message).trim()) && !photoUrl) return apiJson({ error: 'Please write a message or set a photo.' }, 400);
+        const bcBody = await request.json();
+        const { userIds, message, photo_url: photoUrl, buttons_json: buttonsJson,
+                media_type: mediaTypeRaw, file_id: fileIdRaw, media_meta: mediaMetaRaw } = bcBody;
+        const mediaType = normalizeMediaType(mediaTypeRaw || (photoUrl ? 'photo' : 'text'));
+        const fileId = fileIdRaw ? String(fileIdRaw).trim() : '';
+        const mediaMeta = parseMediaMeta(mediaMetaRaw);
+        if ((!message || !String(message).trim()) && !photoUrl && !fileId) return apiJson({ error: 'Please write a message or attach media.' }, 400);
         if (!userIds || !userIds.length) return apiJson({ error: 'No recipients selected.' }, 400);
         const built = buttonsJson ? buildReplyMarkup(buttonsJson) : null;
         const markup = built && built.markup ? built.markup : null;
         const uniqueIds = [...new Set(userIds)];
+        // Cloudflare Workers caps subrequests per invocation (50 free / 1000 paid).
+        // Every recipient uses at least one subrequest, so a large broadcast can
+        // silently truncate partway. Warn now, keep the operation best-effort.
+        const SUBREQUEST_SAFE_LIMIT = 40;
+        if (uniqueIds.length > SUBREQUEST_SAFE_LIMIT) {
+            // Log it so the admin can see the warning later in Activity Log.
+            try { await logAction(env.DB, null, `Broadcast warning: ${uniqueIds.length} recipients exceeds safe subrequest limit (${SUBREQUEST_SAFE_LIMIT})`); } catch (e) {}
+        }
         const settings = await getBroadcastSettings(env);
         const blockedSet = new Set();
         for (let i = 0; i < uniqueIds.length; i += 400) {
@@ -7885,30 +9788,44 @@ async function handleBroadcast(request, env) {
             const rows = await env.DB.prepare(`SELECT user_id FROM blocked_users WHERE block_type = 'full' AND user_id IN (${ph})`).bind(...slice).all();
             for (const r of (rows.results || [])) blockedSet.add(r.user_id);
         }
-        const kind = photoUrl ? 'photo' : 'text';
-        const content = { kind, text: message || '', photoUrl: photoUrl || '' };
+        const content = { mediaType, text: message || '', mediaUrl: fileId || photoUrl || '', mediaMeta };
         let broadcastId = null;
         try {
-            const histRes = await env.DB.prepare('INSERT INTO broadcast_history (message, photo_url, kind, buttons_json, recipient_count, sent_count, sent_at) VALUES (?, ?, ?, ?, ?, 0, datetime("now"))').bind(message || '', photoUrl || null, kind, buttonsJson || null, uniqueIds.length).run();
+            const histRes = await env.DB.prepare('INSERT INTO broadcast_history (message, photo_url, kind, buttons_json, file_id, media_meta, recipient_count, sent_count, sent_at) VALUES (?, ?, ?, ?, ?, ?, ?, 0, datetime("now"))').bind(message || '', photoUrl || null, mediaType, buttonsJson || null, fileId || null, JSON.stringify(mediaMeta || {}), uniqueIds.length).run();
             broadcastId = histRes && histRes.meta ? histRes.meta.last_row_id : null;
         } catch (e) {}
         let sent = 0, failed = 0, skipped = 0;
+        const unreachableIds = [];
         const recipientRows = [];
         const chunks = [];
         for (let i = 0; i < uniqueIds.length; i += settings.batch_size) chunks.push(uniqueIds.slice(i, i + settings.batch_size));
         for (let ci = 0; ci < chunks.length; ci++) {
             const results = await Promise.allSettled(chunks[ci].map(async (uid) => {
-                if (blockedSet.has(uid)) return { ok: false, skipped: true };
+                if (blockedSet.has(uid)) return { ok: false, blocked: false, skipped: true, messageId: null };
                 return broadcastToUser(token, uid, built, markup, content, settings.timeout_ms);
             }));
             for (let ri = 0; ri < results.length; ri++) {
                 const r = results[ri];
-                const v = r.status === 'fulfilled' ? r.value : { ok: false };
+                const v = r.status === 'fulfilled' ? r.value : { ok: false, blocked: false, skipped: false, messageId: null };
                 if (v.ok) { sent++; if (broadcastId !== null && v.messageId) recipientRows.push([broadcastId, chunks[ci][ri], v.messageId]); }
                 else if (v.skipped) skipped++;
-                else failed++;
+                else {
+                    failed++;
+                    if (v.blocked) unreachableIds.push(chunks[ci][ri]);
+                }
             }
             if (settings.delay_ms > 0 && ci < chunks.length - 1) await sleepMs(settings.delay_ms);
+        }
+        // Flip private_started = 0 for every recipient Telegram said was blocked.
+        if (unreachableIds.length) {
+            try {
+                for (let i = 0; i < unreachableIds.length; i += 200) {
+                    const slice = unreachableIds.slice(i, i + 200);
+                    const ph = slice.map(() => '?').join(', ');
+                    await env.DB.prepare(`UPDATE users SET private_started = 0 WHERE id IN (${ph})`).bind(...slice).run();
+                }
+                await logAction(env.DB, null, `Marked ${unreachableIds.length} unreachable user(s) after broadcast`);
+            } catch (e) { console.error('Failed to mark unreachable users:', e); }
         }
         if (broadcastId !== null && recipientRows.length) {
             try { await runBatchChunks(env.DB, recipientRows.map(r => env.DB.prepare('INSERT OR IGNORE INTO broadcast_recipients (broadcast_id, chat_id, message_id) VALUES (?, ?, ?)').bind(...r)), 100); } catch (e) {}
@@ -7916,18 +9833,23 @@ async function handleBroadcast(request, env) {
         if (broadcastId !== null) { try { await env.DB.prepare('UPDATE broadcast_history SET sent_count = ? WHERE id = ?').bind(sent, broadcastId).run(); } catch (e) {} }
         if (built && built.replySpec && built.replySpec.actions) await mergeReplyActions(env.DB, built.replySpec.actions);
         await logAction(env.DB, null, `Broadcast sent to ${sent}/${uniqueIds.length}`);
-        return apiJson({ success: true, sent, failed, skipped, broadcast_id: broadcastId });
+        const bcResponse = { success: true, sent, failed, skipped, broadcast_id: broadcastId };
+        if (uniqueIds.length > SUBREQUEST_SAFE_LIMIT) {
+            bcResponse.warning = `You targeted ${uniqueIds.length} recipients, which exceeds Cloudflare's per-invocation subrequest budget on the free plan. If some users show as "sent: no", split the broadcast into batches of ${SUBREQUEST_SAFE_LIMIT} or fewer using the "Specific user IDs" option.`;
+        }
+        return apiJson(bcResponse);
     } catch (e) { return internalError(e); }
 }
 async function editBroadcastMessage(request, env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
-        const { broadcastId, message, buttons_json: buttonsJson, photo_url: photoUrl } = await request.json();
+        const editBody = await request.json();
+        const { broadcastId, message, buttons_json: buttonsJson, photo_url: photoUrl } = editBody;
         if (!broadcastId) return apiJson({ error: 'Missing broadcast ID.' }, 400);
         await initializeDatabase(env.DB);
         const token = await getSetting(env.DB, 'bot_token');
         if (!token) return apiJson({ error: 'Bot token is not set.' }, 400);
-        const hist = await env.DB.prepare('SELECT kind, buttons_json, photo_url FROM broadcast_history WHERE id = ?').bind(broadcastId).first();
+        const hist = await env.DB.prepare('SELECT kind, buttons_json, photo_url, file_id, media_meta FROM broadcast_history WHERE id = ?').bind(broadcastId).first();
         if (!hist) return apiJson({ error: 'Broadcast not found.' }, 404);
         const effectiveButtons = buttonsJson !== undefined ? buttonsJson : hist.buttons_json;
         const built = effectiveButtons ? buildReplyMarkup(effectiveButtons) : null;
@@ -7937,9 +9859,13 @@ async function editBroadcastMessage(request, env) {
         const recipients = recRows.results || [];
 
         const originalKind = hist.kind || 'text';
-        const newKind = photoUrl ? 'photo' : 'text';
+        const newKind = normalizeMediaType(editBody.media_type || (photoUrl ? 'photo' : originalKind || 'text'));
+        const newFileId = editBody.file_id ? String(editBody.file_id).trim() : '';
+        const newMediaRef = newFileId || photoUrl || '';
+        const newMediaMeta = parseMediaMeta(editBody.media_meta);
+        const storedMediaRef = hist.file_id || hist.photo_url || '';
         const typeChanged = originalKind !== newKind;
-        const photoChanged = originalKind === 'photo' && newKind === 'photo' && photoUrl && photoUrl !== (hist.photo_url || '');
+        const photoChanged = newKind !== 'text' && newMediaRef && storedMediaRef !== newMediaRef;
 
         const chunks = [];
         for (let i = 0; i < recipients.length; i += settings.batch_size) chunks.push(recipients.slice(i, i + settings.batch_size));
@@ -7955,12 +9881,12 @@ async function editBroadcastMessage(request, env) {
                         // Best-effort delete: if the old message is gone, still
                         // send the replacement so the chat ends up correct.
                         await tgCall(token, 'deleteMessage', { chat_id: row.chat_id, message_id: row.message_id }, { timeoutMs: settings.timeout_ms, retry: false });
-                        const payload = { chat_id: row.chat_id };
-                        if (photoUrl) { payload.photo = photoUrl; if (message) { payload.caption = message; payload.parse_mode = 'HTML'; } }
-                        else { payload.text = message || ' '; payload.parse_mode = 'HTML'; }
-                        if (inlineMarkup) payload.reply_markup = inlineMarkup;
-                        const method = photoUrl ? 'sendPhoto' : 'sendMessage';
-                        const resp = await tgCall(token, method, payload, { timeoutMs: settings.timeout_ms });
+                        let resp;
+                        if (newKind === 'text') {
+                            resp = await sendRichText(token, row.chat_id, message || ' ', inlineMarkup ? { reply_markup: inlineMarkup } : {});
+                        } else {
+                            resp = await sendMediaMessage(token, row.chat_id, newKind, newMediaRef, message || '', inlineMarkup, newMediaMeta);
+                        }
                         if (!resp || !resp.ok) return null;
                         return { chat_id: row.chat_id, message_id: resp.result && resp.result.message_id };
                     } catch (e) { return null; }
@@ -7978,23 +9904,23 @@ async function editBroadcastMessage(request, env) {
                         .bind(broadcastId, r.chat_id, r.message_id)
                 ), 100);
             }
-            await env.DB.prepare('UPDATE broadcast_history SET message = ?, buttons_json = ?, kind = ?, photo_url = ?, sent_count = ? WHERE id = ?')
-                .bind(message || '', effectiveButtons || null, newKind, photoUrl || null, updated, broadcastId).run();
+            await env.DB.prepare('UPDATE broadcast_history SET message = ?, buttons_json = ?, kind = ?, photo_url = ?, file_id = ?, media_meta = ?, sent_count = ? WHERE id = ?')
+                .bind(message || '', effectiveButtons || null, newKind, photoUrl || null, newFileId || null, JSON.stringify(newMediaMeta || {}), updated, broadcastId).run();
             await logAction(env.DB, null, `Broadcast #${broadcastId} converted ${originalKind}→${newKind} (${updated}/${recipients.length})`);
             return apiJson({ success: true, updated, failed, total: recipients.length, converted: true });
         }
 
-        const isPhoto = newKind === 'photo';
-        const method = isPhoto ? 'editMessageCaption' : 'editMessageText';
+        const isMedia = newKind !== 'text';
+        const method = isMedia ? 'editMessageCaption' : 'editMessageText';
         for (let ci = 0; ci < chunks.length; ci++) {
             const results = await Promise.allSettled(chunks[ci].map(async (row) => {
                 const payload = { chat_id: row.chat_id, message_id: row.message_id, parse_mode: 'HTML' };
-                if (isPhoto) { if (message) payload.caption = message; } else payload.text = message || ' ';
+                if (isMedia) { if (message) payload.caption = message; } else payload.text = message || ' ';
                 payload.reply_markup = inlineMarkup || { inline_keyboard: [] };
                 let resp = await tgCall(token, method, payload, { timeoutMs: settings.timeout_ms });
                 if ((!resp || !resp.ok) && isHtmlParseError(resp)) {
                     const plain = Object.assign({}, payload); delete plain.parse_mode;
-                    if (isPhoto) { if (message) plain.caption = htmlToPlain(message); } else plain.text = htmlToPlain(message || ' ');
+                    if (isMedia) { if (message) plain.caption = htmlToPlain(message); } else plain.text = htmlToPlain(message || ' ');
                     resp = await tgCall(token, method, plain, { timeoutMs: settings.timeout_ms });
                 }
                 return !!(resp && resp.ok);
@@ -8508,12 +10434,14 @@ async function getSettings(env, originUrl) {
         const [token, webhook, cfToken] = await Promise.all([
             getSetting(env.DB, 'bot_token'), getSetting(env.DB, 'webhook_url'), getSetting(env.DB, 'cf_api_token'),
         ]);
+        const mediaStorage = await getSetting(env.DB, 'media_storage_chat_id');
         return apiJson({
             bot_token_masked: maskSecret(token),
             bot_token_set: !!token,
             webhook_url: webhook || `${originUrl}/webhook`,
             cf_token_masked: maskSecret(cfToken),
             cf_token_set: !!cfToken,
+            media_storage_chat_id: mediaStorage || '',
         });
     } catch (err) { return internalError(err); }
 }
@@ -8585,6 +10513,17 @@ async function updateBotToken(request, env, originUrl) {
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
 }
+async function saveMediaStorageChat(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const body = await request.json();
+        const chatId = String(body.chatId || '').trim();
+        await initializeDatabase(env.DB);
+        await setSetting(env.DB, 'media_storage_chat_id', chatId);
+        await logAction(env.DB, null, 'Media storage chat updated');
+        return apiJson({ success: true, chat_id: chatId });
+    } catch (err) { return internalError(err); }
+}
 async function handleWebhookTest(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
@@ -8630,6 +10569,87 @@ async function handleWebhookFix(env, originUrl) {
         return apiJson({ success: true, fixed, url: result.url || '', expected_url: expectedUrl, registered: !!result.url, url_matches: !!(result.url === expectedUrl), pending_updates: result.pending_update_count || 0, last_error: result.last_error_message || '' });
     } catch (err) { return internalError(err); }
 }
+async function handleWebhookDiagnostics(env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        const token = await getSetting(env.DB, 'bot_token');
+        if (!token) return apiJson({ error: 'Bot token is not set. Please add it first.' }, 400);
+        const expectedUrl = (await getSetting(env.DB, 'webhook_url')) || '';
+        let getMeMs = -1, getMeOk = false;
+        try {
+            const t0 = Date.now();
+            const me = await tgFetchJson(`https://api.telegram.org/bot${token}/getMe`);
+            getMeMs = Date.now() - t0;
+            getMeOk = !!(me && me.ok);
+        } catch (e) {}
+        let webhookMs = -1, info = null;
+        try {
+            const t1 = Date.now();
+            const r = await tgFetchJson(`https://api.telegram.org/bot${token}/getWebhookInfo`);
+            webhookMs = Date.now() - t1;
+            info = r && r.ok ? (r.result || {}) : null;
+        } catch (e) {}
+        return apiJson({
+            success: true,
+            getMeOk, getMeMs, webhookMs,
+            webhookUrl: info ? info.url || '' : '',
+            expectedUrl,
+            urlMatches: !!(info && expectedUrl && info.url === expectedUrl),
+            pendingUpdates: info ? info.pending_update_count || 0 : 0,
+            lastErrorMessage: info ? info.last_error_message || '' : '',
+        });
+    } catch (err) { return internalError(err); }
+}
+async function handleSchemaHealth(env) {
+    // Dry-run: introspect DB and report drift without applying fixes.
+    // Does NOT call initializeDatabase, so it reports the real state.
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const drift = {
+            missingTables: [], missingColumns: [],
+            currentVersion: null, expectedVersion: SCHEMA_VERSION,
+            versionOutdated: false,
+            cleanupWillRun: SCHEMA_CLEANUPS.length > 0,
+        };
+        let verRow = null;
+        try { verRow = await env.DB.prepare("SELECT value FROM settings WHERE key = 'schema_version'").first(); } catch (e) {}
+        drift.currentVersion = verRow ? parseInt(verRow.value) || 0 : 0;
+        drift.versionOutdated = drift.currentVersion !== SCHEMA_VERSION;
+        for (const [tableName, spec] of Object.entries(DESIRED_SCHEMA)) {
+            const exists = await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").bind(tableName).first();
+            if (!exists) { drift.missingTables.push(tableName); continue; }
+            try {
+                const info = await env.DB.prepare(`PRAGMA table_info(${tableName})`).all();
+                const actual = new Set((info.results || []).map(c => c.name));
+                for (const colName of Object.keys(spec.columns)) {
+                    if (!actual.has(colName)) drift.missingColumns.push(tableName + '.' + colName);
+                }
+            } catch (e) { /* ignore */ }
+        }
+        const healthy = drift.missingTables.length === 0 && drift.missingColumns.length === 0 && !drift.versionOutdated;
+        return apiJson({ success: true, healthy, drift });
+    } catch (err) { return internalError(err); }
+}
+
+async function handleSchemaHeal(env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        // Run heal without the read-through cache, so its version read is
+        // accurate even if the app has already cold-started.
+        const result = await autoHealSchema(env.DB);
+        const cleanedCount = Object.values(result.cleanedRows || {}).reduce((a, b) => a + b, 0);
+        const nothingHealed = result.tablesCreated.length === 0
+            && result.columnsAdded.length === 0
+            && result.settingsInserted.length === 0
+            && cleanedCount === 0
+            && result.warnings.length === 0
+            && result.versionBefore === result.versionAfter;
+        await logAction(env.DB, null, 'Schema auto-heal: ' + JSON.stringify(result).slice(0, 1500));
+        return apiJson({ success: true, healed: !nothingHealed, result });
+    } catch (err) { return internalError(err); }
+}
+
 async function changeAdminPassword(request, env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
@@ -8637,11 +10657,23 @@ async function changeAdminPassword(request, env) {
         if (!newPassword || newPassword.length < 6) return apiJson({ error: 'Password must be at least 6 characters.' }, 400);
         await initializeDatabase(env.DB);
         await setSetting(env.DB, 'admin_password', await hashPassword(newPassword));
+        // Bump password_version so every session on every worker isolate is
+        // invalidated the next time it is checked. (This replaces the old
+        // per-isolate memory-only invalidation.)
+        const newPv = String(Date.now());
+        await setSetting(env.DB, 'password_version', newPv);
         const cookie = request.headers.get('Cookie') || '';
         const part = cookie.split(';').find(c => c.trim().startsWith('session='));
         const currentToken = part ? part.split('=')[1].trim() : null;
-        if (currentToken) await env.DB.prepare('DELETE FROM sessions WHERE user_id IS NULL AND token != ?').bind(currentToken).run();
-        else await env.DB.prepare('DELETE FROM sessions WHERE user_id IS NULL').run();
+        if (currentToken) {
+            const newCsrf = crypto.randomUUID().replace(/-/g, '');
+            await env.DB.prepare('DELETE FROM sessions WHERE user_id IS NULL AND token != ?').bind(currentToken).run();
+            await env.DB.prepare('UPDATE sessions SET password_version = ?, csrf_token = ? WHERE token = ?').bind(newPv, newCsrf, currentToken).run();
+            invalidateSessionCache();
+            await logAction(env.DB, null, 'Admin password changed');
+            return apiJson({ success: true, csrf: newCsrf });
+        }
+        await env.DB.prepare('DELETE FROM sessions WHERE user_id IS NULL').run();
         invalidateSessionCache();
         await logAction(env.DB, null, 'Admin password changed');
         return apiJson({ success: true });
@@ -8694,13 +10726,13 @@ async function exportBackup(env) {
         await initializeDatabase(env.DB);
         const [commands, featured, users, messages, settingsRows, broadcastRows, groupsRows, dmRows] = await Promise.all([
             env.DB.prepare('SELECT * FROM commands').all(),
-            env.DB.prepare('SELECT command, kind, content, buttons_json, success_text, failure_text, admin_only, access_level, enabled FROM featured_replies').all(),
+            env.DB.prepare('SELECT command, kind, content, buttons_json, success_text, failure_text, admin_only, access_level, enabled, button_style FROM featured_replies').all(),
             env.DB.prepare('SELECT * FROM users').all(),
             env.DB.prepare('SELECT chat_id, role, content, timestamp FROM ai_messages ORDER BY id').all(),
             env.DB.prepare('SELECT key, value FROM settings').all(),
-            env.DB.prepare('SELECT message, photo_url, kind, buttons_json, recipient_count, sent_count, sent_at FROM broadcast_history ORDER BY id').all(),
+            env.DB.prepare('SELECT message, photo_url, kind, buttons_json, file_id, media_meta, recipient_count, sent_count, sent_at FROM broadcast_history ORDER BY id').all(),
             env.DB.prepare('SELECT * FROM groups').all(),
-            env.DB.prepare('SELECT chat_id, direction, source, kind, text, photo_url, created_at FROM dm_messages ORDER BY id').all(),
+            env.DB.prepare('SELECT chat_id, message_id, direction, source, kind, text, photo_url, file_id, media_meta, buttons_json, created_at, edited_at FROM dm_messages ORDER BY id').all(),
         ]);
         const settings = {};
         for (const row of settingsRows.results) settings[row.key] = row.value;
@@ -8740,8 +10772,8 @@ async function restoreBackup(request, env) {
         if (wants('commands') && Array.isArray(data.commands)) {
             await runBatchChunks(env.DB, data.commands.filter(c => c && c.command).map(c => {
                 const access = effectiveCommandAccess(c);
-                return env.DB.prepare(`INSERT INTO commands (command, parent, response_type, content, media_url, buttons_json, is_admin_only, access_level, enabled, show_reply_keyboard, reply_keyboard_json, order_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-                    .bind(c.command, c.parent || null, c.response_type || 'text', c.content || '', c.media_url || '', c.buttons_json || '', access === 'admin' ? 1 : 0, access, c.enabled !== undefined ? c.enabled : 1, c.show_reply_keyboard ? 1 : 0, c.reply_keyboard_json || '', c.order_idx || 0);
+                return env.DB.prepare(`INSERT INTO commands (command, parent, response_type, content, media_url, file_id, media_meta, buttons_json, is_admin_only, access_level, enabled, show_reply_keyboard, reply_keyboard_json, order_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+                    .bind(c.command, c.parent || null, c.response_type || 'text', c.content || '', c.media_url || '', c.file_id || '', c.media_meta || '', c.buttons_json || '', access === 'admin' ? 1 : 0, access, c.enabled !== undefined ? c.enabled : 1, c.show_reply_keyboard ? 1 : 0, c.reply_keyboard_json || '', c.order_idx || 0);
             }));
         }
         if (wants('featured') && Array.isArray(data.featured)) {
@@ -8752,11 +10784,12 @@ async function restoreBackup(request, env) {
                     ? f.access_level
                     : (f.admin_only ? 'admin' : 'everyone');
                 return env.DB.prepare(
-                    'INSERT INTO featured_replies (command, kind, content, buttons_json, success_text, failure_text, admin_only, access_level, enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                    'INSERT INTO featured_replies (command, kind, content, buttons_json, success_text, failure_text, admin_only, access_level, enabled, button_style) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
                 ).bind(
                     f.command, f.kind || 'text', f.content || '', null,
                     f.success_text || '', f.failure_text || '',
-                    access === 'admin' ? 1 : 0, access, f.enabled ? 1 : 0
+                    access === 'admin' ? 1 : 0, access, f.enabled ? 1 : 0,
+                    ['primary', 'success', 'danger'].includes(f.button_style) ? f.button_style : ''
                 );
             }));
         }
@@ -8773,8 +10806,8 @@ async function restoreBackup(request, env) {
                 .bind(m.chat_id, m.role || 'user', m.content, m.timestamp || new Date().toISOString())));
         }
         if (wants('dm_messages') && Array.isArray(data.dm_messages)) {
-            await runBatchChunks(env.DB, data.dm_messages.filter(m => m && m.chat_id).map(m => env.DB.prepare('INSERT INTO dm_messages (chat_id, direction, source, kind, text, photo_url, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
-                .bind(m.chat_id, m.direction || 'in', m.source || null, m.kind || 'text', m.text || '', m.photo_url || null, m.created_at || new Date().toISOString())));
+            await runBatchChunks(env.DB, data.dm_messages.filter(m => m && m.chat_id).map(m => env.DB.prepare('INSERT INTO dm_messages (chat_id, direction, source, kind, text, photo_url, file_id, media_meta, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+                .bind(m.chat_id, m.direction || 'in', m.source || null, m.kind || 'text', m.text || '', m.photo_url || null, m.file_id || null, m.media_meta || null, m.created_at || new Date().toISOString())));
         }
         if (wants('groups') && Array.isArray(data.groups)) {
             for (const g of data.groups) {
@@ -8784,8 +10817,8 @@ async function restoreBackup(request, env) {
             }
         }
         if (wants('broadcast_history') && Array.isArray(data.broadcast_history)) {
-            await runBatchChunks(env.DB, data.broadcast_history.filter(h => h && h.message).map(h => env.DB.prepare('INSERT INTO broadcast_history (message, photo_url, kind, buttons_json, recipient_count, sent_count, sent_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
-                .bind(h.message, h.photo_url || null, h.kind || 'text', h.buttons_json || null, h.recipient_count || 0, h.sent_count || 0, h.sent_at || new Date().toISOString())));
+            await runBatchChunks(env.DB, data.broadcast_history.filter(h => h && h.message).map(h => env.DB.prepare('INSERT INTO broadcast_history (message, photo_url, kind, buttons_json, file_id, media_meta, recipient_count, sent_count, sent_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+                .bind(h.message, h.photo_url || null, h.kind || 'text', h.buttons_json || null, h.file_id || null, h.media_meta || null, h.recipient_count || 0, h.sent_count || 0, h.sent_at || new Date().toISOString())));
         }
         const settings = data.settings || {};
         const setStmts = [];
@@ -8819,9 +10852,93 @@ async function factoryReset(request, env) {
         invalidateSessionCache();
         aiSettingsCache.data = null;
         invalidateReplyButtonMap();
+        replyActionsCache = { data: null, fetchedAt: 0 };
+        botUsernameCache.username = null; botUsernameCache.fetchedAt = 0;
+        botNameCache.name = null; botNameCache.fetchedAt = 0;
+        mcpTokenCache.clear();
+        _permCache.delete(env);
         await logAction(env.DB, null, 'FACTORY RESET performed');
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
+}
+
+// ============================================================================
+// UPLOAD & FILE PROXY (media for commands/messages)
+// ============================================================================
+async function handleUploadMedia(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        const token = await getSetting(env.DB, 'bot_token');
+        if (!token) return apiJson({ error: 'Bot token is not set. Add it in Settings first.' }, 400);
+        const storageChat = (await getSetting(env.DB, 'media_storage_chat_id')) || '';
+        if (!storageChat) return apiJson({ error: 'Set a "Media storage chat ID" in Settings → Media storage. Use your own Telegram user ID after you have started the bot.' }, 400);
+
+        const contentType = request.headers.get('Content-Type') || '';
+        if (!contentType.includes('multipart/form-data')) return apiJson({ error: 'Upload must be multipart/form-data.' }, 400);
+        const form = await request.formData();
+        const file = form.get('file');
+        const mediaType = normalizeMediaType(form.get('media_type'));
+        if (!file || typeof file === 'string') return apiJson({ error: 'No file attached.' }, 400);
+        const def = MEDIA_TYPE_METHODS[mediaType];
+        if (!def) return apiJson({ error: 'Unsupported media type for upload.' }, 400);
+
+        const tgForm = new FormData();
+        tgForm.append('chat_id', String(storageChat));
+        tgForm.append('disable_notification', 'true');
+        tgForm.append(def.field, file, file.name || 'upload.bin');
+        if (mediaType === 'video' || mediaType === 'animation' || mediaType === 'video_note') {
+            tgForm.append('supports_streaming', 'true');
+        }
+
+        const res = await fetch(`https://api.telegram.org/bot${token}/${def.method}`, { method: 'POST', body: tgForm });
+        const data = await res.json().catch(() => null);
+        if (!data || !data.ok) return apiJson({ error: (data && data.description) || 'Telegram rejected the upload.' }, 500);
+
+        const sent = data.result || {};
+        // Telegram returns PhotoSize as an ARRAY for `photo` (one entry per
+        // resolution), so `sent.photo.file_id` is always undefined. Pick the
+        // largest variant. All other media types are plain objects.
+        const mediaObj = mediaType === 'photo'
+            ? (Array.isArray(sent.photo) ? sent.photo[sent.photo.length - 1] : sent.photo)
+            : sent[mediaType];
+        const fileId = mediaObj && mediaObj.file_id ? mediaObj.file_id : '';
+        if (!fileId) return apiJson({ error: 'Telegram accepted the upload but returned no file_id. Try again.' }, 500);
+        const mediaMeta = {};
+
+        if (mediaType === 'voice')     { mediaMeta.duration   = sent.voice && sent.voice.duration; }
+        if (mediaType === 'audio')     { mediaMeta.duration   = sent.audio && sent.audio.duration; mediaMeta.performer = sent.audio && sent.audio.performer; mediaMeta.title = sent.audio && sent.audio.title; mediaMeta.file_name = sent.audio && sent.audio.file_name; }
+        if (mediaType === 'video')     { mediaMeta.duration   = sent.video && sent.video.duration; mediaMeta.width = sent.video && sent.video.width; mediaMeta.height = sent.video && sent.video.height; mediaMeta.file_name = sent.video && sent.video.file_name; }
+        if (mediaType === 'animation') { mediaMeta.duration   = sent.animation && sent.animation.duration; mediaMeta.width = sent.animation && sent.animation.width; mediaMeta.height = sent.animation && sent.animation.height; }
+        if (mediaType === 'video_note'){ mediaMeta.duration   = sent.video_note && sent.video_note.duration; mediaMeta.length = sent.video_note && sent.video_note.length; }
+        if (mediaType === 'photo')     { mediaMeta.width      = sent.photo && sent.photo[0] && sent.photo[0].width; mediaMeta.height = sent.photo && sent.photo[0] && sent.photo[0].height; }
+        if (mediaType === 'document')  { mediaMeta.file_name  = sent.document && sent.document.file_name; }
+
+        // Clean up the storage chat so it doesn't fill up.
+        if (sent.message_id) await tgCall(token, 'deleteMessage', { chat_id: storageChat, message_id: sent.message_id }, { retry: false });
+
+        return apiJson({ success: true, file_id: fileId, media_type: mediaType, media_meta: mediaMeta });
+    } catch (err) { return internalError(err); }
+}
+async function handleFileProxy(request, env, url) {
+    if (!env.DB) return new Response('DB not available', { status: 500 });
+    const session = await getSession(request, env);
+    if (!session) return new Response('Unauthorized', { status: 401 });
+    const fileId = decodeURIComponent(url.pathname.replace('/api/file/', ''));
+    if (!fileId) return new Response('Missing file id', { status: 400 });
+    await initializeDatabase(env.DB);
+    const token = await getSetting(env.DB, 'bot_token');
+    if (!token) return new Response('Bot token not set', { status: 400 });
+    try {
+        const info = await tgFetchJson(`https://api.telegram.org/bot${token}/getFile?file_id=${encodeURIComponent(fileId)}`);
+        if (!info || !info.ok || !info.result || !info.result.file_path) return new Response('File unavailable', { status: 404 });
+        const fileRes = await fetch(`https://api.telegram.org/file/bot${token}/${info.result.file_path}`);
+        const headers = new Headers();
+        headers.set('Content-Type', fileRes.headers.get('Content-Type') || 'application/octet-stream');
+        headers.set('Cache-Control', 'private, max-age=3600');
+        headers.set('X-Content-Type-Options', 'nosniff');
+        return new Response(fileRes.body, { status: 200, headers });
+    } catch (e) { return new Response('File unavailable', { status: 500 }); }
 }
 
 // ============================================================================
@@ -8940,15 +11057,6 @@ async function performUpdate(request, env) {
 // ============================================================================
 // CLOUDFLARE OAUTH HANDLERS
 // ============================================================================
-function b64url(bytes) {
-  let s = ''; for (const b of bytes) s += String.fromCharCode(b);
-  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-function randomB64url(n) { const a = new Uint8Array(n); crypto.getRandomValues(a); return b64url(a); }
-async function pkceChallenge(verifier) {
-  const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
-  return b64url(new Uint8Array(d));
-}
 
 async function getStoredCfOAuth(db) {
   const keys = Object.values(CF_OAUTH_KEYS);
@@ -9039,10 +11147,13 @@ async function handleCfOAuthCallback(request, env) {
 
   let res, tokens;
   try {
+    // Prefer env.RELAY_SECRET; fall back to the compiled-in default so
+    // existing deployments keep working until the secret is rotated.
+    const relaySecret = (env && env.RELAY_SECRET) ? String(env.RELAY_SECRET) : RELAY_EXCHANGE_SECRET;
     res = await fetch(`${RELAY_BASE}/oauth/exchange`, {
       method: 'POST',
       headers: {
-        'Authorization': 'Bearer ' + RELAY_EXCHANGE_SECRET,
+        'Authorization': 'Bearer ' + relaySecret,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ exchange_code: exchangeCode }),
@@ -9432,8 +11543,10 @@ function normalizeInlineBtn(item) {
         else type = 'callback';
     }
     if (type !== 'url' && type !== 'command' && type !== 'callback') type = 'callback';
-    if (type === 'command' && value.charAt(0) !== '/') return { text, type, value: '/' + value };
-    return { text, type, value };
+    const rawStyle = String(item.style || '').trim();
+    const style = ['primary', 'success', 'danger'].includes(rawStyle) ? rawStyle : '';
+    if (type === 'command' && value.charAt(0) !== '/') return { text, type, value: '/' + value, style };
+    return { text, type, value, style };
 }
 function normalizeInlineRows(input) {
     if (!Array.isArray(input)) return [];
@@ -9458,11 +11571,13 @@ function normalizeReplyInput(rep) {
     const rows = [];
     const actions = {};
     const readBtn = (x) => {
-        if (typeof x === 'string') return { text: x, command: '' };
+        if (typeof x === 'string') return { text: x, command: '', style: '' };
         if (!x || typeof x !== 'object') return null;
         const text = String(x.text || '');
         const cmd = String(x.command || x.value || '').trim();
-        return text ? { text, command: cmd } : null;
+        const rawStyle = String(x.style || '').trim();
+        const style = ['primary', 'success', 'danger'].includes(rawStyle) ? rawStyle : '';
+        return text ? { text, command: cmd, style } : null;
     };
     if (Array.isArray(rep.rows)) {
         for (const r of rep.rows) {
@@ -9495,7 +11610,11 @@ function normalizeReplyInput(rep) {
         actions[b.text] = b.command.startsWith('/') ? b.command : '/' + b.command;
     }
     return {
-        rows: rows.map(row => row.map(b => ({ text: b.text }))),
+        rows: rows.map(row => row.map(b => {
+            const btn = { text: b.text };
+            if (b.style) btn.style = b.style;
+            return btn;
+        })),
         actions,
         resize: rep.resize !== false,
         one_time: rep.one_time === true,
@@ -9575,8 +11694,11 @@ function buildButtonPayloads(args) {
 }
 
 // ---- Tool registry ----------------------------------------------------------
+const _toolDefCache = new Map();
 function getMcpToolDefinitions(categories) {
     const enabled = new Set(categories || ['read', 'write']);
+    const cacheKey = [...enabled].sort().join(',');
+    if (_toolDefCache.has(cacheKey)) return _toolDefCache.get(cacheKey);
     const tools = [];
     const push = (def, cat) => { if (enabled.has(cat)) tools.push(def); };
 
@@ -9667,8 +11789,8 @@ function getMcpToolDefinitions(categories) {
                 type: 'object',
                 description: 'Structured keyboard: inline buttons and/or reply keyboard.',
                 properties: {
-                    inline: { type: 'array', description: 'Inline buttons. Each: {text, type:"callback"|"url"|"command", value}. May be flat (auto-wrapped 3/row) or array-of-arrays for exact rows.' },
-                    reply: { type: 'object', description: 'Reply keyboard: { rows: [[{text},...]], actions: {"Label":"/cmd"}, resize, one_time, persistent, placeholder }.' }
+                    inline: { type: 'array', description: 'Inline buttons. Each: {text, type:"callback"|"url"|"command", value, style:"primary"|"success"|"danger"} — style is optional (blue/green/red); omit for the client default. May be flat (auto-wrapped 3/row) or array-of-arrays for exact rows.' },
+                    reply: { type: 'object', description: 'Reply keyboard: { rows: [[{text, style},...]], actions: {"Label":"/cmd"}, resize, one_time, persistent, placeholder }. Set style on a reply button to color it ("primary"|"success"|"danger").' }
                 }
             },
             buttons_json: { type: 'string', description: 'Advanced: raw JSON for inline buttons column.' },
@@ -9692,7 +11814,7 @@ function getMcpToolDefinitions(categories) {
             enabled: { type: 'boolean' },
             buttons: {
                 type: 'object',
-                description: 'Structured keyboard (same shape as create_command). Omit to keep existing. Pass {inline:[]} to clear inline, {reply:null} to clear reply.'
+                description: 'Structured keyboard (same shape as create_command, including optional style:"primary"|"success"|"danger" on each button). Omit to keep existing. Pass {inline:[]} to clear inline, {reply:null} to clear reply.'
             },
             buttons_json: { type: 'string' },
             reply_keyboard_json: { type: 'string' },
@@ -9740,7 +11862,7 @@ function getMcpToolDefinitions(categories) {
             userId: { type: 'number' },
             text: { type: 'string', description: 'Message text or photo caption (optional if photo_url is provided).' },
             photo_url: { type: 'string' },
-            buttons: { type: 'object', description: 'Optional keyboard.' },
+            buttons: { type: 'object', description: 'Optional keyboard. Per-button color via style:"primary"|"success"|"danger".' },
             buttons_json: { type: 'string' }
         }, required: ['userId'] }
     }}, 'outbound');
@@ -9752,7 +11874,7 @@ function getMcpToolDefinitions(categories) {
             userIds: { type: 'array', items: { type: 'number' }, description: 'Non-empty list of user IDs.' },
             message: { type: 'string' },
             photo_url: { type: 'string' },
-            buttons: { type: 'object', description: 'Optional keyboard.' },
+            buttons: { type: 'object', description: 'Optional keyboard. Per-button color via style:"primary"|"success"|"danger".' },
             buttons_json: { type: 'string' }
         }, required: ['userIds'] }
     }}, 'outbound');
@@ -9775,6 +11897,92 @@ function getMcpToolDefinitions(categories) {
         }, required: ['confirm'] }
     }}, 'dangerous');
 
+    // ── v5.0: user & group management tools ──────────────────────────
+    push({ type: 'function', function: {
+        name: 'get_group_settings',
+        description: 'Read a group\'s full settings (AI mode, flood protection, welcome, rules, permissions, etc.). Call this BEFORE update_group_settings so you can see current values.',
+        parameters: { type: 'object', properties: { groupId: { type: 'number' } }, required: ['groupId'] }
+    }}, 'read');
+
+    push({ type: 'function', function: {
+        name: 'get_user_memory',
+        description: 'Read a single user\'s AI conversation memory. Returns recent messages (role + content + timestamp), oldest first. Useful for understanding context before replying or clearing.',
+        parameters: { type: 'object', properties: {
+            userId: { type: 'number' },
+            limit: { type: 'number', description: 'How many recent messages to return. Default 50, max 200.' }
+        }, required: ['userId'] }
+    }}, 'read');
+
+    push({ type: 'function', function: {
+        name: 'get_logs',
+        description: 'Read recent admin activity log entries. Optional case-insensitive substring filter on the action text.',
+        parameters: { type: 'object', properties: {
+            limit: { type: 'number', description: 'Default 50, max 200.' },
+            search: { type: 'string', description: 'Optional substring to match against the action.' }
+        } }
+    }}, 'read');
+
+    push({ type: 'function', function: {
+        name: 'get_broadcast_history',
+        description: 'List past broadcasts (id, message preview, kind, recipient_count, sent_count, sent_at). Newest first.',
+        parameters: { type: 'object', properties: { limit: { type: 'number', description: 'Default 10, max 50.' } } }
+    }}, 'read');
+
+    push({ type: 'function', function: {
+        name: 'list_featured_commands',
+        description: 'List all featured commands (DM / Buttons / MCP), including access level and per-command button style.',
+        parameters: { type: 'object', properties: {} }
+    }}, 'read');
+
+    push({ type: 'function', function: {
+        name: 'update_group_settings',
+        description: 'Update one or more settings on a group. Only the fields you pass will change — existing values are preserved. Common fields: ai ("inherit"|"on"|"off"), welcome_enabled (bool), welcome_text (str), rules_text (str), anti_flood (bool), flood_limit (num), flood_mute_minutes (num), flood_action ("mute"|"kick"|"ban"), link_filter (bool), anti_forward (bool), blacklist_words (str), anti_bot (bool), track_members (bool), ai_trigger ("inherit"|"mention"|"reply"|"either"|"both"|"none"), memory ("inherit"|"0"|"5"|"10"|"20"). Call get_group_settings first to see current values.',
+        parameters: { type: 'object', properties: {
+            groupId: { type: 'number' },
+            settings: { type: 'object', description: 'Partial settings object — only fields you want to change.' }
+        }, required: ['groupId','settings'] }
+    }}, 'write');
+
+    push({ type: 'function', function: {
+        name: 'promote_user',
+        description: 'Promote a user to a higher role. role="moderator" gives limited access; role="admin" gives full access. Takes effect immediately. The last remaining admin cannot be demoted (use demote_user).',
+        parameters: { type: 'object', properties: {
+            userId: { type: 'number' },
+            role: { type: 'string', enum: ['moderator','admin'], description: 'Default "admin" if omitted.' }
+        }, required: ['userId'] }
+    }}, 'write');
+
+    push({ type: 'function', function: {
+        name: 'demote_user',
+        description: 'Downgrade a user\'s role: admin → moderator → user. No-op if already a regular user. Refuses to demote the last remaining admin.',
+        parameters: { type: 'object', properties: { userId: { type: 'number' } }, required: ['userId'] }
+    }}, 'write');
+
+    push({ type: 'function', function: {
+        name: 'block_user',
+        description: 'Block a user from interacting with the bot. blockType="full" blocks everything; blockType="ai_only" blocks AI replies but keeps commands working.',
+        parameters: { type: 'object', properties: {
+            userId: { type: 'number' },
+            blockType: { type: 'string', enum: ['full','ai_only'], description: 'Default "full" if omitted.' }
+        }, required: ['userId'] }
+    }}, 'write');
+
+    push({ type: 'function', function: {
+        name: 'unblock_user',
+        description: 'Remove any block from a user. Idempotent.',
+        parameters: { type: 'object', properties: { userId: { type: 'number' } }, required: ['userId'] }
+    }}, 'write');
+
+    push({ type: 'function', function: {
+        name: 'clear_user_memory',
+        description: 'Delete ALL AI conversation memory for ONE user. Use clear_ai_memory to delete for every user instead. You MUST ask the user for confirmation before calling this and only set confirm=true after they say yes.',
+        parameters: { type: 'object', properties: {
+            userId: { type: 'number' },
+            confirm: { type: 'boolean', description: 'Must be true. Only set after the user confirms.' }
+        }, required: ['userId','confirm'] }
+    }}, 'dangerous');
+
+    _toolDefCache.set(cacheKey, tools);
     return tools;
 }
 
@@ -9842,14 +12050,16 @@ async function executeMcpTool(name, args, env, categories) {
 
         case 'list_commands': {
             requireRead();
+            // Correlated subquery returns child counts in the same round-trip.
             const rows = await env.DB.prepare(
-                'SELECT command, parent, response_type, content, enabled, is_admin_only, access_level, buttons_json, show_reply_keyboard FROM commands ORDER BY order_idx, command'
+                'SELECT c.command, c.parent, c.response_type, c.content, c.enabled, c.is_admin_only, c.access_level, c.buttons_json, c.show_reply_keyboard, (SELECT COUNT(*) FROM commands c2 WHERE c2.parent = c.command) as child_count FROM commands c ORDER BY c.order_idx, c.command'
             ).all();
             const commands = (rows.results || []).map(r => ({
                 command: r.command, parent: r.parent || null,
                 response_type: r.response_type || 'text',
                 enabled: r.enabled !== 0, is_admin_only: !!r.is_admin_only, access_level: effectiveCommandAccess(r),
                 has_buttons: !!r.buttons_json, has_reply_keyboard: !!r.show_reply_keyboard,
+                child_count: r.child_count || 0,
                 content_preview: (r.content || '').slice(0, 120),
             }));
             return { count: commands.length, commands };
@@ -9868,6 +12078,7 @@ async function executeMcpTool(name, args, env, categories) {
                 command: row.command, parent: row.parent || null,
                 response_type: row.response_type || 'text',
                 content: row.content || '', media_url: row.media_url || '',
+                file_id: row.file_id || '', media_meta: row.media_meta || '',
                 is_admin_only: !!row.is_admin_only, access_level: effectiveCommandAccess(row), enabled: row.enabled !== 0,
                 show_reply_keyboard: !!row.show_reply_keyboard,
                 buttons, reply_keyboard: replyKb,
@@ -9963,6 +12174,8 @@ async function executeMcpTool(name, args, env, categories) {
                 response_type: args.response_type !== undefined ? args.response_type : (existing.response_type || 'text'),
                 content: args.content !== undefined ? String(args.content) : (existing.content || ''),
                 media_url: args.media_url !== undefined ? String(args.media_url) : (existing.media_url || ''),
+                file_id: existing.file_id || '',
+                media_meta: existing.media_meta || '',
                 is_admin_only: args.is_admin_only !== undefined ? (args.is_admin_only ? 1 : 0) : (existing.is_admin_only ? 1 : 0),
                 access_level: args.access_level || effectiveCommandAccess(existing),
                 enabled: args.enabled !== undefined ? (args.enabled ? 1 : 0) : (existing.enabled !== 0 ? 1 : 0),
@@ -10134,6 +12347,178 @@ async function executeMcpTool(name, args, env, categories) {
             requireDangerous();
             if (!args.confirm) throw new Error('You must set confirm=true after the user explicitly confirms.');
             return await callApi({ path: '/api/ai/clear_memory', method: 'POST', handler: async (r, e) => await clearAiMemory(e) });
+        }
+
+        // ---- v5.0: user & group management --------------------------------
+        case 'get_group_settings': {
+            requireRead();
+            const gid = parseInt(args.groupId);
+            if (!gid) throw new Error('groupId is required.');
+            const row = await env.DB.prepare('SELECT * FROM groups WHERE id = ?').bind(gid).first();
+            if (!row) throw new Error(`Group ${gid} not found.`);
+            let settingsRaw = {};
+            try { settingsRaw = JSON.parse(row.settings_json || '{}'); } catch (e) {}
+            return {
+                id: row.id,
+                title: row.title || '',
+                type: row.type || '',
+                username: row.username || '',
+                member_count: row.member_count || 0,
+                is_active: row.is_active == 1,
+                last_active: row.last_active,
+                settings: normalizeGroupSettings(settingsRaw),
+            };
+        }
+
+        case 'get_user_memory': {
+            requireRead();
+            const uid = parseInt(args.userId);
+            if (!uid) throw new Error('userId is required.');
+            const limit = Math.min(Math.max(parseInt(args.limit) || 50, 1), 200);
+            const rows = await env.DB.prepare(
+                'SELECT id, role, content, timestamp FROM ai_messages WHERE chat_id = ? ORDER BY id DESC LIMIT ?'
+            ).bind(uid, limit).all();
+            const messages = (rows.results || []).map(m => ({
+                id: m.id,
+                role: m.role,
+                content: String(m.content || '').slice(0, 500),
+                timestamp: m.timestamp,
+            })).reverse();
+            return { userId: uid, count: messages.length, messages: messages };
+        }
+
+        case 'get_logs': {
+            requireRead();
+            const limit = Math.min(Math.max(parseInt(args.limit) || 50, 1), 200);
+            const search = args.search ? ('%' + String(args.search).slice(0, 100) + '%') : null;
+            let q = 'SELECT id, action, user_id, timestamp FROM logs';
+            const params = [];
+            if (search) { q += ' WHERE action LIKE ?'; params.push(search); }
+            q += ' ORDER BY id DESC LIMIT ?';
+            params.push(limit);
+            const rows = await env.DB.prepare(q).bind(...params).all();
+            const logs = (rows.results || []).map(l => ({
+                id: l.id,
+                action: String(l.action || '').slice(0, 300),
+                user_id: l.user_id,
+                timestamp: l.timestamp,
+            }));
+            return { count: logs.length, logs: logs };
+        }
+
+        case 'get_broadcast_history': {
+            requireRead();
+            const limit = Math.min(Math.max(parseInt(args.limit) || 10, 1), 50);
+            const rows = await env.DB.prepare(
+                'SELECT id, message, kind, recipient_count, sent_count, sent_at FROM broadcast_history ORDER BY id DESC LIMIT ?'
+            ).bind(limit).all();
+            const broadcasts = (rows.results || []).map(b => ({
+                id: b.id,
+                message: String(b.message || '').slice(0, 200),
+                kind: b.kind,
+                recipient_count: b.recipient_count,
+                sent_count: b.sent_count,
+                sent_at: b.sent_at,
+            }));
+            return { count: broadcasts.length, broadcasts: broadcasts };
+        }
+
+        case 'list_featured_commands': {
+            requireRead();
+            const rows = await env.DB.prepare(
+                'SELECT id, command, kind, content, success_text, failure_text, enabled, access_level, admin_only, button_style FROM featured_replies ORDER BY id DESC LIMIT 200'
+            ).all();
+            const commands = (rows.results || []).map(f => ({
+                id: f.id,
+                command: f.command,
+                kind: f.kind || 'text',
+                content: String(f.content || '').slice(0, 200),
+                success_text: String(f.success_text || '').slice(0, 200),
+                failure_text: String(f.failure_text || '').slice(0, 200),
+                enabled: f.enabled !== 0,
+                access_level: f.access_level || (f.admin_only ? 'admin' : 'everyone'),
+                button_style: f.button_style || '',
+            }));
+            return { count: commands.length, commands: commands };
+        }
+
+        case 'update_group_settings': {
+            requireWrite();
+            const gid = parseInt(args.groupId);
+            if (!gid) throw new Error('groupId is required.');
+            const patch = args.settings || {};
+            if (typeof patch !== 'object' || Array.isArray(patch)) throw new Error('settings must be an object.');
+            const row = await env.DB.prepare('SELECT settings_json FROM groups WHERE id = ?').bind(gid).first();
+            if (!row) throw new Error(`Group ${gid} not found.`);
+            let existing = {};
+            try { existing = JSON.parse(row.settings_json || '{}'); } catch (e) {}
+            const merged = normalizeGroupSettings(Object.assign({}, existing, patch));
+            await env.DB.prepare('UPDATE groups SET settings_json = ? WHERE id = ?').bind(JSON.stringify(merged), gid).run();
+            return { success: true, groupId: gid, settings: merged };
+        }
+
+        case 'promote_user': {
+            requireWrite();
+            const uid = parseInt(args.userId);
+            if (!uid) throw new Error('userId is required.');
+            const role = args.role === 'moderator' ? 'moderator' : 'admin';
+            const user = await env.DB.prepare('SELECT id, role, first_name, username FROM users WHERE id = ?').bind(uid).first();
+            if (!user) throw new Error(`User ${uid} not found.`);
+            if (user.role === role) return { success: true, userId: uid, role: role, note: 'Already at this role.' };
+            await env.DB.prepare('UPDATE users SET role = ? WHERE id = ?').bind(role, uid).run();
+            return {
+                success: true, userId: uid,
+                first_name: user.first_name || '', username: user.username || '',
+                previousRole: user.role || 'user', newRole: role,
+            };
+        }
+
+        case 'demote_user': {
+            requireWrite();
+            const uid = parseInt(args.userId);
+            if (!uid) throw new Error('userId is required.');
+            const user = await env.DB.prepare('SELECT id, role, first_name, username FROM users WHERE id = ?').bind(uid).first();
+            if (!user) throw new Error(`User ${uid} not found.`);
+            if (user.role === 'user' || !user.role) return { success: true, userId: uid, note: 'Already a regular user.' };
+            if (user.role === 'admin') {
+                const cnt = await env.DB.prepare("SELECT COUNT(*) as n FROM users WHERE role = 'admin'").first();
+                if ((cnt && cnt.n || 0) <= 1) throw new Error('Refusing to demote the last remaining admin. Promote someone else first.');
+            }
+            const newRole = user.role === 'admin' ? 'moderator' : 'user';
+            await env.DB.prepare('UPDATE users SET role = ? WHERE id = ?').bind(newRole, uid).run();
+            return {
+                success: true, userId: uid,
+                first_name: user.first_name || '', username: user.username || '',
+                previousRole: user.role, newRole: newRole,
+            };
+        }
+
+        case 'block_user': {
+            requireWrite();
+            const uid = parseInt(args.userId);
+            if (!uid) throw new Error('userId is required.');
+            const type = args.blockType === 'ai_only' ? 'ai_only' : 'full';
+            await env.DB.prepare(
+                'INSERT INTO blocked_users (user_id, block_type) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET block_type = excluded.block_type, blocked_at = CURRENT_TIMESTAMP'
+            ).bind(uid, type).run();
+            return { success: true, userId: uid, blockType: type };
+        }
+
+        case 'unblock_user': {
+            requireWrite();
+            const uid = parseInt(args.userId);
+            if (!uid) throw new Error('userId is required.');
+            await env.DB.prepare('DELETE FROM blocked_users WHERE user_id = ?').bind(uid).run();
+            return { success: true, userId: uid };
+        }
+
+        case 'clear_user_memory': {
+            requireDangerous();
+            if (!args.confirm) throw new Error('You must set confirm=true after the user explicitly confirms.');
+            const uid = parseInt(args.userId);
+            if (!uid) throw new Error('userId is required.');
+            const r = await env.DB.prepare('DELETE FROM ai_messages WHERE chat_id = ?').bind(uid).run();
+            return { success: true, userId: uid, deleted: (r && r.meta && r.meta.changes) || 0 };
         }
 
         default:
@@ -10389,6 +12774,7 @@ async function runMcpAgent(userMessage, env, opts) {
         env,
         sessionKey,
         persistSession: true,
+        forceKeep: keep,
         providerSettings: aiSettings,
         systemPrompt: MCP_SYSTEM_PROMPT,
         history,
@@ -10399,10 +12785,14 @@ async function runMcpAgent(userMessage, env, opts) {
     });
 }
 
-async function runAgentLoop({ env, sessionKey, persistSession, providerSettings, systemPrompt, history, userText, tools, maxIter, categories, forceKeep = 0 }) {
+async function runAgentLoop({ env, sessionKey, persistSession, providerSettings, systemPrompt, history, userText, tools, maxIter, categories, forceKeep }) {
     const toolCallsLog = [];
     const messages = (history || []).concat([{ role: 'user', content: userText }]);
-    const keep = forceKeep || (persistSession && sessionKey ? await getMcpMemoryLimit(env.DB) : 0);
+    // `forceKeep` present (including 0) means the caller already fetched it —
+    // avoid a duplicate DB call. Undefined → fetch now.
+    const keep = forceKeep !== undefined
+        ? forceKeep
+        : (persistSession && sessionKey ? await getMcpMemoryLimit(env.DB) : 0);
     let iteration = 0;
 
     while (iteration < maxIter) {
@@ -10415,20 +12805,26 @@ async function runAgentLoop({ env, sessionKey, persistSession, providerSettings,
             return { finalMessage: response.content || '(no response)', toolCalls: toolCallsLog, messages: finalMessages, iterations: iteration };
         }
         messages.push({ role: 'assistant', content: response.content || null, tool_calls: toolCalls });
-        for (const call of toolCalls) {
+        // Fire all tool calls in parallel — "list commands AND users AND stats"
+        // goes from ~3× round-trip to ~1×. The two `logAction` calls are
+        // fire-and-forget so a slow D1 write can't bottleneck the turn.
+        const parallelResults = await Promise.all(toolCalls.map(async (call) => {
             const fnName = call.function && call.function.name;
             let parsedArgs = {};
             try { parsedArgs = JSON.parse(call.function.arguments || '{}'); } catch (e) {}
             let toolResult = null, toolError = null;
             try {
                 toolResult = await executeMcpTool(fnName, parsedArgs, env, categories);
-                try { await logAction(env.DB, null, 'MCP agent: ' + fnName + ' ' + JSON.stringify(parsedArgs).slice(0, 200)); } catch (e) {}
+                logAction(env.DB, null, 'MCP agent: ' + fnName + ' ' + JSON.stringify(parsedArgs).slice(0, 200)).catch(function () {});
             } catch (err) {
                 toolError = String(err.message || err);
-                try { await logAction(env.DB, null, 'MCP (error): ' + fnName + ' — ' + String(toolError).slice(0, 200)); } catch (e) {}
+                logAction(env.DB, null, 'MCP (error): ' + fnName + ' — ' + String(toolError).slice(0, 200)).catch(function () {});
             }
-            toolCallsLog.push({ name: fnName, args: parsedArgs, result: toolResult, error: toolError });
-            messages.push({ role: 'tool', tool_call_id: call.id, content: JSON.stringify(toolError ? { error: toolError } : toolResult) });
+            return { call: call, fnName: fnName, parsedArgs: parsedArgs, toolResult: toolResult, toolError: toolError };
+        }));
+        for (const r of parallelResults) {
+            toolCallsLog.push({ name: r.fnName, args: r.parsedArgs, result: r.toolResult, error: r.toolError });
+            messages.push({ role: 'tool', tool_call_id: r.call.id, content: JSON.stringify(r.toolError ? { error: r.toolError } : r.toolResult) });
         }
     }
 
@@ -10467,9 +12863,9 @@ async function handleMcpDashboardChat(request, env) {
             iterations: result.iterations,
             rateLimited: !!result.rateLimited
         });
-        } catch (err) {
-            return apiJson({ success: false, error: String(err.message || err) }, 500);
-        }
+    } catch (err) {
+        return apiJson({ success: false, error: String(err.message || err) }, 500);
+    }
 }
 
 async function handleMcpAiTest(request, env) {
@@ -10647,10 +13043,34 @@ function renderMarkdown(text){
     }
     return out;
 }
+var __csrf = null;
+async function loadCsrf(){
+    try {
+        var res = await fetch('/api/check_session', {credentials:'same-origin'});
+        if (res.ok) {
+            var d = await res.json();
+            if (d && d.csrf) __csrf = d.csrf;
+        }
+    } catch (e) {}
+}
 async function api(method,path,body){
-    var opts={method:method,headers:{},credentials:'same-origin'};
-    if(body!==undefined){opts.headers['Content-Type']='application/json';opts.body=JSON.stringify(body);}
-    var res=await fetch(path,opts);
+    var doFetch = async function(csrf){
+        var opts={method:method,headers:{},credentials:'same-origin'};
+        if (csrf && method !== 'GET') opts.headers['X-Nyxx-CSRF'] = csrf;
+        if(body!==undefined){opts.headers['Content-Type']='application/json';opts.body=JSON.stringify(body);}
+        return await fetch(path,opts);
+    };
+    var res = await doFetch(__csrf);
+    if (res.status === 403) {
+        var errData = null;
+        try { errData = await res.clone().json(); } catch(e){}
+        if (errData && /csrf/i.test(String(errData.error || ''))) {
+            // Token was rotated (e.g. password changed in another tab) —
+            // refetch it and retry once before giving up.
+            await loadCsrf();
+            res = await doFetch(__csrf);
+        }
+    }
     if(res.status===401){window.location.href='/';throw new Error('Session expired');}
     var data=null;
     try{data=await res.json();}catch(e){}
@@ -10880,6 +13300,7 @@ async function send(){
 }
 
 (async function init(){
+    await loadCsrf();
     await loadSessions();
     var q=new URLSearchParams(window.location.search);
     var k=q.get('s');
@@ -11101,6 +13522,65 @@ async function sendRichText(token, chatId, text, extra = {}) {
         return tgCall(token, 'sendMessage', Object.assign({ chat_id: chatId, text: fallbackText, parse_mode: 'HTML' }, extra));
     }
     return data;
+}
+const SUPPORTED_MEDIA_TYPES = ['text', 'photo', 'video', 'animation', 'voice', 'audio', 'document', 'video_note', 'sticker'];
+const MEDIA_TYPE_METHODS = {
+    photo:      { method: 'sendPhoto',      field: 'photo' },
+    video:      { method: 'sendVideo',      field: 'video' },
+    animation:  { method: 'sendAnimation',  field: 'animation' },
+    voice:      { method: 'sendVoice',      field: 'voice' },
+    audio:      { method: 'sendAudio',      field: 'audio' },
+    document:   { method: 'sendDocument',   field: 'document' },
+    video_note: { method: 'sendVideoNote',  field: 'video_note' },
+    sticker:    { method: 'sendSticker',    field: 'sticker' },
+};
+function normalizeMediaType(t) {
+    const s = String(t || 'text').toLowerCase().trim();
+    return SUPPORTED_MEDIA_TYPES.includes(s) ? s : 'text';
+}
+function parseMediaMeta(raw) {
+    if (!raw) return {};
+    if (typeof raw === 'object') return raw;
+    try { return JSON.parse(raw) || {}; } catch (e) { return {}; }
+}
+async function sendMediaMessage(token, chatId, mediaType, fileIdOrUrl, caption, replyMarkup, extra) {
+    mediaType = normalizeMediaType(mediaType);
+    if (mediaType === 'text' || !mediaType) {
+        return await sendRichText(token, chatId, caption || '', replyMarkup ? { reply_markup: replyMarkup } : {});
+    }
+    const def = MEDIA_TYPE_METHODS[mediaType];
+    if (!def) return await sendRichText(token, chatId, caption || '', replyMarkup ? { reply_markup: replyMarkup } : {});
+    const media = fileIdOrUrl ? String(fileIdOrUrl).trim() : '';
+    if (!media) return null;
+    const payload = { chat_id: chatId };
+    payload[def.field] = media;
+    if (caption) { payload.caption = caption; payload.parse_mode = 'HTML'; }
+    if (replyMarkup) payload.reply_markup = replyMarkup;
+    const meta = extra || {};
+    if (meta.duration) payload.duration = meta.duration;
+    if (meta.title) payload.title = meta.title;
+    if (meta.performer) payload.performer = meta.performer;
+    if (meta.width) payload.width = meta.width;
+    if (meta.height) payload.height = meta.height;
+    if (meta.length) payload.length = meta.length;
+    if (meta.file_name) payload.file_name = meta.file_name;
+    if (meta.thumb) payload.thumb = meta.thumb;
+    let res = await tgCall(token, def.method, payload);
+    if ((!res || !res.ok) && caption && isHtmlParseError(res)) {
+        const plain = Object.assign({}, payload);
+        plain.caption = htmlToPlain(caption);
+        delete plain.parse_mode;
+        res = await tgCall(token, def.method, plain);
+    }
+    return res;
+}
+async function resolveFileDownloadUrl(token, fileId) {
+    if (!fileId) return '';
+    try {
+        const r = await tgFetchJson(`https://api.telegram.org/bot${token}/getFile?file_id=${encodeURIComponent(fileId)}`);
+        if (r && r.ok && r.result && r.result.file_path) return `/api/file/${encodeURIComponent(fileId)}`;
+    } catch (e) {}
+    return '';
 }
 function stripTagsForPreview(text) { return String(text || '').replace(/<[^>]*>/g, ''); }
 const TG_MESSAGE_LIMIT = 4096;
@@ -11368,7 +13848,7 @@ async function processTelegramUpdate(update, env) {
                         return;
                     }
                 }
-                // Anti-flood + optional auto-mute.
+                // Anti-flood with escalation (mute → kick → ban).
                 if (groupSettings && groupSettings.anti_flood) {
                     const minute = Math.floor(Date.now() / 60000);
                     await env.DB.prepare('INSERT INTO group_flood (chat_id, user_id, minute, count) VALUES (?, ?, ?, 1) ON CONFLICT(chat_id, user_id, minute) DO UPDATE SET count = count + 1').bind(chatId, msg.from.id, minute).run();
@@ -11376,24 +13856,10 @@ async function processTelegramUpdate(update, env) {
                     if (row && row.count > (groupSettings.flood_limit || 6)) {
                         if (modRole !== 'admin') {
                             await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id });
+                            // One strike per minute — subsequent flood messages are
+                            // deleted silently without re-escalating.
                             if (row.count === (groupSettings.flood_limit || 6) + 1) {
-                                const muteMin = parseInt(groupSettings.flood_mute_minutes) || 0;
-                                if (muteMin > 0) {
-                                    const until = Math.floor(Date.now() / 1000) + muteMin * 60;
-                                    const muteRes = await tgCall(BOT_TOKEN, 'restrictChatMember', {
-                                        chat_id: chatId,
-                                        user_id: msg.from.id,
-                                        permissions: { can_send_messages: false },
-                                        until_date: until
-                                    });
-                                    if (muteRes && muteRes.ok) {
-                                        await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: '🔇 User muted for ' + muteMin + ' minute(s) for flooding.' });
-                                    } else {
-                                        await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: '⚠️ Please slow down.' });
-                                    }
-                                } else {
-                                    await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: '⚠️ Please slow down.' });
-                                }
+                                await applyFloodEscalation(env, BOT_TOKEN, chatId, msg.from.id, groupSettings);
                             }
                             return;
                         }
@@ -11515,7 +13981,7 @@ async function processTelegramUpdate(update, env) {
                                 }
                                 try {
                                     const messageText = parsed.message || 'Here you go:';
-                                    const inlineKb = await buildFeaturedInlineKeyboard(env.DB, parsed.buttons);
+                                    const inlineKb = await buildFeaturedInlineKeyboard(env.DB, parsed.buttons, feat.button_style || '');
                                     const payload = { chat_id: chatId, text: escapeTelegramHTML(messageText), parse_mode: 'HTML' };
                                     if (inlineKb) payload.reply_markup = inlineKb;
                                     let resp = await tgCall(BOT_TOKEN, 'sendMessage', payload);
@@ -11536,20 +14002,12 @@ async function processTelegramUpdate(update, env) {
                                 return;
                             }
 
-                            // --- DM kind (unchanged) ---
+                            // --- DM kind — delegated to contact handler ---
                             if (!argsTrimmed) {
                                 if (feat.content) await sendRichText(BOT_TOKEN, chatId, feat.content);
                                 return;
                             }
-                            try {
-                                const saveFeatured = (await getSetting(env.DB, 'dm_save_featured')) !== '0';
-                                if (saveFeatured) {
-                                    await logDm(env.DB, userId, 'in', 'featured', 'text', argsTrimmed, null, null, null);
-                                }
-                                if (feat.success_text) await sendRichText(BOT_TOKEN, chatId, feat.success_text);
-                            } catch (err) {
-                                if (feat.failure_text) await sendRichText(BOT_TOKEN, chatId, feat.failure_text);
-                            }
+                            await handleContactMessage(env, BOT_TOKEN, chatId, userId, msg.from, argsTrimmed, feat);
                             return;
                         }
                     }
@@ -11559,9 +14017,11 @@ async function processTelegramUpdate(update, env) {
                 // command, reply-keyboard shortcut, or "back") BEFORE the AI
                 // decision, so the `no_command` AI trigger can defer to it.
                 let targetCommand = null;
+                let targetCommandArgs = '';
                 if (text.startsWith('/')) {
                     const wsIdx = text.search(/\s/);
                     const cmdRaw = wsIdx >= 0 ? text.slice(0, wsIdx) : text;
+                    targetCommandArgs = wsIdx >= 0 ? text.slice(wsIdx + 1) : '';
                     const bare = cmdRaw.split('@')[0].trim();
                     const cmdRecord = await env.DB.prepare('SELECT command FROM commands WHERE command = ? AND enabled = 1').bind(bare).first();
                     if (cmdRecord) targetCommand = cmdRecord.command;
@@ -11641,7 +14101,7 @@ async function processTelegramUpdate(update, env) {
                 if (targetCommand) {
                     const cmdRecord = await env.DB.prepare('SELECT * FROM commands WHERE command = ? AND enabled = 1').bind(targetCommand).first();
                     if (cmdRecord) {
-                        await executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, msg.chat.type);
+                        await executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, msg.chat.type, targetCommandArgs);
                         return;
                     }
                 }
@@ -11694,7 +14154,7 @@ async function processTelegramUpdate(update, env) {
                 }
                 const cmdRecord = await env.DB.prepare('SELECT * FROM commands WHERE command = ? AND enabled = 1').bind(data).first();
                 const answer = tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
-                if (cmdRecord) await executeCommand(chatId, cb.from.id, cmdRecord, BOT_TOKEN, env, cb.message.chat.type);
+                if (cmdRecord) await executeCommand(chatId, cb.from.id, cmdRecord, BOT_TOKEN, env, cb.message.chat.type, '');
                 await answer;
                 return;
             } else if (data && data.startsWith('T:') && cbBlockType !== 'ai_only') {
@@ -11745,7 +14205,10 @@ async function sendDefaultStart(chatId, env, BOT_TOKEN) {
     const keyboard = { inline_keyboard: [[{ text: '🔗 GitHub', url: 'https://github.com/Mahan07dev' }, { text: '📊 Dashboard', url: dashboardUrl }]] };
     await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: botStrings().welcome(botName), parse_mode: 'HTML', reply_markup: keyboard });
 }
-async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatType) {
+function escapeArgsForHtml(str) {
+    return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatType, args) {
     const strings = botStrings();
     if (!await checkPermissionForChat(env, userId, 'commands', chatId, chatType)) {
         await sendMessage(chatId, strings.unauthorized, BOT_TOKEN, 'HTML');
@@ -11760,6 +14223,14 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatTyp
         INSERT INTO sessions (token, user_id, command, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)
         ON CONFLICT(user_id) DO UPDATE SET token = excluded.token, command = excluded.command, updated_at = CURRENT_TIMESTAMP
     `).bind('bot-' + userId, userId, cmdRecord.command).run();
+    // Resolve {{args}} (full trailing text) and {{arg1}}..{{argN}} (individual
+    // whitespace-separated tokens) from the text after the command. Each
+    // substitution is HTML-escaped so user input can never smuggle in tags.
+    const argsRaw = String(args || '');
+    const argsTokens = argsRaw.split(/\s+/).filter(Boolean).map(escapeArgsForHtml);
+    const finalContent = cmdRecord.content ? String(cmdRecord.content)
+        .split('{{args}}').join(escapeArgsForHtml(argsRaw))
+        .replace(/\{\{arg(\d+)\}\}/g, (m, n) => argsTokens[parseInt(n, 10) - 1] || '') : '';
     const built = cmdRecord.buttons_json ? buildReplyMarkup(cmdRecord.buttons_json) : null;
     const inlineMarkup = built && built.inlineMarkup ? built.inlineMarkup : null;
     let replySpec = (cmdRecord.show_reply_keyboard && cmdRecord.reply_keyboard_json) ? kbNormalizeReply(cmdRecord.reply_keyboard_json) : null;
@@ -11770,29 +14241,44 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatTyp
     const replyKeyboardMarkup = replySpec ? kbReplyMarkup(replySpec) : null;
     if (replySpec && replySpec.actions && Object.keys(replySpec.actions).length) await mergeReplyActions(env.DB, replySpec.actions);
     const markup = inlineMarkup || replyKeyboardMarkup || undefined;
-    if (cmdRecord.response_type === 'photo') {
-        const photoPayload = { chat_id: chatId, photo: cmdRecord.media_url };
-        if (cmdRecord.content) { photoPayload.caption = cmdRecord.content; photoPayload.parse_mode = 'HTML'; }
-        if (markup) photoPayload.reply_markup = markup;
+    const mediaType = normalizeMediaType(cmdRecord.response_type);
+    if (mediaType !== 'text') {
+        const fileIdOrUrl = (cmdRecord.file_id && String(cmdRecord.file_id).trim()) || (cmdRecord.media_url && String(cmdRecord.media_url).trim()) || '';
+        const mediaMeta = parseMediaMeta(cmdRecord.media_meta);
         let res = null;
-        if (cmdRecord.media_url) {
-            res = await tgCall(BOT_TOKEN, 'sendPhoto', photoPayload);
-            if (res && !res.ok && cmdRecord.content && isHtmlParseError(res)) res = await tgCall(BOT_TOKEN, 'sendPhoto', Object.assign({}, photoPayload, { caption: htmlToPlain(cmdRecord.content) }));
+        if (fileIdOrUrl) res = await sendMediaMessage(BOT_TOKEN, chatId, mediaType, fileIdOrUrl, finalContent, markup, mediaMeta);
+        if ((!res || !res.ok) && finalContent) {
+            await sendRichText(BOT_TOKEN, chatId, finalContent, markup ? { reply_markup: markup } : {});
+        } else if (!res && !finalContent && markup) {
+            await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: ' ', reply_markup: markup });
         }
-        if ((!res || !res.ok) && cmdRecord.content) await sendRichText(BOT_TOKEN, chatId, cmdRecord.content, markup ? { reply_markup: markup } : {});
         if (inlineMarkup && replyKeyboardMarkup) await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: ' ', reply_markup: replyKeyboardMarkup });
         return;
     }
     const extra = {};
     if (markup) extra.reply_markup = markup;
-    if (cmdRecord.content) await sendRichText(BOT_TOKEN, chatId, cmdRecord.content, extra);
+    if (finalContent) await sendRichText(BOT_TOKEN, chatId, finalContent, extra);
     else if (extra.reply_markup) await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: ' ', reply_markup: extra.reply_markup });
     if (inlineMarkup && replyKeyboardMarkup) await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: ' ', reply_markup: replyKeyboardMarkup });
 }
 async function getAiHistory(db, chatId, limit) {
     if (!limit || limit <= 0) return [];
     const result = await db.prepare('SELECT role, content FROM ai_messages WHERE chat_id = ? ORDER BY id DESC LIMIT ?').bind(chatId, limit).all();
-    return (result.results || []).reverse();
+    const messages = (result.results || []).reverse();
+    // Char-aware sliding window: even a small message count can overflow a
+    // model's context window if the messages are long. Drop the oldest
+    // messages until the total payload fits within a safe ceiling (~8000
+    // chars ≈ 2000 tokens). Always keep at least the last 2 turns.
+    const MAX_HISTORY_CHARS = 8000;
+    let total = 0;
+    const kept = [];
+    for (let i = messages.length - 1; i >= 0; i--) {
+        const len = String(messages[i].content || '').length;
+        if (total + len > MAX_HISTORY_CHARS && kept.length >= 2) break;
+        total += len;
+        kept.unshift(messages[i]);
+    }
+    return kept;
 }
 async function saveAiMessage(db, chatId, role, content) { await db.prepare('INSERT INTO ai_messages (chat_id, role, content) VALUES (?, ?, ?)').bind(chatId, role, content).run(); }
 async function trimAiMessages(db, chatId, keep) {
@@ -11938,6 +14424,7 @@ async function processAiReply(chatId, userId, text, aiSettings, env, BOT_TOKEN, 
                             tools: getMcpToolDefinitions(cats),
                             maxIter: 4,
                             categories: cats,
+                            forceKeep: undefined,
                         });
                         usedTools = !!(result.toolCalls && result.toolCalls.length);
                         // In minimal mode, if the model declined (<NO_TOOL>) we
@@ -12012,6 +14499,11 @@ async function processAiReply(chatId, userId, text, aiSettings, env, BOT_TOKEN, 
             if (mainError) throw new Error(mainError);
         }
         if (!reply || !String(reply).trim()) throw new Error('The AI returned an empty reply.');
+        // Drain any in-flight streaming sends/edits BEFORE deciding how to
+        // deliver the final reply. Without this, a chunk whose sendMessage
+        // failed earlier can complete late and race the final message,
+        // producing a duplicate reply in the chat.
+        if (streaming) await publishChain;
         const rawReply = reply;
         reply = formatAiReply(reply);
         if (!reply.trim()) throw new Error('The AI returned an empty reply.');
