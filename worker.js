@@ -398,7 +398,7 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
 .chat { display: flex; flex-direction: column; gap: var(--s3); padding: var(--s4); background: var(--surface-2); border-radius: var(--r-lg); border: 1px solid var(--hairline); max-height: 480px; overflow-y: auto; }
 .bubble { max-width: 82%; padding: 10px 14px; border-radius: 18px; font-size: var(--fs-subhead); line-height: 1.5; word-break: break-word; white-space: pre-wrap; position: relative; unicode-bidi: plaintext; text-align: start; }
 .bubble.in { align-self: flex-start; background: var(--surface); border: 1px solid var(--hairline); border-bottom-left-radius: 6px; }
-.bubble.out { align-self: flex-end; background: var(--accent); color: #fff; border-bottom-right-radius: 6px; }
+.bubble.out { align-self: flex-end; background: #005dbb; color: #fff; border-bottom-right-radius: 6px; }
 .bubble.out a { color: #fff; text-decoration: underline; }
 .bubble .b-meta { font-size: var(--fs-caption2); opacity: 0.65; margin-top: 5px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .bubble.out .b-meta { color: rgba(255,255,255,0.85); }
@@ -406,8 +406,8 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
 .bubble .b-actions button { border: none; background: rgba(255,255,255,0.2); color: inherit; font-size: var(--fs-caption2); font-weight: 600; padding: 3px 9px; border-radius: var(--r-pill); cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
 .bubble.in .b-actions button { background: var(--fill-1); }
 .bubble .b-actions button:hover { filter: brightness(0.95); }
-.bubble .photo-tag { font-size: var(--fs-caption2); background: rgba(255,255,255,0.2); padding: 2px 7px; border-radius: var(--r-pill); display: inline-block; margin-bottom: 5px; }
-.bubble.in .photo-tag { background: var(--fill-1); }
+.bubble .photo-tag { font-size: var(--fs-caption2); background: black; padding: 2px 7px; border-radius: var(--r-pill); display: inline-block; margin-bottom: 5px; }
+.bubble.in .photo-tag { background: #390000; }
 .chat-compose { display: flex; gap: var(--s2); align-items: flex-end; margin-top: var(--s3); }
 .chat-compose .textarea { min-height: 44px; max-height: 160px; resize: none; border-radius: var(--r-md); }
 
@@ -4374,7 +4374,7 @@ function renderMediaAttachment(m) {
     }
     if (kind === 'document') {
         var fn = meta.file_name || 'Document';
-        return '<div class="m-media"><a class="btn btn-gray btn-sm" href="' + esc(src) + '" target="_blank" rel="noopener"><i class="fa-regular fa-file"></i> ' + esc(fn) + '</a></div>';
+        return '<div class="m-media"><a class="btn btn-gray btn-sm" href="' + esc(src) + '" target="_blank" rel="noopener" style="background: #00000069;"><i class="fa-regular fa-file"></i> ' + esc(fn) + '</a></div>';
     }
     if (kind === 'sticker') return '<div class="m-media"><img src="' + esc(src) + '" alt="sticker" style="max-width:160px;max-height:160px;"></div>';
     return '<div class="muted small">(' + esc(kind) + ')</div>';
@@ -4408,7 +4408,7 @@ function renderDm(msgs) {
                 if (inl) for (var r of inl) for (var btn of r) if (btn.text) labels.push(btn.text);
                 if (b.reply && b.reply.rows) for (var rr of b.reply.rows) for (var bb of rr) if (bb.text) labels.push(bb.text);
                 if (labels.length) {
-                    buttonChips = '<div class="small" style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap;">' + labels.slice(0, 8).map(function (l) { return '<span class="badge">' + esc(l) + '</span>'; }).join('') + '</div>';
+                    buttonChips = '<div class="small" style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap;">' + labels.slice(0, 8).map(function (l) { return '<span class="badge black">' + esc(l) + '</span>'; }).join('') + '</div>';
                 }
             } catch (e) {}
         }
