@@ -3694,7 +3694,7 @@ function renderMediaPreview(prefix) {
 
     var previewHtml = '';
     if (mediaType === 'photo') {
-        previewHtml = '<img src="' + esc(mediaRef) + '" alt="" onerror="this.style.display=\'none\'">';
+        previewHtml = '<img src="' + esc(mediaRef) + '" alt="" onerror="this.style.display=\\'none\\'">';
     } else if (mediaType === 'video') {
         previewHtml = '<video src="' + esc(mediaRef) + '" controls preload="metadata" muted></video>';
     } else if (mediaType === 'animation') {
@@ -3730,7 +3730,7 @@ function renderMediaPreview(prefix) {
                     '<a href="' + esc(mediaRef) + '" target="_blank" rel="noopener" class="btn btn-gray btn-sm" style="height:28px;padding:0 10px;font-size:12px;">' +
                         '<i class="fa-solid fa-up-right-from-square"></i> Open' +
                     '</a>' +
-                    '<button type="button" class="btn btn-danger btn-sm" onclick="removeMedia(\'' + prefix + '\')" style="height:28px;padding:0 10px;font-size:12px;">' +
+                    '<button type="button" class="btn btn-danger btn-sm" onclick="removeMedia(\\'' + prefix + '\\')" style="height:28px;padding:0 10px;font-size:12px;">' +
                         '<i class="fa-solid fa-xmark"></i> Remove media' +
                     '</button>' +
                 '</div>' +
