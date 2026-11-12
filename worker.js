@@ -748,6 +748,76 @@ body { overflow-x: hidden; }
     overscroll-behavior-y: contain;
     -webkit-overflow-scrolling: touch;
 }
+
+/* ===== Media preview (cmd + msg editors) ===== */
+.media-preview {
+    margin-top: 12px;
+    padding: 12px;
+    background: var(--surface-2);
+    border-radius: var(--r-md);
+    border: 1px dashed var(--hairline);
+    display: none;
+}
+.media-preview.show { display: block; }
+.media-preview .mp-label {
+    font-size: var(--fs-caption2);
+    color: var(--text-4);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+.media-preview .mp-label i { color: var(--accent); margin-right: 4px; }
+.media-preview .mp-body {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+.media-preview .mp-thumb {
+    flex-shrink: 0;
+    min-width: 80px;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface);
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--hairline);
+    padding: 6px;
+}
+.media-preview .mp-thumb:empty { display: none; }
+.media-preview .mp-thumb img,
+.media-preview .mp-thumb video {
+    max-width: 110px;
+    max-height: 110px;
+    border-radius: 6px;
+    object-fit: cover;
+    display: block;
+}
+.media-preview .mp-thumb audio { max-width: 240px; width: 100%; }
+.media-preview .mp-info {
+    flex: 1;
+    min-width: 0;
+    font-size: var(--fs-caption);
+    color: var(--text-3);
+    line-height: 1.5;
+}
+.media-preview .mp-info b { color: var(--text); }
+.media-preview .mp-ref {
+    margin-top: 6px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-4);
+    word-break: break-all;
+    opacity: 0.85;
+}
+@media (max-width: 480px) {
+    .media-preview .mp-body { flex-direction: column; align-items: stretch; }
+    .media-preview .mp-thumb { min-width: 0; width: 100%; max-height: 180px; }
+    .media-preview .mp-thumb img,
+    .media-preview .mp-thumb video { max-width: 100%; max-height: 160px; width: auto; margin: 0 auto; }
+}
 </style>
 </head>
 <body>
@@ -1489,7 +1559,7 @@ body { overflow-x: hidden; }
                     <div class="field" style="margin-bottom:0;">
                         <label class="field-label">Maximum contact messages per user per hour</label>
                         <input type="number" class="input" id="ct-rate-limit" min="0" max="1000" value="5" style="max-width:200px;">
-                        <span class="field-hint">0 = unlimited. Users who exceed the limit get a soft warning and their message is not stored.</span>
+                        <span class="field-hint">0 = unlimited. Users who exceed the limit get a soft warning and their message is not stored. <b>Note:</b> rate limiting counts stored messages, so it requires "Save featured command messages" (Memory tab) to be on.</span>
                     </div>
                 </div>
 
@@ -2389,7 +2459,7 @@ crons = ["0 3 * * *"]</code></pre>
                     <button data-v="file" type="button" onclick="setSeg('cmd-media-source','file');toggleCmdMediaSource()">Upload</button>
                 </div>
                 <div id="cmd-media-url-panel">
-                    <input class="input" id="cmd-media" placeholder="https://…">
+                    <input class="input" id="cmd-media" placeholder="https://…" oninput="renderMediaPreview('cmd')">
                     <span class="field-hint" id="cmd-media-hint">Direct link to your media file.</span>
                 </div>
                 <div id="cmd-media-file-panel" class="hidden">
@@ -2397,6 +2467,7 @@ crons = ["0 3 * * *"]</code></pre>
                     <span class="field-hint" id="cmd-media-file-hint">Upload a file — it will be stored on Telegram and referenced by file_id. Requires a media storage chat (Settings → Media storage).</span>
                     <div id="cmd-media-file-status" class="small" style="margin-top:8px;"></div>
                 </div>
+                <div id="cmd-media-preview" class="media-preview"></div>
                 <input type="hidden" id="cmd-file-id">
                 <input type="hidden" id="cmd-media-meta">
             </div>
@@ -2486,13 +2557,15 @@ crons = ["0 3 * * *"]</code></pre>
                     <button data-v="file" type="button" onclick="setSeg('msg-media-source','file');toggleMsgMediaSource()">Upload</button>
                 </div>
                 <div id="msg-media-url-panel">
-                    <input class="input" id="msg-photo" placeholder="https://…">
+                    <input class="input" id="msg-photo" placeholder="https://…" oninput="renderMediaPreview('msg')">
                     <span class="field-hint">Direct media URL.</span>
                 </div>
                 <div id="msg-media-file-panel" class="hidden">
-                    <input type="file" class="input" id="msg-media-file" onchange="uploadMsgMedia()" style="align-content: center;>
+                    <input type="file" class="input" id="msg-media-file" onchange="uploadMsgMedia()" style="align-content: center;">
+                    <span class="field-hint" id="msg-media-file-hint">Upload a file — stored on Telegram and referenced by file_id. Requires a media storage chat (Settings → Media storage).</span>
                     <div id="msg-media-file-status" class="small" style="margin-top:8px;"></div>
                 </div>
+                <div id="msg-media-preview" class="media-preview"></div>
                 <input type="hidden" id="msg-file-id">
                 <input type="hidden" id="msg-media-meta">
             </div>
@@ -3577,7 +3650,113 @@ function toggleCmdMediaSource() {
     var src = getSeg('cmd-media-source') || 'url';
     show($('cmd-media-url-panel'), src === 'url');
     show($('cmd-media-file-panel'), src === 'file');
+    renderMediaPreview('cmd');
 }
+
+/* ===== Media preview (shared by cmd + msg editors) ===== */
+function _mediaPreviewRefs(prefix) {
+    if (prefix === 'cmd') {
+        return {
+            typeId: 'cmd-type', sourceId: 'cmd-media-source',
+            urlEl: $('cmd-media'), fileIdEl: $('cmd-file-id'), metaEl: $('cmd-media-meta'),
+            box: $('cmd-media-preview')
+        };
+    }
+    return {
+        typeId: 'msg-type', sourceId: 'msg-media-source',
+        urlEl: $('msg-photo'), fileIdEl: $('msg-file-id'), metaEl: $('msg-media-meta'),
+        box: $('msg-media-preview')
+    };
+}
+
+function renderMediaPreview(prefix) {
+    var r = _mediaPreviewRefs(prefix);
+    if (!r.box) return;
+
+    var typeEl = $(r.typeId);
+    var mediaType = typeEl ? (typeEl.value || 'text') : 'text';
+    if (mediaType === 'text') { r.box.classList.remove('show'); r.box.innerHTML = ''; return; }
+
+    var source = getSeg(r.sourceId) || 'url';
+    var url = r.urlEl ? r.urlEl.value.trim() : '';
+    var fileId = r.fileIdEl ? r.fileIdEl.value.trim() : '';
+    var meta = r.metaEl ? r.metaEl.value : '';
+
+    var useFile = source === 'file';
+    var mediaRef = useFile
+        ? (fileId ? ('/api/file/' + encodeURIComponent(fileId)) : '')
+        : url;
+
+    if (!mediaRef) { r.box.classList.remove('show'); r.box.innerHTML = ''; return; }
+
+    var metaObj = {};
+    try { metaObj = meta ? (typeof meta === 'string' ? JSON.parse(meta) : meta) : {}; } catch (e) {}
+
+    var previewHtml = '';
+    if (mediaType === 'photo') {
+        previewHtml = '<img src="' + esc(mediaRef) + '" alt="" onerror="this.style.display=\'none\'">';
+    } else if (mediaType === 'video') {
+        previewHtml = '<video src="' + esc(mediaRef) + '" controls preload="metadata" muted></video>';
+    } else if (mediaType === 'animation') {
+        previewHtml = '<video src="' + esc(mediaRef) + '" autoplay loop muted playsinline></video>';
+    } else if (mediaType === 'video_note') {
+        previewHtml = '<video src="' + esc(mediaRef) + '" controls playsinline style="width:100px;height:100px;border-radius:50%;object-fit:cover;"></video>';
+    } else if (mediaType === 'voice' || mediaType === 'audio') {
+        previewHtml = '<audio src="' + esc(mediaRef) + '" controls preload="metadata"></audio>';
+    } else if (mediaType === 'document') {
+        previewHtml = '<i class="fa-regular fa-file" style="font-size:32px;color:var(--text-3);"></i>';
+    } else if (mediaType === 'sticker') {
+        previewHtml = '<img src="' + esc(mediaRef) + '" alt="sticker" style="max-width:80px;max-height:80px;">';
+    }
+
+    var typeLabel = mediaType.charAt(0).toUpperCase() + mediaType.slice(1).replace(/_/g, ' ');
+    var metaParts = [];
+    if (metaObj.file_name) metaParts.push(esc(metaObj.file_name));
+    if (metaObj.duration)  metaParts.push(Math.round(metaObj.duration) + 's');
+    if (metaObj.width && metaObj.height) metaParts.push(metaObj.width + '×' + metaObj.height);
+    var metaLine = metaParts.length ? ' · ' + metaParts.join(' · ') : '';
+
+    var refDisplay = useFile
+        ? ('file_id: ' + (fileId ? (fileId.slice(0, 24) + (fileId.length > 24 ? '…' : '')) : '(none)'))
+        : (url || '(none)');
+
+    r.box.innerHTML =
+        '<div class="mp-label"><i class="fa-regular fa-image"></i> Media preview</div>' +
+        '<div class="mp-body">' +
+            '<div class="mp-thumb">' + previewHtml + '</div>' +
+            '<div class="mp-info">' +
+                '<div><b>' + esc(typeLabel) + '</b>' + metaLine + '</div>' +
+                '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">' +
+                    '<a href="' + esc(mediaRef) + '" target="_blank" rel="noopener" class="btn btn-gray btn-sm" style="height:28px;padding:0 10px;font-size:12px;">' +
+                        '<i class="fa-solid fa-up-right-from-square"></i> Open' +
+                    '</a>' +
+                    '<button type="button" class="btn btn-danger btn-sm" onclick="removeMedia(\'' + prefix + '\')" style="height:28px;padding:0 10px;font-size:12px;">' +
+                        '<i class="fa-solid fa-xmark"></i> Remove media' +
+                    '</button>' +
+                '</div>' +
+                '<div class="mp-ref">' + esc(refDisplay) + '</div>' +
+            '</div>' +
+        '</div>';
+    r.box.classList.add('show');
+}
+
+function removeMedia(prefix) {
+    if (prefix === 'cmd') {
+        if ($('cmd-media'))         $('cmd-media').value = '';
+        if ($('cmd-file-id'))       $('cmd-file-id').value = '';
+        if ($('cmd-media-meta'))    $('cmd-media-meta').value = '';
+        if ($('cmd-media-file'))    $('cmd-media-file').value = '';
+        if ($('cmd-media-file-status')) $('cmd-media-file-status').innerHTML = '';
+    } else {
+        if ($('msg-photo'))         $('msg-photo').value = '';
+        if ($('msg-file-id'))       $('msg-file-id').value = '';
+        if ($('msg-media-meta'))    $('msg-media-meta').value = '';
+        if ($('msg-media-file'))    $('msg-media-file').value = '';
+        if ($('msg-media-file-status')) $('msg-media-file-status').innerHTML = '';
+    }
+    renderMediaPreview(prefix);
+}
+
 async function uploadCmdMedia() {
     var input = $('cmd-media-file');
     var status = $('cmd-media-file-status');
@@ -3596,6 +3775,7 @@ async function uploadCmdMedia() {
         $('cmd-media-meta').value = JSON.stringify(data.media_meta || {});
         $('cmd-media').value = '';
         status.innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Uploaded. file_id stored.</span>';
+        renderMediaPreview('cmd'); 
     } catch (e) {
         status.innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>';
     }
@@ -5034,6 +5214,7 @@ function toggleMsgMediaSource() {
     var src = getSeg('msg-media-source') || 'url';
     show($('msg-media-url-panel'), src === 'url');
     show($('msg-media-file-panel'), src === 'file');
+    renderMediaPreview('msg');
 }
 async function uploadMsgMedia() {
     var input = $('msg-media-file');
@@ -5052,6 +5233,7 @@ async function uploadMsgMedia() {
         $('msg-file-id').value = data.file_id || '';
         $('msg-media-meta').value = JSON.stringify(data.media_meta || {});
         status.innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Uploaded.</span>';
+        renderMediaPreview('msg');
     } catch (e) { status.innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
 }
 function openMsgEditor(mode, id) {
@@ -5457,7 +5639,16 @@ function createKeyboardBuilder(prefix, opts) {
         if (raw) {
             try {
                 var o = typeof raw === 'string' ? JSON.parse(raw) : raw;
-                var rep = (o.v === 2 && o.reply) ? o.reply : (o.keyboard ? { rows: o.keyboard, actions: {}, resize: o.resize_keyboard, one_time: o.one_time_keyboard, persistent: o.is_persistent, placeholder: o.input_field_placeholder } : o);
+                var rep;
+                if (Array.isArray(o)) {
+                    rep = { rows: o.map(function (r) { return Array.isArray(r) ? r : [r]; }), actions: {} };
+                } else if (o.v === 2 && o.reply) {
+                    rep = o.reply;
+                } else if (o.keyboard) {
+                    rep = { rows: o.keyboard, actions: {}, resize: o.resize_keyboard, one_time: o.one_time_keyboard, persistent: o.is_persistent, placeholder: o.input_field_placeholder };
+                } else {
+                    rep = o;
+                }
                 if (rep && rep.rows) {
                 reply.rows = rep.rows.map(function (r) { return (Array.isArray(r) ? r : [r]).map(function (b) { return { text: typeof b === 'string' ? b : b.text, command: typeof b === 'object' ? (b.command || '') : '', style: typeof b === 'object' ? (b.style || '') : '' }; }); });
                     reply.actions = rep.actions || {};
@@ -7364,7 +7555,8 @@ const DESIRED_SCHEMA = {
         created_at: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' },
         edited_at: { type: 'DATETIME' },
         file_id: { type: 'TEXT', default: "''" },
-        media_meta: { type: 'TEXT', default: "''" }
+        media_meta: { type: 'TEXT', default: "''" },
+        read_at: { type: 'DATETIME' }
     }},
     ai_rate_limits: { columns: {
         user_id: { type: 'INTEGER', primary: true },
@@ -7765,9 +7957,10 @@ async function initializeDatabase(db) {
             `ALTER TABLE commands ADD COLUMN access_level TEXT DEFAULT 'everyone'`,
             `ALTER TABLE commands ADD COLUMN file_id TEXT DEFAULT ''`,
             `ALTER TABLE commands ADD COLUMN media_meta TEXT DEFAULT ''`,
-            // dm_messages — added by v13
+            // dm_messages — added by v13 & v17
             `ALTER TABLE dm_messages ADD COLUMN file_id TEXT DEFAULT ''`,
             `ALTER TABLE dm_messages ADD COLUMN media_meta TEXT DEFAULT ''`,
+            `ALTER TABLE dm_messages ADD COLUMN read_at DATETIME`,
             // broadcast_history — added by v13
             `ALTER TABLE broadcast_history ADD COLUMN file_id TEXT DEFAULT ''`,
             `ALTER TABLE broadcast_history ADD COLUMN media_meta TEXT DEFAULT ''`,
@@ -8622,6 +8815,11 @@ async function getReplyButtonMap(db) {
             const spec = kbNormalizeReply(row.reply_keyboard_json);
             if (!spec) continue;
             for (const btnRow of spec.rows) for (const btn of btnRow) if (btn.text && btn.command) map[btn.text] = btn.command;
+            if (spec.actions && typeof spec.actions === 'object') {
+                for (const [text, cmd] of Object.entries(spec.actions)) {
+                    if (text && cmd) map[text] = cmd;
+                }
+            }
         }
     } catch (e) {}
     replyButtonMapCache = { data: map, fetchedAt: Date.now() };
@@ -9178,6 +9376,8 @@ async function deleteUser(request, env, url) {
             env.DB.prepare('DELETE FROM ai_messages WHERE chat_id = ?').bind(id),
             env.DB.prepare('DELETE FROM dm_messages WHERE chat_id = ?').bind(id),
             env.DB.prepare('DELETE FROM blocked_users WHERE user_id = ?').bind(id),
+            env.DB.prepare('DELETE FROM ai_rate_limits WHERE user_id = ?').bind(id),
+            env.DB.prepare('DELETE FROM broadcast_recipients WHERE chat_id = ?').bind(id),
             env.DB.prepare("DELETE FROM sessions WHERE user_id = ? AND token LIKE 'bot-%'").bind(id),
         ]);
         await logAction(env.DB, id, 'User deleted');
@@ -9206,6 +9406,8 @@ async function deleteUnreachableUsers(env) {
                 env.DB.prepare(`DELETE FROM ai_messages   WHERE chat_id IN (${ph})`).bind(...slice),
                 env.DB.prepare(`DELETE FROM dm_messages   WHERE chat_id IN (${ph})`).bind(...slice),
                 env.DB.prepare(`DELETE FROM blocked_users WHERE user_id IN (${ph})`).bind(...slice),
+                env.DB.prepare(`DELETE FROM ai_rate_limits WHERE user_id IN (${ph})`).bind(...slice),
+                env.DB.prepare(`DELETE FROM broadcast_recipients WHERE chat_id IN (${ph})`).bind(...slice),
                 env.DB.prepare(`DELETE FROM sessions      WHERE user_id IN (${ph}) AND token LIKE 'bot-%'`).bind(...slice),
             ]);
         }
@@ -9270,7 +9472,7 @@ async function getUserDmMessages(env, url) {
         const userId = parseInt(url.pathname.split('/')[3]);
         if (isNaN(userId)) return apiJson({ error: 'Invalid user ID.' }, 400);
         await initializeDatabase(env.DB);
-        const rows = await env.DB.prepare('SELECT * FROM dm_messages WHERE chat_id = ? ORDER BY id ASC LIMIT 300').bind(userId).all();
+        const rows = await env.DB.prepare('SELECT * FROM (SELECT * FROM dm_messages WHERE chat_id = ? ORDER BY id DESC LIMIT 300) ORDER BY id ASC').bind(userId).all();
         return apiJson({ messages: rows.results || [] });
     } catch (err) { return internalError(err); }
 }
@@ -9588,7 +9790,7 @@ async function getGroupMemory(env, url) {
         const id = parseInt(url.pathname.split('/')[3]);
         await initializeDatabase(env.DB);
         const rows = await env.DB.prepare(
-            'SELECT id, role, content, timestamp FROM ai_messages WHERE chat_id = ? ORDER BY id ASC LIMIT 500'
+            'SELECT id, role, content, timestamp FROM (SELECT id, role, content, timestamp FROM ai_messages WHERE chat_id = ? ORDER BY id DESC LIMIT 500) ORDER BY id ASC'
         ).bind(id).all();
         return apiJson({ messages: rows.results || [] });
     } catch (err) { return internalError(err); }
@@ -12255,21 +12457,27 @@ async function executeMcpTool(name, args, env, categories) {
                     if (Array.isArray(incomingAlts)) {
                         let storedAlts = [];
                         try { const raw = await getSetting(env.DB, 'ai_alt_providers'); storedAlts = raw ? JSON.parse(raw) : []; } catch (e) {}
-                        // Preserve existing API keys keyed by provider NAME, not index —
-                        // reordering or inserting a new provider can't steal another's key.
+                        // Keys are ONLY resolved from stored settings. The AI can
+                        // never inject a new key — even if it sends one in `apiKey`
+                        // it is ignored. This matches the tool description.
                         const storedByProvider = {};
                         for (const a of storedAlts) if (a && a.provider) storedByProvider[String(a.provider)] = a.apiKey || '';
                         const cleaned = incomingAlts.map(a => {
                             const prov = String((a && a.provider) || '').trim();
-                            const incomingKey = a && a.apiKey && a.apiKey !== KEEP_SENTINEL ? String(a.apiKey) : '';
-                            const resolvedKey = incomingKey || storedByProvider[prov] || '';
-                            if (!resolvedKey) throw new Error(`Provider "${prov}" has no API key. Add it in the dashboard first, then retry.`);
+                            if (!prov) return null;
+                            const storedKey = storedByProvider[prov] || '';
+                            if (!storedKey) {
+                                throw new Error(
+                                    `Fallback "${prov}" has no stored API key. ` +
+                                    `Add it in the AI tab first, then the AI can manage the provider list.`
+                                );
+                            }
                             return {
                                 provider: prov,
                                 model: String((a && a.model) || '').trim(),
-                                apiKey: resolvedKey,
+                                apiKey: storedKey,
                             };
-                        }).filter(a => a.provider);
+                        }).filter(Boolean);
                         incoming.ai_alt_providers = JSON.stringify(cleaned);
                     } else {
                         delete incoming.ai_alt_providers;
@@ -13445,12 +13653,13 @@ async function sendChatMessage(request, env, url) {
 
         const tools = getMcpToolDefinitions(categories);
         const history = await loadMcpSession(env.DB, key);
+        const dbKeep = await getMcpMemoryLimit(env.DB);
 
         const result = await runAgentLoop({
             env,
             sessionKey: key,
             persistSession: true,
-            forceKeep: 50,
+            forceKeep: dbKeep,
             providerSettings: aiSettings,
             systemPrompt: MCP_SYSTEM_PROMPT,
             history,
@@ -13532,15 +13741,23 @@ async function tgCall(token, method, payload, opts = {}) {
 }
 async function sendRichText(token, chatId, text, extra = {}) {
     if (!text) return null;
-    const payload = Object.assign({ chat_id: chatId, text, parse_mode: 'HTML' }, extra);
-    const data = await tgCall(token, 'sendMessage', payload);
-    if (data && data.ok) return data;
-    if (isHtmlParseError(data)) {
-        const desc = String((data && data.description) || '');
-        const fallbackText = /unsupported start tag|unclosed tag/i.test(desc) ? htmlToPlain(text) : htmlToLiteral(text);
-        return tgCall(token, 'sendMessage', Object.assign({ chat_id: chatId, text: fallbackText, parse_mode: 'HTML' }, extra));
+    const chunks = text.length > 4000 ? splitEscapedHtml(text, 4000) : [text];
+    let last = null;
+    for (let i = 0; i < chunks.length; i++) {
+        const chunk = chunks[i];
+        const chunkExtra = (i === chunks.length - 1) ? extra : {};
+        const payload = Object.assign({ chat_id: chatId, text: chunk, parse_mode: 'HTML' }, chunkExtra);
+        const data = await tgCall(token, 'sendMessage', payload);
+        if (data && data.ok) { last = data; continue; }
+        if (isHtmlParseError(data)) {
+            const desc = String((data && data.description) || '');
+            const fallbackText = /unsupported start tag|unclosed tag/i.test(desc) ? htmlToPlain(chunk) : htmlToLiteral(chunk);
+            last = await tgCall(token, 'sendMessage', Object.assign({ chat_id: chatId, text: fallbackText, parse_mode: 'HTML' }, chunkExtra));
+            continue;
+        }
+        last = data;
     }
-    return data;
+    return last;
 }
 const SUPPORTED_MEDIA_TYPES = ['text', 'photo', 'video', 'animation', 'voice', 'audio', 'document', 'video_note', 'sticker'];
 const MEDIA_TYPE_METHODS = {
@@ -13571,9 +13788,22 @@ async function sendMediaMessage(token, chatId, mediaType, fileIdOrUrl, caption, 
     if (!def) return await sendRichText(token, chatId, caption || '', replyMarkup ? { reply_markup: replyMarkup } : {});
     const media = fileIdOrUrl ? String(fileIdOrUrl).trim() : '';
     if (!media) return null;
+
+    // Telegram caps captions at 1024 chars; anything past that gets dropped.
+    // Split off the overflow, send it as a follow-up text message.
+    const TG_CAPTION_LIMIT = 1024;
+    let firstCaption = caption || '';
+    let overflow = '';
+    if (firstCaption.length > TG_CAPTION_LIMIT) {
+        let cut = firstCaption.lastIndexOf(' ', TG_CAPTION_LIMIT);
+        if (cut < TG_CAPTION_LIMIT * 0.5) cut = TG_CAPTION_LIMIT;
+        overflow = firstCaption.slice(cut).replace(/^\s+/, '');
+        firstCaption = firstCaption.slice(0, cut);
+    }
+
     const payload = { chat_id: chatId };
     payload[def.field] = media;
-    if (caption) { payload.caption = caption; payload.parse_mode = 'HTML'; }
+    if (firstCaption) { payload.caption = firstCaption; payload.parse_mode = 'HTML'; }
     if (replyMarkup) payload.reply_markup = replyMarkup;
     const meta = extra || {};
     if (meta.duration) payload.duration = meta.duration;
@@ -13585,12 +13815,13 @@ async function sendMediaMessage(token, chatId, mediaType, fileIdOrUrl, caption, 
     if (meta.file_name) payload.file_name = meta.file_name;
     if (meta.thumb) payload.thumb = meta.thumb;
     let res = await tgCall(token, def.method, payload);
-    if ((!res || !res.ok) && caption && isHtmlParseError(res)) {
+    if ((!res || !res.ok) && firstCaption && isHtmlParseError(res)) {
         const plain = Object.assign({}, payload);
-        plain.caption = htmlToPlain(caption);
+        plain.caption = htmlToPlain(firstCaption);
         delete plain.parse_mode;
         res = await tgCall(token, def.method, plain);
     }
+    if (overflow) await sendRichText(token, chatId, overflow);
     return res;
 }
 async function resolveFileDownloadUrl(token, fileId) {
