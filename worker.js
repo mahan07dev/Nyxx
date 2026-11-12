@@ -2489,7 +2489,7 @@ crons = ["0 3 * * *"]</code></pre>
                     <span class="field-hint">Direct media URL.</span>
                 </div>
                 <div id="msg-media-file-panel" class="hidden">
-                    <input type="file" class="input" id="msg-media-file" onchange="uploadMsgMedia()">
+                    <input type="file" class="input" id="msg-media-file" onchange="uploadMsgMedia()" style="align-content: center;>
                     <div id="msg-media-file-status" class="small" style="margin-top:8px;"></div>
                 </div>
                 <input type="hidden" id="msg-file-id">
