@@ -360,6 +360,7 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
 .badge.red { background: var(--red-soft); color: var(--red); }
 .badge.orange { background: var(--orange-soft); color: var(--orange); }
 .badge.blue { background: var(--accent-soft); color: var(--accent); }
+.badge.black { background: black; color: white; }
 .badge.purple { background: var(--purple-soft); color: var(--purple); }
 .empty { text-align: center; padding: var(--s10) var(--s4); color: var(--text-4); font-size: var(--fs-subhead); }
 .empty i { display: block; font-size: 30px; margin-bottom: var(--s3); opacity: 0.4; }
