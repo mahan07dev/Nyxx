@@ -1,8 +1,8 @@
 // ============================================================================
-// NYXX — v4.8.0
+// NYXX — v4.9.0
 // Telegram bot builder + management dashboard for Cloudflare Workers + D1.
 // ============================================================================
-const VERSION = '4.8.0';
+const VERSION = '4.9.0';
 
 const RELAY_BASE = 'https://nyxx-proxy.nova-06272b19.workers.dev';
 const RELAY_EXCHANGE_SECRET = 'SECRET_ULTRA_PRO_MAX'; // Must match proxy.js
@@ -171,8 +171,27 @@ input, textarea, select, button { font-family: inherit; }
 .brand img { width: 36px; height: 36px; border-radius: 9px; }
 .brand-name { font-size: var(--fs-title3); font-weight: 700; letter-spacing: -0.02em; }
 .brand-ver { font-size: var(--fs-caption2); color: var(--text-4); font-weight: 600; }
-.nav-group { display: flex; flex-direction: column; gap: 2px; margin-bottom: var(--s3); }
-.nav-label { font-size: var(--fs-caption2); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-4); padding: var(--s2) var(--s3); }
+.nav-group { display: flex; flex-direction: column; gap: 2px; margin-bottom: var(--s2); }
+.nav-label { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: var(--s2) var(--s3); background: none; border: none; font-family: inherit; font-size: var(--fs-caption2); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-4); cursor: pointer; border-radius: var(--r-sm); transition: color 0.15s, background 0.15s; min-height: 35px; }
+.nav-label:hover { color: var(--text-3); background: var(--fill-1); }
+.nav-chev { font-size: 10px; transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1); opacity: 0.7; }
+.nav-group.collapsed .nav-chev { transform: rotate(-90deg); }
+.nav-group.collapsed .nav-items { display: none; }
+.nav-items { display: flex; flex-direction: column; gap: 2px; }
+.nav-subgroup { margin-top: 4px; margin-bottom: 4px; }
+.nav-subgroup .nav-sublabel { padding-left: 24px; font-size: 10px; opacity: 0.85; }
+.nav-subgroup .nav-subgroup { border-left: 1px solid var(--hairline); margin-left: 12px; padding-left: 0; }
+.nav-subgroup .nav-item { padding-left: 26px; font-size: 13px; min-height: 38px; }
+.nav-subgroup .nav-item i { font-size: 13px; }
+.nav-primary { margin-bottom: var(--s2); }
+.nav-primary .nav-item { font-weight: 600; }
+.nav-search { display: flex; align-items: center; gap: 8px; padding: 0 10px; height: 34px; background: var(--fill-1); border: 1px solid transparent; border-radius: var(--r-sm); margin: 0 4px var(--s3); transition: background 0.15s, border-color 0.15s, box-shadow 0.15s; }
+.nav-search:focus-within { background: var(--surface); border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.nav-search i { color: var(--text-4); font-size: 12px; flex-shrink: 0; }
+.nav-search input { flex: 1; min-width: 0; border: none; background: none; outline: none; color: var(--text); font-size: 13px; font-family: inherit; padding: 0; min-height: 35px; }
+.nav-search input::placeholder { color: var(--text-4); }
+.nav-search-kbd { font-family: var(--mono); font-size: 10px; padding: 1px 6px; background: var(--fill-2); color: var(--text-4); border-radius: 4px; border: 1px solid var(--hairline); flex-shrink: 0; }
+.nav-badge { margin-left: auto; background: var(--red); color: #fff; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: var(--r-pill); min-width: 18px; text-align: center; }
 .nav-item {
     display: flex; align-items: center; gap: var(--s3);
     padding: 9px var(--s3); border-radius: var(--r-sm);
@@ -243,7 +262,7 @@ html[data-theme="dark"] .btn:hover:not(:disabled) { filter: brightness(1.15); }
 .btn:active:not(:disabled) { transform: scale(0.97); }
 .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .btn-primary { background: var(--accent); color: #fff; }
-.btn-primary:hover:not(:disabled) { background: var(--accent-2); filter: none; }
+.btn-primary:hover:not(:disabled) { background: linear-gradient(var(--accent-2)); filter: none; }
 .btn-success { background: var(--green); color: #fff; }
 .btn-danger { background: var(--red); color: #fff; }
 .btn-gray { background: var(--fill-1); color: var(--text); }
@@ -265,12 +284,13 @@ html[data-theme="dark"] .btn:hover:not(:disabled) { filter: brightness(1.15); }
 .icon-btn:active { transform: scale(0.94); }
 .icon-btn.danger { color: var(--red); }
 .icon-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-.btn.loading { position: relative; pointer-events: none; opacity: 0.7; }
+.btn.loading { position: relative; pointer-events: none; font-size: 0 !important; user-select: none; }
 .btn.loading > :not(.btn-spinner) { visibility: hidden; }
 .btn .btn-spinner { display: none; position: absolute; inset: 0; align-items: center; justify-content: center; }
 .btn.loading .btn-spinner { display: flex; }
-.mini-spinner { width: 15px; height: 15px; border-radius: 50%; border: 2px solid currentColor; border-top-color: transparent; animation: spin 0.7s linear infinite; display: inline-block; opacity: 0.8; }
-.btn .mini-spinner { border-color: rgba(255,255,255,0.4); border-top-color: #fff; }
+.mini-spinner { width: 15px; height: 15px; border-radius: 50%; border: 2px solid currentColor; border-top-color: transparent; animation: spin 0.7s linear infinite; display: inline-block; opacity: 0.9; }
+.btn.loading .mini-spinner { width: 20px; height: 20px; border-width: 2.5px; }
+.btn .mini-spinner { border-color: rgba(255,255,255,0.35); border-top-color: #fff; }
 .btn-gray .mini-spinner, .btn-bordered .mini-spinner, .btn-plain .mini-spinner { border-color: var(--fill-3); border-top-color: var(--text-2); }
 @keyframes spin { to { transform: rotate(360deg); } }
 .busy-dots { display: inline-flex; gap: 3px; align-items: center; }
@@ -510,16 +530,58 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
 .kb-preview .pvbtn.pv-cmd { color: var(--green); }
 .kb-preview .pvbtn.pv-cb { color: var(--orange); }
 
-.toasts { position: fixed; bottom: var(--s6); right: var(--s6); z-index: 500; display: flex; flex-direction: column; gap: var(--s2); max-width: min(92vw, 400px); pointer-events: none; }
-.toast { background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--hairline); border-radius: var(--r-md); padding: 12px 14px 12px 16px; font-size: var(--fs-subhead); box-shadow: var(--shadow-lg); animation: toastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); word-break: break-word; pointer-events: auto; display: flex; align-items: flex-start; gap: 10px; }
-.toast-body { flex: 1; }
-.toast-close { border: none; background: none; color: var(--text-4); cursor: pointer; font-size: 16px; line-height: 1; padding: 0; width: 20px; height: 20px; flex-shrink: 0; }
-.toast-close:hover { color: var(--text); }
-.toast.success { border-left: 4px solid var(--green); }
-.toast.error { border-left: 4px solid var(--red); }
-.toast.info { border-left: 4px solid var(--accent); }
-@keyframes toastIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-@media (max-width: 900px) { .toasts { right: var(--s4); bottom: var(--s4); left: var(--s4); max-width: none; } }
+.toasts { position: fixed; top: 76px; right: var(--s5); z-index: 500; display: flex; flex-direction: column; gap: 10px; max-width: min(92vw, 420px); pointer-events: none; }
+.toast {
+    position: relative;
+    background: var(--bg-elev);
+    border: 1px solid var(--hairline);
+    border-left: 4px solid var(--accent);
+    border-radius: var(--r-md);
+    padding: 14px 14px 17px 14px;
+    font-size: var(--fs-subhead);
+    font-weight: 500;
+    box-shadow: 0 14px 40px -8px rgba(0,0,0,0.35), 0 4px 14px rgba(0,0,0,0.12);
+    animation: toastIn 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+    word-break: break-word;
+    pointer-events: auto;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    overflow: hidden;
+    color: var(--text);
+}
+.toast .toast-icon {
+    width: 30px; height: 30px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0;
+}
+.toast .toast-body { flex: 1; min-width: 0; padding-top: 5px; line-height: 1.45; }
+.toast .toast-close {
+    border: none; background: transparent; color: var(--text-4);
+    cursor: pointer; font-size: 20px; line-height: 1; padding: 0;
+    width: 26px; height: 26px; flex-shrink: 0; border-radius: 7px;
+    transition: background 0.15s, color 0.15s;
+    display: flex; align-items: center; justify-content: center;
+    margin-top: 2px; font-family: inherit;
+}
+.toast .toast-close:hover { background: var(--fill-1); color: var(--text); }
+.toast .toast-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(120,120,128,0.15); }
+.toast .toast-progress-fill { height: 100%; width: 100%; background: var(--accent); animation: toastProgress 4s linear forwards; }
+.toast.success { border-left-color: var(--green); background: linear-gradient(135deg, var(--bg-elev) 0%, var(--green-soft) 220%); }
+.toast.success .toast-icon { background: var(--green); color: #fff; }
+.toast.success .toast-progress-fill { background: var(--green); }
+.toast.error { border-left-color: var(--red); background: linear-gradient(135deg, var(--bg-elev) 0%, var(--red-soft) 220%); }
+.toast.error .toast-icon { background: var(--red); color: #fff; }
+.toast.error .toast-progress-fill { background: var(--red); }
+.toast.info { border-left-color: var(--accent); background: linear-gradient(135deg, var(--bg-elev) 0%, var(--accent-soft) 220%); }
+.toast.info .toast-icon { background: var(--accent); color: #fff; }
+.toast.info .toast-progress-fill { background: var(--accent); }
+@keyframes toastIn { from { opacity: 0; transform: translateY(-24px) scale(0.94); } to { opacity: 1; transform: none; } }
+@keyframes toastOut { to { opacity: 0; transform: translateY(-16px) scale(0.94); } }
+@keyframes toastProgress { from { width: 100%; } to { width: 0%; } }
+@media (max-width: 900px) {
+    .toasts { top: 58px; right: var(--s3); left: var(--s3); max-width: none; }
+}
 
 @keyframes shimmer { 0% { background-position: -320px 0; } 100% { background-position: 320px 0; } }
 .skl { background: linear-gradient(90deg, var(--fill-1) 0%, var(--fill-2) 50%, var(--fill-1) 100%); background-size: 320px 100%; animation: shimmer 1.5s ease-in-out infinite; border-radius: var(--r-xs); color: transparent !important; }
@@ -650,6 +712,100 @@ details.help > div { padding: 0 16px 14px; font-size: var(--fs-footnote); line-h
     .menu-entry .menu-desc { width: 100%; }
     .menu-entry .menu-actions { justify-content: center; }
 }
+
+/* ===== Overview layout ===== */
+.ov-main-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s5); margin-bottom: var(--s5); }
+.ov-main-grid > .card { min-width: 0; }
+@media (max-width: 900px) { .ov-main-grid { grid-template-columns: minmax(0, 1fr); } }
+.ov-actions { display: flex; flex-direction: column; gap: 8px; }
+.ov-action { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: var(--r-sm); background: transparent; border: 1px solid var(--hairline); cursor: pointer; text-align: left; font-family: inherit; color: var(--text); transition: border-color 0.15s, background 0.15s, transform 0.15s; }
+.ov-action:hover { border-color: var(--accent); background: var(--fill-1); transform: translateX(2px); }
+.ov-action.primary { background: var(--accent-soft); border-color: var(--accent); }
+.ov-action.primary:hover { background: var(--accent); color: #fff; }
+.ov-action-ic { width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; background: var(--fill-1); color: var(--text-2); font-size: 13px; flex-shrink: 0; }
+.ov-action.primary .ov-action-ic { background: var(--accent); color: #fff; }
+.ov-action.primary:hover .ov-action-ic { background: #fff; color: var(--accent); }
+.ov-action-ic.blue { background: var(--accent-soft); color: var(--accent); }
+.ov-action-ic.purple { background: var(--purple-soft); color: var(--purple); }
+.ov-action-ic.green { background: var(--green-soft); color: var(--green); }
+.ov-action-text { flex: 1; min-width: 0; }
+.ov-action-title { font-weight: 600; font-size: var(--fs-subhead); }
+.ov-action-sub { font-size: var(--fs-caption); color: var(--text-4); margin-top: 2px; }
+.ov-action.primary:hover .ov-action-sub { color: rgba(255,255,255,0.8); }
+.ov-status-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--hairline); }
+.ov-status-row:last-child { border-bottom: none; }
+.ov-status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.ov-status-label { font-weight: 600; font-size: var(--fs-subhead); color: var(--text); }
+.ov-status-detail { font-size: var(--fs-caption); color: var(--text-4); text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 55%; }
+.ov-recent-list { display: flex; flex-direction: column; gap: 2px; }
+.ov-recent-item { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border-radius: var(--r-sm); transition: background 0.15s; }
+.ov-recent-item:hover { background: var(--fill-1); }
+.ov-recent-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; margin-top: 7px; }
+.ov-recent-text { flex: 1; min-width: 0; }
+.ov-recent-action { font-size: var(--fs-footnote); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ov-recent-time { font-size: var(--fs-caption2); color: var(--text-4); margin-top: 1px; }
+
+/* ===== General UI polish ===== */
+.page-head h1 { position: relative; display: inline-block; }
+.page-head h1::after { content: ''; position: absolute; bottom: -3px; left: 0; width: 36px; height: 3px; border-radius: 2px; background: linear-gradient(90deg, var(--accent), var(--purple)); }
+
+.stat { transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease; }
+.stat:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--accent); }
+.stat .st-ic { transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+.stat:hover .st-ic { transform: scale(1.08) rotate(-3deg); }
+.stat .st-val { font-variant-numeric: tabular-nums; }
+
+.btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+.btn-primary:hover:not(:disabled) { box-shadow: 0 4px 14px -4px var(--accent); filter: none; }
+
+.hint-banner { border-left: 3px solid var(--accent); }
+.hint-banner.warn { border-left-color: var(--orange); }
+.hint-banner.danger { border-left-color: var(--red); }
+
+.switch-row { transition: border-color 0.15s ease; }
+.switch-row:hover { border-color: var(--fill-3); }
+
+.input:hover, .textarea:hover, select.input:hover { border-color: var(--fill-3); }
+
+.card { transition: box-shadow 0.2s ease; }
+.card:hover { box-shadow: var(--shadow-md); }
+
+.list-row { transition: background 0.14s ease, transform 0.1s ease; }
+.list-row:hover { transform: translateX(1px); }
+
+@media (max-width: 900px) {
+    .page-head h1::after { width: 24px; height: 2px; bottom: -2px; }
+    .stat:hover { transform: none; }
+}
+
+/* ===== Compose status (draft attachments indicator) ===== */
+.compose-status { display: none; margin-top: 10px; padding: 12px 14px; border-radius: var(--r-md); background: var(--green-soft); border-left: 3px solid var(--green); font-size: var(--fs-footnote); }
+.compose-status.show { display: block; animation: fade 0.25s ease; }
+.compose-status .cs-head { display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--green); margin-bottom: 8px; font-size: var(--fs-subhead); }
+.compose-status .cs-head i { font-size: 15px; }
+.compose-status .cs-badges { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.compose-status .cs-badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: var(--r-pill); background: var(--surface); border: 1px solid var(--hairline); font-size: 11px; font-weight: 700; color: var(--text); text-transform: capitalize; }
+.compose-status .cs-badge i { color: var(--accent); font-size: 11px; }
+.compose-status .cs-clear { margin-left: auto; background: none; border: 1px solid var(--hairline); color: var(--text-2); padding: 4px 10px; border-radius: var(--r-pill); font-size: 11px; cursor: pointer; font-family: inherit; font-weight: 600; transition: background 0.15s, color 0.15s; }
+.compose-status .cs-clear:hover { background: var(--fill-1); color: var(--text); }
+
+/* ===== Media library ===== */
+.media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+.media-card { background: var(--surface); border: 1px solid var(--hairline); border-radius: 12px; overflow: hidden; position: relative; transition: transform 0.15s, border-color 0.15s; }
+.media-card:hover { transform: translateY(-2px); border-color: var(--accent); }
+.media-card .media-thumb { aspect-ratio: 1; background: var(--surface-2); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.media-card .media-thumb img, .media-card .media-thumb video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.media-card .media-thumb .fa-solid, .media-card .media-thumb .fa-regular { font-size: 32px; color: var(--text-4); }
+.media-card .media-info { padding: 10px 12px; }
+.media-card .media-title { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.media-card .media-sub { font-size: 11px; color: var(--text-4); margin-top: 2px; display: flex; justify-content: space-between; }
+.media-card .media-actions { position: absolute; top: 6px; right: 6px; display: flex; gap: 4px; opacity: 0; transition: opacity 0.15s; }
+.media-card:hover .media-actions { opacity: 1; }
+.media-card .media-actions button { background: rgba(0,0,0,0.7); color: #fff; border: none; width: 28px; height: 28px; border-radius: 6px; cursor: pointer; font-size: 12px; display: inline-flex; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
+.media-card .media-actions button:hover { background: var(--accent); }
+.media-card .media-actions button.danger:hover { background: var(--red); }
+.media-type-tag { position: absolute; top: 6px; left: 6px; background: rgba(0,0,0,0.7); color: #fff; font-size: 10px; font-weight: 700; padding: 3px 7px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.04em; backdrop-filter: blur(8px); }
+@media (max-width: 640px) { .media-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; } .media-card .media-actions { opacity: 1; } }
 
 /* ===== AUTH GATEWAY ===== */
 .auth-shell { min-height: calc(100vh - 200px); display: flex; align-items: center; justify-content: center; padding: var(--s6) 0; }
@@ -818,6 +974,11 @@ body { overflow-x: hidden; }
     .media-preview .mp-thumb img,
     .media-preview .mp-thumb video { max-width: 100%; max-height: 160px; width: auto; margin: 0 auto; }
 }
+
+.segmented button.loading { position: relative; pointer-events: none; font-size: 0 !important; }
+.segmented button.loading > :not(.btn-spinner) { visibility: hidden; }
+.segmented button.loading .btn-spinner { display: flex; }
+.segmented button .btn-spinner { display: none; position: absolute; inset: 0; align-items: center; justify-content: center; }
 </style>
 </head>
 <body>
@@ -830,38 +991,73 @@ body { overflow-x: hidden; }
                 <div class="brand-ver">v${VERSION}</div>
             </div>
         </div>
-        <nav class="nav-group">
-            <div class="nav-label">Bot</div>
-            <button class="nav-item active" data-page="overview" onclick="go('overview')"><i class="fa-solid fa-house"></i><span>Overview</span></button>
-            <button class="nav-item" data-page="commands" onclick="go('commands')"><i class="fa-solid fa-terminal"></i><span>Commands</span></button>
-            <button class="nav-item" data-page="menu" onclick="go('menu')"><i class="fa-solid fa-list"></i><span>Menu &amp; Featured</span></button>
-            <button class="nav-item" data-page="botinfo" onclick="go('botinfo')"><i class="fa-solid fa-circle-info"></i><span>Bot Info</span></button>
+        <div class="nav-search">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input id="nav-search-input" placeholder="Search pages…" oninput="filterNav(this.value)" autocomplete="off" spellcheck="false">
+            <kbd class="nav-search-kbd">/</kbd>
+        </div>
+
+        <nav class="nav-group nav-primary">
+            <button class="nav-item active" data-page="overview" data-label="overview home dashboard start" onclick="go('overview')"><i class="fa-solid fa-house"></i><span>Overview</span></button>
         </nav>
-        <nav class="nav-group">
-            <div class="nav-label">Audience</div>
-            <button class="nav-item" data-page="users" onclick="go('users')"><i class="fa-solid fa-user-group"></i><span>Users</span></button>
-            <button class="nav-item" data-page="groups" onclick="go('groups')"><i class="fa-solid fa-comments"></i><span>Groups</span></button>
-            <button class="nav-item" data-page="broadcast" onclick="go('broadcast')"><i class="fa-solid fa-bullhorn"></i><span>Broadcast</span></button>
-            <button class="nav-item" data-page="contact" onclick="go('contact')"><i class="fa-solid fa-envelope"></i><span>Contact</span><span class="nav-badge" id="contact-nav-badge" style="display:none;margin-left:auto;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:var(--r-pill);min-width:18px;text-align:center;"></span></button>
-            <button class="nav-item" data-page="memory" onclick="go('memory')"><i class="fa-solid fa-database"></i><span>Memory</span></button>
+
+        <nav class="nav-group" data-group="messaging">
+            <button class="nav-label" type="button" onclick="toggleNavGroup(this)"><span>Messaging</span><i class="fa-solid fa-chevron-down nav-chev"></i></button>
+            <div class="nav-items">
+                <button class="nav-item" data-page="commands" data-label="commands cmd terminal bot replies" onclick="go('commands')"><i class="fa-solid fa-terminal"></i><span>Commands</span></button>
+                <button class="nav-item" data-page="menu" data-label="menu featured commands telegram" onclick="go('menu')"><i class="fa-solid fa-list"></i><span>Menu &amp; Featured</span></button>
+                <button class="nav-item" data-page="broadcast" data-label="broadcast send message users announce" onclick="go('broadcast')"><i class="fa-solid fa-bullhorn"></i><span>Broadcast</span></button>
+                <div class="nav-group nav-subgroup" data-group="contact-sub">
+                    <button class="nav-label nav-sublabel" type="button" onclick="toggleNavGroup(this)"><span>Contact</span><i class="fa-solid fa-chevron-down nav-chev"></i></button>
+                    <div class="nav-items">
+                        <button class="nav-item" data-page="contact" data-label="contact settings notifications auto-reply away mode rate limit" onclick="go('contact')"><i class="fa-solid fa-envelope"></i><span>Contact</span></button>
+                        <button class="nav-item" data-page="inbox" data-label="inbox messages replies unread contact" onclick="go('inbox')"><i class="fa-solid fa-inbox"></i><span>Inbox</span><span class="nav-badge" id="contact-nav-badge" style="display:none;"></span></button>
+                    </div>
+                </div>
+            </div>
         </nav>
-        <nav class="nav-group">
-            <div class="nav-label">Intelligence</div>
-            <button class="nav-item" data-page="ai" onclick="go('ai')" title="Connect an AI provider and shape how the bot replies"><i class="fa-solid fa-wand-magic-sparkles"></i><span>AI</span></button>
-            <button class="nav-item" data-page="mcp" onclick="go('mcp')" title="Model Context Protocol — let AI manage the bot with tools"><i class="fa-solid fa-plug"></i><span>MCP</span></button>
+
+        <nav class="nav-group" data-group="people">
+            <button class="nav-label" type="button" onclick="toggleNavGroup(this)"><span>People</span><i class="fa-solid fa-chevron-down nav-chev"></i></button>
+            <div class="nav-items">
+                <button class="nav-item" data-page="users" data-label="users people members audience" onclick="go('users')"><i class="fa-solid fa-user-group"></i><span>Users</span></button>
+                <button class="nav-item" data-page="groups" data-label="groups chats communities" onclick="go('groups')"><i class="fa-solid fa-comments"></i><span>Groups</span></button>
+            </div>
         </nav>
-        <nav class="nav-group">
-            <div class="nav-label">Admin</div>
-            <button class="nav-item" data-page="permissions" onclick="go('permissions')"><i class="fa-solid fa-shield-halved"></i><span>Permissions</span></button>
+
+        <nav class="nav-group" data-group="content">
+            <button class="nav-label" type="button" onclick="toggleNavGroup(this)"><span>Content</span><i class="fa-solid fa-chevron-down nav-chev"></i></button>
+            <div class="nav-items">
+                <button class="nav-item" data-page="media" data-label="media library files photos videos audio" onclick="go('media')"><i class="fa-solid fa-photo-film"></i><span>Media Library</span></button>
+                <button class="nav-item" data-page="memory" data-label="memory chat history conversations stored" onclick="go('memory')"><i class="fa-solid fa-database"></i><span>Memory</span></button>
+            </div>
         </nav>
-        <nav class="nav-group">
-            <div class="nav-label">System</div>
-            <button class="nav-item" data-page="settings" onclick="go('settings')"><i class="fa-solid fa-gear"></i><span>Settings</span></button>
-            <button class="nav-item" data-page="cron" onclick="go('cron')"><i class="fa-solid fa-clock-rotate-left"></i><span>Cleanup</span></button>
-            <button class="nav-item" data-page="backup" onclick="go('backup')"><i class="fa-solid fa-box-archive"></i><span>Backup</span></button>
-            <button class="nav-item" data-page="logs" onclick="go('logs')"><i class="fa-solid fa-clipboard-list"></i><span>Activity Log</span></button>
-            <button class="nav-item" data-page="update" onclick="go('update')"><i class="fa-solid fa-cloud-arrow-up"></i><span>Update</span></button>
+
+        <nav class="nav-group" data-group="ai">
+            <button class="nav-label" type="button" onclick="toggleNavGroup(this)"><span>AI</span><i class="fa-solid fa-chevron-down nav-chev"></i></button>
+            <div class="nav-items">
+                <button class="nav-item" data-page="ai" data-label="ai assistant prompt gpt openai gemini replies" onclick="go('ai')" title="Connect an AI provider and shape how the bot replies"><i class="fa-solid fa-wand-magic-sparkles"></i><span>AI Assistant</span></button>
+                <button class="nav-item" data-page="mcp" data-label="mcp tools protocol claude context" onclick="go('mcp')" title="Model Context Protocol — let AI manage the bot with tools"><i class="fa-solid fa-plug"></i><span>MCP Tools</span></button>
+            </div>
         </nav>
+
+        <nav class="nav-group" data-group="system">
+            <button class="nav-label" type="button" onclick="toggleNavGroup(this)"><span>System</span><i class="fa-solid fa-chevron-down nav-chev"></i></button>
+            <div class="nav-items">
+                <button class="nav-item" data-page="settings" data-label="settings config token webhook password media storage" onclick="go('settings')"><i class="fa-solid fa-gear"></i><span>Settings</span></button>
+                <button class="nav-item" data-page="botinfo" data-label="bot profile info name description" onclick="go('botinfo')"><i class="fa-solid fa-circle-info"></i><span>Bot Profile</span></button>
+                <button class="nav-item" data-page="permissions" data-label="permissions access admin moderator roles" onclick="go('permissions')"><i class="fa-solid fa-shield-halved"></i><span>Permissions</span></button>
+                <button class="nav-item" data-page="update" data-label="update deploy version upgrade" onclick="go('update')"><i class="fa-solid fa-cloud-arrow-up"></i><span>Update</span></button>
+                <button class="nav-item" data-page="backup" data-label="backup restore export import" onclick="go('backup')"><i class="fa-solid fa-box-archive"></i><span>Backup</span></button>
+                <button class="nav-item" data-page="logs" data-label="logs activity audit history" onclick="go('logs')"><i class="fa-solid fa-clipboard-list"></i><span>Activity Log</span></button>
+                <button class="nav-item" data-page="cron" data-label="retention cleanup cron schedule delete" onclick="go('cron')"><i class="fa-solid fa-clock-rotate-left"></i><span>Retention</span></button>
+            </div>
+        </nav>
+
+        <div id="nav-no-results" style="display:none;padding:24px 12px;text-align:center;color:var(--text-4);font-size:12px;">
+            <i class="fa-solid fa-magnifying-glass" style="font-size:20px;display:block;margin-bottom:8px;opacity:0.5;"></i>
+            No matches
+        </div>
         <div class="nav-spacer"></div>
         <div class="nav-foot">
             <div class="nav-foot-row">
@@ -971,20 +1167,50 @@ body { overflow-x: hidden; }
                     <div class="page-actions"><button class="btn btn-gray btn-sm" onclick="loadOverview(true)"><i class="fa-solid fa-rotate"></i> Refresh</button></div>
                 </div>
                 <div class="stats" id="ov-stats"></div>
-                <div class="card">
-                    <div class="card-head"><div class="card-title"><i class="fa-solid fa-bolt"></i> Quick actions</div></div>
-                    <div class="grid grid-2" style="gap:10px;">
-                        <button class="btn btn-primary btn-block" onclick="openCommandModal()"><i class="fa-solid fa-plus"></i> New command</button>
-                        <button class="btn btn-gray btn-block" onclick="go('broadcast')"><i class="fa-solid fa-bullhorn"></i> Send broadcast</button>
-                        <button class="btn btn-gray btn-block" onclick="go('menu')"><i class="fa-solid fa-list"></i> Menu &amp; Featured</button>
-                        <button class="btn btn-gray btn-block" onclick="go('ai')"><i class="fa-solid fa-wand-magic-sparkles"></i> Configure AI</button>
-                        <button class="btn btn-gray btn-block" onclick="go('groups')"><i class="fa-solid fa-comments"></i> Manage groups</button>
-                        <button class="btn btn-gray btn-block" onclick="go('permissions')"><i class="fa-solid fa-shield-halved"></i> Permissions</button>
+
+                <div class="ov-main-grid">
+                    <div class="card" style="margin-bottom:0;">
+                        <div class="card-head"><div class="card-title"><i class="fa-solid fa-bolt"></i> Quick actions</div></div>
+                        <div class="ov-actions">
+                            <button class="ov-action primary" onclick="openCommandModal()">
+                                <div class="ov-action-ic"><i class="fa-solid fa-plus"></i></div>
+                                <div class="ov-action-text"><div class="ov-action-title">New command</div><div class="ov-action-sub">Create a bot command or reply</div></div>
+                            </button>
+                            <button class="ov-action" onclick="go('broadcast')">
+                                <div class="ov-action-ic blue"><i class="fa-solid fa-bullhorn"></i></div>
+                                <div class="ov-action-text"><div class="ov-action-title">Broadcast</div><div class="ov-action-sub">Message every user at once</div></div>
+                            </button>
+                            <button class="ov-action" onclick="go('ai')">
+                                <div class="ov-action-ic purple"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                                <div class="ov-action-text"><div class="ov-action-title">AI Assistant</div><div class="ov-action-sub">Configure the AI reply engine</div></div>
+                            </button>
+                            <button class="ov-action" onclick="go('groups')">
+                                <div class="ov-action-ic green"><i class="fa-solid fa-comments"></i></div>
+                                <div class="ov-action-text"><div class="ov-action-title">Groups</div><div class="ov-action-sub">Manage group behaviour</div></div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card" style="margin-bottom:0;">
+                        <div class="card-head"><div class="card-title"><i class="fa-solid fa-heart-pulse"></i> System status</div></div>
+                        <div id="ov-status-list" class="small muted">Loading…</div>
                     </div>
                 </div>
-                <div class="card">
-                    <div class="card-head"><div class="card-title"><i class="fa-solid fa-flag-checkered"></i> Getting started</div></div>
-                    <ul id="ov-checklist" style="list-style:none;padding:0;margin:0;"></ul>
+
+                <div class="ov-main-grid">
+                    <div class="card" style="margin-bottom:0;">
+                        <div class="card-head"><div class="card-title"><i class="fa-solid fa-flag-checkered"></i> Getting started</div></div>
+                        <ul id="ov-checklist" style="list-style:none;padding:0;margin:0;"></ul>
+                    </div>
+
+                    <div class="card" style="margin-bottom:0;">
+                        <div class="card-head">
+                            <div class="card-title"><i class="fa-solid fa-history"></i> Recent activity</div>
+                            <div style="flex:1"></div>
+                            <button class="btn btn-gray btn-sm" onclick="go('logs')">View all</button>
+                        </div>
+                        <div id="ov-recent"></div>
+                    </div>
                 </div>
             </section>
 
@@ -1122,9 +1348,10 @@ body { overflow-x: hidden; }
                         </div>
                         <div class="row" style="margin-top:8px;">
                             <input id="um-photo" class="input" placeholder="Photo URL (optional — text becomes the caption)" style="flex:1;">
-                            <button class="btn btn-gray btn-sm" onclick="openMsgEditor('dm-new')"><i class="fa-solid fa-keyboard"></i> Buttons</button>
+                            <button class="btn btn-gray btn-sm" onclick="openMsgEditor('dm-new')"><i class="fa-solid fa-sliders"></i> Compose options</button>
                         </div>
-                        <div class="field-hint">Attach an inline/reply keyboard with the Buttons button. It is saved with the message and can be edited later.</div>
+                        <div id="um-compose-status" class="compose-status"></div>
+                        <div class="field-hint" style="margin-top:6px;">Click <b>Compose options</b> to attach a media type, upload a file, or add inline / reply buttons before sending.</div>
                     </div>
 
                     <div class="tabpane" id="um-pane-ai">
@@ -1390,13 +1617,26 @@ body { overflow-x: hidden; }
                 </div>
 
                 <div class="card">
-                    <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-bullhorn"></i> Send announcement</div></div>
-                    <textarea class="textarea" id="gm-announce" rows="3" placeholder="Message to post in this group…"></textarea>
-                    <input class="input" id="gm-announce-photo" placeholder="Photo URL (optional)" style="margin-top:8px;">
-                    <div class="row" style="margin-top:10px;">
-                        <button class="btn btn-gray btn-sm" onclick="openMsgEditor('group')"><i class="fa-solid fa-keyboard"></i> Buttons</button>
-                        <button class="btn btn-primary" onclick="sendGroupAnnouncement()"><i class="fa-solid fa-paper-plane"></i> Send</button>
+                    <div class="card-head">
+                        <div class="card-title c-green"><i class="fa-solid fa-comments"></i> Group chat</div>
+                        <div style="flex:1"></div>
+                        <button class="btn btn-gray btn-sm" onclick="loadGroupChatMessages()" aria-label="Refresh chat"><i class="fa-solid fa-rotate"></i></button>
                     </div>
+                    <div class="hint-banner">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <div>Messages you send via the dashboard appear here. Click <b>Edit</b> to change text, media or buttons — or <b>Delete</b> to remove it from the group.</div>
+                    </div>
+                    <div class="chat" id="gm-chat-history" style="max-height:480px;overflow-y:auto;"></div>
+                    <div class="chat-compose" style="margin-top:12px;">
+                        <textarea class="textarea" id="gm-announce" rows="2" placeholder="Write an announcement…  (Enter to send)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendGroupAnnouncement();}"></textarea>
+                        <button class="btn btn-primary btn-icon" onclick="sendGroupAnnouncement()" id="gm-announce-send" aria-label="Send announcement"><i class="fa-solid fa-paper-plane"></i></button>
+                    </div>
+                    <div class="row" style="margin-top:8px;">
+                        <input class="input" id="gm-announce-photo" placeholder="Photo URL (optional)" style="flex:1;">
+                        <button class="btn btn-gray btn-sm" onclick="openMsgEditor('group')"><i class="fa-solid fa-sliders"></i> Compose options</button>
+                    </div>
+                    <div id="gm-compose-status" class="compose-status"></div>
+                    <div class="field-hint" style="margin-top:6px;">Click <b>Compose options</b> to attach a media type, upload a file, or add inline / reply buttons before sending.</div>
                 </div>
 
                 <div class="card">
@@ -1465,26 +1705,24 @@ body { overflow-x: hidden; }
                     </div>
                     <div class="row" style="margin-top:8px;">
                         <input class="input" id="bc-photo" placeholder="Photo URL (optional)" style="flex:1;">
-                        <button class="btn btn-gray btn-sm" onclick="openMsgEditor('broadcast-new')"><i class="fa-solid fa-keyboard"></i> Buttons</button>
+                        <button class="btn btn-gray btn-sm" onclick="openMsgEditor('broadcast-new')"><i class="fa-solid fa-sliders"></i> Compose options</button>
                     </div>
+                    <div id="bc-compose-status" class="compose-status"></div>
                 </div>
             </section>
 
             <section class="page" id="page-contact">
                 <div class="page-head">
-                    <div class="lead"><h1>Contact</h1><p>Messages people sent through your <code>/contact</code> featured command, plus how they're handled.</p></div>
+                    <div class="lead"><h1>Contact</h1><p>How the bot handles messages sent through your <code>/contact</code> featured command.</p></div>
                     <div class="page-actions">
-                        <button class="btn btn-gray btn-sm" onclick="loadContact()"><i class="fa-solid fa-rotate"></i> Refresh</button>
-                        <button class="btn btn-primary btn-sm" onclick="markAllContactRead()"><i class="fa-solid fa-check-double"></i> Mark all read</button>
+                        <button class="btn btn-primary btn-sm" onclick="go('inbox')"><i class="fa-solid fa-inbox"></i> Open inbox</button>
                     </div>
                 </div>
 
                 <div class="hint-banner">
                     <i class="fa-solid fa-circle-info"></i>
-                    <div>These are <b>incoming messages from users</b>. They land here when someone sends a DM featured command like <code>/contact hello</code>. Configure notifications, auto-replies and rate limits below.</div>
+                    <div>This page configures <b>how</b> incoming contact messages are handled. To <b>read or reply to</b> messages, open the <a href="#" onclick="go('inbox');return false;"><b>Inbox</b></a>.</div>
                 </div>
-
-                <div class="stats" id="contact-stats"></div>
 
                 <div class="card">
                     <div class="card-head"><div class="card-title c-green"><i class="fa-solid fa-bell"></i> Notifications</div></div>
@@ -1566,10 +1804,28 @@ body { overflow-x: hidden; }
                 <div class="sticky-actions">
                     <button class="btn btn-primary" onclick="saveContactSettings()"><i class="fa-solid fa-check"></i> Save settings</button>
                 </div>
+            </section>
 
-                <div class="card" style="margin-top:var(--s6);">
+            <section class="page" id="page-inbox">
+                <div class="page-head">
+                    <div class="lead"><h1>Inbox</h1><p>Messages people sent through your contact command.</p></div>
+                    <div class="page-actions">
+                        <button class="btn btn-gray btn-sm" onclick="loadInbox()"><i class="fa-solid fa-rotate"></i> Refresh</button>
+                        <button class="btn btn-primary btn-sm" onclick="markAllContactRead()"><i class="fa-solid fa-check-double"></i> Mark all read</button>
+                        <button class="btn btn-danger btn-sm" onclick="clearAllContactMessages()"><i class="fa-solid fa-trash-can"></i> Clear all</button>
+                    </div>
+                </div>
+
+                <div class="hint-banner">
+                    <i class="fa-solid fa-lightbulb"></i>
+                    <div>Click <b>Open</b> to jump to a user's profile and reply directly. For notifications, auto-replies, and rate limits, see <a href="#" onclick="go('contact');return false;"><b>Contact settings</b></a>.</div>
+                </div>
+
+                <div class="stats" id="contact-stats"></div>
+
+                <div class="card">
                     <div class="card-head">
-                        <div class="card-title"><i class="fa-solid fa-inbox"></i> Inbox</div>
+                        <div class="card-title"><i class="fa-solid fa-inbox"></i> Messages</div>
                         <div style="flex:1"></div>
                         <div class="chips" style="margin:0;">
                             <button class="chip active" data-cf="all" onclick="setContactFilter('all')">All</button>
@@ -1681,6 +1937,39 @@ body { overflow-x: hidden; }
                 </div>
                 <div id="mem-list"></div>
                 <div id="mem-groups-list" style="margin-top:20px;"></div>
+            </section>
+
+            <section class="page" id="page-media">
+                <div class="page-head">
+                    <div class="lead"><h1>Media Library</h1><p>Every file you have uploaded. Reuse them anywhere media is accepted.</p></div>
+                    <div class="page-actions">
+                        <button class="btn btn-gray btn-sm" onclick="loadMediaLibrary(true)"><i class="fa-solid fa-rotate"></i> Refresh</button>
+                        <button class="btn btn-danger btn-sm" onclick="clearMediaLibrary()"><i class="fa-solid fa-trash-can"></i> Clear library</button>
+                    </div>
+                </div>
+                <div class="hint-banner">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <div>Files are stored on Telegram and referenced by <code>file_id</code> — they cost nothing to keep. The library is populated automatically whenever you upload media through this dashboard.</div>
+                </div>
+                <div class="card" id="media-storage-card">
+                    <div class="card-head"><div class="card-title c-green"><i class="fa-solid fa-database"></i> Storage chat</div></div>
+                    <div id="media-storage-info" class="small muted">Loading…</div>
+                    <div class="field-hint" style="margin-top:8px;">Set or change this in <a href="#" onclick="go('settings');return false;">Settings → Media storage</a>. Changes appear here automatically.</div>
+                </div>
+                <div class="toolbar">
+                    <div class="search"><i class="fa-solid fa-magnifying-glass"></i><input id="media-search" placeholder="Search by file name or label" oninput="debouncedMedia()"></div>
+                </div>
+                <div class="chips" id="media-filters" style="margin-bottom:14px;">
+                    <button class="chip active" data-mt="all" onclick="setMediaFilter('all')">All</button>
+                    <button class="chip" data-mt="photo" onclick="setMediaFilter('photo')">Photos</button>
+                    <button class="chip" data-mt="video" onclick="setMediaFilter('video')">Videos</button>
+                    <button class="chip" data-mt="animation" onclick="setMediaFilter('animation')">GIFs</button>
+                    <button class="chip" data-mt="voice" onclick="setMediaFilter('voice')">Voice</button>
+                    <button class="chip" data-mt="audio" onclick="setMediaFilter('audio')">Audio</button>
+                    <button class="chip" data-mt="document" onclick="setMediaFilter('document')">Files</button>
+                    <button class="chip" data-mt="sticker" onclick="setMediaFilter('sticker')">Stickers</button>
+                </div>
+                <div id="media-grid" class="media-grid"></div>
             </section>
 
             <section class="page" id="page-ai">
@@ -1933,7 +2222,7 @@ body { overflow-x: hidden; }
                     <div class="playground" id="pg"></div>
                     <div class="row nowrap">
                         <input class="input" id="pg-input" placeholder="Type a test message…  (Enter to send)" onkeydown="if(event.key==='Enter')sendPlayground()" style="flex:1;">
-                        <button class="btn btn-primary btn-icon" onclick="sendPlayground()" aria-label="Send test message"><i class="fa-solid fa-paper-plane"></i></button>
+                        <button class="btn btn-primary btn-icon" id="pg-send-btn" onclick="sendPlayground()" aria-label="Send test message"><i class="fa-solid fa-paper-plane"></i></button>
                     </div>
                 </div>
 
@@ -2152,6 +2441,23 @@ body { overflow-x: hidden; }
             <section class="page" id="page-settings">
                 <div class="page-head"><div class="lead"><h1>Settings</h1><p>Bot connection and admin credentials.</p></div></div>
                 <div class="card">
+                    <div class="card-head"><div class="card-title c-green"><i class="fa-solid fa-language"></i> Language</div></div>
+                    <div class="hint-banner">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <div>Changes the language of <b>system prompts</b> — messages the bot sends to users (contact notifications, error messages), the AI assistant's built-in rules, and the MCP admin prompt. It does <b>not</b> change the dashboard UI or AI replies (those follow the AI tab's language setting).</div>
+                    </div>
+                    <div class="field" style="margin-bottom:0;">
+                        <label class="field-label">System language</label>
+                        <div class="segmented" id="sys-lang">
+                            <button data-v="en" onclick="setSystemLanguage('en')">English</button>
+                            <button data-v="fa" onclick="setSystemLanguage('fa')">فارسی</button>
+                        </div>
+                        <span class="field-hint">Applies immediately to every user.</span>
+                    </div>
+                    <div id="sys-lang-result" class="small" style="margin-top:10px;"></div>
+                </div>
+
+                <div class="card">
                     <div class="card-head"><div class="card-title c-purple"><i class="fa-solid fa-heart-pulse"></i> Schema health</div><div style="flex:1"></div>
                         <button class="btn btn-gray btn-sm" onclick="checkSchemaHealth()" aria-label="Check schema health"><i class="fa-solid fa-stethoscope"></i> Check health</button>
                     </div>
@@ -2329,91 +2635,164 @@ crons = ["0 3 * * *"]</code></pre>
             </section>
 
 <section class="page" id="page-update">
-<div class="page-head">
-    <div class="lead"><h1>Update</h1><p>Deploy the latest Nyxx to your Worker.</p></div>
+<style>
+.update-hero{position:relative;overflow:hidden;background:linear-gradient(135deg,rgba(10,132,255,.12),rgba(94,92,230,.12));border:1px solid var(--hairline);border-radius:var(--r-xl);padding:var(--s6);margin-bottom:var(--s5)}
+html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,132,255,.18),rgba(94,92,230,.14))}
+.update-hero::before{content:'';position:absolute;top:-50%;right:-20%;width:400px;height:400px;background:radial-gradient(circle,rgba(10,132,255,.28),transparent 60%);pointer-events:none}
+.update-hero::after{content:'';position:absolute;bottom:-40%;left:-10%;width:350px;height:350px;background:radial-gradient(circle,rgba(94,92,230,.24),transparent 60%);pointer-events:none}
+.update-hero-inner{position:relative;z-index:1;display:flex;gap:var(--s4);align-items:center;flex-wrap:wrap}
+.update-hero-icon{width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,var(--accent),var(--purple));color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;box-shadow:0 10px 30px -10px rgba(10,132,255,.7)}
+.update-hero .uh-text{flex:1;min-width:200px}
+.update-hero .uh-title{font-size:var(--fs-title2);font-weight:700;margin:0 0 6px}
+.update-hero .uh-sub{color:var(--text-3);font-size:var(--fs-subhead);margin:0}
+.update-versions{display:grid;grid-template-columns:1fr auto 1fr;gap:var(--s3);align-items:center;margin-top:var(--s5);position:relative;z-index:1}
+.update-version-box{background:var(--surface);border:1px solid var(--hairline);border-radius:var(--r-md);padding:var(--s4)}
+.update-version-box .uv-label{font-size:var(--fs-caption2);text-transform:uppercase;letter-spacing:.06em;color:var(--text-4);font-weight:700;margin-bottom:4px}
+.update-version-input{font-size:22px;font-weight:700;letter-spacing:-.02em;background:transparent;border:none;padding:0;color:inherit;width:100%;font-family:inherit;outline:none;cursor:default}
+.update-version-box.latest{border-color:var(--accent);background:var(--accent-soft)}
+.update-version-box.latest .update-version-input{color:var(--accent)}
+.update-arrow{color:var(--text-4);font-size:20px;animation:pulseArrow 1.6s ease-in-out infinite}
+@keyframes pulseArrow{0%,100%{opacity:.5;transform:translateX(0)}50%{opacity:1;transform:translateX(3px)}}
+.update-actions-row{display:flex;gap:var(--s3);margin-top:var(--s5);position:relative;z-index:1;flex-wrap:wrap}
+.btn-update-hero{position:relative;background:linear-gradient(135deg,var(--accent),var(--purple));color:#fff;border:none;padding:0 var(--s6);height:48px;border-radius:var(--r-md);font-size:var(--fs-callout);font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:8px;box-shadow:0 12px 30px -10px rgba(10,132,255,.6);transition:transform .15s ease,box-shadow .15s ease}
+.btn-update-hero:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 16px 36px -10px rgba(10,132,255,.8)}
+.btn-update-hero:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
+.btn-update-hero .btn-spinner{display:none;position:absolute;inset:0;align-items:center;justify-content:center}
+.btn-update-hero.loading{pointer-events:none}
+.btn-update-hero.loading > :not(.btn-spinner){visibility:hidden}
+.btn-update-hero.loading .btn-spinner{display:flex}
+.cf-connect-tile{display:flex;align-items:center;gap:var(--s3);background:var(--surface);border:1px solid var(--hairline);border-radius:var(--r-md);padding:var(--s3) var(--s4);margin-bottom:var(--s3)}
+.cf-connect-tile .cf-logo{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#f6821f,#faae40);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.cf-connect-tile .cf-main{flex:1;min-width:0}
+.cf-connect-tile .cf-title{font-weight:700;font-size:var(--fs-subhead)}
+.cf-connect-tile .cf-sub{color:var(--text-4);font-size:var(--fs-caption);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cf-connect-tile.connected{border-color:var(--green);background:var(--green-soft)}
+.cf-connect-tile.connected .cf-logo{background:linear-gradient(135deg,var(--green),#0b8a4e)}
+.cf-method-switch{display:inline-flex;background:var(--fill-1);border-radius:var(--r-sm);padding:4px;gap:2px;margin-bottom:var(--s4)}
+.cf-method-switch button{border:none;background:transparent;color:var(--text-2);font-size:var(--fs-footnote);font-weight:600;padding:8px 16px;border-radius:8px;cursor:pointer;transition:all .2s}
+.cf-method-switch button.active{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.update-progress{display:none;margin-top:var(--s4);padding:var(--s4);background:var(--surface-2);border-radius:var(--r-md)}
+.update-progress.show{display:block;animation:fadeUp .3s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.update-progress-bar{height:6px;background:var(--fill-2);border-radius:999px;overflow:hidden}
+.update-progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--purple));border-radius:999px;width:0%;transition:width .4s ease;animation:shimmerBar 1.4s ease-in-out infinite}
+@keyframes shimmerBar{0%,100%{opacity:1}50%{opacity:.75}}
+.update-progress-text{font-size:var(--fs-footnote);margin-top:var(--s2);color:var(--text-3)}
+@media(max-width:640px){.update-versions{grid-template-columns:1fr}.update-arrow{display:none}.update-hero{padding:var(--s5) var(--s4)}.update-hero-icon{width:44px;height:44px;font-size:18px}}
+</style>
+
+<div class="update-hero">
+    <div class="update-hero-inner">
+        <div class="update-hero-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+        <div class="uh-text">
+            <h2 class="uh-title">Keep Nyxx up to date</h2>
+            <p class="uh-sub">Deploys the latest release from GitHub to your Worker. All settings, D1 data, and bindings are preserved.</p>
+        </div>
+    </div>
+    <div class="update-versions">
+        <div class="update-version-box">
+            <div class="uv-label">Current</div>
+            <input class="update-version-input" id="up-current" readonly value="${VERSION}">
+        </div>
+        <i class="fa-solid fa-arrow-right update-arrow"></i>
+        <div class="update-version-box latest">
+            <div class="uv-label">Latest on GitHub</div>
+            <input class="update-version-input" id="up-latest" readonly value="—">
+            <div class="tiny muted" id="up-notes" style="margin-top:4px;"></div>
+        </div>
+    </div>
+    <div class="update-actions-row">
+        <button class="btn-update-hero" id="up-btn" onclick="performUpdate(false)" disabled>
+            <i class="fa-solid fa-cloud-arrow-up"></i> Update now
+            <span class="btn-spinner"><span class="mini-spinner"></span></span>
+        </button>
+        <button class="btn btn-gray btn-lg" id="up-reinstall-btn" onclick="performUpdate(true)">
+            <i class="fa-solid fa-rotate"></i> Force redeploy
+        </button>
+        <button class="btn btn-bordered btn-lg" onclick="checkUpdate(true)">
+            <i class="fa-solid fa-magnifying-glass"></i> Check for updates
+        </button>
+    </div>
+    <div id="up-result" class="small" style="margin-top:var(--s3);position:relative;z-index:1;"></div>
 </div>
+
+<div class="hint-banner warn hidden" id="up-beta-hint">
+    <i class="fa-solid fa-flask"></i>
+    <div><b>Beta version available.</b> The latest release on GitHub is a pre-release and may contain bugs. Updating is optional — stay on your current version until a stable release lands.</div>
+</div>
+
 <div class="card">
-    <div class="hint-banner">
-      <i class="fa-solid fa-circle-info"></i>
-      <div>The update downloads the latest code from GitHub and redeploys your Worker, keeping all your bindings and data.</div>
+    <div class="card-head">
+        <div class="card-title c-orange"><i class="fa-brands fa-cloudflare"></i> Cloudflare connection</div>
     </div>
-    <div class="hint-banner warn hidden" id="up-beta-hint">
-      <i class="fa-solid fa-flask"></i>
-      <div><b>Beta version available.</b> The latest release on GitHub is a pre-release and may contain bugs. Updating is optional — you can stay on your current version and update later when a stable release lands.</div>
-    </div>
-    <div class="grid grid-2">
-      <div class="field"><label class="field-label">Current version</label>
-        <input class="input" id="up-current" readonly value="${VERSION}"></div>
-      <div class="field"><label class="field-label">Latest version</label>
-        <div class="input-with-btn">
-          <input class="input" id="up-latest" readonly placeholder="Click to check…">
-          <button class="btn btn-gray btn-sm" onclick="checkUpdate(true)" aria-label="Check for updates">
-            <i class="fa-solid fa-rotate"></i>
-          </button>
-        </div>
-        <span class="field-hint" id="up-notes"></span>
-      </div>
-    </div>
-
-    <div class="field">
-      <label class="field-label">Cloudflare connection</label>
-      <div class="segmented" id="cf-method">
-        <button data-v="oauth" onclick="cfSetMethod('oauth')">OAuth (recommended)</button>
-        <button data-v="token" onclick="cfSetMethod('token')">API token</button>
-      </div>
-      <span class="field-hint">Choose how the updater authenticates with Cloudflare. Both methods work identically.</span>
-    </div>
-
-    <div id="cf-oauth-panel" class="hidden" style="margin-bottom:16px;">
-      <div class="switch-row" style="margin-bottom:12px;align-items:flex-start;">
-        <div style="flex:1;min-width:0;">
-          <div class="sw-label" id="cf-oauth-label">Not connected</div>
-          <div class="sw-sub" id="cf-oauth-sub">Connect your Cloudflare account to update without pasting a token.</div>
-        </div>
-      </div>
-      <div class="row">
-        <button class="btn btn-primary btn-sm" id="cf-oauth-connect" onclick="startCfOAuth()">
-          <i class="fa-solid fa-cloud-arrow-up"></i> Connect Cloudflare
-        </button>
-        <button class="btn btn-danger btn-sm hidden" id="cf-oauth-disconnect" onclick="disconnectCfOAuth()">
-          <i class="fa-solid fa-link-slash"></i> Disconnect
-        </button>
-      </div>
-      <div class="field-hint" style="margin-top:10px;">
+    <div class="hint-banner" style="margin-bottom:var(--s4);">
         <i class="fa-solid fa-circle-info"></i>
-        You'll be redirected to Cloudflare to sign in. Requires <code>&lt;worker&gt;/oauth/callback</code> to be registered on your OAuth client.
-      </div>
+        <div>Choose how the updater authenticates. <b>OAuth</b> is one-click and recommended. <b>API token</b> is manual but works anywhere.</div>
     </div>
-
-    <div id="cf-token-panel" class="hidden" style="margin-bottom:16px;">
-      <div class="field">
-        <label class="field-label">Cloudflare API token</label>
-        <div class="input-with-btn">
-          <div class="pw-wrap" style="flex:1;">
-            <input type="password" class="input" id="up-token" placeholder="Workers Scripts:Edit" autocomplete="off">
-            <button type="button" class="pw-toggle" onclick="togglePw('up-token',this)" aria-label="Show or hide token">
-              <i class="fa-regular fa-eye"></i>
+    <div class="cf-method-switch" id="cf-method">
+        <button data-v="oauth" onclick="cfSetMethod('oauth')"><i class="fa-solid fa-bolt"></i> OAuth</button>
+        <button data-v="token" onclick="cfSetMethod('token')"><i class="fa-solid fa-key"></i> API token</button>
+    </div>
+    <div id="cf-oauth-panel" class="hidden">
+        <div class="cf-connect-tile" id="cf-oauth-tile">
+            <div class="cf-logo"><i class="fa-brands fa-cloudflare"></i></div>
+            <div class="cf-main">
+                <div class="cf-title" id="cf-oauth-label">Not connected</div>
+                <div class="cf-sub" id="cf-oauth-sub">Connect your Cloudflare account to update without pasting a token.</div>
+            </div>
+            <button class="btn btn-primary btn-sm" id="cf-oauth-connect" onclick="startCfOAuth()">
+                <i class="fa-solid fa-cloud-arrow-up"></i> <span>Connect</span>
             </button>
-          </div>
-          <button class="btn btn-gray btn-sm" onclick="openTokenGen()">
-            <i class="fa-solid fa-key"></i> Get token
-          </button>
+            <button class="btn btn-danger btn-sm hidden" id="cf-oauth-disconnect" onclick="disconnectCfOAuth()">
+                <i class="fa-solid fa-link-slash"></i> <span class="hide-mobile">Disconnect</span>
+            </button>
         </div>
-        <span class="field-hint">Needs the <b>Workers Scripts:Edit</b> permission. Only used for this update, never shared.</span>
-      </div>
+        <div class="field-hint">
+            <i class="fa-solid fa-circle-info"></i>
+            You'll be redirected to Cloudflare to sign in. Requires <code>&lt;worker&gt;/oauth/callback</code> on your OAuth client.
+        </div>
     </div>
+    <div id="cf-token-panel" class="hidden">
+        <div class="field">
+            <label class="field-label">Cloudflare API token</label>
+            <div class="input-with-btn">
+                <div class="pw-wrap" style="flex:1;">
+                    <input type="password" class="input" id="up-token" placeholder="Workers Scripts:Edit" autocomplete="off">
+                    <button type="button" class="pw-toggle" onclick="togglePw('up-token',this)" aria-label="Show or hide"><i class="fa-regular fa-eye"></i></button>
+                </div>
+                <button class="btn btn-gray btn-sm" onclick="openTokenGen()">
+                    <i class="fa-solid fa-key"></i> Get token
+                </button>
+            </div>
+            <span class="field-hint">Needs the <b>Workers Scripts:Edit</b> permission. Only used for this update, never shared.</span>
+        </div>
+    </div>
+</div>
 
-    <div class="row">
-      <button class="btn btn-primary" id="up-btn" onclick="performUpdate(false)" disabled>
-        <i class="fa-solid fa-cloud-arrow-up"></i> Update now
-      </button>
-      <button class="btn btn-gray" id="up-reinstall-btn" onclick="performUpdate(true)">
-        <i class="fa-solid fa-rotate"></i> Force redeploy
-      </button>
+<div class="card">
+    <div class="card-head">
+        <div class="card-title"><i class="fa-solid fa-circle-info"></i> About updates</div>
     </div>
-    <div class="field-hint" style="margin-top:8px;">Force redeploy re-downloads and re-deploys whatever version is currently on GitHub main, even if it matches your current version. Useful when your deployment feels corrupted.</div>
-    <div id="up-result" class="small" style="margin-top:10px;"></div>
-  </div>
+    <div style="display:grid;gap:var(--s3);">
+        <div class="row" style="gap:var(--s3);align-items:flex-start;">
+            <div style="width:32px;height:32px;border-radius:8px;background:var(--green-soft);color:var(--green);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fa-solid fa-shield-halved"></i></div>
+            <div><div style="font-weight:600;font-size:var(--fs-subhead);">Bindings preserved</div><div class="muted small">D1, KV, R2 and environment variables stay intact across updates.</div></div>
+        </div>
+        <div class="row" style="gap:var(--s3);align-items:flex-start;">
+            <div style="width:32px;height:32px;border-radius:8px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fa-solid fa-database"></i></div>
+            <div><div style="font-weight:600;font-size:var(--fs-subhead);">Data untouched</div><div class="muted small">Your commands, users, groups, memory and settings remain exactly as they are.</div></div>
+        </div>
+        <div class="row" style="gap:var(--s3);align-items:flex-start;">
+            <div style="width:32px;height:32px;border-radius:8px;background:var(--orange-soft);color:var(--orange);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fa-solid fa-rotate"></i></div>
+            <div><div style="font-weight:600;font-size:var(--fs-subhead);">Force redeploy</div><div class="muted small">Re-installs the current version from GitHub. Useful if your deployment feels corrupted.</div></div>
+        </div>
+    </div>
+</div>
+
+<div class="update-progress" id="update-progress">
+    <div class="update-progress-bar"><div class="update-progress-fill" id="update-progress-fill"></div></div>
+    <div class="update-progress-text" id="update-progress-text">Starting…</div>
+</div>
 </section>
         </div>
     </div>
@@ -2454,9 +2833,12 @@ crons = ["0 3 * * *"]</code></pre>
             </div>
             <div class="field hidden" id="cmd-media-wrap">
                 <label class="field-label">Media source</label>
-                <div class="segmented" id="cmd-media-source" style="margin-bottom:10px;">
-                    <button data-v="url" type="button" onclick="setSeg('cmd-media-source','url');toggleCmdMediaSource()">URL</button>
-                    <button data-v="file" type="button" onclick="setSeg('cmd-media-source','file');toggleCmdMediaSource()">Upload</button>
+                <div class="row" style="margin-bottom:10px;">
+                    <div class="segmented" id="cmd-media-source">
+                        <button data-v="url" type="button" onclick="setSeg('cmd-media-source','url');toggleCmdMediaSource()">URL</button>
+                        <button data-v="file" type="button" onclick="setSeg('cmd-media-source','file');toggleCmdMediaSource()">Upload</button>
+                    </div>
+                    <button type="button" class="btn btn-gray btn-sm" onclick="openMediaPicker('cmd')"><i class="fa-solid fa-photo-film"></i> Pick from library</button>
                 </div>
                 <div id="cmd-media-url-panel">
                     <input class="input" id="cmd-media" placeholder="https://…" oninput="renderMediaPreview('cmd')">
@@ -2552,9 +2934,12 @@ crons = ["0 3 * * *"]</code></pre>
             </div>
             <div class="field hidden" id="msg-media-wrap">
                 <label class="field-label">Media source</label>
-                <div class="segmented" id="msg-media-source" style="margin-bottom:10px;">
-                    <button data-v="url" type="button" onclick="setSeg('msg-media-source','url');toggleMsgMediaSource()">URL</button>
-                    <button data-v="file" type="button" onclick="setSeg('msg-media-source','file');toggleMsgMediaSource()">Upload</button>
+                <div class="row" style="margin-bottom:10px;">
+                    <div class="segmented" id="msg-media-source">
+                        <button data-v="url" type="button" onclick="setSeg('msg-media-source','url');toggleMsgMediaSource()">URL</button>
+                        <button data-v="file" type="button" onclick="setSeg('msg-media-source','file');toggleMsgMediaSource()">Upload</button>
+                    </div>
+                    <button type="button" class="btn btn-gray btn-sm" onclick="openMediaPicker('msg')"><i class="fa-solid fa-photo-film"></i> Pick from library</button>
                 </div>
                 <div id="msg-media-url-panel">
                     <input class="input" id="msg-photo" placeholder="https://…" oninput="renderMediaPreview('msg')">
@@ -2702,6 +3087,37 @@ crons = ["0 3 * * *"]</code></pre>
     </div>
 </div>
 
+<div class="modal hidden" id="media-picker-modal" role="dialog" aria-modal="true" aria-labelledby="media-picker-title">
+    <div class="modal-bg" onclick="closeMediaPicker()"></div>
+    <div class="sheet">
+        <div class="sheet-head">
+            <button class="btn btn-plain" onclick="closeMediaPicker()">Cancel</button>
+            <div class="sheet-title" id="media-picker-title">Pick media</div>
+            <button class="btn btn-plain" onclick="closeMediaPicker();go('media');">Open library</button>
+        </div>
+        <div class="sheet-body">
+            <div class="hint-banner">
+                <i class="fa-solid fa-circle-info"></i>
+                <div>Files uploaded through this dashboard. Click any card to attach its <code>file_id</code>.</div>
+            </div>
+            <div class="toolbar">
+                <div class="search"><i class="fa-solid fa-magnifying-glass"></i><input id="media-picker-search" placeholder="Search…" oninput="renderMediaPicker()"></div>
+            </div>
+            <div class="chips" id="media-picker-filters">
+                <button class="chip active" data-mt="all" onclick="setMediaPickerFilter('all')">All</button>
+                <button class="chip" data-mt="photo" onclick="setMediaPickerFilter('photo')">Photos</button>
+                <button class="chip" data-mt="video" onclick="setMediaPickerFilter('video')">Videos</button>
+                <button class="chip" data-mt="animation" onclick="setMediaPickerFilter('animation')">GIFs</button>
+                <button class="chip" data-mt="voice" onclick="setMediaPickerFilter('voice')">Voice</button>
+                <button class="chip" data-mt="audio" onclick="setMediaPickerFilter('audio')">Audio</button>
+                <button class="chip" data-mt="document" onclick="setMediaPickerFilter('document')">Files</button>
+                <button class="chip" data-mt="sticker" onclick="setMediaPickerFilter('sticker')">Stickers</button>
+            </div>
+            <div id="media-picker-grid" class="media-grid"></div>
+        </div>
+    </div>
+</div>
+
 <div class="modal hidden" id="about-modal" role="dialog" aria-modal="true">
     <div class="modal-bg" onclick="closeAboutModal()"></div>
     <div class="sheet small">
@@ -2790,26 +3206,55 @@ function updatePwStrength() {
 var activeToasts = [];
 function toast(msg, type) {
     var host = $('toasts'); if (!host) return;
-    while (activeToasts.length >= 3) {
+    type = (type === 'error' || type === 'info') ? type : 'success';
+    while (activeToasts.length >= 4) {
         var old = activeToasts.shift();
         try { old.remove(); } catch (e) {}
     }
     var t = document.createElement('div');
-    t.className = 'toast ' + (type || 'success');
-    var body = document.createElement('div'); body.className = 'toast-body'; body.textContent = msg;
-    var x = document.createElement('button'); x.className = 'toast-close'; x.innerHTML = '×'; x.setAttribute('aria-label', 'Dismiss');
+    t.className = 'toast ' + type;
+
+    var icon = document.createElement('div');
+    icon.className = 'toast-icon';
+    icon.innerHTML = type === 'success'
+        ? '<i class="fa-solid fa-check"></i>'
+        : type === 'error'
+            ? '<i class="fa-solid fa-xmark"></i>'
+            : '<i class="fa-solid fa-info"></i>';
+
+    var body = document.createElement('div');
+    body.className = 'toast-body';
+    body.textContent = msg;
+
+    var x = document.createElement('button');
+    x.className = 'toast-close';
+    x.innerHTML = '×';
+    x.setAttribute('aria-label', 'Dismiss');
     x.onclick = function () { dismissToast(t); };
-    t.appendChild(body); t.appendChild(x);
+
+    var progress = document.createElement('div');
+    progress.className = 'toast-progress';
+    var fill = document.createElement('div');
+    fill.className = 'toast-progress-fill';
+    progress.appendChild(fill);
+
+    t.appendChild(icon);
+    t.appendChild(body);
+    t.appendChild(x);
+    t.appendChild(progress);
+
     host.appendChild(t);
     activeToasts.push(t);
-    setTimeout(function () { dismissToast(t); }, 4000);
+    t._dismissTimer = setTimeout(function () { dismissToast(t); }, 4000);
 }
 function dismissToast(t) {
+    if (!t) return;
     var idx = activeToasts.indexOf(t);
     if (idx >= 0) activeToasts.splice(idx, 1);
-    if (t && t.parentNode) {
-        t.style.opacity = '0'; t.style.transition = 'opacity .25s';
-        setTimeout(function () { try { t.remove(); } catch (e) {} }, 260);
+    if (t._dismissTimer) { clearTimeout(t._dismissTimer); t._dismissTimer = null; }
+    if (t.parentNode) {
+        t.style.animation = 'toastOut 0.28s cubic-bezier(0.4, 0, 1, 1) forwards';
+        setTimeout(function () { try { t.remove(); } catch (e) {} }, 300);
     }
 }
 
@@ -2874,8 +3319,33 @@ async function api(method, path, body) {
     }
     return data;
 }
-function busy(btn, on) { if (btn) btn.classList.toggle('loading', !!on); }
+function busy(btn, on) {
+    if (!btn) return;
+    if (on && !btn.querySelector('.btn-spinner')) {
+        var sp = document.createElement('span');
+        sp.className = 'btn-spinner';
+        sp.innerHTML = '<span class="mini-spinner"></span>';
+        btn.appendChild(sp);
+    }
+    btn.classList.toggle('loading', !!on);
+}
 async function withBusy(btn, fn) { busy(btn, true); try { return await fn(); } finally { busy(btn, false); } }
+function getClickBtn() {
+    try {
+        var e = (typeof window !== 'undefined') ? window.event : null;
+        if (!e) return null;
+        var el = e.currentTarget || e.target;
+        if (!el) return null;
+        if (el.closest) return el.closest('.btn, .icon-btn, .chip');
+        var cur = el;
+        while (cur && cur !== document.body) {
+            if (cur.classList && (cur.classList.contains('btn') || cur.classList.contains('icon-btn') || cur.classList.contains('chip'))) return cur;
+            cur = cur.parentElement;
+        }
+    } catch (err) {}
+    return null;
+}
+async function withSelfBusy(fn) { await withBusy(getClickBtn(), fn); }
 function toggleSwitch(id, force) {
     var el = $(id); if (!el) return false;
     var on = typeof force === 'boolean' ? force : !el.classList.contains('on');
@@ -2980,8 +3450,8 @@ function cycleTheme() {
 var PAGE_TITLES = {
     overview: 'Overview', commands: 'Commands', menu: 'Menu & Featured', users: 'Users',
     'user-manage': 'User', groups: 'Groups', 'group-manage': 'Group',
-    broadcast: 'Broadcast', contact: 'Contact', memory: 'Memory', ai: 'AI', settings: 'Settings', botinfo: 'Bot Info',
-    cron: 'Cleanup', backup: 'Backup', logs: 'Activity Log', update: 'Update',
+    broadcast: 'Broadcast', contact: 'Contact', inbox: 'Inbox', memory: 'Memory', media: 'Media Library', ai: 'AI', settings: 'Settings', botinfo: 'Bot Info',
+    cron: 'Retention', backup: 'Backup', logs: 'Activity Log', update: 'Update', mcp: 'MCP',
     permissions: 'Admin & Permissions'
 };
 var currentPage = 'overview';
@@ -2990,6 +3460,9 @@ function go(page) {
     document.querySelectorAll('.page').forEach(function (p) { p.classList.remove('active'); });
     var el = $('page-' + page); if (el) el.classList.add('active');
     document.querySelectorAll('.nav-item').forEach(function (n) { n.classList.toggle('active', n.dataset.page === page); });
+    if (typeof expandNavGroupFor === 'function') expandNavGroupFor(page);
+    var __navSearch = document.getElementById('nav-search-input');
+    if (__navSearch && __navSearch.value) { __navSearch.value = ''; if (typeof filterNav === 'function') filterNav(''); }
     $('page-title').textContent = PAGE_TITLES[page] || 'Nyxx';
     if (window.innerWidth <= 900) toggleSidebar(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -3000,8 +3473,10 @@ function go(page) {
     if (page === 'groups') loadGroups();
     if (page === 'broadcast') loadBroadcast();
     if (page === 'contact') loadContact();
+    if (page === 'inbox') loadInbox();
     if (page === 'memory') loadMemory();
     if (page === 'ai') { loadAi(); refreshMemoryCount(); }
+    if (page === 'media') loadMediaLibrary();
     if (page === 'settings') loadSettings();
     if (page === 'botinfo') loadBotInfo();
     if (page === 'cron') loadCron();
@@ -3016,6 +3491,43 @@ function toggleSidebar(force) {
     app.classList.toggle('sidebar-open', open);
     var overlay = document.getElementById('sidebar-overlay');
     if (overlay) overlay.classList.toggle('show', open);
+}
+function toggleNavGroup(btn) {
+    var group = btn.closest('.nav-group');
+    if (group && group.hasAttribute('data-group')) group.classList.toggle('collapsed');
+}
+function expandNavGroupFor(page) {
+    var item = document.querySelector('.nav-item[data-page="' + page + '"]');
+    if (!item) return;
+    var el = item.closest('.nav-group[data-group]');
+    while (el) {
+        el.classList.remove('collapsed');
+        var parent = el.parentElement;
+        el = parent ? parent.closest('.nav-group[data-group]') : null;
+    }
+}
+function initNav() {
+    // Collapse every data-group except the one containing the active page.
+    document.querySelectorAll('.nav-group[data-group]').forEach(function (g) {
+        if (!g.querySelector('.nav-item.active')) g.classList.add('collapsed');
+    });
+}
+function filterNav(q) {
+    q = String(q || '').toLowerCase().trim();
+    var anyVisible = false;
+    document.querySelectorAll('.nav-item[data-label]').forEach(function (item) {
+        var label = (item.dataset.label || '') + ' ' + (item.textContent || '');
+        var match = !q || label.toLowerCase().indexOf(q) >= 0;
+        item.style.display = match ? '' : 'none';
+        if (match) anyVisible = true;
+    });
+    document.querySelectorAll('.nav-group[data-group]').forEach(function (g) {
+        if (!q) { g.classList.remove('collapsed'); return; }
+        var hasVisible = Array.from(g.querySelectorAll('.nav-item[data-label]')).some(function (i) { return i.style.display !== 'none'; });
+        g.classList.toggle('collapsed', !hasVisible);
+    });
+    var empty = document.getElementById('nav-no-results');
+    if (empty) empty.style.display = (q && !anyVisible) ? 'block' : 'none';
 }
 function showInfo() {
     if (openModals.indexOf('about-modal') >= 0) return;
@@ -3134,16 +3646,18 @@ function toggleMcpMemory() {
 }
 
 async function saveMcpMemorySettings() {
-    try {
-        await api('POST', '/api/mcp/settings', {
-            mcp_memory_limit: sw('mcp-memory-enabled') ? (parseInt($('mcp-memory-limit').value) || 0) : 0,
-            mcp_memory_ttl_hours: parseInt($('mcp-memory-ttl').value) || 24,
-            mcp_rate_limit: parseInt($('mcp-rate-limit').value) || 20,
-            mcp_rate_limit_window: $('mcp-rate-window').value || 'minute',
-        });
-        toast('MCP memory & rate limits saved.');
-        loadMcp(true);
-    } catch (e) { toast(e.message, 'error'); }
+    await withSelfBusy(async function () {
+        try {
+            await api('POST', '/api/mcp/settings', {
+                mcp_memory_limit: sw('mcp-memory-enabled') ? (parseInt($('mcp-memory-limit').value) || 0) : 0,
+                mcp_memory_ttl_hours: parseInt($('mcp-memory-ttl').value) || 24,
+                mcp_rate_limit: parseInt($('mcp-rate-limit').value) || 20,
+                mcp_rate_limit_window: $('mcp-rate-window').value || 'minute',
+            });
+            toast('MCP memory & rate limits saved.');
+            loadMcp(true);
+        } catch (e) { toast(e.message, 'error'); }
+    });
 }
 
 async function loadMcpSessionsList() {
@@ -3159,13 +3673,16 @@ async function loadMcpSessionsList() {
 }
 
 async function clearAllMcpSessions() {
+    var btn = getClickBtn();
     const ok = await confirmDialog('Clear every MCP session? Follow-up context is lost.', 'Clear sessions');
     if (!ok) return;
-    try {
-        await api('POST', '/api/mcp/sessions/clear');
-        toast('Sessions cleared.');
-        loadMcpSessionsList();
-    } catch (e) { toast(e.message, 'error'); }
+    await withBusy(btn, async function () {
+        try {
+            await api('POST', '/api/mcp/sessions/clear');
+            toast('Sessions cleared.');
+            loadMcpSessionsList();
+        } catch (e) { toast(e.message, 'error'); }
+    });
 }
 
 function renderMcpSnippets() {
@@ -3207,15 +3724,17 @@ async function toggleMcpCategory(cat) {
 }
 
 async function saveMcpAiSettings() {
-    var body = {
-        mcp_ai_provider: $('mcp-provider').value,
-        mcp_ai_model: $('mcp-model').value.trim(),
-        mcp_ai_base_url: $('mcp-base').value.trim(),
-    };
-    var key = $('mcp-api-key').value.trim();
-    if (key) body.mcp_ai_api_key = key;
-    try { await api('POST', '/api/mcp/settings', body); toast('MCP AI provider saved.'); loadMcp(); }
-    catch (e) { toast(e.message, 'error'); }
+    await withSelfBusy(async function () {
+        var body = {
+            mcp_ai_provider: $('mcp-provider').value,
+            mcp_ai_model: $('mcp-model').value.trim(),
+            mcp_ai_base_url: $('mcp-base').value.trim(),
+        };
+        var key = $('mcp-api-key').value.trim();
+        if (key) body.mcp_ai_api_key = key;
+        try { await api('POST', '/api/mcp/settings', body); toast('MCP AI provider saved.'); loadMcp(); }
+        catch (e) { toast(e.message, 'error'); }
+    });
 }
 
 async function testMcpAi() {
@@ -3252,20 +3771,25 @@ async function loadMcpTokens() {
 }
 
 async function generateMcpToken() {
-    try {
-        var d = await api('POST', '/api/mcp/token/generate', { label: 'dashboard' });
-        $('mcp-token-value').value = d.token;
-        show($('mcp-token-once'), true);
-        loadMcpTokens();
-        toast('Token generated — copy it now.', 'info');
-    } catch (e) { toast(e.message, 'error'); }
+    await withSelfBusy(async function () {
+        try {
+            var d = await api('POST', '/api/mcp/token/generate', { label: 'dashboard' });
+            $('mcp-token-value').value = d.token;
+            show($('mcp-token-once'), true);
+            loadMcpTokens();
+            toast('Token generated — copy it now.', 'info');
+        } catch (e) { toast(e.message, 'error'); }
+    });
 }
 
 async function revokeMcpTokens() {
+    var btn = getClickBtn();
     var ok = await confirmDialog('Revoke ALL MCP tokens? Every connected client will be disconnected immediately.', 'Revoke tokens');
     if (!ok) return;
-    try { await api('POST', '/api/mcp/token/revoke'); toast('All tokens revoked.'); show($('mcp-token-once'), false); loadMcpTokens(); }
-    catch (e) { toast(e.message, 'error'); }
+    await withBusy(btn, async function () {
+        try { await api('POST', '/api/mcp/token/revoke'); toast('All tokens revoked.'); show($('mcp-token-once'), false); loadMcpTokens(); }
+        catch (e) { toast(e.message, 'error'); }
+    });
 }
 
 // Chat with Nyxx now lives at /chat (a dedicated route).
@@ -3437,6 +3961,7 @@ async function checkStatus() {
 function enterDashboard() {
   __setupDone = true;
   showStep('step-dashboard');
+  if (typeof initNav === 'function') initNav();
   go('overview');
   loadCommands(true);
   loadMenu(true);
@@ -3521,6 +4046,50 @@ async function loadOverview(force) {
                 (x.done ? '' : '<button class="btn btn-gray btn-sm" onclick="go(\\\'' + x.page + '\\\')">Open</button>') +
                 '</li>';
         }).join('');
+
+        // --- System status ---
+        var statusBox = $('ov-status-list');
+        if (statusBox) {
+            var rows = [
+                { ok: !!s.bot_linked,  label: 'Bot connection', detail: s.bot_linked ? ('@' + (s.bot_username || 'connected')) : 'Not connected' },
+                { ok: !!s.bot_linked,  label: 'Database (D1)',  detail: 'Connected' },
+                { ok: !!s.ai_enabled,  label: 'AI replies',     detail: s.ai_enabled ? 'Enabled' : 'Disabled' },
+                { ok: s.commands_total > 0, label: 'Commands',  detail: s.commands_total > 0 ? (s.commands_total + ' configured') : 'None yet' }
+            ];
+            statusBox.innerHTML = rows.map(function (r) {
+                return '<div class="ov-status-row">' +
+                    '<div style="display:flex;align-items:center;gap:10px;">' +
+                        '<span class="ov-status-dot" style="background:' + (r.ok ? 'var(--green)' : 'var(--red)') + ';"></span>' +
+                        '<span class="ov-status-label">' + esc(r.label) + '</span>' +
+                    '</div>' +
+                    '<span class="ov-status-detail">' + esc(r.detail) + '</span>' +
+                '</div>';
+            }).join('');
+        }
+
+        // --- Recent activity ---
+        var recentBox = $('ov-recent');
+        if (recentBox) {
+            try {
+                var logRes = await api('GET', '/api/logs?limit=5');
+                var logs = (logRes && logRes.logs) || [];
+                if (!logs.length) {
+                    recentBox.innerHTML = '<div class="empty" style="padding:24px 12px;"><i class="fa-regular fa-clock"></i>No activity yet.<div class="empty-hint">Actions you take in the dashboard will appear here.</div></div>';
+                } else {
+                    recentBox.innerHTML = '<div class="ov-recent-list">' + logs.map(function (l) {
+                        return '<div class="ov-recent-item">' +
+                            '<span class="ov-recent-dot"></span>' +
+                            '<div class="ov-recent-text">' +
+                                '<div class="ov-recent-action">' + esc(l.action) + '</div>' +
+                                '<div class="ov-recent-time">' + fmtTime(l.timestamp) + '</div>' +
+                            '</div>' +
+                        '</div>';
+                    }).join('') + '</div>';
+                }
+            } catch (e) {
+                recentBox.innerHTML = '<div class="empty" style="padding:24px 12px;color:var(--text-4);font-size:12px;">Could not load activity.</div>';
+            }
+        }
     } catch (e) {
         st.innerHTML = '<div style="grid-column:1/-1">' + errorState(e.message, 'loadOverview(true)') + '</div>';
     }
@@ -3881,14 +4450,19 @@ async function saveCommand() {
     });
 }
 async function deleteCommand(name) {
+    var btn = getClickBtn();
     var ok = await confirmDialog('Delete "' + name + '" and all sub-commands? This cannot be undone.', 'Delete command');
     if (!ok) return;
-    try { await api('DELETE', '/api/commands/' + encodeURIComponent(name)); toast('Deleted.'); if (currentParent === name) navigateUp(); commands = []; loadCommands(true); }
-    catch (e) { toast(e.message, 'error'); }
+    await withBusy(btn, async function () {
+        try { await api('DELETE', '/api/commands/' + encodeURIComponent(name)); toast('Deleted.'); if (currentParent === name) navigateUp(); commands = []; loadCommands(true); }
+        catch (e) { toast(e.message, 'error'); }
+    });
 }
 async function exportCommandPack() {
-    try { var d = await api('GET', '/api/commands/export'); downloadJson('nyxx-commands-' + stamp() + '.json', d.data); }
-    catch (e) { toast(e.message, 'error'); }
+    await withSelfBusy(async function () {
+        try { var d = await api('GET', '/api/commands/export'); downloadJson('nyxx-commands-' + stamp() + '.json', d.data); }
+        catch (e) { toast(e.message, 'error'); }
+    });
 }
 function importCommandPack(ev) {
     var f = ev.target.files[0]; if (!f) return;
@@ -4075,11 +4649,14 @@ var contactFilter = 'all';
 var contactSettings = {};
 function setContactFilter(f) {
     contactFilter = f;
-    document.querySelectorAll('#page-contact .chip[data-cf]').forEach(function (c) { c.classList.toggle('active', c.dataset.cf === f); });
+    document.querySelectorAll('#page-inbox .chip[data-cf]').forEach(function (c) { c.classList.toggle('active', c.dataset.cf === f); });
     loadContactMessages();
 }
 async function loadContact() {
     await loadContactSettings();
+    updateContactBadge();
+}
+async function loadInbox() {
     await loadContactStats();
     await loadContactMessages();
     updateContactBadge();
@@ -4157,6 +4734,7 @@ async function loadContactMessages() {
                     (m.is_unread
                         ? '<button class="btn btn-primary btn-sm" onclick="markContactUserRead(' + m.userId + ', this)" title="Mark all messages from this user as read"><i class="fa-solid fa-envelope-open"></i> Mark read</button>'
                         : '<span class="badge green" style="align-self:center;"><i class="fa-solid fa-check"></i> Read</span>') +
+                    '<button class="btn btn-danger btn-sm" onclick="deleteContactMessage(' + m.id + ', this)" title="Delete this message"><i class="fa-solid fa-trash-can"></i></button>' +
                 '</div>' +
                 '<div style="padding-left:' + (m.is_unread ? '14px' : '0') + ';font-size:13px;line-height:1.55;color:var(--text-2);white-space:pre-wrap;word-break:break-word;">' + text + '</div>' +
                 '</div>';
@@ -4164,31 +4742,33 @@ async function loadContactMessages() {
     } catch (e) { box.innerHTML = errorState(e.message, 'loadContactMessages()'); }
 }
 async function saveContactSettings() {
-    var adminsValue = $('ct-notify-admins').value;
-    var notifyAdmins;
-    if (adminsValue === 'all') {
-        notifyAdmins = 'all';
-    } else {
-        var ids = $('ct-notify-custom-ids').value.split(/[^0-9]+/).map(Number).filter(Boolean);
-        if (!ids.length) { toast('Enter at least one admin user ID or switch to "All admins".', 'error'); return; }
-        notifyAdmins = JSON.stringify(ids);
-    }
-    var body = {
-        notify_enabled: sw('ct-notify-toggle') ? '1' : '0',
-        notify_include_user: sw('ct-notify-user-toggle') ? '1' : '0',
-        notify_admins: notifyAdmins,
-        autoreply_enabled: sw('ct-autoreply-toggle') ? '1' : '0',
-        autoreply_text: $('ct-autoreply-text').value,
-        away_enabled: sw('ct-away-toggle') ? '1' : '0',
-        away_text: $('ct-away-text').value,
-        away_start_hour: parseInt($('ct-away-start').value) || 0,
-        away_end_hour: parseInt($('ct-away-end').value) || 0,
-        rate_limit: parseInt($('ct-rate-limit').value) || 0
-    };
-    try {
-        await api('POST', '/api/contact/settings', body);
-        toast('Contact settings saved.');
-    } catch (e) { toast(e.message, 'error'); }
+    await withSelfBusy(async function () {
+        var adminsValue = $('ct-notify-admins').value;
+        var notifyAdmins;
+        if (adminsValue === 'all') {
+            notifyAdmins = 'all';
+        } else {
+            var ids = $('ct-notify-custom-ids').value.split(/[^0-9]+/).map(Number).filter(Boolean);
+            if (!ids.length) { toast('Enter at least one admin user ID or switch to "All admins".', 'error'); return; }
+            notifyAdmins = JSON.stringify(ids);
+        }
+        var body = {
+            notify_enabled: sw('ct-notify-toggle') ? '1' : '0',
+            notify_include_user: sw('ct-notify-user-toggle') ? '1' : '0',
+            notify_admins: notifyAdmins,
+            autoreply_enabled: sw('ct-autoreply-toggle') ? '1' : '0',
+            autoreply_text: $('ct-autoreply-text').value,
+            away_enabled: sw('ct-away-toggle') ? '1' : '0',
+            away_text: $('ct-away-text').value,
+            away_start_hour: parseInt($('ct-away-start').value) || 0,
+            away_end_hour: parseInt($('ct-away-end').value) || 0,
+            rate_limit: parseInt($('ct-rate-limit').value) || 0
+        };
+        try {
+            await api('POST', '/api/contact/settings', body);
+            toast('Contact settings saved.');
+        } catch (e) { toast(e.message, 'error'); }
+    });
 }
 async function testContactNotification() {
     $('ct-notify-result').innerHTML = '<span class="mini-spinner"></span> Sending…';
@@ -4198,8 +4778,27 @@ async function testContactNotification() {
     } catch (e) { $('ct-notify-result').innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
 }
 async function markAllContactRead() {
-    try { await api('POST', '/api/contact/mark_read'); toast('Inbox marked as read.'); loadContact(); }
+    try { await api('POST', '/api/contact/mark_read'); toast('Inbox marked as read.'); loadInbox(); }
     catch (e) { toast(e.message, 'error'); }
+}
+async function deleteContactMessage(id, btn) {
+    if (!await confirmDialog('Delete this contact message?', 'Delete message')) return;
+    try {
+        await withBusy(btn, function () { return api('POST', '/api/contact/delete', { messageId: id }); });
+        toast('Message deleted.');
+        loadInbox();
+    } catch (e) { toast(e.message, 'error'); }
+}
+async function clearAllContactMessages() {
+    var btn = getClickBtn();
+    if (!await confirmDialog('Delete ALL contact messages? This cannot be undone.', 'Clear inbox', true)) return;
+    await withBusy(btn, async function () {
+        try {
+            await api('POST', '/api/contact/clear_all');
+            toast('Inbox cleared.');
+            loadInbox();
+        } catch (e) { toast(e.message, 'error'); }
+    });
 }
 async function updateContactBadge() {
     try {
@@ -4408,21 +5007,27 @@ async function checkAllUsers() {
     }
 }
 async function deleteUnreachableUsers() {
+    var btn = getClickBtn();
     var ok = await confirmDialog(
         'Delete every non-admin user who has never started the bot? Their AI memory, DM history and blocks are removed. Admins and moderators are preserved. This cannot be undone.',
         'Delete unreachable users', true);
     if (!ok) return;
-    try {
-        var d = await api('POST', '/api/users/delete_unreachable');
-        toast('Deleted ' + (d.deleted || 0) + ' user(s).');
-        loadUsers(true);
-    } catch (e) { toast(e.message, 'error'); }
+    await withBusy(btn, async function () {
+        try {
+            var d = await api('POST', '/api/users/delete_unreachable');
+            toast('Deleted ' + (d.deleted || 0) + ' user(s).');
+            loadUsers(true);
+        } catch (e) { toast(e.message, 'error'); }
+    });
 }
 async function deleteUser(id, name) {
+    var btn = getClickBtn();
     var ok = await confirmDialog('Delete ' + (name || 'this user') + '? Their AI memory, direct messages and blocks are removed. This cannot be undone.', 'Delete user');
     if (!ok) return;
-    try { await api('DELETE', '/api/users/' + id); toast('User deleted.'); loadUsers(); }
-    catch (e) { toast(e.message, 'error'); }
+    await withBusy(btn, async function () {
+        try { await api('DELETE', '/api/users/' + id); toast('User deleted.'); loadUsers(); }
+        catch (e) { toast(e.message, 'error'); }
+    });
 }
 async function openUser(idOrUser) {
     if (idOrUser && typeof idOrUser === 'object' && idOrUser.id !== undefined) {
@@ -4622,7 +5227,8 @@ async function sendUserMessage() {
     try {
         await withBusy($('um-send'), function () { return api('POST', '/api/users/send_message', body); });
         $('um-input').value = ''; $('um-photo').value = '';
-        draftButtonsJson = null; draftMedia = null; toast('Sent.'); loadDmMessages(manageUser.id);
+        clearComposeStatus('um');
+        toast('Sent.'); loadDmMessages(manageUser.id);
     } catch (e) { toast(e.message, 'error'); }
 }
 async function deleteDm(chatId, messageId) {
@@ -4825,24 +5431,28 @@ async function loadAutoRemove() {
 }
 async function toggleMemSaveFeatured() { toggleSwitch('mem-save-featured'); saveMemPolicies(); }
 async function saveMemPolicies() {
-    try {
-        await api('POST', '/api/memory/auto_remove', {
-            enabled: sw('arm-enable') ? '1' : '0',
-            dm_value: parseInt($('arm-dm-value').value) || 30,
-            dm_unit: $('arm-dm-unit').value || 'days',
-            dm_save_private: $('mem-dm-save').value || 'auto',
-            dm_save_featured: sw('mem-save-featured') ? '1' : '0'
-        });
-        toast('Save policy updated.');
-    } catch (e) { toast(e.message, 'error'); }
+    await withSelfBusy(async function () {
+        try {
+            await api('POST', '/api/memory/auto_remove', {
+                enabled: sw('arm-enable') ? '1' : '0',
+                dm_value: parseInt($('arm-dm-value').value) || 30,
+                dm_unit: $('arm-dm-unit').value || 'days',
+                dm_save_private: $('mem-dm-save').value || 'auto',
+                dm_save_featured: sw('mem-save-featured') ? '1' : '0'
+            });
+            toast('Save policy updated.');
+        } catch (e) { toast(e.message, 'error'); }
+    });
 }
 async function saveAutoRemove() {
-    var value = parseInt($('arm-dm-value').value);
-    if (isNaN(value) || value < 1) { toast('Enter a positive number.', 'error'); return; }
-    try {
-        await api('POST', '/api/memory/auto_remove', { enabled: sw('arm-enable') ? '1' : '0', dm_value: value, dm_unit: $('arm-dm-unit').value });
-        toast('Auto-remove saved.');
-    } catch (e) { toast(e.message, 'error'); }
+    await withSelfBusy(async function () {
+        var value = parseInt($('arm-dm-value').value);
+        if (isNaN(value) || value < 1) { toast('Enter a positive number.', 'error'); return; }
+        try {
+            await api('POST', '/api/memory/auto_remove', { enabled: sw('arm-enable') ? '1' : '0', dm_value: value, dm_unit: $('arm-dm-unit').value });
+            toast('Auto-remove saved.');
+        } catch (e) { toast(e.message, 'error'); }
+    });
 }
 
 /* ============================================================
@@ -4900,6 +5510,7 @@ async function openGroup(id) {
             badge.innerHTML = '<i class="fa-solid fa-circle" style="font-size:8px;"></i> ' + (manageGroup.is_active == 1 ? 'Active' : 'Left / removed');
         }
         loadGroupMemory();
+        loadGroupChatMessages();
         // Best-effort background sync — don't block the UI.
         api('POST', '/api/groups/' + manageGroup.id + '/sync', {}).then(function (d) {
             if (badge) {
@@ -4957,57 +5568,67 @@ function gmToggle(key) {
 }
 function gmSet(k, v) { setSeg('gm-ai-mode', v); }
 async function saveGroupSettings() {
-    var body = {
-        ai: getSeg('gm-ai-mode') || 'inherit',
-        commands_permission: getSeg('gm-commands-perm') || 'inherit',
-        featured_commands_permission: getSeg('gm-featured-perm') || 'inherit',
-        ai_chat_permission: getSeg('gm-ai-perm') || 'inherit',
-        callback_queries_permission: getSeg('gm-callback-perm') || 'inherit',
-        mcp_telegram_permission: getSeg('gm-mcp-perm') || 'inherit',
-        rules_command_permission: getSeg('gm-rules-perm') || 'inherit',
-        link_filter_level: getSeg('gm-link-level') || 'admins',
-        anti_forward_level: getSeg('gm-forward-level') || 'admins',
-        blacklist_level: getSeg('gm-blacklist-level') || 'admins',
-        memory: $('gm-memory-select').value, ai_trigger: $('gm-ai-trigger').value,
-        welcome_enabled: sw('gm-welcome-toggle'), welcome_text: $('gm-welcome-text').value, rules_text: $('gm-rules').value,
-        anti_flood: sw('gm-flood-toggle'), flood_limit: parseInt($('gm-flood-limit').value) || 6,
-        flood_mute_minutes: parseInt($('gm-flood-mute').value) || 0,
-        flood_action: getSeg('gm-flood-action') || 'mute',
-        flood_kick_after: parseInt($('gm-flood-kick-after').value) || 2,
-        flood_ban_after: parseInt($('gm-flood-ban-after').value) || 2,
-        link_filter: sw('gm-link-toggle'), auto_delete_service: sw('gm-service-toggle'), track_members: sw('gm-track-toggle'),
-        anti_forward: sw('gm-forward-toggle'), blacklist_words: $('gm-blacklist').value || '',
-        anti_bot: sw('gm-bot-toggle')
-    };
-    try { await api('POST', '/api/groups/' + manageGroup.id + '/settings', body); toast('Group settings saved.'); }
-    catch (e) { toast(e.message, 'error'); }
+    await withSelfBusy(async function () {
+        var body = {
+            ai: getSeg('gm-ai-mode') || 'inherit',
+            commands_permission: getSeg('gm-commands-perm') || 'inherit',
+            featured_commands_permission: getSeg('gm-featured-perm') || 'inherit',
+            ai_chat_permission: getSeg('gm-ai-perm') || 'inherit',
+            callback_queries_permission: getSeg('gm-callback-perm') || 'inherit',
+            mcp_telegram_permission: getSeg('gm-mcp-perm') || 'inherit',
+            rules_command_permission: getSeg('gm-rules-perm') || 'inherit',
+            link_filter_level: getSeg('gm-link-level') || 'admins',
+            anti_forward_level: getSeg('gm-forward-level') || 'admins',
+            blacklist_level: getSeg('gm-blacklist-level') || 'admins',
+            memory: $('gm-memory-select').value, ai_trigger: $('gm-ai-trigger').value,
+            welcome_enabled: sw('gm-welcome-toggle'), welcome_text: $('gm-welcome-text').value, rules_text: $('gm-rules').value,
+            anti_flood: sw('gm-flood-toggle'), flood_limit: parseInt($('gm-flood-limit').value) || 6,
+            flood_mute_minutes: parseInt($('gm-flood-mute').value) || 0,
+            flood_action: getSeg('gm-flood-action') || 'mute',
+            flood_kick_after: parseInt($('gm-flood-kick-after').value) || 2,
+            flood_ban_after: parseInt($('gm-flood-ban-after').value) || 2,
+            link_filter: sw('gm-link-toggle'), auto_delete_service: sw('gm-service-toggle'), track_members: sw('gm-track-toggle'),
+            anti_forward: sw('gm-forward-toggle'), blacklist_words: $('gm-blacklist').value || '',
+            anti_bot: sw('gm-bot-toggle')
+        };
+        try { await api('POST', '/api/groups/' + manageGroup.id + '/settings', body); toast('Group settings saved.'); }
+        catch (e) { toast(e.message, 'error'); }
+    });
 }
 async function sendGroupAnnouncement() {
-    var text = $('gm-announce').value.trim();
-    var photo = $('gm-announce-photo').value.trim();
-    var hasDraftMedia = draftMedia && draftMedia.media_type && draftMedia.media_type !== 'text' && (draftMedia.file_id || draftMedia.photo_url);
-    if (!text && !photo && !hasDraftMedia) { toast('Write a message first.', 'error'); return; }
-    var body = { message: text };
-    if (photo) body.photo_url = photo;
-    if (draftButtonsJson) body.buttons_json = draftButtonsJson;
-    if (draftMedia) {
-        body.media_type = draftMedia.media_type;
-        body.file_id = draftMedia.file_id;
-        body.media_meta = draftMedia.media_meta;
-        if (draftMedia.media_type === 'text') { body.photo_url = ''; body.file_id = ''; body.media_meta = ''; }
-        else if (draftMedia.file_id) body.photo_url = '';
-    }
-    try {
-        await api('POST', '/api/groups/' + manageGroup.id + '/send', body);
-        toast('Announcement sent.');
-        $('gm-announce').value = ''; $('gm-announce-photo').value = ''; draftButtonsJson = null; draftMedia = null;
-    } catch (e) { toast(e.message, 'error'); }
+    var btn = getClickBtn() || $('gm-announce-send');
+    await withBusy(btn, async function () {
+        var text = $('gm-announce').value.trim();
+        var photo = $('gm-announce-photo').value.trim();
+        var hasDraftMedia = draftMedia && draftMedia.media_type && draftMedia.media_type !== 'text' && (draftMedia.file_id || draftMedia.photo_url);
+        if (!text && !photo && !hasDraftMedia) { toast('Write a message first.', 'error'); return; }
+        var body = { message: text };
+        if (photo) body.photo_url = photo;
+        if (draftButtonsJson) body.buttons_json = draftButtonsJson;
+        if (draftMedia) {
+            body.media_type = draftMedia.media_type;
+            body.file_id = draftMedia.file_id;
+            body.media_meta = draftMedia.media_meta;
+            if (draftMedia.media_type === 'text') { body.photo_url = ''; body.file_id = ''; body.media_meta = ''; }
+            else if (draftMedia.file_id) body.photo_url = '';
+        }
+        try {
+            await api('POST', '/api/groups/' + manageGroup.id + '/send', body);
+            toast('Announcement sent.');
+            $('gm-announce').value = ''; $('gm-announce-photo').value = '';
+            clearComposeStatus('gm');
+            loadGroupChatMessages();
+        } catch (e) { toast(e.message, 'error'); }
+    });
 }
 async function removeGroup() {
+    var btn = getClickBtn();
     var ok = await confirmDialog('Remove this group from the dashboard? The bot stays in the group.', 'Remove group');
     if (!ok) return;
-    try { await api('DELETE', '/api/groups/' + manageGroup.id); toast('Removed.'); groups = []; go('groups'); }
-    catch (e) { toast(e.message, 'error'); }
+    await withBusy(btn, async function () {
+        try { await api('DELETE', '/api/groups/' + manageGroup.id); toast('Removed.'); groups = []; go('groups'); }
+        catch (e) { toast(e.message, 'error'); }
+    });
 }
 
 async function syncGroup() {
@@ -5050,6 +5671,51 @@ async function loadGroupMemory() {
     } catch (e) { box.innerHTML = errorState(e.message, 'loadGroupMemory()'); }
 }
 
+async function loadGroupChatMessages() {
+    var box = $('gm-chat-history');
+    if (!box || !manageGroup) return;
+    box.innerHTML = '<div class="spinner-page"><span class="mini-spinner"></span></div>';
+    try {
+        var d = await api('GET', '/api/groups/' + manageGroup.id + '/messages');
+        var msgs = d.messages || [];
+        window.__groupChatCache = msgs;
+        if (!msgs.length) { box.innerHTML = emptyState('fa-regular fa-comments', 'No messages sent to this group yet.', 'Use the Send announcement panel above.'); return; }
+        box.innerHTML = msgs.map(function (m, i) {
+            var mediaHtml = '';
+            if (m.file_id || m.photo_url) {
+                var src = m.photo_url || ('/api/file/' + encodeURIComponent(m.file_id));
+                var kind = (m.kind || 'text').toLowerCase();
+                if (kind === 'photo') mediaHtml = '<div style="margin-bottom:6px;"><img src="' + esc(src) + '" style="max-width:100%;max-height:200px;border-radius:8px;object-fit:cover;"></div>';
+                else if (kind === 'video' || kind === 'animation') mediaHtml = '<div style="margin-bottom:6px;"><video src="' + esc(src) + '" controls style="max-width:100%;max-height:200px;border-radius:8px;"></video></div>';
+                else if (kind === 'voice' || kind === 'audio') mediaHtml = '<div style="margin-bottom:6px;"><audio src="' + esc(src) + '" controls style="width:100%;max-width:280px;"></audio></div>';
+            }
+            return '<div class="bubble out" style="max-width:88%;" dir="auto">' +
+                mediaHtml +
+                esc(m.text || '') +
+                '<div class="b-meta">' + fmtTime(m.created_at) + (m.edited_at ? ' · edited' : '') + '</div>' +
+                '<div class="b-actions">' +
+                    '<button onclick="editGroupChatMsg(' + i + ')"><i class="fa-regular fa-pen-to-square"></i> Edit</button>' +
+                    '<button onclick="deleteGroupChatMsg(' + i + ')"><i class="fa-regular fa-trash-can"></i> Delete</button>' +
+                '</div></div>';
+        }).join('');
+        scrollBottom(box);
+    } catch (e) { box.innerHTML = errorState(e.message, 'loadGroupChatMessages()'); }
+}
+function editGroupChatMsg(idx) {
+    var m = window.__groupChatCache && window.__groupChatCache[idx];
+    if (!m) return;
+    openMsgEditor('group-edit', m.id);
+}
+async function deleteGroupChatMsg(idx) {
+    var m = window.__groupChatCache && window.__groupChatCache[idx];
+    if (!m) return;
+    if (!await confirmDialog('Delete this message from the group?', 'Delete message')) return;
+    try {
+        await api('POST', '/api/groups/' + manageGroup.id + '/messages/delete', { id: m.id, messageId: m.message_id });
+        toast('Message deleted.');
+        loadGroupChatMessages();
+    } catch (e) { toast(e.message, 'error'); }
+}
 async function deleteGroupMemMsg(idx) {
     var m = window.__groupMem && window.__groupMem[idx];
     if (!m) return;
@@ -5069,6 +5735,174 @@ async function clearGroupMemory() {
 }
 
 /* ============================================================
+   MEDIA LIBRARY
+   ============================================================ */
+var mediaLibrary = [];
+var mediaFilter = 'all';
+var mediaSearchTimer = null;
+function debouncedMedia() { clearTimeout(mediaSearchTimer); mediaSearchTimer = setTimeout(function () { renderMediaGrid(); }, 200); }
+function setMediaFilter(t) {
+    mediaFilter = t;
+    document.querySelectorAll('#media-filters .chip').forEach(function (c) { c.classList.toggle('active', c.dataset.mt === t); });
+    renderMediaGrid();
+}
+async function loadMediaLibrary(force) {
+    var box = $('media-grid');
+    if (box) box.innerHTML = '<div class="spinner-page"><span class="mini-spinner"></span></div>';
+    try {
+        var d = await api('GET', '/api/media/library');
+        mediaLibrary = (d && d.items) || [];
+        renderMediaGrid();
+        loadMediaStorageInfo();
+    } catch (e) {
+        if (box) box.innerHTML = errorState(e.message, 'loadMediaLibrary(true)');
+    }
+}
+async function loadMediaStorageInfo() {
+    var box = $('media-storage-info');
+    if (!box) return;
+    try {
+        var d = await api('GET', '/api/settings');
+        var chatId = d.media_storage_chat_id || '';
+        if (!chatId) { box.innerHTML = '<span style="color:var(--orange)"><i class="fa-solid fa-triangle-exclamation"></i> No storage chat is set yet. Add one in Settings → Media storage before uploading files.</span>'; return; }
+        try {
+            var info = await api('GET', '/api/media/storage_chat?id=' + encodeURIComponent(chatId));
+            box.innerHTML = '<div style="display:flex;align-items:center;gap:10px;"><i class="fa-solid fa-circle-check" style="color:var(--green);font-size:18px;"></i><div><div style="font-weight:600;">' + esc(info.title || ('Chat ' + chatId)) + '</div><div class="tiny muted">ID <code>' + esc(chatId) + '</code> · ' + esc(info.type || 'unknown') + (info.username ? ' · @' + esc(info.username) : '') + '</div></div></div>';
+        } catch (e) {
+            box.innerHTML = '<div style="color:var(--orange)"><i class="fa-solid fa-triangle-exclamation"></i> Chat ID <code>' + esc(chatId) + '</code> is set, but could not be verified: ' + esc(e.message) + '</div>';
+        }
+    } catch (e) { box.innerHTML = ''; }
+}
+function renderMediaGrid() {
+    var box = $('media-grid');
+    if (!box) return;
+    var q = ($('media-search') && $('media-search').value || '').toLowerCase().trim();
+    var list = mediaLibrary.filter(function (m) {
+        if (mediaFilter !== 'all' && m.media_type !== mediaFilter) return false;
+        if (q) {
+            var hay = (String(m.label || '') + ' ' + String(m.file_name || '')).toLowerCase();
+            if (hay.indexOf(q) < 0) return false;
+        }
+        return true;
+    });
+    if (!list.length) { box.innerHTML = emptyState('fa-solid fa-photo-film', mediaLibrary.length ? 'No media match this filter.' : 'No media in the library yet.', 'Upload a file in any editor (command, DM, broadcast, group) and it will appear here automatically.'); return; }
+    box.innerHTML = list.map(function (m) {
+        var kind = m.media_type || 'photo';
+        var src = '/api/file/' + encodeURIComponent(m.file_id);
+        var thumb = '';
+        if (kind === 'photo' || kind === 'sticker') thumb = '<img src="' + esc(src) + '" alt="" loading="lazy">';
+        else if (kind === 'video' || kind === 'animation' || kind === 'video_note') thumb = '<video src="' + esc(src) + '" muted playsinline preload="metadata"></video>';
+        else if (kind === 'voice' || kind === 'audio') thumb = '<i class="fa-solid fa-volume-high"></i>';
+        else if (kind === 'document') thumb = '<i class="fa-regular fa-file-lines"></i>';
+        else thumb = '<i class="fa-solid fa-file"></i>';
+        var meta = {};
+        try { meta = m.media_meta ? (typeof m.media_meta === 'string' ? JSON.parse(m.media_meta) : m.media_meta) : {}; } catch (e) {}
+        var sizeStr = meta.file_size ? (Math.round(meta.file_size / 1024) + ' KB') : '';
+        return '<div class="media-card">' +
+            '<span class="media-type-tag">' + esc(kind) + '</span>' +
+            '<div class="media-actions">' +
+                '<button onclick="reuseMedia(' + m.id + ')" title="Copy file_id"><i class="fa-solid fa-recycle"></i></button>' +
+                '<button onclick="renameMedia(' + m.id + ')" title="Rename"><i class="fa-solid fa-pen"></i></button>' +
+                '<button class="danger" onclick="deleteMedia(' + m.id + ')" title="Delete"><i class="fa-regular fa-trash-can"></i></button>' +
+            '</div>' +
+            '<div class="media-thumb">' + thumb + '</div>' +
+            '<div class="media-info">' +
+                '<div class="media-title" title="' + esc(m.label || m.file_name || 'Untitled') + '">' + esc(m.label || m.file_name || 'Untitled') + '</div>' +
+                '<div class="media-sub"><span>' + esc(sizeStr || kind) + '</span><span>' + fmtTime(m.uploaded_at) + '</span></div>' +
+            '</div>' +
+        '</div>';
+    }).join('');
+}
+async function deleteMedia(id) {
+    if (!await confirmDialog('Remove this file from the library? The file_id itself stays valid on Telegram.', 'Delete from library')) return;
+    try { await api('POST', '/api/media/delete', { id: id }); toast('Removed from library.'); loadMediaLibrary(true); }
+    catch (e) { toast(e.message, 'error'); }
+}
+async function clearMediaLibrary() {
+    var btn = getClickBtn();
+    if (!await confirmDialog('Remove ALL files from the library? This does not delete the underlying Telegram files, but removes all references from this dashboard.', 'Clear library', true)) return;
+    await withBusy(btn, async function () {
+        try { await api('POST', '/api/media/clear'); toast('Library cleared.'); loadMediaLibrary(true); }
+        catch (e) { toast(e.message, 'error'); }
+    });
+}
+async function renameMedia(id) {
+    var item = mediaLibrary.find(function (m) { return m.id === id; });
+    if (!item) return;
+    var newLabel = prompt('Rename:', item.label || item.file_name || '');
+    if (newLabel === null) return;
+    try { await api('POST', '/api/media/rename', { id: id, label: String(newLabel).slice(0, 80) }); loadMediaLibrary(true); }
+    catch (e) { toast(e.message, 'error'); }
+}
+function reuseMedia(id) {
+    var item = mediaLibrary.find(function (m) { return m.id === id; });
+    if (!item) return;
+    navigator.clipboard.writeText(item.file_id).then(function () { toast('file_id copied. Paste it anywhere a file_id is accepted.'); });
+}
+var mediaPickerTarget = null;
+var mediaPickerFilter = 'all';
+async function openMediaPicker(targetPrefix) {
+    mediaPickerTarget = targetPrefix;
+    if (!mediaLibrary.length) await loadMediaLibrary();
+    $('media-picker-modal').classList.remove('hidden');
+    trackModal('media-picker-modal');
+    renderMediaPicker();
+}
+function closeMediaPicker() {
+    $('media-picker-modal').classList.add('hidden');
+    untrackModal('media-picker-modal');
+    mediaPickerTarget = null;
+}
+function setMediaPickerFilter(t) {
+    mediaPickerFilter = t;
+    document.querySelectorAll('#media-picker-filters .chip').forEach(function (c) { c.classList.toggle('active', c.dataset.mt === t); });
+    renderMediaPicker();
+}
+function renderMediaPicker() {
+    var box = $('media-picker-grid');
+    if (!box) return;
+    var q = ($('media-picker-search') && $('media-picker-search').value || '').toLowerCase();
+    var list = mediaLibrary.filter(function (m) {
+        if (mediaPickerFilter !== 'all' && m.media_type !== mediaPickerFilter) return false;
+        if (q && (String(m.label || '') + ' ' + String(m.file_name || '')).toLowerCase().indexOf(q) < 0) return false;
+        return true;
+    });
+    if (!list.length) { box.innerHTML = emptyState('fa-solid fa-photo-film', 'No media in the library.', 'Upload something first.'); return; }
+    box.innerHTML = list.map(function (m) {
+        var kind = m.media_type || 'photo';
+        var src = '/api/file/' + encodeURIComponent(m.file_id);
+        var thumb = '';
+        if (kind === 'photo' || kind === 'sticker') thumb = '<img src="' + esc(src) + '" alt="" loading="lazy">';
+        else if (kind === 'video' || kind === 'animation' || kind === 'video_note') thumb = '<video src="' + esc(src) + '" muted playsinline preload="metadata"></video>';
+        else if (kind === 'voice' || kind === 'audio') thumb = '<i class="fa-solid fa-volume-high"></i>';
+        else if (kind === 'document') thumb = '<i class="fa-regular fa-file-lines"></i>';
+        else thumb = '<i class="fa-solid fa-file"></i>';
+        return '<div class="media-card" style="cursor:pointer;" onclick="pickMedia(' + m.id + ')">' +
+            '<span class="media-type-tag">' + esc(kind) + '</span>' +
+            '<div class="media-thumb">' + thumb + '</div>' +
+            '<div class="media-info"><div class="media-title">' + esc(m.label || m.file_name || 'Untitled') + '</div></div>' +
+        '</div>';
+    }).join('');
+}
+function pickMedia(id) {
+    var item = mediaLibrary.find(function (m) { return m.id === id; });
+    if (!item || !mediaPickerTarget) return;
+    var prefix = mediaPickerTarget;
+    var fileIdEl = $(prefix + '-file-id');
+    var metaEl = $(prefix + '-media-meta');
+    var typeEl = $(prefix + '-type');
+    if (fileIdEl) fileIdEl.value = item.file_id;
+    if (metaEl) metaEl.value = typeof item.media_meta === 'string' ? item.media_meta : JSON.stringify(item.media_meta || {});
+    if (typeEl) typeEl.value = item.media_type || 'photo';
+    setSeg(prefix + '-media-source', 'file');
+    if (prefix === 'cmd') toggleCmdMediaSource();
+    else toggleMsgMediaSource();
+    renderMediaPreview(prefix);
+    closeMediaPicker();
+    toast('Media attached.');
+}
+
+/* ============================================================
    BROADCAST
    ============================================================ */
 var bcHistory = [];
@@ -5083,14 +5917,16 @@ async function loadBroadcastPacing() {
     } catch (e) {}
 }
 async function saveBroadcastPacing() {
-    try {
-        await api('POST', '/api/broadcast/settings', {
-            batch_size: parseInt($('bc-batch').value) || 25,
-            delay_ms: parseInt($('bc-delay').value) || 0,
-            timeout_ms: parseInt($('bc-timeout').value) || 10000
-        });
-        toast('Pacing saved.');
-    } catch (e) { toast(e.message, 'error'); }
+    await withSelfBusy(async function () {
+        try {
+            await api('POST', '/api/broadcast/settings', {
+                batch_size: parseInt($('bc-batch').value) || 25,
+                delay_ms: parseInt($('bc-delay').value) || 0,
+                timeout_ms: parseInt($('bc-timeout').value) || 10000
+            });
+            toast('Pacing saved.');
+        } catch (e) { toast(e.message, 'error'); }
+    });
 }
 function onBroadcastTargetChange() {
     var t = $('bc-target').value;
@@ -5151,7 +5987,7 @@ async function sendBroadcast() {
         toast('Delivered to ' + d.sent + ' user(s).');
         if (d.warning) toast(d.warning, 'info');
         $('bc-text').value = ''; $('bc-photo').value = '';
-        draftButtonsJson = null; draftMedia = null;
+        clearComposeStatus('bc');
         loadBroadcastHistory();
     } catch (e) { toast(e.message, 'error'); }
 }
@@ -5193,6 +6029,29 @@ async function deleteBroadcast(id) {
    ============================================================ */
 var msgContext = null;
 var draftButtonsJson = null;
+function renderComposeStatus(prefix, info) {
+    var el = $(prefix + '-compose-status');
+    if (!el) return;
+    if (!info) { el.classList.remove('show'); el.innerHTML = ''; return; }
+    var badges = [];
+    if (info.mediaType && info.mediaType !== 'text') {
+        var iconMap = { photo: 'fa-image', video: 'fa-video', animation: 'fa-film', voice: 'fa-microphone', audio: 'fa-music', document: 'fa-file', video_note: 'fa-circle', sticker: 'fa-sticky-note' };
+        badges.push('<span class="cs-badge"><i class="fa-solid ' + (iconMap[info.mediaType] || 'fa-file') + '"></i>' + esc(info.mediaType.replace('_', ' ')) + '</span>');
+    }
+    if (info.hasButtons) {
+        badges.push('<span class="cs-badge"><i class="fa-solid fa-keyboard"></i>Buttons attached</span>');
+    }
+    if (!badges.length) { el.classList.remove('show'); el.innerHTML = ''; return; }
+    el.innerHTML = '<div class="cs-head"><i class="fa-solid fa-circle-check"></i>Attachments ready to send</div>' +
+        '<div class="cs-badges">' + badges.join('') + '<button type="button" class="cs-clear" onclick="clearComposeStatus(\\'' + prefix + '\\')"><i class="fa-solid fa-xmark"></i> Clear</button></div>';
+    el.classList.add('show');
+}
+function clearComposeStatus(prefix) {
+    var el = $(prefix + '-compose-status');
+    if (el) { el.classList.remove('show'); el.innerHTML = ''; }
+    draftButtonsJson = null;
+    draftMedia = null;
+}
 function toggleMsgSection(which) {
     var map = { kb: ['msg-kb-toggle', 'msg-kb-section'], inline: ['msg-inline-toggle', 'msg-inline-section'], reply: ['msg-reply-toggle', 'msg-reply-section'] };
     var m = map[which];
@@ -5260,11 +6119,14 @@ function openMsgEditor(mode, id) {
     var _typeEl = _g('msg-type'); if (_typeEl) _typeEl.disabled = false;
     setSeg('msg-media-source', 'url');
 
-    if (mode === 'dm' || mode === 'broadcast') {
+    if (mode === 'dm' || mode === 'broadcast' || mode === 'group-edit') {
         var rec = mode === 'dm'
             ? (window.__dmCache || []).find(function (m) { return m.id === id; })
-            : bcHistory.find(function (h) { return h.id === id; });
-        var _title = _g('msg-title'); if (_title) _title.textContent = 'Edit message';
+            : mode === 'broadcast'
+            ? bcHistory.find(function (h) { return h.id === id; })
+            : (window.__groupChatCache || []).find(function (m) { return m.id === id; });
+        var _title = _g('msg-title');
+        if (_title) _title.textContent = mode === 'group-edit' ? 'Edit group message' : 'Edit message';
         if (rec) {
             var curType = normalizeClientMediaType(rec.kind || rec.media_type || (rec.photo_url ? 'photo' : 'text'));
             if (_typeEl) { _typeEl.value = curType; _typeEl.disabled = false; }
@@ -5351,14 +6213,38 @@ async function saveMsgEditor() {
                 var bResp = await api('POST', '/api/broadcast/edit', { broadcastId: msgContext.id, ...payload });
                 toast(bResp && bResp.converted ? 'Broadcast re-sent (media type changed) to ' + (bResp.updated || 0) + ' chats.' : 'Broadcast updated.');
                 loadBroadcastHistory();
+            } else if (msgContext.mode === 'group-edit') {
+                var grec = (window.__groupChatCache || []).find(function (m) { return m.id === msgContext.id; });
+                if (!grec) throw new Error('Message not found. Refresh and try again.');
+                var gresp = await api('POST', '/api/groups/' + manageGroup.id + '/messages/edit', {
+                    id: grec.id,
+                    messageId: grec.message_id,
+                    text: text,
+                    media_type: mediaType,
+                    file_id: fileId,
+                    photo_url: photo,
+                    media_meta: mediaMeta,
+                    buttons_json: buttons
+                });
+                toast(gresp && gresp.converted ? 'Group message re-sent (media type changed).' : 'Group message updated.');
+                loadGroupChatMessages();
             } else {
                 // Stash on the input fields so sendUserMessage / sendGroupAnnouncement / sendBroadcast pick them up.
                 draftButtonsJson = buttons;
                 draftMedia = { media_type: mediaType, file_id: fileId, photo_url: photo, media_meta: mediaMeta };
-                if (msgContext.mode === 'dm-new') { $('um-input').value = text; $('um-photo').value = photo; }
-                if (msgContext.mode === 'group') { $('gm-announce').value = text; $('gm-announce-photo').value = photo; }
-                if (msgContext.mode === 'broadcast-new') { $('bc-text').value = text; $('bc-photo').value = photo; }
-                toast('Message composed. Send it when ready.');
+                if (msgContext.mode === 'dm-new') {
+                    $('um-input').value = text; $('um-photo').value = photo;
+                    renderComposeStatus('um', { mediaType: mediaType, hasButtons: !!buttons });
+                }
+                if (msgContext.mode === 'group') {
+                    $('gm-announce').value = text; $('gm-announce-photo').value = photo;
+                    renderComposeStatus('gm', { mediaType: mediaType, hasButtons: !!buttons });
+                }
+                if (msgContext.mode === 'broadcast-new') {
+                    $('bc-text').value = text; $('bc-photo').value = photo;
+                    renderComposeStatus('bc', { mediaType: mediaType, hasButtons: !!buttons });
+                }
+                toast('Attachments ready. Send when you are set.', 'success');
             }
             closeMsgEditor();
         });
@@ -5765,10 +6651,12 @@ function setPerm(key, val, btn) {
     btn.parentNode.querySelectorAll('button').forEach(function (b) { b.classList.toggle('active', b === btn); });
 }
 async function savePermissions() {
-    try {
-        await api('POST', '/api/permissions', { permissions: permState });
-        toast('Permissions saved.');
-    } catch (e) { toast(e.message, 'error'); }
+    await withSelfBusy(async function () {
+        try {
+            await api('POST', '/api/permissions', { permissions: permState });
+            toast('Permissions saved.');
+        } catch (e) { toast(e.message, 'error'); }
+    });
 }
 async function loadAdmins() {
     var box = $('admins-list');
@@ -5793,16 +6681,18 @@ async function loadAdmins() {
     } catch (e) { box.innerHTML = errorState(e.message, 'loadAdmins()'); }
 }
 async function promoteAdmin() {
-    var id = parseInt($('promote-user-id').value);
-    var role = $('promote-user-role').value;
-    if (!id) { toast('Enter a numeric user ID.', 'error'); return; }
-    if (!['moderator', 'admin'].includes(role)) role = 'admin';
-    try {
-        await api('POST', '/api/admins/promote', { userId: id, role: role });
-        toast('User promoted to ' + role + '.');
-        $('promote-user-id').value = '';
-        loadAdmins();
-    } catch (e) { toast(e.message, 'error'); }
+    await withSelfBusy(async function () {
+        var id = parseInt($('promote-user-id').value);
+        var role = $('promote-user-role').value;
+        if (!id) { toast('Enter a numeric user ID.', 'error'); return; }
+        if (!['moderator', 'admin'].includes(role)) role = 'admin';
+        try {
+            await api('POST', '/api/admins/promote', { userId: id, role: role });
+            toast('User promoted to ' + role + '.');
+            $('promote-user-id').value = '';
+            loadAdmins();
+        } catch (e) { toast(e.message, 'error'); }
+    });
 }
 async function demoteAdmin(userId) {
     var ok = await confirmDialog('Demote this user from admin?', 'Demote admin');
@@ -6036,16 +6926,20 @@ function toggleAiUseMcp() {
     if (on) toast('Streaming is disabled while tools are on.', 'info');
 }
 async function saveAi() {
-    try { await api('POST', '/api/ai_settings', collectAi()); toast('AI settings saved.'); refreshMemoryCount(); loadAi(true); }
-    catch (e) { toast(e.message, 'error'); }
+    await withSelfBusy(async function () {
+        try { await api('POST', '/api/ai_settings', collectAi()); toast('AI settings saved.'); refreshMemoryCount(); loadAi(true); }
+        catch (e) { toast(e.message, 'error'); }
+    });
 }
 async function testAi() {
-    $('ai-test-result').innerHTML = '<span class="mini-spinner"></span> Testing connection…';
-    try {
-        var d = await api('POST', '/api/ai/test', { settings: collectAi(), provider: 'main' });
-        if (d.success) $('ai-test-result').innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Connected successfully — your API key works.</span>';
-        else $('ai-test-result').innerHTML = '<span style="color:var(--red)"><i class="fa-solid fa-circle-xmark"></i> ' + esc(d.error || 'Test failed') + '</span>';
-    } catch (e) { $('ai-test-result').innerHTML = '<span style="color:var(--red)"><i class="fa-solid fa-circle-xmark"></i> ' + esc(e.message) + '</span>'; }
+    await withSelfBusy(async function () {
+        $('ai-test-result').innerHTML = '<span class="mini-spinner"></span> Testing connection…';
+        try {
+            var d = await api('POST', '/api/ai/test', { settings: collectAi(), provider: 'main' });
+            if (d.success) $('ai-test-result').innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Connected successfully — your API key works.</span>';
+            else $('ai-test-result').innerHTML = '<span style="color:var(--red)"><i class="fa-solid fa-circle-xmark"></i> ' + esc(d.error || 'Test failed') + '</span>';
+        } catch (e) { $('ai-test-result').innerHTML = '<span style="color:var(--red)"><i class="fa-solid fa-circle-xmark"></i> ' + esc(e.message) + '</span>'; }
+    });
 }
 async function refreshMemoryCount() {
     try { var d = await api('GET', '/api/ai/memory_count'); $('mem-count').textContent = d.count + ' messages'; }
@@ -6066,6 +6960,7 @@ function renderPgHtml(text) {
     return out;
 }
 async function sendPlayground() {
+    var btn = getClickBtn() || $('pg-send-btn');
     var text = $('pg-input').value.trim(); if (!text) return;
     var box = $('pg');
     if (box.querySelector('.empty')) box.innerHTML = '';
@@ -6074,12 +6969,14 @@ async function sendPlayground() {
     var id = 'pg-' + Date.now();
     box.insertAdjacentHTML('beforeend', '<div class="pg-msg bot" id="' + id + '"><span class="mini-spinner"></span></div>');
     scrollBottom(box);
-    try {
-        var d = await api('POST', '/api/ai/playground', { settings: collectAi(), history: pgHistory, message: text });
-        $(id).innerHTML = renderPgHtml(d.response || '');
-        pgHistory.push({ role: 'user', content: text }, { role: 'assistant', content: d.response });
-    } catch (e) { $(id).innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
-    scrollBottom(box);
+    await withBusy(btn, async function () {
+        try {
+            var d = await api('POST', '/api/ai/playground', { settings: collectAi(), history: pgHistory, message: text });
+            $(id).innerHTML = renderPgHtml(d.response || '');
+            pgHistory.push({ role: 'user', content: text }, { role: 'assistant', content: d.response });
+        } catch (e) { $(id).innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
+        scrollBottom(box);
+    });
 }
 function clearPlayground() { pgHistory = []; $('pg').innerHTML = '<div class="empty">Playground cleared.</div>'; }
 function exportAi() { downloadJson('nyxx-ai-settings.json', collectAi()); }
@@ -6123,17 +7020,39 @@ async function loadSettings(force) {
         if ($('set-media-storage')) $('set-media-storage').value = d.media_storage_chat_id || '';
         window.__botTokenSet = d.bot_token_set;
         if (d.cf_token_set) $('up-token').placeholder = 'Token already stored — click Generate to replace';
+        setSeg('sys-lang', d.system_language || 'en');
     } catch (e) { /* silent */ }
 }
-async function saveMediaStorage() {
-    var id = $('set-media-storage').value.trim();
-    var out = $('media-storage-result');
-    out.innerHTML = '<span class="mini-spinner"></span> Saving…';
+async function setSystemLanguage(lang) {
+    lang = lang === 'fa' ? 'fa' : 'en';
+    var out = $('sys-lang-result');
+    var btn = null;
     try {
-        await api('POST', '/api/settings/media_storage', { chatId: id });
-        out.innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Saved.</span>';
-        toast('Media storage chat saved.');
-    } catch (e) { out.innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
+        var seg = $('sys-lang');
+        if (seg) btn = seg.querySelector('button[data-v="' + lang + '"]');
+    } catch (err) {}
+    await withBusy(btn, async function () {
+        try {
+            await api('POST', '/api/settings/system_language', { language: lang });
+            setSeg('sys-lang', lang);
+            out.innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Language set to ' + (lang === 'fa' ? 'فارسی' : 'English') + '.</span>';
+            toast(lang === 'fa' ? 'زبان به فارسی تغییر کرد.' : 'Language switched to English.');
+        } catch (e) {
+            out.innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>';
+        }
+    });
+}
+async function saveMediaStorage() {
+    var out = $('media-storage-result');
+    await withSelfBusy(async function () {
+        var id = $('set-media-storage').value.trim();
+        out.innerHTML = '<span class="mini-spinner"></span> Saving…';
+        try {
+            await api('POST', '/api/settings/media_storage', { chatId: id });
+            out.innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Saved.</span>';
+            toast('Media storage chat saved.');
+        } catch (e) { out.innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
+    });
 }
 async function revealToken() {
     if (!window.__botTokenSet) { toast('No bot token stored yet.', 'error'); return; }
@@ -6156,14 +7075,16 @@ function closeTokenModal() {
     untrackModal('token-modal');
 }
 async function saveToken() {
-    var newTok = $('token-input').value.trim();
-    if (!newTok) { $('token-result').innerHTML = '<span style="color:var(--red)">Please paste a token first.</span>'; return; }
-    $('token-result').innerHTML = '<span class="mini-spinner"></span> Validating…';
-    try {
-        var d = await api('POST', '/api/settings/token', { botToken: newTok });
-        toast(d.warning ? d.warning : 'Token updated.', d.warning ? 'error' : 'success');
-        $('token-modal').classList.add('hidden'); untrackModal('token-modal'); loadSettings(true);
-    } catch (e) { $('token-result').innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
+    await withSelfBusy(async function () {
+        var newTok = $('token-input').value.trim();
+        if (!newTok) { $('token-result').innerHTML = '<span style="color:var(--red)">Please paste a token first.</span>'; return; }
+        $('token-result').innerHTML = '<span class="mini-spinner"></span> Validating…';
+        try {
+            var d = await api('POST', '/api/settings/token', { botToken: newTok });
+            toast(d.warning ? d.warning : 'Token updated.', d.warning ? 'error' : 'success');
+            $('token-modal').classList.add('hidden'); untrackModal('token-modal'); loadSettings(true);
+        } catch (e) { $('token-result').innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
+    });
 }
 async function testHook() {
     $('hook-result').innerHTML = '<span class="mini-spinner"></span> Testing…';
@@ -6224,9 +7145,10 @@ async function checkSchemaHealth() {
 
 async function runSchemaHeal() {
     var ok = await confirmDialog(
-        'Run auto-heal? This will inspect the database and create any missing tables, columns, indexes and settings. It is safe to run multiple times. It will not delete any data.',
+        'Run auto-heal? This will inspect the database and create any missing tables, columns, indexes and settings. It is safe to run multiple times. It might also delete any broken data.',
         'Run schema auto-heal', false);
     if (!ok) return;
+    await withSelfBusy(async function () {
     var box = $('schema-health-result');
     box.innerHTML = '<span class="mini-spinner"></span> Healing…';
     try {
@@ -6252,28 +7174,34 @@ async function runSchemaHeal() {
         }
         toast('Schema auto-heal finished.', 'success');
     } catch (e) { box.innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
+    });
 }
 
 async function changePassword() {
-    $('pw-result').innerHTML = '';
-    if ($('pw1').value !== $('pw2').value) { $('pw-result').innerHTML = '<span style="color:var(--red)">Passwords do not match.</span>'; return; }
-    if ($('pw1').value.length < 6) { $('pw-result').innerHTML = '<span style="color:var(--red)">Password must be at least 6 characters.</span>'; return; }
-    $('pw-result').innerHTML = '<span class="mini-spinner"></span> Updating…';
-    try {
-        var r = await api('POST', '/api/change_password', { newPassword: $('pw1').value });
-        if (r && r.csrf) __csrf = r.csrf;
-        $('pw-result').innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Password updated. Every other browser/device is now signed out.</span>';
-        $('pw1').value = ''; $('pw2').value = '';
-    } catch (e) { $('pw-result').innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
+    await withSelfBusy(async function () {
+        $('pw-result').innerHTML = '';
+        if ($('pw1').value !== $('pw2').value) { $('pw-result').innerHTML = '<span style="color:var(--red)">Passwords do not match.</span>'; return; }
+        if ($('pw1').value.length < 6) { $('pw-result').innerHTML = '<span style="color:var(--red)">Password must be at least 6 characters.</span>'; return; }
+        $('pw-result').innerHTML = '<span class="mini-spinner"></span> Updating…';
+        try {
+            var r = await api('POST', '/api/change_password', { newPassword: $('pw1').value });
+            if (r && r.csrf) __csrf = r.csrf;
+            $('pw-result').innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Password updated. Every other browser/device is now signed out.</span>';
+            $('pw1').value = ''; $('pw2').value = '';
+        } catch (e) { $('pw-result').innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
+    });
 }
 async function factoryReset() {
+    var btn = getClickBtn();
     var ok = await confirmDialog('This permanently deletes everything. Type FACTORY RESET to confirm.', 'Factory reset', true,
         '<input class="input" id="fr-text" placeholder="FACTORY RESET" style="margin-top:10px;">');
     if (!ok) return;
     var t = $('fr-text');
     if (!t || t.value !== 'FACTORY RESET') { toast('Confirmation text did not match.', 'error'); return; }
-    try { await api('POST', '/api/reset', { confirmation: 'FACTORY RESET' }); toast('Reset complete — reloading…'); setTimeout(function () { location.reload(); }, 1200); }
-    catch (e) { toast(e.message, 'error'); }
+    await withBusy(btn, async function () {
+        try { await api('POST', '/api/reset', { confirmation: 'FACTORY RESET' }); toast('Reset complete — reloading…'); setTimeout(function () { location.reload(); }, 1200); }
+        catch (e) { toast(e.message, 'error'); }
+    });
 }
 async function loadBotInfo(force) {
     try {
@@ -6321,18 +7249,24 @@ async function toggleCronEnabled() {
     toggleSwitch('cron-enable', turningOn);
 }
 async function saveCron() {
-    var body = { cron_enabled: sw('cron-enable') ? '1' : '0' };
-    CRON_FIELDS.forEach(function (f) { var n = parseInt($('cf-' + f[0]).value); if (!isNaN(n)) body[f[0]] = n; });
-    try { await api('POST', '/api/cron', body); toast('Cleanup settings saved.'); loadCron(); }
-    catch (e) { toast(e.message, 'error'); }
+    await withSelfBusy(async function () {
+        var body = { cron_enabled: sw('cron-enable') ? '1' : '0' };
+        CRON_FIELDS.forEach(function (f) { var n = parseInt($('cf-' + f[0]).value); if (!isNaN(n)) body[f[0]] = n; });
+        try { await api('POST', '/api/cron', body); toast('Retention settings saved.'); loadCron(); }
+        catch (e) { toast(e.message, 'error'); }
+    });
 }
 async function runCron() {
-    try { var r = await api('POST', '/api/cron/run'); if (r && r.skipped) toast(r.message, 'error'); else { toast('Cleanup run complete.'); loadCron(); } }
-    catch (e) { toast(e.message, 'error'); }
+    await withSelfBusy(async function () {
+        try { var r = await api('POST', '/api/cron/run'); if (r && r.skipped) toast(r.message, 'error'); else { toast('Cleanup run complete.'); loadCron(); } }
+        catch (e) { toast(e.message, 'error'); }
+    });
 }
 async function exportBackup() {
-    try { var d = await api('GET', '/api/backup'); downloadJson('nyxx-backup-' + stamp() + '.json', d.data); }
-    catch (e) { toast(e.message, 'error'); }
+    await withSelfBusy(async function () {
+        try { var d = await api('GET', '/api/backup'); downloadJson('nyxx-backup-' + stamp() + '.json', d.data); }
+        catch (e) { toast(e.message, 'error'); }
+    });
 }
 const BACKUP_ITEMS = [
     { id: 'commands', title: 'Commands', sub: 'Bot commands and replies' },
@@ -6357,6 +7291,7 @@ function openCustomBackup() {
 }
 function closeCustomBackup() { $('backup-modal').classList.add('hidden'); untrackModal('backup-modal'); }
 async function runCustomBackup() {
+    await withSelfBusy(async function () {
     var checked = Array.from(document.querySelectorAll('.backup-cb:checked')).map(function (c) { return c.value; });
     if (!checked.length) { toast('Select at least one section.', 'error'); return; }
     try {
@@ -6388,6 +7323,7 @@ async function runCustomBackup() {
         closeCustomBackup();
         toast('Custom backup downloaded.');
     } catch (e) { toast(e.message, 'error'); }
+    });
 }
 function restoreBackup(ev) {
     var f = ev.target.files[0]; if (!f) return;
@@ -6459,14 +7395,20 @@ async function toggleLogClean() {
     show($('logclean-days-wrap'), on);
 }
 async function saveLogClean() {
-    var body = { enabled: sw('logclean-toggle') ? '1' : '0', days: parseInt($('logclean-days').value) || 30 };
-    try { await api('POST', '/api/logs/settings', body); toast('Log cleanup saved.'); }
-    catch (e) { toast(e.message, 'error'); }
+    await withSelfBusy(async function () {
+        var body = { enabled: sw('logclean-toggle') ? '1' : '0', days: parseInt($('logclean-days').value) || 30 };
+        try { await api('POST', '/api/logs/settings', body); toast('Log cleanup saved.'); }
+        catch (e) { toast(e.message, 'error'); }
+    });
 }
 async function clearLogs() {
+    var btn = getClickBtn();
     var ok = await confirmDialog('Delete all activity log entries?', 'Clear logs');
     if (!ok) return;
-    await api('DELETE', '/api/logs'); toast('Cleared.'); loadLogs();
+    await withBusy(btn, async function () {
+        try { await api('DELETE', '/api/logs'); toast('Cleared.'); loadLogs(); }
+        catch (e) { toast(e.message, 'error'); }
+    });
 }
 var latestVersion = null, updateAvailable = false, workerUrl = null;
 const UPDATE_CHECK_TTL_MS = 30 * 60 * 1000;
@@ -6482,7 +7424,7 @@ function applyUpdateData(d) {
     updateAvailable = versionChanged;
     if ($('up-btn')) {
         $('up-btn').disabled = !updateAvailable;
-        $('up-btn').innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> ' + (stableUpgrade ? 'Update now' : 'Update (version changed)');
+        $('up-btn').innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> ' + (stableUpgrade ? 'Update now' : 'Update (version changed)') + '<span class="btn-spinner"><span class="mini-spinner"></span></span>';
     }
     show($('update-pill'), stableUpgrade);
     show($('up-beta-hint'), isLatestBeta);
@@ -6561,52 +7503,62 @@ async function loadCfOAuthStatus() {
 function renderCfOAuthStatus() {
   var s = cfOAuthStatus;
   if (!s) return;
+  var tile    = $('cf-oauth-tile');
   var connect = $('cf-oauth-connect');
   var disc    = $('cf-oauth-disconnect');
   var label   = $('cf-oauth-label');
   var sub     = $('cf-oauth-sub');
 
   if (!s.configured) {
-    label.textContent = 'Not configured';
-    sub.innerHTML = 'OAuth is not enabled on this worker. Add a <code>CF_OAUTH.CLIENT_ID</code> in <code>worker.js</code> and redeploy.';
-    if (connect) connect.disabled = true;
+    if (label) label.textContent = 'Not configured';
+    if (sub) sub.innerHTML = 'OAuth is not enabled on this worker. Add a <code>CF_OAUTH.CLIENT_ID</code> in <code>worker.js</code> and redeploy.';
+    if (connect) { connect.disabled = true; connect.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> <span>Connect</span>'; }
     if (disc) disc.classList.add('hidden');
+    if (tile) tile.classList.remove('connected');
     return;
   }
   if (connect) connect.disabled = false;
 
   if (s.connected) {
-    label.textContent = 'Connected via Cloudflare';
+    if (label) label.textContent = 'Connected to Cloudflare';
     var parts = [];
     if (s.account_id)  parts.push('Account ' + String(s.account_id).slice(0, 8) + '…');
     if (s.script_name) parts.push('Script ' + s.script_name);
     if (s.expires_in)  parts.push('Expires in ' + Math.round(s.expires_in / 60000) + ' min');
-    sub.textContent = parts.join(' · ') || 'Connected.';
-    if (connect) connect.innerHTML = '<i class="fa-solid fa-rotate"></i> Reconnect';
+    if (sub) sub.textContent = parts.join(' · ') || 'Connected.';
+    if (connect) connect.innerHTML = '<i class="fa-solid fa-rotate"></i> <span>Reconnect</span>';
     if (disc) disc.classList.remove('hidden');
+    if (tile) tile.classList.add('connected');
   } else {
-    label.textContent = 'Not connected';
-    sub.textContent = 'Connect your Cloudflare account to update without pasting a token.';
-    if (connect) connect.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Connect Cloudflare';
+    if (label) label.textContent = 'Not connected';
+    if (sub) sub.textContent = 'Connect your Cloudflare account to update without pasting a token.';
+    if (connect) connect.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> <span>Connect</span>';
     if (disc) disc.classList.add('hidden');
+    if (tile) tile.classList.remove('connected');
   }
 }
 
 async function startCfOAuth() {
-  try {
-    var d = await api('POST', '/api/oauth/start', {});
-    if (!d || !d.authorize_url) throw new Error('Could not start OAuth.');
-    window.location.href = d.authorize_url;
-  } catch (e) { toast(e.message, 'error'); }
+  var btn = $('cf-oauth-connect');
+  await withBusy(btn, async function () {
+    try {
+      var d = await api('POST', '/api/oauth/start', {});
+      if (!d || !d.authorize_url) throw new Error('Could not start OAuth.');
+      window.location.href = d.authorize_url;
+    } catch (e) { toast(e.message, 'error'); }
+  });
 }
 
 async function disconnectCfOAuth() {
   if (!await confirmDialog('Disconnect from Cloudflare? Future updates will need a manual API token unless you reconnect.', 'Disconnect Cloudflare')) return;
-  try {
-    await api('POST', '/api/oauth/disconnect', {});
-    toast('Disconnected from Cloudflare.', 'success');
-    await loadCfOAuthStatus();
-  } catch (e) { toast(e.message, 'error'); }
+  var btn = $('cf-oauth-disconnect');
+  await withBusy(btn, async function () {
+    try {
+      await api('POST', '/api/oauth/disconnect', {});
+      toast('Disconnected from Cloudflare.', 'success');
+      await loadCfOAuthStatus();
+    } catch (e) { toast(e.message, 'error'); }
+  });
 }
 
 async function loadUpdateTab() {
@@ -6630,6 +7582,22 @@ async function loadUpdateTab() {
   cfSetMethod('oauth');
 }
 
+function updateProgress(pct, msg) {
+  var el = $('update-progress');
+  var fill = $('update-progress-fill');
+  var txt = $('update-progress-text');
+  if (el) el.classList.add('show');
+  if (fill) fill.style.width = pct + '%';
+  if (txt) txt.textContent = msg || '';
+}
+function hideProgress(delay) {
+  setTimeout(function () {
+    var el = $('update-progress');
+    if (el) el.classList.remove('show');
+    var fill = $('update-progress-fill');
+    if (fill) fill.style.width = '0%';
+  }, delay || 2000);
+}
 async function performUpdate(force) {
   force = !!force;
   var token = cfMethod === 'token' ? $('up-token').value.trim() : '';
@@ -6651,11 +7619,13 @@ async function performUpdate(force) {
     return;
   }
 
+  updateProgress(15, 'Validating credentials…');
   $('up-result').innerHTML = '<span class="mini-spinner"></span> Validating…';
   try {
     var v = await api('POST', '/api/update/validate', { token: token });
     if (!v.valid) throw new Error(v.error || 'Invalid token');
 
+    updateProgress(50, 'Deploying to ' + esc(v.scriptName || 'your Worker') + '…');
     $('up-result').innerHTML = '<span class="mini-spinner"></span> Deploying to ' + esc(v.scriptName || 'your Worker') + '…';
 
     var r = await api('POST', '/api/update', {
@@ -6666,6 +7636,8 @@ async function performUpdate(force) {
     });
     if (!r || !r.success) throw new Error((r && r.error) || 'Update failed.');
 
+    updateProgress(100, 'Done — Worker is now on v' + (r.version || 'latest') + '.');
+    hideProgress(3000);
     $('up-result').innerHTML =
       '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Updated to ' +
       esc(r.version || 'latest') + '.</span>';
@@ -6673,6 +7645,7 @@ async function performUpdate(force) {
     checkUpdate(true);
     loadCfOAuthStatus();
   } catch (e) {
+    hideProgress(1500);
     $('up-result').innerHTML =
       '<span style="color:var(--red)"><i class="fa-solid fa-circle-xmark"></i> ' +
       esc(e.message) + '</span>';
@@ -6711,6 +7684,13 @@ document.addEventListener('keydown', function (e) {
         else if (top === 'check-modal') closeCheckModal();
     }
     if (e.key === 'Escape') closeAllDropdowns();
+    if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey && !/^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || '')) {
+        var dash = document.getElementById('step-dashboard');
+        if (dash && !dash.classList.contains('hidden')) {
+            var inp = document.getElementById('nav-search-input');
+            if (inp) { e.preventDefault(); inp.focus(); }
+        }
+    }
 });
 
 checkStatus();
@@ -6921,6 +7901,8 @@ export default {
             if (request.method === 'POST' && url.pathname === '/api/contact/mark_user_read') return await markContactUserRead(request, env);
             if (request.method === 'GET'  && url.pathname === '/api/contact/stats')      return await getContactStats(env);
             if (request.method === 'POST' && url.pathname === '/api/contact/test_notify') return await testContactNotify(env);
+            if (request.method === 'POST' && url.pathname === '/api/contact/delete')     return await deleteContactMessageHandler(request, env);
+            if (request.method === 'POST' && url.pathname === '/api/contact/clear_all')  return await clearAllContactMessagesHandler(env);
 
             if (request.method === 'GET' && url.pathname === '/api/memory/overview') return await getMemoryOverview(env);
             if (request.method === 'POST' && url.pathname === '/api/memory/clear') return await handleMemoryClear(request, env);
@@ -6951,6 +7933,9 @@ export default {
             if (request.method === 'GET' && /^\/api\/groups\/-?[0-9]+$/.test(url.pathname)) return await getGroupDetail(env, url);
             if (request.method === 'POST' && /^\/api\/groups\/-?[0-9]+\/sync$/.test(url.pathname)) return await syncGroupStatus(env, url);
             if (request.method === 'GET' && /^\/api\/groups\/-?[0-9]+\/memory$/.test(url.pathname)) return await getGroupMemory(env, url);
+            if (request.method === 'GET' && /^\/api\/groups\/-?[0-9]+\/messages$/.test(url.pathname)) return await getGroupChatMessages(env, url);
+            if (request.method === 'POST' && /^\/api\/groups\/-?[0-9]+\/messages\/delete$/.test(url.pathname)) return await deleteGroupChatMessage(request, env, url);
+            if (request.method === 'POST' && /^\/api\/groups\/-?[0-9]+\/messages\/edit$/.test(url.pathname)) return await editGroupChatMessage(request, env, url);
             if (request.method === 'POST' && /^\/api\/groups\/-?[0-9]+\/memory\/clear$/.test(url.pathname)) return await clearGroupMemory(env, url);
             if (request.method === 'POST' && /^\/api\/groups\/-?[0-9]+\/memory\/delete$/.test(url.pathname)) return await deleteGroupMemoryMessage(request, env, url);
             if (request.method === 'POST' && url.pathname.endsWith('/settings') && url.pathname.startsWith('/api/groups/')) return await saveGroupSettings(request, env, url);
@@ -6983,6 +7968,7 @@ export default {
             if (request.method === 'POST' && url.pathname === '/api/settings/token') return await updateBotToken(request, env, url.origin);
             if (request.method === 'POST' && url.pathname === '/api/settings/webhook-test') return await handleWebhookTest(env);
             if (request.method === 'POST' && url.pathname === '/api/settings/media_storage') return await saveMediaStorageChat(request, env);
+            if (request.method === 'POST' && url.pathname === '/api/settings/system_language') return await saveSystemLanguage(request, env);
             if (request.method === 'POST' && url.pathname === '/api/settings/webhook-fix') return await handleWebhookFix(env, url.origin);
             if (request.method === 'POST' && url.pathname === '/api/settings/webhook-diagnostics') return await handleWebhookDiagnostics(env);
             if (request.method === 'GET'  && url.pathname === '/api/schema/health') return await handleSchemaHealth(env);
@@ -6995,6 +7981,11 @@ export default {
             if (request.method === 'GET' && url.pathname === '/api/stats') return await getStats(env);
             if (request.method === 'POST' && url.pathname === '/api/upload_media') return await handleUploadMedia(request, env);
             if (request.method === 'GET' && url.pathname.startsWith('/api/file/')) return await handleFileProxy(request, env, url);
+            if (request.method === 'GET'  && url.pathname === '/api/media/library') return await getMediaLibrary(env);
+            if (request.method === 'POST' && url.pathname === '/api/media/delete') return await deleteMediaLibraryItem(request, env);
+            if (request.method === 'POST' && url.pathname === '/api/media/clear') return await clearMediaLibraryDb(env);
+            if (request.method === 'POST' && url.pathname === '/api/media/rename') return await renameMediaLibraryItem(request, env);
+            if (request.method === 'GET'  && url.pathname === '/api/media/storage_chat') return await getMediaStorageChatInfo(env, url);
             // ---- MCP dashboard API ----
             if (request.method === 'GET'  && url.pathname === '/api/mcp/settings') return await getMcpSettings(request, env);
             if (request.method === 'POST' && url.pathname === '/api/mcp/settings') return await saveMcpSettings(request, env);
@@ -7649,6 +8640,22 @@ const DESIRED_SCHEMA = {
         kick_count: { type: 'INTEGER', default: '0' },
         banned: { type: 'INTEGER', default: '0' },
         updated_at: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' }
+    }},
+    contact_pending_reply: { columns: {
+        admin_id: { type: 'INTEGER', primary: true },
+        target_user_id: { type: 'INTEGER' },
+        source_message_id: { type: 'INTEGER', default: '0' },
+        created_at: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' }
+    }},
+    media_library: { columns: {
+        id: { type: 'INTEGER', primary: true },
+        file_id: { type: 'TEXT' },
+        media_type: { type: 'TEXT', default: "'photo'" },
+        media_meta: { type: 'TEXT', default: "'{}'" },
+        label: { type: 'TEXT', default: "''" },
+        file_name: { type: 'TEXT', default: "''" },
+        file_size: { type: 'INTEGER', default: '0' },
+        uploaded_at: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' }
     }}
 };
 
@@ -7699,6 +8706,11 @@ const SCHEMA_CLEANUPS = [
         sql: "DELETE FROM mcp_sessions WHERE updated_at <= datetime('now', '-24 hours')",
         description: 'MCP sessions idle for over 24 hours',
     },
+    {
+        name: 'stale_contact_pending',
+        sql: "DELETE FROM contact_pending_reply WHERE created_at <= datetime('now', '-1 hour')",
+        description: 'Contact reply sessions idle for over 1 hour',
+    },
     // Orphaned — parent record no longer exists
     {
         name: 'orphaned_broadcast_recipients',
@@ -7747,6 +8759,7 @@ const IDEMPOTENT_DATA_MIGRATIONS = [
 
 const REQUIRED_SETTINGS = {
     password_version: '',
+    system_language: 'en',
     contact_notify_enabled: '1',
     contact_notify_admins: 'all',
     contact_notify_include_user: '1',
@@ -7876,6 +8889,7 @@ async function autoHealSchema(db) {
     if (result.warnings.length === 0) {
         try {
             await db.prepare("INSERT INTO settings (key, value) VALUES ('schema_version', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(String(SCHEMA_VERSION)).run();
+            await db.prepare("INSERT INTO settings (key, value) VALUES ('schema_ready_version', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(String(SCHEMA_VERSION)).run();
             result.versionAfter = SCHEMA_VERSION;
         } catch (e) {
             result.warnings.push('Could not bump schema_version: ' + e.message);
@@ -7891,34 +8905,48 @@ async function autoHealSchema(db) {
 
 async function initializeDatabase(db) {
     if (dbInitCache.has(db)) return dbInitCache.get(db);
-    const schema = `
-        CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT);
-        CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT, first_name TEXT, role TEXT DEFAULT 'user', is_premium BOOLEAN DEFAULT 0, private_started BOOLEAN DEFAULT 0, last_group_id INTEGER, last_active DATETIME DEFAULT CURRENT_TIMESTAMP);
-        CREATE TABLE IF NOT EXISTS commands (command TEXT PRIMARY KEY, parent TEXT, response_type TEXT DEFAULT 'text', content TEXT, media_url TEXT, buttons_json TEXT, is_admin_only BOOLEAN DEFAULT 0, access_level TEXT DEFAULT 'everyone', enabled BOOLEAN DEFAULT 1, show_reply_keyboard BOOLEAN DEFAULT 0, reply_keyboard_json TEXT, order_idx INTEGER DEFAULT 0);
-        CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, user_id INTEGER UNIQUE, command TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP);
-        CREATE TABLE IF NOT EXISTS logs (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, action TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP);
-        CREATE TABLE IF NOT EXISTS ai_messages (id INTEGER PRIMARY KEY AUTOINCREMENT, chat_id INTEGER, role TEXT, content TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP);
-        CREATE TABLE IF NOT EXISTS dm_messages (id INTEGER PRIMARY KEY AUTOINCREMENT, chat_id INTEGER, message_id INTEGER, direction TEXT, source TEXT, kind TEXT DEFAULT 'text', text TEXT, photo_url TEXT, buttons_json TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, edited_at DATETIME);
-        CREATE TABLE IF NOT EXISTS ai_rate_limits (user_id INTEGER NOT NULL, minute INTEGER NOT NULL, count INTEGER NOT NULL DEFAULT 1, PRIMARY KEY (user_id, minute));
-        CREATE TABLE IF NOT EXISTS blocked_users (user_id INTEGER PRIMARY KEY, block_type TEXT NOT NULL DEFAULT 'full', blocked_at DATETIME DEFAULT CURRENT_TIMESTAMP);
-        CREATE TABLE IF NOT EXISTS login_attempts (minute INTEGER PRIMARY KEY, count INTEGER NOT NULL DEFAULT 0);
-        CREATE TABLE IF NOT EXISTS broadcast_history (id INTEGER PRIMARY KEY AUTOINCREMENT, message TEXT, photo_url TEXT, kind TEXT DEFAULT 'text', buttons_json TEXT, recipient_count INTEGER, sent_count INTEGER, sent_at DATETIME DEFAULT CURRENT_TIMESTAMP);
-        CREATE TABLE IF NOT EXISTS broadcast_recipients (broadcast_id INTEGER NOT NULL, chat_id INTEGER NOT NULL, message_id INTEGER, PRIMARY KEY (broadcast_id, chat_id));
-        CREATE TABLE IF NOT EXISTS groups (id INTEGER PRIMARY KEY, title TEXT, type TEXT, username TEXT, added_at DATETIME DEFAULT CURRENT_TIMESTAMP, last_active DATETIME DEFAULT CURRENT_TIMESTAMP, is_active BOOLEAN DEFAULT 1, settings_json TEXT, member_count INTEGER DEFAULT 0);
-        CREATE TABLE IF NOT EXISTS group_flood (chat_id INTEGER, user_id INTEGER, minute INTEGER, count INTEGER DEFAULT 0, PRIMARY KEY (chat_id, user_id, minute));
-        CREATE TABLE IF NOT EXISTS featured_replies (id INTEGER PRIMARY KEY AUTOINCREMENT, command TEXT UNIQUE NOT NULL, kind TEXT DEFAULT 'text', content TEXT, buttons_json TEXT, success_text TEXT DEFAULT '', failure_text TEXT DEFAULT '', enabled BOOLEAN DEFAULT 1, access_level TEXT DEFAULT 'everyone', created_at DATETIME DEFAULT CURRENT_TIMESTAMP);
-        CREATE INDEX IF NOT EXISTS idx_commands_parent ON commands(parent);
-        CREATE INDEX IF NOT EXISTS idx_ai_messages_chat ON ai_messages(chat_id);
-        CREATE INDEX IF NOT EXISTS idx_dm_messages_chat ON dm_messages(chat_id);
-        CREATE INDEX IF NOT EXISTS idx_logs_user ON logs(user_id);
-        CREATE INDEX IF NOT EXISTS idx_groups_active ON groups(is_active);
-        CREATE INDEX IF NOT EXISTS idx_featured_command ON featured_replies(command);
-        CREATE TABLE IF NOT EXISTS mcp_sessions (session_key TEXT PRIMARY KEY, messages_json TEXT NOT NULL DEFAULT '[]', size_bytes INTEGER DEFAULT 0, title TEXT DEFAULT '', created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP);
-        CREATE INDEX IF NOT EXISTS idx_mcp_sessions_updated ON mcp_sessions(updated_at);
-        CREATE TABLE IF NOT EXISTS mcp_rate_limits (session_key TEXT NOT NULL, minute INTEGER NOT NULL, count INTEGER NOT NULL DEFAULT 1, PRIMARY KEY (session_key, minute));
-    `;
-    const statements = schema.split(';').filter(s => s.trim().length > 0);
     const p = (async () => {
+        // ── FAST PATH ────────────────────────────────────────────────────
+        // One SELECT proves the schema is already set up for this version.
+        // This is the common case on every cold start. The slow path only
+        // runs on fresh installs or when SCHEMA_VERSION changes.
+        try {
+            const marker = await db.prepare("SELECT value FROM settings WHERE key = 'schema_ready_version'").first();
+            if (marker && String(marker.value) === String(SCHEMA_VERSION)) return;
+        } catch (e) {
+            // `settings` table may not exist yet (fresh install) — fall through.
+        }
+
+        // ── SLOW PATH ────────────────────────────────────────────────────
+        // Full schema creation + migrations + defensive healing. Runs once
+        // per version. Manual repair lives at Settings → Schema health.
+        const schema = `
+            CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT);
+            CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT, first_name TEXT, role TEXT DEFAULT 'user', is_premium BOOLEAN DEFAULT 0, private_started BOOLEAN DEFAULT 0, last_group_id INTEGER, last_active DATETIME DEFAULT CURRENT_TIMESTAMP);
+            CREATE TABLE IF NOT EXISTS commands (command TEXT PRIMARY KEY, parent TEXT, response_type TEXT DEFAULT 'text', content TEXT, media_url TEXT, buttons_json TEXT, is_admin_only BOOLEAN DEFAULT 0, access_level TEXT DEFAULT 'everyone', enabled BOOLEAN DEFAULT 1, show_reply_keyboard BOOLEAN DEFAULT 0, reply_keyboard_json TEXT, order_idx INTEGER DEFAULT 0);
+            CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, user_id INTEGER UNIQUE, command TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP);
+            CREATE TABLE IF NOT EXISTS logs (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, action TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP);
+            CREATE TABLE IF NOT EXISTS ai_messages (id INTEGER PRIMARY KEY AUTOINCREMENT, chat_id INTEGER, role TEXT, content TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP);
+            CREATE TABLE IF NOT EXISTS dm_messages (id INTEGER PRIMARY KEY AUTOINCREMENT, chat_id INTEGER, message_id INTEGER, direction TEXT, source TEXT, kind TEXT DEFAULT 'text', text TEXT, photo_url TEXT, buttons_json TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, edited_at DATETIME);
+            CREATE TABLE IF NOT EXISTS ai_rate_limits (user_id INTEGER NOT NULL, minute INTEGER NOT NULL, count INTEGER NOT NULL DEFAULT 1, PRIMARY KEY (user_id, minute));
+            CREATE TABLE IF NOT EXISTS blocked_users (user_id INTEGER PRIMARY KEY, block_type TEXT NOT NULL DEFAULT 'full', blocked_at DATETIME DEFAULT CURRENT_TIMESTAMP);
+            CREATE TABLE IF NOT EXISTS login_attempts (minute INTEGER PRIMARY KEY, count INTEGER NOT NULL DEFAULT 0);
+            CREATE TABLE IF NOT EXISTS broadcast_history (id INTEGER PRIMARY KEY AUTOINCREMENT, message TEXT, photo_url TEXT, kind TEXT DEFAULT 'text', buttons_json TEXT, recipient_count INTEGER, sent_count INTEGER, sent_at DATETIME DEFAULT CURRENT_TIMESTAMP);
+            CREATE TABLE IF NOT EXISTS broadcast_recipients (broadcast_id INTEGER NOT NULL, chat_id INTEGER NOT NULL, message_id INTEGER, PRIMARY KEY (broadcast_id, chat_id));
+            CREATE TABLE IF NOT EXISTS groups (id INTEGER PRIMARY KEY, title TEXT, type TEXT, username TEXT, added_at DATETIME DEFAULT CURRENT_TIMESTAMP, last_active DATETIME DEFAULT CURRENT_TIMESTAMP, is_active BOOLEAN DEFAULT 1, settings_json TEXT, member_count INTEGER DEFAULT 0);
+            CREATE TABLE IF NOT EXISTS group_flood (chat_id INTEGER, user_id INTEGER, minute INTEGER, count INTEGER DEFAULT 0, PRIMARY KEY (chat_id, user_id, minute));
+            CREATE TABLE IF NOT EXISTS featured_replies (id INTEGER PRIMARY KEY AUTOINCREMENT, command TEXT UNIQUE NOT NULL, kind TEXT DEFAULT 'text', content TEXT, buttons_json TEXT, success_text TEXT DEFAULT '', failure_text TEXT DEFAULT '', enabled BOOLEAN DEFAULT 1, access_level TEXT DEFAULT 'everyone', created_at DATETIME DEFAULT CURRENT_TIMESTAMP);
+            CREATE INDEX IF NOT EXISTS idx_commands_parent ON commands(parent);
+            CREATE INDEX IF NOT EXISTS idx_ai_messages_chat ON ai_messages(chat_id);
+            CREATE INDEX IF NOT EXISTS idx_dm_messages_chat ON dm_messages(chat_id);
+            CREATE INDEX IF NOT EXISTS idx_logs_user ON logs(user_id);
+            CREATE INDEX IF NOT EXISTS idx_groups_active ON groups(is_active);
+            CREATE INDEX IF NOT EXISTS idx_featured_command ON featured_replies(command);
+            CREATE TABLE IF NOT EXISTS mcp_sessions (session_key TEXT PRIMARY KEY, messages_json TEXT NOT NULL DEFAULT '[]', size_bytes INTEGER DEFAULT 0, title TEXT DEFAULT '', created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP);
+            CREATE INDEX IF NOT EXISTS idx_mcp_sessions_updated ON mcp_sessions(updated_at);
+            CREATE TABLE IF NOT EXISTS mcp_rate_limits (session_key TEXT NOT NULL, minute INTEGER NOT NULL, count INTEGER NOT NULL DEFAULT 1, PRIMARY KEY (session_key, minute));
+        `;
+        const statements = schema.split(';').filter(s => s.trim().length > 0);
         try { await db.batch(statements.map(s => db.prepare(s))); }
         catch (e) { console.error('Schema batch failed (continuing):', e.message); }
 
@@ -7936,59 +8964,58 @@ async function initializeDatabase(db) {
             }
         }
 
-        // NOTE: no auto-healing here. If the migrations above left the DB in
-        // an inconsistent state (e.g. a vN migration silently failed and
-        // schema_version already advanced), the admin must click
-        // Settings → Schema Health → "Run auto-heal". This keeps cold starts
-        // fast (~1 schema read) and makes every DDL change deliberate.
         try {
             await db.prepare("INSERT INTO settings (key, value) VALUES ('schema_version', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(String(SCHEMA_VERSION)).run();
         } catch (e) { console.error(`Failed to bump schema_version to ${SCHEMA_VERSION}:`, e.message); }
 
-        // ── Defensive schema healing ─────────────────────────────────────
-        // Migrations can silently fail (e.g. when schema_version was bumped
-        // without the ALTERs actually running). This loop re-applies every
-        // "ADD COLUMN" that later INSERT/UPDATE statements depend on. Each
-        // ALTER either succeeds or fails with "duplicate column" — both are
-        // fine. So even if schema_version is wrong, missing columns get
-        // created here. Cheap: 12 no-op statements on a healthy DB.
+        // Extra tables added in later releases.
+        try {
+            await db.prepare(`CREATE TABLE IF NOT EXISTS contact_pending_reply (
+                admin_id INTEGER PRIMARY KEY,
+                target_user_id INTEGER,
+                source_message_id INTEGER DEFAULT 0,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )`).run();
+            await db.prepare(`CREATE TABLE IF NOT EXISTS media_library (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                file_id TEXT NOT NULL,
+                media_type TEXT DEFAULT 'photo',
+                media_meta TEXT DEFAULT '{}',
+                label TEXT DEFAULT '',
+                file_name TEXT DEFAULT '',
+                file_size INTEGER DEFAULT 0,
+                uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )`).run();
+            await db.prepare('CREATE INDEX IF NOT EXISTS idx_media_library_uploaded ON media_library(uploaded_at)').run();
+        } catch (e) { /* ignore */ }
+
         const SCHEMA_HEALS = [
-            // commands — added by v11 & v13
             `ALTER TABLE commands ADD COLUMN access_level TEXT DEFAULT 'everyone'`,
             `ALTER TABLE commands ADD COLUMN file_id TEXT DEFAULT ''`,
             `ALTER TABLE commands ADD COLUMN media_meta TEXT DEFAULT ''`,
-            // dm_messages — added by v13 & v17
             `ALTER TABLE dm_messages ADD COLUMN file_id TEXT DEFAULT ''`,
             `ALTER TABLE dm_messages ADD COLUMN media_meta TEXT DEFAULT ''`,
             `ALTER TABLE dm_messages ADD COLUMN read_at DATETIME`,
-            // broadcast_history — added by v13
             `ALTER TABLE broadcast_history ADD COLUMN file_id TEXT DEFAULT ''`,
             `ALTER TABLE broadcast_history ADD COLUMN media_meta TEXT DEFAULT ''`,
-            // sessions — added by v14
             `ALTER TABLE sessions ADD COLUMN csrf_token TEXT DEFAULT ''`,
             `ALTER TABLE sessions ADD COLUMN password_version TEXT DEFAULT ''`,
-            // featured_replies — added by v7, v10, v12
             `ALTER TABLE featured_replies ADD COLUMN admin_only INTEGER DEFAULT 0`,
             `ALTER TABLE featured_replies ADD COLUMN delete_user_message INTEGER DEFAULT 1`,
             `ALTER TABLE featured_replies ADD COLUMN access_level TEXT DEFAULT 'everyone'`,
-            // users — added by v4
             `ALTER TABLE users ADD COLUMN private_started BOOLEAN DEFAULT 0`,
             `ALTER TABLE users ADD COLUMN last_group_id INTEGER`,
-            // mcp_sessions — added by v9
             `ALTER TABLE mcp_sessions ADD COLUMN title TEXT DEFAULT ''`,
         ];
         for (const sql of SCHEMA_HEALS) {
             try { await db.prepare(sql).run(); }
-            catch (e) { /* column already exists, or table missing entirely — both fine */ }
+            catch (e) { /* column already exists — fine */ }
         }
 
-        // Ensure the password_version setting exists (the getSession JOIN
-        // depends on this row being present, even if empty).
         try {
             await db.prepare("INSERT INTO settings (key, value) VALUES ('password_version', '') ON CONFLICT(key) DO NOTHING").run();
         } catch (e) { /* ignore */ }
 
-        // Ensure group_strikes table exists (used by flood escalation).
         try {
             await db.prepare(`CREATE TABLE IF NOT EXISTS group_strikes (
                 chat_id INTEGER NOT NULL,
@@ -8000,6 +9027,19 @@ async function initializeDatabase(db) {
                 PRIMARY KEY (chat_id, user_id)
             )`).run();
         } catch (e) { /* ignore */ }
+
+        // Ensure the system-language setting exists (default: English).
+        try {
+            await db.prepare("INSERT INTO settings (key, value) VALUES ('system_language', 'en') ON CONFLICT(key) DO NOTHING").run();
+        } catch (e) { /* ignore */ }
+
+        // ── MARK SCHEMA READY ────────────────────────────────────────────
+        // From now on, cold starts hit the fast path.
+        try {
+            await db.prepare("INSERT INTO settings (key, value) VALUES ('schema_ready_version', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(String(SCHEMA_VERSION)).run();
+        } catch (e) {
+            console.warn('Could not set schema_ready_version:', e.message);
+        }
     })();
     dbInitCache.set(db, p);
     try { await p; } catch (e) { dbInitCache.delete(db); throw e; }
@@ -8357,6 +9397,26 @@ async function getContactStats(env) {
         });
     } catch (err) { return internalError(err); }
 }
+async function deleteContactMessageHandler(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const body = await request.json();
+        const messageId = parseInt(body.messageId);
+        if (!messageId) return apiJson({ error: 'Invalid messageId.' }, 400);
+        await initializeDatabase(env.DB);
+        await env.DB.prepare("DELETE FROM dm_messages WHERE id = ? AND source = 'featured' AND direction = 'in'").bind(messageId).run();
+        return apiJson({ success: true });
+    } catch (err) { return internalError(err); }
+}
+async function clearAllContactMessagesHandler(env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        const r = await env.DB.prepare("DELETE FROM dm_messages WHERE source = 'featured' AND direction = 'in'").run();
+        await logAction(env.DB, null, 'Contact inbox cleared');
+        return apiJson({ success: true, deleted: (r && r.meta && r.meta.changes) || 0 });
+    } catch (err) { return internalError(err); }
+}
 async function getContactNotifyAdmins(env) {
     const raw = (await getSetting(env.DB, 'contact_notify_admins')) || 'all';
     if (raw === 'all') {
@@ -8394,7 +9454,7 @@ async function handleContactMessage(env, BOT_TOKEN, chatId, userId, userInfo, me
                 "SELECT COUNT(*) as n FROM dm_messages WHERE chat_id = ? AND source = 'featured' AND direction = 'in' AND created_at > datetime('now', '-1 hour')"
             ).bind(userId).first();
             if (row && row.n >= rateLimit) {
-                await sendRichText(BOT_TOKEN, chatId, '⏳ You have sent too many messages in the last hour. Please wait before sending another.');
+                await sendRichText(BOT_TOKEN, chatId, sysStr().contact_rate_limit);
                 return;
             }
         }
@@ -8432,16 +9492,23 @@ async function handleContactMessage(env, BOT_TOKEN, chatId, userId, userInfo, me
             const adminIds = await getContactNotifyAdmins(env);
             const includeUser = (await getSetting(env.DB, 'contact_notify_include_user')) !== '0';
             const preview = message.length > 500 ? message.slice(0, 500) + '…' : message;
-            let header = '📬 <b>New contact message</b>';
+            const L = sysStr();
+            let header = L.contact_new;
             if (includeUser && userInfo) {
-                header += '\nFrom: <b>' + escapeTelegramHTML(userInfo.first_name || 'User') + '</b>';
+                header += '\n' + L.contact_from + ' <b>' + escapeTelegramHTML(userInfo.first_name || 'User') + '</b>';
                 if (userInfo.username) header += ' (@' + escapeTelegramHTML(userInfo.username) + ')';
-                header += '\nID: <code>' + escapeTelegramHTML(String(userInfo.id)) + '</code>';
+                header += '\n' + L.contact_id + ' <code>' + escapeTelegramHTML(String(userInfo.id)) + '</code>';
             }
             const body = '\n\n' + escapeTelegramHTML(preview);
+            const replyKb = {
+                inline_keyboard: [[
+                    { text: L.contact_reply_btn, callback_data: 'CR:' + userId + ':reply' },
+                    { text: L.contact_dismiss_btn, callback_data: 'CR:' + userId + ':cancel' }
+                ]]
+            };
             for (const adminId of adminIds) {
-                if (Number(adminId) === Number(userId)) continue; // don't notify the sender
-                const resp = await sendRichText(BOT_TOKEN, adminId, header + body);
+                if (Number(adminId) === Number(userId)) continue;
+                const resp = await sendRichText(BOT_TOKEN, adminId, header + body, { reply_markup: replyKb });
                 if (!resp || !resp.ok) {
                     await logAction(env.DB, null, 'Contact notify failed for admin ' + adminId);
                 }
@@ -9784,6 +10851,93 @@ async function syncGroupStatus(env, url) {
     } catch (err) { return internalError(err); }
 }
 
+async function getGroupChatMessages(env, url) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const id = parseInt(url.pathname.split('/')[3]);
+        await initializeDatabase(env.DB);
+        const rows = await env.DB.prepare(
+            "SELECT id, message_id, kind, text, photo_url, file_id, media_meta, buttons_json, created_at, edited_at FROM dm_messages WHERE chat_id = ? AND source = 'group_announce' ORDER BY id ASC LIMIT 300"
+        ).bind(id).all();
+        return apiJson({ messages: rows.results || [] });
+    } catch (err) { return internalError(err); }
+}
+async function deleteGroupChatMessage(request, env, url) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const id = parseInt(url.pathname.split('/')[3]);
+        const body = await request.json();
+        const dbId = parseInt(body.id);
+        const messageId = parseInt(body.messageId);
+        await initializeDatabase(env.DB);
+        const token = await getSetting(env.DB, 'bot_token');
+        if (token && messageId) {
+            try { await tgCall(token, 'deleteMessage', { chat_id: id, message_id: messageId }, { retry: false }); } catch (e) {}
+        }
+        await env.DB.prepare('DELETE FROM dm_messages WHERE id = ? AND chat_id = ?').bind(dbId, id).run();
+        return apiJson({ success: true });
+    } catch (err) { return internalError(err); }
+}
+async function editGroupChatMessage(request, env, url) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const id = parseInt(url.pathname.split('/')[3]);
+        const body = await request.json();
+        const dbId = parseInt(body.id);
+        const messageId = parseInt(body.messageId);
+        const text = String(body.text || '');
+        const mediaType = normalizeMediaType(body.media_type || 'text');
+        const fileId = body.file_id ? String(body.file_id).trim() : '';
+        const photoUrl = body.photo_url ? String(body.photo_url).trim() : '';
+        const mediaMeta = parseMediaMeta(body.media_meta);
+        const buttonsJson = body.buttons_json || '';
+        await initializeDatabase(env.DB);
+        const token = await getSetting(env.DB, 'bot_token');
+        if (!token) return apiJson({ error: 'Bot token not set.' }, 400);
+        const row = await env.DB.prepare('SELECT kind, photo_url, file_id, media_meta FROM dm_messages WHERE id = ? AND chat_id = ?').bind(dbId, id).first();
+        if (!row) return apiJson({ error: 'Message not found.' }, 404);
+
+        const storedKind = row.kind || 'text';
+        const storedMediaRef = row.file_id || row.photo_url || '';
+        const newMediaRef = fileId || photoUrl || '';
+        const typeChanged = storedKind !== mediaType;
+        const mediaChanged = mediaType !== 'text' && newMediaRef && storedMediaRef !== newMediaRef;
+
+        const built = buttonsJson ? buildReplyMarkup(buttonsJson) : null;
+        const inlineMarkup = built && built.inlineMarkup ? built.inlineMarkup : null;
+
+        if (typeChanged || mediaChanged) {
+            // Delete old and re-send with the new media type / file.
+            try { await tgCall(token, 'deleteMessage', { chat_id: id, message_id: messageId }, { retry: false }); } catch (e) {}
+            let resp;
+            if (mediaType === 'text') {
+                resp = await sendRichText(token, id, text || ' ', inlineMarkup ? { reply_markup: inlineMarkup } : {});
+            } else {
+                resp = await sendMediaMessage(token, id, mediaType, newMediaRef, text || '', inlineMarkup, mediaMeta);
+            }
+            if (!resp || !resp.ok) return apiJson({ error: (resp && resp.description) || 'Telegram error' }, 500);
+            const newMessageId = resp.result && resp.result.message_id;
+            await env.DB.prepare('UPDATE dm_messages SET message_id = ?, kind = ?, text = ?, photo_url = ?, file_id = ?, media_meta = ?, buttons_json = ?, edited_at = CURRENT_TIMESTAMP WHERE id = ? AND chat_id = ?')
+                .bind(newMessageId, mediaType, text, photoUrl || null, fileId || null, JSON.stringify(mediaMeta || {}), buttonsJson || null, dbId, id).run();
+            return apiJson({ success: true, message_id: newMessageId, converted: true });
+        }
+
+        // Same media type — edit in place.
+        const method = mediaType !== 'text' ? 'editMessageCaption' : 'editMessageText';
+        const payload = { chat_id: id, message_id: messageId, parse_mode: 'HTML' };
+        if (method === 'editMessageCaption') payload.caption = text || ' '; else payload.text = text || ' ';
+        payload.reply_markup = inlineMarkup || { inline_keyboard: [] };
+        let res = await tgCall(token, method, payload);
+        if (res && !res.ok && isHtmlParseError(res)) {
+            const plain = Object.assign({}, payload); delete plain.parse_mode;
+            if (method === 'editMessageCaption') plain.caption = htmlToPlain(text || ' '); else plain.text = htmlToPlain(text || ' ');
+            res = await tgCall(token, method, plain);
+        }
+        if (!res || !res.ok) return apiJson({ error: (res && res.description) || 'Telegram error' }, 500);
+        await env.DB.prepare('UPDATE dm_messages SET text = ?, buttons_json = ?, edited_at = CURRENT_TIMESTAMP WHERE id = ? AND chat_id = ?').bind(text, buttonsJson || null, dbId, id).run();
+        return apiJson({ success: true });
+    } catch (err) { return internalError(err); }
+}
 async function getGroupMemory(env, url) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
@@ -9843,6 +10997,7 @@ async function sendGroupMessage(request, env, url) {
         if (!resp || !resp.ok) return apiJson({ error: (resp && resp.description) || 'Telegram error' }, 500);
         if (built && built.both && built.replyMarkup) await tgCall(token, 'sendMessage', { chat_id: id, text: ' ', reply_markup: built.replyMarkup });
         if (built && built.replySpec && built.replySpec.actions) await mergeReplyActions(env.DB, built.replySpec.actions);
+        await logDm(env.DB, id, 'out', 'group_announce', mediaType, message || '', photoUrl || null, resp.result && resp.result.message_id, buttonsJson || null, fileId || null, mediaMeta);
         await logAction(env.DB, null, `Announcement sent to group ${id}`);
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
@@ -10486,39 +11641,24 @@ function addRtlMarkToPersian(text) {
         return '\u200F' + line;
     }).join('\n');
 }
-const AI_STYLE_GUIDES = {
-    friendly: 'Use a friendly, warm and approachable tone.',
-    professional: 'Use a professional, polished and helpful tone.',
-    casual: 'Use a casual, relaxed and informal tone.',
-    formal: 'Use a very formal and courteous tone.',
-    funny: 'Use a humorous and light-hearted tone.'
-};
-const AI_LENGTH_GUIDES = {
-    very_short: 'Keep your responses very short (1-2 sentences).',
-    short: 'Keep your responses short (about 3-5 sentences).',
-    medium: 'Keep your responses a moderate length (about 6-10 sentences).',
-    detailed: 'Provide detailed responses (about 10-20 sentences).',
-    automatic: 'Decide the response length yourself based on complexity.'
-};
-const AI_LANGUAGE_NAMES = {
-    english: 'English', spanish: 'Spanish', french: 'French', german: 'German',
-    persian: 'Persian (Farsi)', arabic: 'Arabic', farsi: 'Farsi', russian: 'Russian'
-};
+// Style/length/language guides now live in SYSTEM_STRINGS so they can be
+// translated alongside the rest of the system prompts.
 function buildAiSystemPrompt(settings, context) {
+    const L = sysStr();
     let systemContent = settings.ai_system_prompt || '';
-    if (settings.ai_strict_mode === '1') systemContent += (systemContent ? '\n\n' : '') + 'CORE RULES:\n- Answer ONLY using the provided instructions and knowledge base.\n- NEVER invent information.\n- If the answer is not available, politely say you do not have that information.';
-    if (settings.ai_rtl_support === '1') systemContent += (systemContent ? '\n\n' : '') + 'When the response is primarily Persian, begin each paragraph with the U+200F right-to-left mark. Never mention this rule.';
+    if (settings.ai_strict_mode === '1') systemContent += (systemContent ? '\n\n' : '') + L.ai_core_rules;
+    if (settings.ai_rtl_support === '1') systemContent += (systemContent ? '\n\n' : '') + L.ai_rtl_rule;
     try {
         const kbs = JSON.parse(settings.ai_knowledge_bases || '[]');
         const enabled = kbs.filter(kb => kb.enabled !== false && kb.content && kb.content.trim());
         if (enabled.length) systemContent += (systemContent ? '\n\n' : '') + enabled.map((kb, i) => `${kb.label || 'Knowledge ' + (i + 1)}:\n${kb.content.trim()}`).join('\n\n');
     } catch (e) {}
-    systemContent += (systemContent ? '\n\n' : '') + 'FORMATTING: Plain text by default. No Markdown. HTML allowed only with <b>, <i>, <u>, <s>, <code>, <pre>, <a href>, <blockquote>, <tg-spoiler>. Always produce valid Telegram HTML.';
-    const lang = AI_LANGUAGE_NAMES[settings.ai_language];
-    if (lang) systemContent += `\n\nIMPORTANT: Always respond in ${lang}.`;
-    const styleGuide = AI_STYLE_GUIDES[settings.ai_style];
+    systemContent += (systemContent ? '\n\n' : '') + L.ai_formatting;
+    const lang = L.ai_langs[settings.ai_language];
+    if (lang) systemContent += `\n\n${L.ai_lang_rule} ${lang}.`;
+    const styleGuide = L.ai_styles[settings.ai_style];
     if (styleGuide) systemContent += '\n\n' + styleGuide;
-    const lengthGuide = AI_LENGTH_GUIDES[settings.ai_length];
+    const lengthGuide = L.ai_lengths[settings.ai_length];
     if (lengthGuide) systemContent += '\n\n' + lengthGuide;
     if (context) systemContent = replacePlaceholders(systemContent, context);
     return systemContent;
@@ -10652,10 +11792,10 @@ async function getSettings(env, originUrl) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
-        const [token, webhook, cfToken] = await Promise.all([
-            getSetting(env.DB, 'bot_token'), getSetting(env.DB, 'webhook_url'), getSetting(env.DB, 'cf_api_token'),
+        const [token, webhook, cfToken, language, mediaStorage] = await Promise.all([
+            getSetting(env.DB, 'bot_token'), getSetting(env.DB, 'webhook_url'), getSetting(env.DB, 'cf_api_token'), getSetting(env.DB, 'system_language'), getSetting(env.DB, 'media_storage_chat_id'),
         ]);
-        const mediaStorage = await getSetting(env.DB, 'media_storage_chat_id');
+        const systemLanguage = language || 'en';
         return apiJson({
             bot_token_masked: maskSecret(token),
             bot_token_set: !!token,
@@ -10663,6 +11803,7 @@ async function getSettings(env, originUrl) {
             cf_token_masked: maskSecret(cfToken),
             cf_token_set: !!cfToken,
             media_storage_chat_id: mediaStorage || '',
+            system_language: systemLanguage === 'fa' ? 'fa' : 'en',
         });
     } catch (err) { return internalError(err); }
 }
@@ -10743,6 +11884,19 @@ async function saveMediaStorageChat(request, env) {
         await setSetting(env.DB, 'media_storage_chat_id', chatId);
         await logAction(env.DB, null, 'Media storage chat updated');
         return apiJson({ success: true, chat_id: chatId });
+    } catch (err) { return internalError(err); }
+}
+async function saveSystemLanguage(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const body = await request.json();
+        const lang = body.language === 'fa' ? 'fa' : 'en';
+        await initializeDatabase(env.DB);
+        await setSetting(env.DB, 'system_language', lang);
+        // Update the isolate-level cache so subsequent sysStr() calls use the new language immediately.
+        cachedSystemLang = { lang: lang, at: Date.now() };
+        await logAction(env.DB, null, 'System language set to ' + lang);
+        return apiJson({ success: true, language: lang });
     } catch (err) { return internalError(err); }
 }
 async function handleWebhookTest(env) {
@@ -11078,6 +12232,7 @@ async function factoryReset(request, env) {
         botNameCache.name = null; botNameCache.fetchedAt = 0;
         mcpTokenCache.clear();
         _permCache.delete(env);
+        cachedSystemLang = { lang: 'en', at: 0 };
         await logAction(env.DB, null, 'FACTORY RESET performed');
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
@@ -11138,7 +12293,66 @@ async function handleUploadMedia(request, env) {
         // Clean up the storage chat so it doesn't fill up.
         if (sent.message_id) await tgCall(token, 'deleteMessage', { chat_id: storageChat, message_id: sent.message_id }, { retry: false });
 
+        // Save to the media library for reuse.
+        try {
+            const fileName = String(file.name || '').slice(0, 200);
+            const fileSize = file.size || 0;
+            const metaStr = JSON.stringify(Object.assign({}, mediaMeta, { file_size: fileSize }));
+            await env.DB.prepare('INSERT INTO media_library (file_id, media_type, media_meta, label, file_name, file_size) VALUES (?, ?, ?, ?, ?, ?)')
+                .bind(fileId, mediaType, metaStr, fileName || mediaType, fileName, fileSize).run();
+        } catch (e) { console.warn('media library insert failed:', e.message); }
+
         return apiJson({ success: true, file_id: fileId, media_type: mediaType, media_meta: mediaMeta });
+    } catch (err) { return internalError(err); }
+}
+async function getMediaLibrary(env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        const rows = await env.DB.prepare('SELECT id, file_id, media_type, media_meta, label, file_name, file_size, uploaded_at FROM media_library ORDER BY id DESC LIMIT 500').all();
+        return apiJson({ items: rows.results || [] });
+    } catch (err) { return internalError(err); }
+}
+async function deleteMediaLibraryItem(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const body = await request.json();
+        const id = parseInt(body.id);
+        if (!id) return apiJson({ error: 'Invalid id.' }, 400);
+        await env.DB.prepare('DELETE FROM media_library WHERE id = ?').bind(id).run();
+        return apiJson({ success: true });
+    } catch (err) { return internalError(err); }
+}
+async function clearMediaLibraryDb(env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await env.DB.prepare('DELETE FROM media_library').run();
+        return apiJson({ success: true });
+    } catch (err) { return internalError(err); }
+}
+async function renameMediaLibraryItem(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const body = await request.json();
+        const id = parseInt(body.id);
+        const label = String(body.label || '').slice(0, 80);
+        if (!id) return apiJson({ error: 'Invalid id.' }, 400);
+        await env.DB.prepare('UPDATE media_library SET label = ? WHERE id = ?').bind(label, id).run();
+        return apiJson({ success: true });
+    } catch (err) { return internalError(err); }
+}
+async function getMediaStorageChatInfo(env, url) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const chatId = url.searchParams.get('id') || (await getSetting(env.DB, 'media_storage_chat_id')) || '';
+        if (!chatId) return apiJson({ error: 'No chat ID.' }, 400);
+        const token = await getSetting(env.DB, 'bot_token');
+        if (!token) return apiJson({ error: 'Bot token not set.' }, 400);
+        const res = await tgCall(token, 'getChat', { chat_id: chatId });
+        if (!res || !res.ok) return apiJson({ error: (res && res.description) || 'getChat failed' }, 400);
+        const chat = res.result || {};
+        const title = chat.title || (chat.first_name ? chat.first_name + (chat.last_name ? ' ' + chat.last_name : '') : '');
+        return apiJson({ success: true, title: title, type: chat.type, username: chat.username || '', id: chat.id });
     } catch (err) { return internalError(err); }
 }
 async function handleFileProxy(request, env, url) {
@@ -12955,17 +14169,7 @@ async function callMcpAiCompletion(settings, systemPrompt, messages, tools) {
     return choice.message;
 }
 
-const MCP_SYSTEM_PROMPT = `You are the admin assistant for a Telegram bot management dashboard called Nyxx.
-
-You have access to tools that let you read and modify the bot: users, commands, groups, settings, AI config, broadcasts.
-
-Guidelines:
-- For destructive actions (delete_user, clear_ai_memory), you MUST ask the user for explicit confirmation before setting confirm=true. Say what will happen and wait for a clear "yes".
-- For send_dm and send_broadcast, double-check the target before sending.
-- Summarize what you did at the end, in plain language the user can understand.
-- If a tool returns an error, explain it briefly and suggest a fix.
-- Do not reveal API keys, bot tokens, or other secrets, even if asked. They are masked on the server side anyway.
-- Be concise but complete. Format lists with bullets. Use plain text, no markdown.`;
+function mcpSystemPrompt() { return sysStr().mcp_system; }
 
 async function runMcpAgent(userMessage, env, opts) {
     opts = opts || {};
@@ -13003,7 +14207,7 @@ async function runMcpAgent(userMessage, env, opts) {
         persistSession: true,
         forceKeep: keep,
         providerSettings: aiSettings,
-        systemPrompt: MCP_SYSTEM_PROMPT,
+        systemPrompt: mcpSystemPrompt(),
         history,
         userText: userMessage,
         tools,
@@ -13064,6 +14268,7 @@ async function handleMcpDashboardChat(request, env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
+        await getSystemLanguageFromDb(env);
         const enabled = await getSetting(env.DB, 'mcp_enabled');
         if (enabled !== '1') return apiJson({ error: 'MCP is disabled. Enable it in the MCP tab first.' }, 400);
         const body = await request.json().catch(() => null);
@@ -13099,10 +14304,12 @@ async function handleMcpAiTest(request, env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
+        await getSystemLanguageFromDb(env);
         const body = await request.json().catch(() => ({}));
         const settings = await resolveMcpAiSettings(env, body.settings || {});
         if (!settings.mcp_ai_api_key) return apiJson({ success: false, error: 'No API key saved yet. Paste one and press Save provider first.' }, 200);
-        const reply = await callMcpAiCompletion(settings, 'You are a test endpoint. Reply with "OK" and nothing else.', [{ role: 'user', content: 'Reply with OK.' }], null);
+        const L = sysStr();
+        const reply = await callMcpAiCompletion(settings, L.mcp_test_prompt, [{ role: 'user', content: L.mcp_test_user }], null);
         return apiJson({ success: true, message: (reply && reply.content) || '(empty)' });
     } catch (err) { return apiJson({ success: false, error: String(err.message || err) }, 200); }
 }
@@ -13560,6 +14767,7 @@ async function createChatSession(request, env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
+        await getSystemLanguageFromDb(env);
         const mcpOn = await getSetting(env.DB, 'mcp_enabled');
         if (mcpOn !== '1') return apiJson({ error: 'MCP is disabled. Enable it in the MCP tab first.' }, 400);
         const body = await request.json().catch(() => ({}));
@@ -13661,7 +14869,7 @@ async function sendChatMessage(request, env, url) {
             persistSession: true,
             forceKeep: dbKeep,
             providerSettings: aiSettings,
-            systemPrompt: MCP_SYSTEM_PROMPT,
+            systemPrompt: mcpSystemPrompt(),
             history,
             userText: message,
             tools,
@@ -13899,17 +15107,154 @@ async function sendMessage(chatId, text, BOT_TOKEN, parseMode) {
     for (const chunk of chunks) last = await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: chunk });
     return last;
 }
-const BOT_STRINGS = {
+// ============================================================================
+// SYSTEM STRINGS (bot user-facing + AI system prompts)
+// ============================================================================
+// Controlled by the `system_language` setting (en / fa). The cache is primed
+// once per request via getSystemLanguageFromDb() so all downstream calls to
+// sysStr() / botStrings() are synchronous and cheap.
+const SYSTEM_STRINGS = {
     en: {
+        // Bot-level user-facing strings
         not_found: 'Command not found. Use /start to see available options.',
         unauthorized: '⚠️ You are not authorised to use this command.',
         back: 'Back',
         rate_limited: '⏳ Too many requests. Please wait a moment.',
         rate_limited_global: '🌍 The bot is busy right now. Please try again shortly.',
-        welcome: (botName) => `👋 Welcome to <b>${botName}</b>!\n\nThis bot is powered by <a href="https://github.com/Mahan07dev/Nyxx">Nyxx</a>, an open-source Telegram bot builder for Cloudflare Workers.\n\nMade with ❤️ by <b>@Mahan07dev</b>`
-    }
+        welcome: (botName) => `👋 Welcome to <b>${botName}</b>!\n\nThis bot is powered by <a href="https://github.com/Mahan07dev/Nyxx">Nyxx</a>, an open-source Telegram bot builder for Cloudflare Workers.\n\nMade with ❤️ by <b>@Mahan07dev</b>`,
+        // Contact notification + reply flow
+        contact_new: '📬 <b>New contact message</b>',
+        contact_from: 'From:',
+        contact_id: 'ID:',
+        contact_reply_btn: '💬 Reply',
+        contact_dismiss_btn: '❌ Dismiss',
+        contact_reply_intro: '💬 <b>You are replying to',
+        contact_reply_hint: 'Send your reply as a text message. Or tap Cancel to abort.',
+        contact_cancel_btn: '❌ Cancel reply',
+        contact_cancelled: '✅ Reply cancelled.',
+        contact_sent_ok: '✅ <b>Reply sent</b> to',
+        contact_sent_err: '⚠️ Could not send reply:',
+        contact_sent_err_hint: 'Send another message to try again, or /cancel to abort.',
+        contact_rate_limit: '⏳ You have sent too many messages in the last hour. Please wait before sending another.',
+        // MCP AI prompts
+        mcp_system: `You are the admin assistant for a Telegram bot management dashboard called Nyxx.
+
+You have access to tools that let you read and modify the bot: users, commands, groups, settings, AI config, broadcasts.
+
+Guidelines:
+- For destructive actions (delete_user, clear_ai_memory), you MUST ask the user for explicit confirmation before setting confirm=true. Say what will happen and wait for a clear "yes".
+- For send_dm and send_broadcast, double-check the target before sending.
+- Summarize what you did at the end, in plain language the user can understand.
+- If a tool returns an error, explain it briefly and suggest a fix.
+- Do not reveal API keys, bot tokens, or other secrets, even if asked. They are masked on the server side anyway.
+- Be concise but complete. Format lists with bullets. Use plain text, no markdown.`,
+        mcp_test_prompt: 'You are a test endpoint. Reply with "OK" and nothing else.',
+        mcp_test_user: 'Reply with OK.',
+        // AI system prompt fragments
+        ai_core_rules: 'CORE RULES:\n- Answer ONLY using the provided instructions and knowledge base.\n- NEVER invent information.\n- If the answer is not available, politely say you do not have that information.',
+        ai_rtl_rule: 'When the response is primarily Persian, begin each paragraph with the U+200F right-to-left mark. Never mention this rule.',
+        ai_formatting: 'FORMATTING: Plain text by default. No Markdown. HTML allowed only with <b>, <i>, <u>, <s>, <code>, <pre>, <a href>, <blockquote>, <tg-spoiler>. Always produce valid Telegram HTML.',
+        ai_lang_rule: 'IMPORTANT: Always respond in',
+        ai_styles: {
+            friendly: 'Use a friendly, warm and approachable tone.',
+            professional: 'Use a professional, polished and helpful tone.',
+            casual: 'Use a casual, relaxed and informal tone.',
+            formal: 'Use a very formal and courteous tone.',
+            funny: 'Use a humorous and light-hearted tone.',
+        },
+        ai_lengths: {
+            very_short: 'Keep your responses very short (1-2 sentences).',
+            short: 'Keep your responses short (about 3-5 sentences).',
+            medium: 'Keep your responses a moderate length (about 6-10 sentences).',
+            detailed: 'Provide detailed responses (about 10-20 sentences).',
+            automatic: 'Decide the response length yourself based on complexity.',
+        },
+        ai_langs: {
+            english: 'English', spanish: 'Spanish', french: 'French', german: 'German',
+            persian: 'Persian (Farsi)', arabic: 'Arabic', farsi: 'Farsi', russian: 'Russian',
+        },
+    },
+    fa: {
+        // Bot-level user-facing strings
+        not_found: 'دستور یافت نشد. برای مشاهده گزینه‌های موجود از /start استفاده کنید.',
+        unauthorized: '⚠️ شما مجاز به استفاده از این دستور نیستید.',
+        back: 'بازگشت',
+        rate_limited: '⏳ درخواست‌های بیش از حد. لطفاً کمی صبر کنید.',
+        rate_limited_global: '🌍 ربات در حال حاضر مشغول است. لطفاً کمی بعد دوباره تلاش کنید.',
+        welcome: (botName) => `👋 به <b>${botName}</b> خوش آمدید!\n\nاین ربات توسط <a href="https://github.com/Mahan07dev/Nyxx">Nyxx</a> ساخته شده است — یک سازندهٔ ربات تلگرام متن‌باز برای Cloudflare Workers.\n\nساخته شده با ❤️ توسط <b>@Mahan07dev</b>`,
+        // Contact notification + reply flow
+        contact_new: '📬 <b>پیام جدید از طریق فرم تماس</b>',
+        contact_from: 'از طرف:',
+        contact_id: 'شناسه:',
+        contact_reply_btn: '💬 پاسخ',
+        contact_dismiss_btn: '❌ رد کردن',
+        contact_reply_intro: '💬 <b>شما در حال پاسخ دادن به',
+        contact_reply_hint: 'پاسخ خود را به صورت پیام متنی ارسال کنید. یا برای انصراف روی «لغو» بزنید.',
+        contact_cancel_btn: '❌ لغو پاسخ',
+        contact_cancelled: '✅ پاسخ لغو شد.',
+        contact_sent_ok: '✅ <b>پاسخ ارسال شد</b> به',
+        contact_sent_err: '⚠️ ارسال پاسخ ممکن نشد:',
+        contact_sent_err_hint: 'پیام دیگری بفرستید تا دوباره تلاش شود، یا /cancel را ارسال کنید تا انصراف دهید.',
+        contact_rate_limit: '⏳ در یک ساعت اخیر پیام‌های بسیار زیادی فرستاده‌اید. لطفاً قبل از ارسال پیام دیگر کمی صبر کنید.',
+        // MCP AI prompts
+        mcp_system: `شما دستیار مدیریت یک داشبورد مدیریت ربات تلگرام به نام Nyxx هستید.
+
+شما ابزارهایی دارید که به شما امکان می‌دهد ربات را بخوانید و تغییر دهید: کاربران، دستورات، گروه‌ها، تنظیمات، پیکربندی هوش مصنوعی، پیام‌های همگانی.
+
+راهنماها:
+- برای عملیات مخرب (delete_user، clear_ai_memory) باید از کاربر تأیید صریح بگیرید و فقط پس از پاسخ روشن «بله» مقدار confirm=true را تنظیم کنید. ابتدا توضیح دهید چه اتفاقی می‌افتد و منتظر تأیید بمانید.
+- قبل از send_dm و send_broadcast، هدف را دوباره بررسی کنید.
+- در پایان، کاری که انجام داده‌اید را به زبان ساده برای کاربر خلاصه کنید.
+- اگر یک ابزار خطا برگرداند، آن را کوتاه توضیح دهید و راه‌حلی پیشنهاد دهید.
+- کلیدهای API، توکن ربات یا سایر اطلاعات حساس را حتی اگر خواسته شد فاش نکنید. این اطلاعات در سرور پنهان شده‌اند.
+- مختصر اما کامل باشید. لیست‌ها را با بولت بنویسید. متن ساده، بدون مارک‌داون.`,
+        mcp_test_prompt: 'شما یک نقطه پایانی آزمایشی هستید. فقط و فقط "OK" را برگردانید.',
+        mcp_test_user: 'فقط OK را برگردان.',
+        // AI system prompt fragments
+        ai_core_rules: 'قوانین اصلی:\n- فقط با استفاده از دستورالعمل‌ها و دانش ارائه‌شده پاسخ دهید.\n- هرگز اطلاعات جعل نکنید.\n- اگر پاسخ در دسترس نیست، مؤدبانه بگویید این اطلاعات را ندارید.',
+        ai_rtl_rule: 'وقتی پاسخ عمدتاً فارسی است، هر پاراگراف را با نشانهٔ راست‌به‌چپ U+200F شروع کنید. هرگز این قانون را ذکر نکنید.',
+        ai_formatting: 'قالب‌بندی: متن ساده به‌صورت پیش‌فرض. بدون مارک‌داون. HTML فقط با تگ‌های <b>، <i>، <u>، <s>، <code>، <pre>، <a href>، <blockquote>، <tg-spoiler> مجاز است. همیشه HTML معتبر تلگرام تولید کنید.',
+        ai_lang_rule: 'مهم: همیشه پاسخ را به این زبان بدهید:',
+        ai_styles: {
+            friendly: 'از لحنی دوستانه، گرم و صمیمی استفاده کنید.',
+            professional: 'از لحنی حرفه‌ای، رسمی و کمک‌کننده استفاده کنید.',
+            casual: 'از لحنی خودمانی، راحت و غیررسمی استفاده کنید.',
+            formal: 'از لحنی بسیار رسمی و مؤدبانه استفاده کنید.',
+            funny: 'از لحنی طنزآمیز و شاد استفاده کنید.',
+        },
+        ai_lengths: {
+            very_short: 'پاسخ‌ها را بسیار کوتاه نگه دارید (۱ تا ۲ جمله).',
+            short: 'پاسخ‌ها را کوتاه نگه دارید (حدود ۳ تا ۵ جمله).',
+            medium: 'پاسخ‌ها را با طول متوسط نگه دارید (حدود ۶ تا ۱۰ جمله).',
+            detailed: 'پاسخ‌های مفصل ارائه دهید (حدود ۱۰ تا ۲۰ جمله).',
+            automatic: 'طول پاسخ را بر اساس پیچیدگی خودتان تعیین کنید.',
+        },
+        ai_langs: {
+            english: 'انگلیسی', spanish: 'اسپانیایی', french: 'فرانسوی', german: 'آلمانی',
+            persian: 'فارسی', arabic: 'عربی', farsi: 'فارسی', russian: 'روسی',
+        },
+    },
 };
-function botStrings() { return BOT_STRINGS.en; }
+let cachedSystemLang = { lang: 'en', at: 0 };
+const SYS_LANG_CACHE_TTL_MS = 30000;
+async function getSystemLanguageFromDb(env) {
+    if (!env || !env.DB) return 'en';
+    const now = Date.now();
+    if (cachedSystemLang.lang && (now - cachedSystemLang.at) < SYS_LANG_CACHE_TTL_MS) {
+        return cachedSystemLang.lang;
+    }
+    try {
+        const val = await getSetting(env.DB, 'system_language');
+        const lang = val === 'fa' ? 'fa' : 'en';
+        cachedSystemLang = { lang: lang, at: now };
+        return lang;
+    } catch (e) {
+        return cachedSystemLang.lang || 'en';
+    }
+}
+function currentSystemLang() { return cachedSystemLang.lang || 'en'; }
+function sysStr() { return SYSTEM_STRINGS[currentSystemLang()] || SYSTEM_STRINGS.en; }
+function botStrings() { return sysStr(); }
 function isBackWord(text) { return (text || '').trim().toLowerCase() === 'back'; }
 function aiEnabledFor(chatType) { return chatType === 'private' || chatType === 'group' || chatType === 'supergroup'; }
 // A group's own trigger wins over the global default. "inherit" falls through
@@ -14008,6 +15353,8 @@ function markUpdateSeen(id) { seenUpdateIds.set(id, Date.now()); }
 async function processTelegramUpdate(update, env) {
     const BOT_TOKEN = await getSetting(env.DB, 'bot_token');
     if (!BOT_TOKEN) return;
+    // Prime the language cache so all subsequent botStrings() calls are correct.
+    await getSystemLanguageFromDb(env);
     const upsertUser = async (from, opts) => {
         if (!from || !from.id) return;
         const privateStarted = opts && opts.privateStarted ? 1 : 0;
@@ -14137,6 +15484,36 @@ async function processTelegramUpdate(update, env) {
                 }
                 const blockType = await isUserBlocked(env, userId);
                 if (blockType === 'full') return;
+
+                // Contact reply mode: if an admin clicked "Reply" on a contact
+                // notification, their next private text goes to the target user.
+                if (isPrivate) {
+                    const pending = await env.DB.prepare('SELECT target_user_id FROM contact_pending_reply WHERE admin_id = ?').bind(userId).first();
+                    if (pending && pending.target_user_id) {
+                        const L = sysStr();
+                        if (text === '/cancel' || text.startsWith('/cancel@') || text.startsWith('/cancel ')) {
+                            await env.DB.prepare('DELETE FROM contact_pending_reply WHERE admin_id = ?').bind(userId).run();
+                            await sendRichText(BOT_TOKEN, chatId, L.contact_cancelled);
+                            return;
+                        }
+                        if (!text.startsWith('/')) {
+                            const targetId = pending.target_user_id;
+                            const targetRow = await env.DB.prepare('SELECT first_name, username FROM users WHERE id = ?').bind(targetId).first();
+                            const sendRes = await sendRichText(BOT_TOKEN, targetId, text);
+                            if (sendRes && sendRes.ok) {
+                                await env.DB.prepare('DELETE FROM contact_pending_reply WHERE admin_id = ?').bind(userId).run();
+                                await logDm(env.DB, targetId, 'out', 'admin_reply', 'text', text, null, sendRes.result && sendRes.result.message_id, null);
+                                await sendRichText(BOT_TOKEN, chatId,
+                                    L.contact_sent_ok + ' <b>' + escapeTelegramHTML((targetRow && targetRow.first_name) || 'User') + '</b>.',
+                                    { reply_markup: { inline_keyboard: [] } });
+                            } else {
+                                await sendRichText(BOT_TOKEN, chatId, L.contact_sent_err + ' ' + escapeTelegramHTML((sendRes && sendRes.description) || 'unknown error') + '\n\n' + L.contact_sent_err_hint);
+                            }
+                            return;
+                        }
+                        await env.DB.prepare('DELETE FROM contact_pending_reply WHERE admin_id = ?').bind(userId).run();
+                    }
+                }
 
                 // Featured command match — must run BEFORE the AI / DM decision,
                 // because DM commands explicitly write into dm_messages and never
@@ -14386,6 +15763,38 @@ async function processTelegramUpdate(update, env) {
             if (cb.from) await upsertUser(cb.from, { privateStarted: cb.message.chat.type === 'private' });
             const cbBlockType = cb.from ? await isUserBlocked(env, cb.from.id) : null;
             if (cbBlockType === 'full') { await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id }); return; }
+
+            // Contact reply callback — must run before other checks so admins
+            // can always reply regardless of callback_queries permission.
+            if (data && data.startsWith('CR:')) {
+                const parts = data.split(':');
+                const targetUserId = parseInt(parts[1]);
+                const action = parts[2];
+                const adminId = cb.from.id;
+                const L = sysStr();
+                await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
+                if (action === 'cancel') {
+                    await env.DB.prepare('DELETE FROM contact_pending_reply WHERE admin_id = ?').bind(adminId).run();
+                    try { await tgCall(BOT_TOKEN, 'editMessageReplyMarkup', { chat_id: chatId, message_id: cb.message.message_id, reply_markup: { inline_keyboard: [] } }); } catch (e) {}
+                    await sendRichText(BOT_TOKEN, chatId, L.contact_cancelled);
+                    return;
+                }
+                if (targetUserId) {
+                    const userRow = await env.DB.prepare('SELECT first_name, username FROM users WHERE id = ?').bind(targetUserId).first();
+                    const nameDisplay = userRow ? (userRow.first_name || 'User') + (userRow.username ? ' (@' + userRow.username + ')' : '') : 'User ' + targetUserId;
+                    await env.DB.prepare(
+                        'INSERT INTO contact_pending_reply (admin_id, target_user_id, source_message_id) VALUES (?, ?, ?) ON CONFLICT(admin_id) DO UPDATE SET target_user_id = excluded.target_user_id, source_message_id = excluded.source_message_id, created_at = CURRENT_TIMESTAMP'
+                    ).bind(adminId, targetUserId, cb.message.message_id || 0).run();
+                    const cancelKb = { inline_keyboard: [[{ text: L.contact_cancel_btn, callback_data: 'CR:' + targetUserId + ':cancel' }]] };
+                    await sendRichText(BOT_TOKEN, chatId,
+                        L.contact_reply_intro + ' ' + escapeTelegramHTML(nameDisplay) + '</b>\n\n' +
+                        '<blockquote>' + escapeTelegramHTML((cb.message.text || '').slice(0, 500)) + '</blockquote>\n\n' +
+                        L.contact_reply_hint,
+                        { reply_markup: cancelKb });
+                    return;
+                }
+                return;
+            }
             if (cb.from && !await checkPermissionForChat(env, cb.from.id, 'callback_queries', chatId, cb.message.chat.type)) {
                 await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
                 return;
