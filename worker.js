@@ -2636,6 +2636,7 @@ crons = ["0 3 * * *"]</code></pre>
 
 <section class="page" id="page-update">
 <style>
+/* ==== Update tab ==== */
 .update-hero{position:relative;overflow:hidden;background:linear-gradient(135deg,rgba(10,132,255,.12),rgba(94,92,230,.12));border:1px solid var(--hairline);border-radius:var(--r-xl);padding:var(--s6);margin-bottom:var(--s5)}
 html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,132,255,.18),rgba(94,92,230,.14))}
 .update-hero::before{content:'';position:absolute;top:-50%;right:-20%;width:400px;height:400px;background:radial-gradient(circle,rgba(10,132,255,.28),transparent 60%);pointer-events:none}
@@ -2644,7 +2645,7 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
 .update-hero-icon{width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,var(--accent),var(--purple));color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;box-shadow:0 10px 30px -10px rgba(10,132,255,.7)}
 .update-hero .uh-text{flex:1;min-width:200px}
 .update-hero .uh-title{font-size:var(--fs-title2);font-weight:700;margin:0 0 6px}
-.update-hero .uh-sub{color:var(--text-3);font-size:var(--fs-subhead);margin:0}
+.update-hero .uh-sub{color:var(--text-3);font-size:var(--fs-subhead);margin:0;line-height:1.55}
 .update-versions{display:grid;grid-template-columns:1fr auto 1fr;gap:var(--s3);align-items:center;margin-top:var(--s5);position:relative;z-index:1}
 .update-version-box{background:var(--surface);border:1px solid var(--hairline);border-radius:var(--r-md);padding:var(--s4)}
 .update-version-box .uv-label{font-size:var(--fs-caption2);text-transform:uppercase;letter-spacing:.06em;color:var(--text-4);font-weight:700;margin-bottom:4px}
@@ -2661,24 +2662,65 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
 .btn-update-hero.loading{pointer-events:none}
 .btn-update-hero.loading > :not(.btn-spinner){visibility:hidden}
 .btn-update-hero.loading .btn-spinner{display:flex}
-.cf-connect-tile{display:flex;align-items:center;gap:var(--s3);background:var(--surface);border:1px solid var(--hairline);border-radius:var(--r-md);padding:var(--s3) var(--s4);margin-bottom:var(--s3)}
-.cf-connect-tile .cf-logo{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#f6821f,#faae40);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
-.cf-connect-tile .cf-main{flex:1;min-width:0}
-.cf-connect-tile .cf-title{font-weight:700;font-size:var(--fs-subhead)}
-.cf-connect-tile .cf-sub{color:var(--text-4);font-size:var(--fs-caption);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.cf-connect-tile.connected{border-color:var(--green);background:var(--green-soft)}
-.cf-connect-tile.connected .cf-logo{background:linear-gradient(135deg,var(--green),#0b8a4e)}
-.cf-method-switch{display:inline-flex;background:var(--fill-1);border-radius:var(--r-sm);padding:4px;gap:2px;margin-bottom:var(--s4)}
-.cf-method-switch button{border:none;background:transparent;color:var(--text-2);font-size:var(--fs-footnote);font-weight:600;padding:8px 16px;border-radius:8px;cursor:pointer;transition:all .2s}
-.cf-method-switch button.active{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.12)}
-.update-progress{display:none;margin-top:var(--s4);padding:var(--s4);background:var(--surface-2);border-radius:var(--r-md)}
+
+/* Update progress — pinned inside the hero, right under the actions */
+.update-progress{display:none;margin-top:var(--s4);padding:var(--s3) var(--s4);background:var(--surface);border:1px solid var(--hairline);border-radius:var(--r-md);position:relative;z-index:1}
 .update-progress.show{display:block;animation:fadeUp .3s ease}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .update-progress-bar{height:6px;background:var(--fill-2);border-radius:999px;overflow:hidden}
 .update-progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--purple));border-radius:999px;width:0%;transition:width .4s ease;animation:shimmerBar 1.4s ease-in-out infinite}
 @keyframes shimmerBar{0%,100%{opacity:1}50%{opacity:.75}}
 .update-progress-text{font-size:var(--fs-footnote);margin-top:var(--s2);color:var(--text-3)}
-@media(max-width:640px){.update-versions{grid-template-columns:1fr}.update-arrow{display:none}.update-hero{padding:var(--s5) var(--s4)}.update-hero-icon{width:44px;height:44px;font-size:18px}}
+
+/* Cloudflare connection tile — 3-col grid that collapses to 2 rows on mobile */
+.cf-connect-tile{display:grid;grid-template-columns:auto 1fr auto;gap:var(--s3) var(--s4);align-items:center;background:var(--surface);border:1px solid var(--hairline);border-radius:var(--r-md);padding:var(--s3) var(--s4);margin-bottom:var(--s3)}
+.cf-connect-tile .cf-logo{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#f6821f,#faae40);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.cf-connect-tile .cf-main{min-width:0}
+.cf-connect-tile .cf-title{font-weight:700;font-size:var(--fs-subhead);line-height:1.3}
+.cf-connect-tile .cf-sub{color:var(--text-4);font-size:var(--fs-caption);margin-top:2px;line-height:1.45}
+.cf-connect-tile .cf-actions{display:flex;gap:var(--s2);flex-shrink:0}
+.cf-connect-tile.connected{border-color:var(--green);background:var(--green-soft)}
+.cf-connect-tile.connected .cf-logo{background:linear-gradient(135deg,var(--green),#0b8a4e)}
+.cf-method-switch{display:inline-flex;background:var(--fill-1);border-radius:var(--r-sm);padding:4px;gap:2px;margin-bottom:var(--s4)}
+.cf-method-switch button{border:none;background:transparent;color:var(--text-2);font-size:var(--fs-footnote);font-weight:600;padding:8px 16px;border-radius:8px;cursor:pointer;transition:all .2s}
+.cf-method-switch button.active{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+
+/* About updates — feature card grid */
+.update-features{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--s3)}
+.update-feature{display:flex;gap:var(--s3);align-items:flex-start;padding:var(--s3);background:var(--surface-2);border:1px solid var(--hairline);border-radius:var(--r-md);transition:border-color .15s ease,background .15s ease}
+.update-feature:hover{border-color:var(--fill-3);background:var(--fill-1)}
+.update-feature .uf-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.update-feature .uf-text{min-width:0}
+.update-feature .uf-title{font-weight:700;font-size:var(--fs-subhead);line-height:1.3;margin-bottom:2px}
+.update-feature .uf-desc{font-size:var(--fs-caption);color:var(--text-3);line-height:1.5}
+
+/* ===== Mobile tightening ===== */
+@media(max-width:640px){
+    .update-hero{padding:var(--s4);border-radius:var(--r-lg)}
+    .update-hero-inner{gap:var(--s3)}
+    .update-hero-icon{width:44px;height:44px;border-radius:12px;font-size:18px}
+    .update-hero .uh-title{font-size:var(--fs-title3);margin-bottom:4px}
+    .update-hero .uh-sub{font-size:var(--fs-caption)}
+    .update-versions{grid-template-columns:1fr;gap:var(--s2);margin-top:var(--s4)}
+    .update-arrow{display:none}
+    .update-version-box{padding:var(--s3)}
+    .update-version-input{font-size:18px}
+    .update-actions-row{gap:var(--s2);margin-top:var(--s4)}
+    .btn-update-hero{flex:1 1 100%;height:42px;font-size:var(--fs-footnote);padding:0 var(--s4)}
+    .update-actions-row .btn{flex:1 1 calc(50% - var(--s2) / 2);height:38px;min-width:0;font-size:var(--fs-caption);padding:0 var(--s3)}
+    .update-progress{padding:var(--s3);margin-top:var(--s3)}
+    .cf-connect-tile{grid-template-columns:auto 1fr;gap:var(--s3);padding:var(--s3)}
+    .cf-connect-tile .cf-logo{width:36px;height:36px;border-radius:8px;font-size:16px}
+    .cf-connect-tile .cf-actions{grid-column:1 / -1;width:100%}
+    .cf-connect-tile .cf-actions .btn{flex:1;justify-content:center;height:36px}
+    .cf-method-switch{width:100%;display:flex;margin-bottom:var(--s3)}
+    .cf-method-switch button{flex:1;padding:8px 10px;font-size:var(--fs-caption)}
+    .update-features{grid-template-columns:1fr;gap:var(--s2)}
+    .update-feature{padding:var(--s3)}
+    .update-feature .uf-icon{width:32px;height:32px;font-size:13px}
+    .update-feature .uf-title{font-size:var(--fs-callout)}
+    .update-feature .uf-desc{font-size:var(--fs-caption2)}
+}
 </style>
 
 <div class="update-hero">
@@ -2714,6 +2756,10 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
         </button>
     </div>
     <div id="up-result" class="small" style="margin-top:var(--s3);position:relative;z-index:1;"></div>
+    <div class="update-progress" id="update-progress">
+        <div class="update-progress-bar"><div class="update-progress-fill" id="update-progress-fill"></div></div>
+        <div class="update-progress-text" id="update-progress-text">Starting…</div>
+    </div>
 </div>
 
 <div class="hint-banner warn hidden" id="up-beta-hint">
@@ -2740,12 +2786,14 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                 <div class="cf-title" id="cf-oauth-label">Not connected</div>
                 <div class="cf-sub" id="cf-oauth-sub">Connect your Cloudflare account to update without pasting a token.</div>
             </div>
-            <button class="btn btn-primary btn-sm" id="cf-oauth-connect" onclick="startCfOAuth()">
-                <i class="fa-solid fa-cloud-arrow-up"></i> <span>Connect</span>
-            </button>
-            <button class="btn btn-danger btn-sm hidden" id="cf-oauth-disconnect" onclick="disconnectCfOAuth()">
-                <i class="fa-solid fa-link-slash"></i> <span class="hide-mobile">Disconnect</span>
-            </button>
+            <div class="cf-actions">
+                <button class="btn btn-primary btn-sm" id="cf-oauth-connect" onclick="startCfOAuth()">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> <span>Connect</span>
+                </button>
+                <button class="btn btn-danger btn-sm hidden" id="cf-oauth-disconnect" onclick="disconnectCfOAuth()">
+                    <i class="fa-solid fa-link-slash"></i> <span class="hide-mobile">Disconnect</span>
+                </button>
+            </div>
         </div>
         <div class="field-hint">
             <i class="fa-solid fa-circle-info"></i>
@@ -2773,26 +2821,31 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
     <div class="card-head">
         <div class="card-title"><i class="fa-solid fa-circle-info"></i> About updates</div>
     </div>
-    <div style="display:grid;gap:var(--s3);">
-        <div class="row" style="gap:var(--s3);align-items:flex-start;">
-            <div style="width:32px;height:32px;border-radius:8px;background:var(--green-soft);color:var(--green);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fa-solid fa-shield-halved"></i></div>
-            <div><div style="font-weight:600;font-size:var(--fs-subhead);">Bindings preserved</div><div class="muted small">D1, KV, R2 and environment variables stay intact across updates.</div></div>
+    <div class="update-features">
+        <div class="update-feature">
+            <div class="uf-icon" style="background:var(--green-soft);color:var(--green);"><i class="fa-solid fa-shield-halved"></i></div>
+            <div class="uf-text">
+                <div class="uf-title">Bindings preserved</div>
+                <div class="uf-desc">D1, KV, R2 and environment variables stay intact across updates.</div>
+            </div>
         </div>
-        <div class="row" style="gap:var(--s3);align-items:flex-start;">
-            <div style="width:32px;height:32px;border-radius:8px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fa-solid fa-database"></i></div>
-            <div><div style="font-weight:600;font-size:var(--fs-subhead);">Data untouched</div><div class="muted small">Your commands, users, groups, memory and settings remain exactly as they are.</div></div>
+        <div class="update-feature">
+            <div class="uf-icon" style="background:var(--accent-soft);color:var(--accent);"><i class="fa-solid fa-database"></i></div>
+            <div class="uf-text">
+                <div class="uf-title">Data untouched</div>
+                <div class="uf-desc">Your commands, users, groups, memory and settings remain exactly as they are.</div>
+            </div>
         </div>
-        <div class="row" style="gap:var(--s3);align-items:flex-start;">
-            <div style="width:32px;height:32px;border-radius:8px;background:var(--orange-soft);color:var(--orange);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fa-solid fa-rotate"></i></div>
-            <div><div style="font-weight:600;font-size:var(--fs-subhead);">Force redeploy</div><div class="muted small">Re-installs the current version from GitHub. Useful if your deployment feels corrupted.</div></div>
+        <div class="update-feature">
+            <div class="uf-icon" style="background:var(--orange-soft);color:var(--orange);"><i class="fa-solid fa-rotate"></i></div>
+            <div class="uf-text">
+                <div class="uf-title">Force redeploy</div>
+                <div class="uf-desc">Re-installs the current version from GitHub. Useful if your deployment feels corrupted.</div>
+            </div>
         </div>
     </div>
 </div>
 
-<div class="update-progress" id="update-progress">
-    <div class="update-progress-bar"><div class="update-progress-fill" id="update-progress-fill"></div></div>
-    <div class="update-progress-text" id="update-progress-text">Starting…</div>
-</div>
 </section>
         </div>
     </div>
