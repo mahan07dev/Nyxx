@@ -771,7 +771,6 @@ details.help > div { padding: 0 16px 14px; font-size: var(--fs-footnote); line-h
 .card:hover { box-shadow: var(--shadow-md); }
 
 .list-row { transition: background 0.14s ease, transform 0.1s ease; }
-.list-row:hover { transform: translateX(1px); }
 
 @media (max-width: 900px) {
     .page-head h1::after { width: 24px; height: 2px; bottom: -2px; }
