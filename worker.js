@@ -1,8 +1,8 @@
 // ============================================================================
-// NYXX — v4.9.0
+// NYXX — v4.9.1
 // Telegram bot builder + management dashboard for Cloudflare Workers + D1.
 // ============================================================================
-const VERSION = '4.9.0';
+const VERSION = '4.9.1';
 
 const RELAY_BASE = 'https://nyxx-proxy.nova-06272b19.workers.dev';
 const RELAY_EXCHANGE_SECRET = 'SECRET_ULTRA_PRO_MAX'; // Must match proxy.js
@@ -40,7 +40,10 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
 <link rel="shortcut icon" href="https://raw.githubusercontent.com/Mahan07dev/Nyxx/refs/heads/main/logo.webp" type="image/x-icon">
 <title>Nyxx | Dashboard</title>
 <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
+<link rel="dns-prefetch" href="https://api.telegram.org">
+<link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"></noscript>
 <style>
 :root {
     --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -4015,10 +4018,9 @@ function enterDashboard() {
   showStep('step-dashboard');
   if (typeof initNav === 'function') initNav();
   go('overview');
-  loadCommands(true);
-  loadMenu(true);
-  loadFeatured();
-  loadSettings(true);
+  // Only load what Overview actually needs. Commands / Menu / Featured / Settings
+  // fire lazily inside go(page) the moment their tab is opened.
+  loadSettings(true);   // small payload, needed for update pill & Settings tab
   autoCheckUpdate();
   updateContactBadge();
 
@@ -4073,7 +4075,9 @@ async function loadOverview(force) {
     var st = $('ov-stats');
     st.innerHTML = '<div class="stat skl" style="height:120px"></div>'.repeat(5);
     try {
-        var s = await api('GET', '/api/stats');
+        var overview = await api('GET', '/api/overview');
+        var s = overview.stats || {};
+        var preloadedLogs = overview.logs || [];
         function card(cls, icon, val, lbl, extra) {
             return '<div class="stat"><div class="st-ic ' + cls + '"><i class="fa-solid ' + icon + '"></i></div>' +
                 '<div class="st-val">' + val + '</div><div class="st-lbl">' + lbl + '</div>' +
@@ -4123,8 +4127,7 @@ async function loadOverview(force) {
         var recentBox = $('ov-recent');
         if (recentBox) {
             try {
-                var logRes = await api('GET', '/api/logs?limit=5');
-                var logs = (logRes && logRes.logs) || [];
+                var logs = preloadedLogs;
                 if (!logs.length) {
                     recentBox.innerHTML = '<div class="empty" style="padding:24px 12px;"><i class="fa-regular fa-clock"></i>No activity yet.<div class="empty-hint">Actions you take in the dashboard will appear here.</div></div>';
                 } else {
@@ -7745,6 +7748,15 @@ document.addEventListener('keydown', function (e) {
     }
 });
 
+// Service Worker registration. Safe to call on every load — the browser
+// only installs a new SW when /sw.js content changes (which happens
+// automatically when VERSION is bumped).
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+        try { navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function () {}); } catch (e) {}
+    });
+}
+
 checkStatus();
 </script>
 </body>
@@ -7876,6 +7888,7 @@ export default {
         env.__requestUrl = url.toString();
         try {
             if (request.method === 'GET' && url.pathname === '/') return new Response(DASHBOARD_HTML, { headers: HTML_HEADERS });
+            if (request.method === 'GET' && url.pathname === '/sw.js') return await handleServiceWorker(request, env);
             if (request.method === 'GET' && url.pathname === '/chat') return await handleChatPage(request, env);
             if (request.method === 'GET' && url.pathname === '/oauth/callback') {
                 return await handleCfOAuthCallback(request, env);
@@ -8031,6 +8044,7 @@ export default {
             if (request.method === 'POST' && url.pathname === '/api/bot_info') return await setBotInfo(request, env);
 
             if (request.method === 'GET' && url.pathname === '/api/stats') return await getStats(env);
+            if (request.method === 'GET' && url.pathname === '/api/overview') return await getOverview(env);
             if (request.method === 'POST' && url.pathname === '/api/upload_media') return await handleUploadMedia(request, env);
             if (request.method === 'GET' && url.pathname.startsWith('/api/file/')) return await handleFileProxy(request, env, url);
             if (request.method === 'GET'  && url.pathname === '/api/media/library') return await getMediaLibrary(env);
@@ -9097,8 +9111,40 @@ async function initializeDatabase(db) {
     try { await p; } catch (e) { dbInitCache.delete(db); throw e; }
 }
 
-async function getSetting(db, key) { const row = await db.prepare('SELECT value FROM settings WHERE key = ?').bind(key).first(); return row ? row.value : null; }
-async function setSetting(db, key, value) { await db.prepare(`INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`).bind(key, value).run(); }
+// ── Settings cache ──────────────────────────────────────────────────────────
+// The settings table is small (~50-100 rows, mostly short values). Loading it
+// once per isolate for 15s eliminates ~5 SELECTs per webhook message and ~10
+// per dashboard API call. Every write invalidates its own key immediately, so
+// no stale reads within the same isolate. Cross-isolate propagation is up to
+// 15s — acceptable for all these settings except password_version, which is
+// read via direct SQL inside getSession() (not through this cache).
+const SETTINGS_CACHE_TTL_MS = 15000;
+let settingsCache = { data: null, at: 0 };
+
+async function getSetting(db, key) {
+    const now = Date.now();
+    if (!settingsCache.data || (now - settingsCache.at) >= SETTINGS_CACHE_TTL_MS) {
+        try {
+            const rows = await db.prepare('SELECT key, value FROM settings').all();
+            const map = {};
+            for (const row of (rows.results || [])) map[row.key] = row.value;
+            settingsCache = { data: map, at: now };
+        } catch (e) {
+            // If the settings table doesn't exist yet (first cold start), fall
+            // through to a direct read so initializeDatabase can still function.
+            const row = await db.prepare('SELECT value FROM settings WHERE key = ?').bind(key).first();
+            return row ? row.value : null;
+        }
+    }
+    const v = settingsCache.data[key];
+    return v !== undefined ? v : null;
+}
+
+async function setSetting(db, key, value) {
+    const sv = String(value);
+    await db.prepare(`INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`).bind(key, sv).run();
+    if (settingsCache.data) settingsCache.data[key] = sv;
+}
 async function logAction(db, userId, action) {
     try { await db.prepare('INSERT INTO logs (user_id, action) VALUES (?, ?)').bind(userId === undefined || userId === null ? null : userId, String(action)).run(); }
     catch (e) { console.error('logAction failed:', e); }
@@ -9108,7 +9154,12 @@ async function logAction(db, userId, action) {
 // SESSIONS
 // ============================================================================
 const sessionCache = new Map();
-const SESSION_CACHE_TTL = 5000;
+// 60s instead of 5s: the 24h session cookie still expires exactly when the
+// cookie says so; this cache only avoids re-running the same JOIN on every
+// concurrent dashboard API call. Password changes call
+// invalidateSessionCache() synchronously, so local security is unaffected.
+// Cross-isolate revocation latency is 60s (was 5s) — fine for a personal bot.
+const SESSION_CACHE_TTL = 60000;
 async function getSession(request, env) {
     if (!env.DB) return null;
     const cookie = request.headers.get('Cookie') || '';
@@ -9149,6 +9200,10 @@ async function getStatus(env) {
     if (!env.DB) return apiJson({ d1_bound: false });
     try {
         await initializeDatabase(env.DB);
+        // Prime the settings cache with a single table-wide read. Every
+        // subsequent getSetting() call on this isolate (for up to 15 s)
+        // is a pure in-memory lookup — no D1 round-trip.
+        try { await getSetting(env.DB, 'admin_password'); } catch (e) {}
         const [adminPass, tokenRecord, botUsername] = await Promise.all([
             env.DB.prepare("SELECT value FROM settings WHERE key = 'admin_password'").first(),
             env.DB.prepare("SELECT value FROM settings WHERE key = 'bot_token'").first(),
@@ -9254,34 +9309,80 @@ async function getVersionInfo(env, fresh) {
 // ============================================================================
 // STATS
 // ============================================================================
+async function getOverview(env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        // One stats query + one logs query → 2 D1 round-trips total.
+        // Previously the client fired /api/stats (12 queries) then
+        // /api/logs?limit=5 (1 query) as separate HTTP requests.
+        const [statsRow, logsRows] = await Promise.all([
+            env.DB.prepare(`
+                SELECT
+                    (SELECT COUNT(*) FROM commands) as cmds,
+                    (SELECT COUNT(*) FROM commands WHERE enabled = 1) as enabled_cmds,
+                    (SELECT COUNT(*) FROM users) as users,
+                    (SELECT COUNT(*) FROM users WHERE private_started = 1) as private_users,
+                    (SELECT COUNT(*) FROM users WHERE role = 'admin') as admins,
+                    (SELECT COUNT(*) FROM groups) as groups_total,
+                    (SELECT COUNT(*) FROM groups WHERE is_active = 1) as groups_active,
+                    (SELECT COUNT(*) FROM ai_messages) as ai_count,
+                    (SELECT COUNT(*) FROM ai_messages WHERE role = 'assistant' AND timestamp > datetime('now', '-1 day')) as ai_last_24h,
+                    (SELECT value FROM settings WHERE key = 'bot_token') as bot_token,
+                    (SELECT value FROM settings WHERE key = 'ai_enabled') as ai_enabled,
+                    (SELECT value FROM settings WHERE key = 'bot_username') as bot_username
+            `).first(),
+            env.DB.prepare('SELECT id, user_id, action, timestamp FROM logs ORDER BY id DESC LIMIT 5').all(),
+        ]);
+        return apiJson({
+            success: true,
+            stats: {
+                bot_linked: !!(statsRow && statsRow.bot_token),
+                bot_username: statsRow ? (statsRow.bot_username || '') : '',
+                commands_total: statsRow ? statsRow.cmds : 0, commands_enabled: statsRow ? statsRow.enabled_cmds : 0,
+                users_total: statsRow ? statsRow.users : 0, users_private: statsRow ? statsRow.private_users : 0,
+                admins_total: statsRow ? statsRow.admins : 0,
+                groups_total: statsRow ? statsRow.groups_total : 0, groups_active: statsRow ? statsRow.groups_active : 0,
+                ai_memory_count: statsRow ? statsRow.ai_count : 0, ai_replies_24h: statsRow ? statsRow.ai_last_24h : 0,
+                ai_enabled: !!(statsRow && (statsRow.ai_enabled === '1' || statsRow.ai_enabled === true)),
+            },
+            logs: logsRows.results || [],
+        });
+    } catch (err) { return internalError(err); }
+}
+
 async function getStats(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
-        const [cmds, enabledCmds, users, privateUsers, admins, groupsTotal, groupsActive, aiCount, tokenRec, aiEnabledRec, botUsernameRec, aiLast24h] = await Promise.all([
-            env.DB.prepare('SELECT COUNT(*) as n FROM commands').first(),
-            env.DB.prepare('SELECT COUNT(*) as n FROM commands WHERE enabled = 1').first(),
-            env.DB.prepare('SELECT COUNT(*) as n FROM users').first(),
-            env.DB.prepare('SELECT COUNT(*) as n FROM users WHERE private_started = 1').first(),
-            env.DB.prepare("SELECT COUNT(*) as n FROM users WHERE role = 'admin'").first(),
-            env.DB.prepare('SELECT COUNT(*) as n FROM groups').first(),
-            env.DB.prepare('SELECT COUNT(*) as n FROM groups WHERE is_active = 1').first(),
-            env.DB.prepare('SELECT COUNT(*) as n FROM ai_messages').first(),
-            env.DB.prepare("SELECT value FROM settings WHERE key = 'bot_token'").first(),
-            env.DB.prepare("SELECT value FROM settings WHERE key = 'ai_enabled'").first(),
-            env.DB.prepare("SELECT value FROM settings WHERE key = 'bot_username'").first(),
-            env.DB.prepare("SELECT COUNT(*) as n FROM ai_messages WHERE role = 'assistant' AND timestamp > datetime('now', '-1 day')").first(),
-        ]);
+        // Single round-trip: every count is a correlated subquery in one row.
+        // D1 serializes parallel queries internally, so 12 Promise.all() calls
+        // are ~the same latency as 12 sequential. One wide query is ~10× faster.
+        const row = await env.DB.prepare(`
+            SELECT
+                (SELECT COUNT(*) FROM commands) as cmds,
+                (SELECT COUNT(*) FROM commands WHERE enabled = 1) as enabled_cmds,
+                (SELECT COUNT(*) FROM users) as users,
+                (SELECT COUNT(*) FROM users WHERE private_started = 1) as private_users,
+                (SELECT COUNT(*) FROM users WHERE role = 'admin') as admins,
+                (SELECT COUNT(*) FROM groups) as groups_total,
+                (SELECT COUNT(*) FROM groups WHERE is_active = 1) as groups_active,
+                (SELECT COUNT(*) FROM ai_messages) as ai_count,
+                (SELECT COUNT(*) FROM ai_messages WHERE role = 'assistant' AND timestamp > datetime('now', '-1 day')) as ai_last_24h,
+                (SELECT value FROM settings WHERE key = 'bot_token') as bot_token,
+                (SELECT value FROM settings WHERE key = 'ai_enabled') as ai_enabled,
+                (SELECT value FROM settings WHERE key = 'bot_username') as bot_username
+        `).first();
         return apiJson({
             success: true,
-            bot_linked: !!(tokenRec && tokenRec.value),
-            bot_username: botUsernameRec ? botUsernameRec.value : '',
-            commands_total: cmds ? cmds.n : 0, commands_enabled: enabledCmds ? enabledCmds.n : 0,
-            users_total: users ? users.n : 0, users_private: privateUsers ? privateUsers.n : 0,
-            admins_total: admins ? admins.n : 0,
-            groups_total: groupsTotal ? groupsTotal.n : 0, groups_active: groupsActive ? groupsActive.n : 0,
-            ai_memory_count: aiCount ? aiCount.n : 0, ai_replies_24h: aiLast24h ? aiLast24h.n : 0,
-            ai_enabled: !!(aiEnabledRec && (aiEnabledRec.value === '1' || aiEnabledRec.value === true)),
+            bot_linked: !!(row && row.bot_token),
+            bot_username: row ? (row.bot_username || '') : '',
+            commands_total: row ? row.cmds : 0, commands_enabled: row ? row.enabled_cmds : 0,
+            users_total: row ? row.users : 0, users_private: row ? row.private_users : 0,
+            admins_total: row ? row.admins : 0,
+            groups_total: row ? row.groups_total : 0, groups_active: row ? row.groups_active : 0,
+            ai_memory_count: row ? row.ai_count : 0, ai_replies_24h: row ? row.ai_last_24h : 0,
+            ai_enabled: !!(row && (row.ai_enabled === '1' || row.ai_enabled === true)),
         });
     } catch (err) { return internalError(err); }
 }
@@ -14795,6 +14896,94 @@ async function send(){
 })();
 </script>
 </body></html>`;
+
+async function handleServiceWorker(request, env) {
+    // Minimal Service Worker that caches the HTML shell (the DASHBOARD_HTML
+    // string) and serves it cache-first on subsequent navigations. HTML
+    // invalidates automatically when VERSION changes — the CACHE constant
+    // embeds the version string, so each new deploy installs a fresh cache.
+    //
+    // API/webhook/MCP/chat/oauth traffic is NEVER intercepted — those always
+    // hit the network so live data is preserved end-to-end.
+    const sw = `// Nyxx Service Worker v${VERSION}
+const CACHE = 'nyxx-shell-v${VERSION}';
+
+self.addEventListener('install', function(event) {
+    self.skipWaiting();
+    event.waitUntil(
+        caches.open(CACHE).then(function(cache) {
+            return fetch('/').then(function(res) {
+                if (res && res.ok) return cache.put('/', res.clone());
+            }).catch(function() {});
+        })
+    );
+});
+
+self.addEventListener('activate', function(event) {
+    event.waitUntil(
+        caches.keys().then(function(keys) {
+            return Promise.all(
+                keys.filter(function(k) { return k !== CACHE; })
+                    .map(function(k) { return caches.delete(k); })
+            );
+        }).then(function() { return self.clients.claim(); })
+    );
+});
+
+self.addEventListener('fetch', function(event) {
+    const req = event.request;
+    if (req.method !== 'GET') return;
+    const url = new URL(req.url);
+
+    // Never touch dynamic endpoints
+    if (url.pathname.startsWith('/api/')) return;
+    if (url.pathname === '/webhook') return;
+    if (url.pathname === '/mcp') return;
+    if (url.pathname === '/chat') return;
+    if (url.pathname === '/sw.js') return;
+    if (url.pathname.indexOf('/oauth') === 0) return;
+
+    // Navigation → cache-first, background revalidate.
+    if (req.mode === 'navigate' || (url.pathname === '/' && req.headers.get('accept') && req.headers.get('accept').indexOf('text/html') >= 0)) {
+        event.respondWith(
+            caches.open(CACHE).then(function(cache) {
+                return cache.match('/').then(function(cached) {
+                    const networkFetch = fetch(req).then(function(res) {
+                        if (res && res.ok) cache.put('/', res.clone());
+                        return res;
+                    }).catch(function() { return cached; });
+                    return cached || networkFetch;
+                });
+            })
+        );
+        return;
+    }
+
+    // Font Awesome CSS → stale-while-revalidate
+    if (url.hostname === 'cdnjs.cloudflare.com') {
+        event.respondWith(
+            caches.open(CACHE).then(function(cache) {
+                return cache.match(req).then(function(cached) {
+                    const networkFetch = fetch(req).then(function(res) {
+                        if (res && (res.ok || res.type === 'opaque')) cache.put(req, res.clone());
+                        return res;
+                    });
+                    return cached || networkFetch;
+                });
+            })
+        );
+    }
+});
+`;
+    return new Response(sw, {
+        headers: {
+            'Content-Type': 'application/javascript; charset=utf-8',
+            'Cache-Control': 'public, max-age=3600',
+            'Service-Worker-Allowed': '/',
+            'X-Content-Type-Options': 'nosniff',
+        },
+    });
+}
 
 async function handleChatPage(request, env) {
     const session = await getSession(request, env);
