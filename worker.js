@@ -384,7 +384,7 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
 #mem-list .list > .list-row,
 #logs-list .list-row,
 #mem-groups-list .list > .list-row {
-    content-visibility: auto;
+    content-visibility: visible;
     contain-intrinsic-size: auto 56px;
 }
 .list-row .lr-main { flex: 1; min-width: 0; }
