@@ -1,8 +1,8 @@
 // ============================================================================
-// NYXX — v4.9.1
+// NYXX — v4.9.2
 // Telegram bot builder + management dashboard for Cloudflare Workers + D1.
 // ============================================================================
-const VERSION = '4.9.1';
+const VERSION = '4.9.2';
 
 const RELAY_BASE = 'https://nyxx-proxy.nova-06272b19.workers.dev';
 const RELAY_EXCHANGE_SECRET = 'SECRET_ULTRA_PRO_MAX'; // Must match proxy.js
@@ -374,6 +374,19 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
 .list-row { display: flex; align-items: center; gap: var(--s3); padding: var(--s3) var(--s4); border-bottom: 1px solid var(--hairline); min-height: 56px; transition: background 0.14s; position: relative; }
 .list-row:last-child { border-bottom: none; }
 .list-row:hover { background: var(--surface-2); }
+/* Performance: skip rendering of off-screen rows in long lists.
+   Applies only to the pages where lists can genuinely get long
+   (Users, Contacts inbox, Memory, Activity Log). Safe for row
+   counts in the hundreds — the browser renders on demand as the
+   user scrolls. */
+#users-list .list > .list-row,
+#ct-messages .list > .list-row,
+#mem-list .list > .list-row,
+#logs-list .list-row,
+#mem-groups-list .list > .list-row {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 56px;
+}
 .list-row .lr-main { flex: 1; min-width: 0; }
 .list-row .lr-title { font-size: var(--fs-callout); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .list-row .lr-sub { font-size: var(--fs-caption); color: var(--text-4); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -4018,11 +4031,15 @@ function enterDashboard() {
   showStep('step-dashboard');
   if (typeof initNav === 'function') initNav();
   go('overview');
-  // Only load what Overview actually needs. Commands / Menu / Featured / Settings
-  // fire lazily inside go(page) the moment their tab is opened.
-  loadSettings(true);   // small payload, needed for update pill & Settings tab
-  autoCheckUpdate();
-  updateContactBadge();
+  // Critical: only settings (for the update pill & Settings tab) runs eagerly.
+  loadSettings(true);
+  // Non-critical: defer off the critical path so Overview paints first.
+  const deferred = () => { autoCheckUpdate(); updateContactBadge(); };
+  if (typeof requestIdleCallback === 'function') {
+    requestIdleCallback(deferred, { timeout: 1500 });
+  } else {
+    setTimeout(deferred, 200);
+  }
 
   // After the OAuth callback we land here with ?oauth=success.
   // loadUpdateTab() handles the toast and clearing the URL parameter.
@@ -4167,16 +4184,21 @@ function commandAccessLevel(c) {
     return c && c.is_admin_only ? 'admin' : 'everyone';
 }
 
+var _commandsLoading = false;
 async function loadCommands(force) {
-    var box = $('cmd-list');
-    if (!commands.length || force) {
-        box.innerHTML = skeletonRows(3);
-        try {
-            var d = await api('GET', '/api/commands');
-            commands = d.commands || [];
-        } catch (e) { box.innerHTML = errorState(e.message, 'loadCommands(true)'); return; }
-    }
-    buildTree(); renderCommands(); kbCmd.populateCommands();
+    if (_commandsLoading) return;
+    _commandsLoading = true;
+    try {
+        var box = $('cmd-list');
+        if (!commands.length || force) {
+            box.innerHTML = skeletonRows(3);
+            try {
+                var d = await api('GET', '/api/commands');
+                commands = d.commands || [];
+            } catch (e) { box.innerHTML = errorState(e.message, 'loadCommands(true)'); return; }
+        }
+        buildTree(); renderCommands(); kbCmd.populateCommands();
+    } finally { _commandsLoading = false; }
 }
 function buildTree() {
     children = {};
@@ -4758,9 +4780,12 @@ async function loadContactStats() {
             '<div class="stat"><div class="st-ic green"><i class="fa-solid fa-inbox"></i></div><div class="st-val">' + (d.total || 0) + '</div><div class="st-lbl">Total received</div></div>';
     } catch (e) { /* silent */ }
 }
+var _contactMessagesLoading = false;
 async function loadContactMessages() {
+    if (_contactMessagesLoading) return;
+    _contactMessagesLoading = true;
     var box = $('ct-messages');
-    if (!box) return;
+    if (!box) { _contactMessagesLoading = false; return; }
     box.innerHTML = skeletonRows(3);
     try {
         var q = ($('ct-search') && $('ct-search').value || '').trim();
@@ -4795,6 +4820,7 @@ async function loadContactMessages() {
                 '</div>';
         }).join('') + '</div>';
     } catch (e) { box.innerHTML = errorState(e.message, 'loadContactMessages()'); }
+    finally { _contactMessagesLoading = false; }
 }
 async function saveContactSettings() {
     await withSelfBusy(async function () {
@@ -4892,7 +4918,10 @@ function userCircle(u) {
         : 'Not reachable — has not started the bot (or blocked it)';
     return '<div class="user-circle ' + cls + '" title="' + title + '">' + esc(initial) + '</div>';
 }
+var _usersLoading = false;
 async function loadUsers(force) {
+    if (_usersLoading) return;
+    _usersLoading = true;
     var box = $('users-list');
     box.innerHTML = skeletonRows(3);
     try {
@@ -4905,6 +4934,7 @@ async function loadUsers(force) {
         renderUsers();
         renderUsersPager();
     } catch (e) { box.innerHTML = errorState(e.message, 'loadUsers(true)'); }
+    finally { _usersLoading = false; }
 }
 function renderUsers() {
     var box = $('users-list');
@@ -5353,7 +5383,10 @@ function setMemFilter(f) {
     document.querySelectorAll('#mem-filters .chip').forEach(function (c) { c.classList.toggle('active', c.dataset.mf === f); });
     renderMemory();
 }
+var _memoryLoading = false;
 async function loadMemory(force) {
+    if (_memoryLoading) return;
+    _memoryLoading = true;
     loadAutoRemove();
     var box = $('mem-list');
     box.innerHTML = skeletonRows(3);
@@ -5370,6 +5403,7 @@ async function loadMemory(force) {
             '<div class="stat"><div class="st-ic orange"><i class="fa-solid fa-comments"></i></div><div class="st-val">' + (memoryTotals.groups || 0) + '</div><div class="st-lbl">Groups with memory</div></div>';
         renderMemory();
     } catch (e) { box.innerHTML = errorState(e.message, 'loadMemory(true)'); }
+    finally { _memoryLoading = false; }
 }
 function renderMemory() {
     var box = $('mem-list');
@@ -5522,11 +5556,16 @@ function setGroupFilter(f) {
     document.querySelectorAll('#group-filters .chip').forEach(function (c) { c.classList.toggle('active', c.dataset.gf === f); });
     renderGroups();
 }
+var _groupsLoading = false;
 async function loadGroups(force) {
-    var box = $('groups-list');
-    box.innerHTML = skeletonRows(3);
-    try { var d = await api('GET', '/api/groups'); groups = d.groups || []; renderGroups(); }
-    catch (e) { box.innerHTML = errorState(e.message, 'loadGroups(true)'); }
+    if (_groupsLoading) return;
+    _groupsLoading = true;
+    try {
+        var box = $('groups-list');
+        box.innerHTML = skeletonRows(3);
+        try { var d = await api('GET', '/api/groups'); groups = d.groups || []; renderGroups(); }
+        catch (e) { box.innerHTML = errorState(e.message, 'loadGroups(true)'); }
+    } finally { _groupsLoading = false; }
 }
 function renderGroups() {
     var box = $('groups-list');
@@ -7909,7 +7948,7 @@ export default {
             if (request.method === 'POST' && url.pathname === '/api/setup') return await handleSetup(request, env);
             if (request.method === 'POST' && url.pathname === '/api/login') return await handleLogin(request, env);
             if (request.method === 'GET' && url.pathname === '/api/version') {
-                const fresh = url.searchParams.get('force') === '1';
+                const fresh = url.searchParams.get('force') === '1' && !!(await getSession(request, env));
                 return await getVersionInfo(env, fresh);
             }
             if (request.method === 'GET' && url.pathname === '/api/check_session') {
@@ -8127,10 +8166,19 @@ const CRON_BOUNDS = {
 
 async function getCronSettingsFromDb(env) {
     const keys = Object.keys(CRON_DEFAULTS);
-    const placeholders = keys.map(() => '?').join(', ');
-    const rows = await env.DB.prepare(`SELECT key, value FROM settings WHERE key IN (${placeholders})`).bind(...keys).all();
+    // Prime the epoch-checked settings cache once, then read from memory.
+    try { await getSetting(env.DB, 'cron_enabled'); } catch (e) {}
     const raw = {};
-    for (const row of (rows.results || [])) raw[row.key] = row.value;
+    if (settingsCache.data) {
+        for (const k of keys) {
+            const v = settingsCache.data[k];
+            if (v !== undefined && v !== null) raw[k] = v;
+        }
+    } else {
+        const placeholders = keys.map(() => '?').join(', ');
+        const rows = await env.DB.prepare(`SELECT key, value FROM settings WHERE key IN (${placeholders})`).bind(...keys).all();
+        for (const row of (rows.results || [])) raw[row.key] = row.value;
+    }
     const cfg = { cron_enabled: raw.cron_enabled === '1' ? '1' : '0' };
     for (const key of keys) {
         if (key === 'cron_enabled') continue;
@@ -8217,7 +8265,7 @@ async function saveCronSettings(request, env) {
             if (isNaN(parsed)) continue;
             updates.push([key, String(Math.min(Math.max(parsed, min), max))]);
         }
-        for (const [key, value] of updates) await setSetting(env.DB, key, value);
+        await setSettingsBatch(env.DB, updates);
         await logAction(env.DB, null, 'Cleanup settings updated');
         return apiJson({ success: true, settings: await getCronSettingsFromDb(env) });
     } catch (err) { return internalError(err); }
@@ -8289,28 +8337,37 @@ async function getPermissions(env) {
     }
     return out;
 }
-async function isAdminUser(env, userId) {
-    if (!userId) return false;
+// User-role cache — epoch-checked. Role changes must be visible to the
+// dashboard immediately (they affect permission gating on every page).
+const userRoleCache = new Map();
+async function getUserRole(env, userId) {
+    if (!userId) return null;
+    const currentEpoch = await getCurrentEpoch(env.DB);
+    const cached = userRoleCache.get(userId);
+    if (cached && cached.epoch === currentEpoch) return cached.role;
     try {
         const row = await env.DB.prepare('SELECT role FROM users WHERE id = ?').bind(userId).first();
-        return !!(row && row.role === 'admin');
-    } catch (e) { return false; }
+        const role = row ? row.role : null;
+        userRoleCache.set(userId, { role, epoch: currentEpoch });
+        if (userRoleCache.size > 5000) {
+            for (const [k, v] of userRoleCache) if (v.epoch !== currentEpoch) userRoleCache.delete(k);
+        }
+        return role;
+    } catch (e) { return null; }
+}
+async function isAdminUser(env, userId) {
+    return (await getUserRole(env, userId)) === 'admin';
 }
 async function isModeratorOrAbove(env, userId) {
-    if (!userId) return false;
-    try {
-        const row = await env.DB.prepare('SELECT role FROM users WHERE id = ?').bind(userId).first();
-        return !!(row && (row.role === 'admin' || row.role === 'moderator'));
-    } catch (e) { return false; }
+    const role = await getUserRole(env, userId);
+    return role === 'admin' || role === 'moderator';
 }
-const _permCache = new WeakMap(); // env → { data, at }
-const PERM_CACHE_TTL_MS = 15000;
-
+let _permCache = { data: null, epoch: null };
 async function getPermissionsCached(env) {
-    const entry = _permCache.get(env);
-    if (entry && (Date.now() - entry.at) < PERM_CACHE_TTL_MS) return entry.data;
+    const currentEpoch = await getCurrentEpoch(env.DB);
+    if (_permCache.data && _permCache.epoch === currentEpoch) return _permCache.data;
     const fresh = await getPermissions(env);
-    _permCache.set(env, { data: fresh, at: Date.now() });
+    _permCache = { data: fresh, epoch: currentEpoch };
     return fresh;
 }
 
@@ -8357,7 +8414,6 @@ async function savePermissionsHandler(request, env) {
             if (PERMISSION_VALUES.includes(incoming[k])) merged[k] = incoming[k];
         }
         await setSetting(env.DB, 'permissions_json', JSON.stringify(merged));
-        _permCache.delete(env);
         await logAction(env.DB, null, 'Permissions updated');
         return apiJson({ success: true, permissions: merged });
     } catch (err) { return internalError(err); }
@@ -8381,7 +8437,9 @@ async function promoteAdminHandler(request, env) {
         if (!userId) return apiJson({ error: 'Invalid userId.' }, 400);
         await initializeDatabase(env.DB);
         await env.DB.prepare('UPDATE users SET role = ? WHERE id = ?').bind(role, userId).run();
+        await bumpEpoch(env.DB);
         await logAction(env.DB, userId, 'Role set to ' + role);
+        userRoleCache.delete(userId);
         return apiJson({ success: true, role });
     } catch (err) { return internalError(err); }
 }
@@ -8393,7 +8451,9 @@ async function demoteAdminHandler(request, env) {
         if (!userId) return apiJson({ error: 'Invalid userId.' }, 400);
         await initializeDatabase(env.DB);
         await env.DB.prepare("UPDATE users SET role = 'user' WHERE id = ?").bind(userId).run();
+        await bumpEpoch(env.DB);
         await logAction(env.DB, userId, 'User demoted from admin');
+        userRoleCache.delete(userId);
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
 }
@@ -8402,7 +8462,7 @@ async function demoteAdminHandler(request, env) {
 // DATABASE
 // ============================================================================
 const dbInitCache = new WeakMap();
-const SCHEMA_VERSION = 17;
+const SCHEMA_VERSION = 18;
 
 const MIGRATIONS = {
     2: [
@@ -8529,6 +8589,28 @@ const MIGRATIONS = {
         `UPDATE dm_messages SET read_at = created_at
            WHERE source = 'featured' AND direction = 'in' AND read_at IS NULL
              AND created_at <= COALESCE((SELECT value FROM settings WHERE key = 'contact_last_read_at'), '')`,
+    ],
+    18: [
+        // Users — sort + filter indexes for the Users page
+        `CREATE INDEX IF NOT EXISTS idx_users_last_active ON users(last_active DESC)`,
+        `CREATE INDEX IF NOT EXISTS idx_users_private ON users(private_started)`,
+        `CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)`,
+        // DM messages — Contact inbox list, unread filter, per-user DM list
+        `CREATE INDEX IF NOT EXISTS idx_dm_contact ON dm_messages(source, direction, id DESC)`,
+        `CREATE INDEX IF NOT EXISTS idx_dm_unread ON dm_messages(source, direction, id DESC) WHERE read_at IS NULL`,
+        `CREATE INDEX IF NOT EXISTS idx_dm_chat_id ON dm_messages(chat_id, id DESC)`,
+        // Logs — retention scan + Activity Log sort
+        `CREATE INDEX IF NOT EXISTS idx_logs_ts ON logs(timestamp DESC)`,
+        // Groups — list sort
+        `CREATE INDEX IF NOT EXISTS idx_groups_last_active ON groups(last_active DESC)`,
+        // AI messages — per-chat memory queries
+        `CREATE INDEX IF NOT EXISTS idx_ai_chat_id ON ai_messages(chat_id, id DESC)`,
+        // Commands — parent + order (mirrors the in-memory sort)
+        `CREATE INDEX IF NOT EXISTS idx_commands_parent_order ON commands(parent, order_idx)`,
+        // MCP sessions — list sort
+        `CREATE INDEX IF NOT EXISTS idx_mcp_updated ON mcp_sessions(updated_at DESC)`,
+        // Blocked users — broadcast recipient scan
+        `CREATE INDEX IF NOT EXISTS idx_blocked_type ON blocked_users(block_type)`,
     ],
 };
 
@@ -8726,6 +8808,7 @@ const DESIRED_SCHEMA = {
 };
 
 const SCHEMA_INDEXES = [
+    // Existing
     'CREATE INDEX IF NOT EXISTS idx_commands_parent ON commands(parent)',
     'CREATE INDEX IF NOT EXISTS idx_ai_messages_chat ON ai_messages(chat_id)',
     'CREATE INDEX IF NOT EXISTS idx_dm_messages_chat ON dm_messages(chat_id)',
@@ -8733,7 +8816,20 @@ const SCHEMA_INDEXES = [
     'CREATE INDEX IF NOT EXISTS idx_groups_active ON groups(is_active)',
     'CREATE INDEX IF NOT EXISTS idx_featured_command ON featured_replies(command)',
     'CREATE INDEX IF NOT EXISTS idx_mcp_sessions_updated ON mcp_sessions(updated_at)',
-    'CREATE INDEX IF NOT EXISTS idx_group_strikes_chat ON group_strikes(chat_id)'
+    'CREATE INDEX IF NOT EXISTS idx_group_strikes_chat ON group_strikes(chat_id)',
+    // v4.9.2 — sort/filter indexes (mirrors migration 18)
+    'CREATE INDEX IF NOT EXISTS idx_users_last_active ON users(last_active DESC)',
+    'CREATE INDEX IF NOT EXISTS idx_users_private ON users(private_started)',
+    'CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)',
+    'CREATE INDEX IF NOT EXISTS idx_dm_contact ON dm_messages(source, direction, id DESC)',
+    'CREATE INDEX IF NOT EXISTS idx_dm_unread ON dm_messages(source, direction, id DESC) WHERE read_at IS NULL',
+    'CREATE INDEX IF NOT EXISTS idx_dm_chat_id ON dm_messages(chat_id, id DESC)',
+    'CREATE INDEX IF NOT EXISTS idx_logs_ts ON logs(timestamp DESC)',
+    'CREATE INDEX IF NOT EXISTS idx_groups_last_active ON groups(last_active DESC)',
+    'CREATE INDEX IF NOT EXISTS idx_ai_chat_id ON ai_messages(chat_id, id DESC)',
+    'CREATE INDEX IF NOT EXISTS idx_commands_parent_order ON commands(parent, order_idx)',
+    'CREATE INDEX IF NOT EXISTS idx_mcp_updated ON mcp_sessions(updated_at DESC)',
+    'CREATE INDEX IF NOT EXISTS idx_blocked_type ON blocked_users(block_type)',
 ];
 
 // Safe, idempotent cleanups that remove expired and orphaned rows.
@@ -9106,44 +9202,113 @@ async function initializeDatabase(db) {
         } catch (e) {
             console.warn('Could not set schema_ready_version:', e.message);
         }
+
+        // Bump the cache epoch so any in-flight caches on other isolates
+        // (or this isolate's settings cache) invalidate after schema changes.
+        try {
+            const newEpoch = Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+            await db.prepare("INSERT INTO settings (key, value) VALUES ('cache_epoch', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(newEpoch).run();
+            cachedEpoch = newEpoch;
+            lastEpochCheck = Date.now();
+        } catch (e) {
+            console.warn('Could not bump cache epoch after schema init:', e.message);
+        }
     })();
     dbInitCache.set(db, p);
     try { await p; } catch (e) { dbInitCache.delete(db); throw e; }
 }
 
-// ── Settings cache ──────────────────────────────────────────────────────────
-// The settings table is small (~50-100 rows, mostly short values). Loading it
-// once per isolate for 15s eliminates ~5 SELECTs per webhook message and ~10
-// per dashboard API call. Every write invalidates its own key immediately, so
-// no stale reads within the same isolate. Cross-isolate propagation is up to
-// 15s — acceptable for all these settings except password_version, which is
-// read via direct SQL inside getSession() (not through this cache).
-const SETTINGS_CACHE_TTL_MS = 15000;
-let settingsCache = { data: null, at: 0 };
+// ── EPOCH-BASED CACHE SYSTEM ────────────────────────────────────────────────
+// Every write (dashboard, webhook, MCP, direct SQL) bumps a single counter
+// ("cache_epoch") stored in the settings table. Every cache stamps its entries
+// with the epoch at creation time and checks the current epoch before serving.
+//
+// Guarantees:
+//   • Same-isolate read-after-write: instant (local epoch already bumped)
+//   • Cross-isolate: ≤ EPOCH_CHECK_INTERVAL_MS staleness
+//   • No cache ever serves an entry from a previous epoch
+//
+// Cost: one indexed SELECT per request (first cache access) then free.
+// Set EPOCH_CHECK_INTERVAL_MS = 0 for absolute zero staleness at the cost of
+// ~1-2 ms per read (one indexed SELECT per getCurrentEpoch call, per request).
+const EPOCH_CHECK_INTERVAL_MS = 100;
+let cachedEpoch = null;
+let lastEpochCheck = 0;
 
-async function getSetting(db, key) {
+async function getCurrentEpoch(db) {
     const now = Date.now();
-    if (!settingsCache.data || (now - settingsCache.at) >= SETTINGS_CACHE_TTL_MS) {
-        try {
-            const rows = await db.prepare('SELECT key, value FROM settings').all();
-            const map = {};
-            for (const row of (rows.results || [])) map[row.key] = row.value;
-            settingsCache = { data: map, at: now };
-        } catch (e) {
-            // If the settings table doesn't exist yet (first cold start), fall
-            // through to a direct read so initializeDatabase can still function.
-            const row = await db.prepare('SELECT value FROM settings WHERE key = ?').bind(key).first();
-            return row ? row.value : null;
+    if (cachedEpoch !== null && (now - lastEpochCheck) < EPOCH_CHECK_INTERVAL_MS) return cachedEpoch;
+    try {
+        const row = await db.prepare("SELECT value FROM settings WHERE key = 'cache_epoch'").first();
+        cachedEpoch = row && row.value ? row.value : '0';
+    } catch (e) {
+        // Settings table missing (fresh install) — treat as epoch 0
+        cachedEpoch = '0';
+    }
+    lastEpochCheck = now;
+    return cachedEpoch;
+}
+
+async function bumpEpoch(db) {
+    const newEpoch = Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+    try {
+        await db.prepare(
+            "INSERT INTO settings (key, value) VALUES ('cache_epoch', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value"
+        ).bind(newEpoch).run();
+    } catch (e) {
+        // Only "settings table missing" (fresh install) is expected. Any other
+        // failure means cross-isolate invalidation did NOT propagate — other
+        // isolates will keep serving stale data until some future write bumps.
+        if (!/no such table/i.test(String(e.message || ''))) {
+            console.warn('bumpEpoch DB write failed — cross-isolate staleness possible:', e.message);
         }
     }
-    const v = settingsCache.data[key];
-    return v !== undefined ? v : null;
+    cachedEpoch = newEpoch;
+    lastEpochCheck = Date.now();
+    return newEpoch;
+}
+
+let settingsCache = { data: null, epoch: null };
+
+async function getSetting(db, key) {
+    const currentEpoch = await getCurrentEpoch(db);
+    if (settingsCache.data && settingsCache.epoch === currentEpoch) {
+        const v = settingsCache.data[key];
+        return v !== undefined ? v : null;
+    }
+    // Epoch changed or cache empty → reload
+    try {
+        const rows = await db.prepare('SELECT key, value FROM settings').all();
+        const map = {};
+        for (const row of (rows.results || [])) map[row.key] = row.value;
+        settingsCache = { data: map, epoch: currentEpoch };
+        const v = map[key];
+        return v !== undefined ? v : null;
+    } catch (e) {
+        // Settings table doesn't exist yet (first cold start)
+        const row = await db.prepare('SELECT value FROM settings WHERE key = ?').bind(key).first();
+        return row ? row.value : null;
+    }
 }
 
 async function setSetting(db, key, value) {
     const sv = String(value);
     await db.prepare(`INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`).bind(key, sv).run();
-    if (settingsCache.data) settingsCache.data[key] = sv;
+    await bumpEpoch(db);
+    // Drop the local cache: re-stamping it with the new epoch could mask another
+    // isolate's earlier write. Next read reloads once (one cheap SELECT).
+    settingsCache = { data: null, epoch: null };
+}
+
+// Batched variant — one batch write + one epoch bump for N settings.
+async function setSettingsBatch(db, entries) {
+    if (!entries || !entries.length) return;
+    const stmts = entries.map(([key, value]) => db.prepare(
+        `INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`
+    ).bind(key, String(value)));
+    await db.batch(stmts);
+    await bumpEpoch(db);
+    settingsCache = { data: null, epoch: null };
 }
 async function logAction(db, userId, action) {
     try { await db.prepare('INSERT INTO logs (user_id, action) VALUES (?, ?)').bind(userId === undefined || userId === null ? null : userId, String(action)).run(); }
@@ -9183,11 +9348,24 @@ async function getSession(request, env) {
     if (result) { sessionCache.set(token, Date.now()); return token; }
     return null;
 }
+// CSRF tokens are tied to a session and only rotate on password change /
+// logout. Cache them alongside the session for 60 s (same TTL as the session
+// cache). Invalidated synchronously on logout and password change.
+const csrfCache = new Map();
+const CSRF_CACHE_TTL_MS = 60000;
 async function getSessionCsrf(env, sessionToken) {
     if (!env.DB || !sessionToken) return '';
+    const now = Date.now();
+    const cached = csrfCache.get(sessionToken);
+    if (cached && (now - cached.at) < CSRF_CACHE_TTL_MS) return cached.csrf;
     try {
         const row = await env.DB.prepare('SELECT csrf_token FROM sessions WHERE token = ?').bind(sessionToken).first();
-        return row && row.csrf_token ? row.csrf_token : '';
+        const csrf = row && row.csrf_token ? row.csrf_token : '';
+        csrfCache.set(sessionToken, { csrf, at: now });
+        if (csrfCache.size > 200) {
+            for (const [k, v] of csrfCache) if (now - v.at > CSRF_CACHE_TTL_MS) csrfCache.delete(k);
+        }
+        return csrf;
     } catch (e) { return ''; }
 }
 function invalidateSessionCache(token) { if (token) sessionCache.delete(token); else sessionCache.clear(); }
@@ -9200,20 +9378,16 @@ async function getStatus(env) {
     if (!env.DB) return apiJson({ d1_bound: false });
     try {
         await initializeDatabase(env.DB);
-        // Prime the settings cache with a single table-wide read. Every
-        // subsequent getSetting() call on this isolate (for up to 15 s)
-        // is a pure in-memory lookup — no D1 round-trip.
-        try { await getSetting(env.DB, 'admin_password'); } catch (e) {}
-        const [adminPass, tokenRecord, botUsername] = await Promise.all([
-            env.DB.prepare("SELECT value FROM settings WHERE key = 'admin_password'").first(),
-            env.DB.prepare("SELECT value FROM settings WHERE key = 'bot_token'").first(),
-            env.DB.prepare("SELECT value FROM settings WHERE key = 'bot_username'").first(),
-        ]);
+        // getSetting() primes the cache once, then serves every subsequent
+        // call from memory. Previously this endpoint ran 4 queries per call.
+        const adminPass = await getSetting(env.DB, 'admin_password');
+        const botToken = await getSetting(env.DB, 'bot_token');
+        const botUsername = await getSetting(env.DB, 'bot_username');
         return apiJson({
             d1_bound: true,
-            admin_password_set: !!(adminPass && adminPass.value) || !!env.ADMIN_PASS,
-            tg_configured: !!(tokenRecord && tokenRecord.value),
-            bot_username: botUsername ? botUsername.value : ''
+            admin_password_set: !!adminPass || !!env.ADMIN_PASS,
+            tg_configured: !!botToken,
+            bot_username: botUsername || ''
         });
     } catch (e) { return apiJson({ d1_bound: false }); }
 }
@@ -9221,23 +9395,29 @@ async function handleSetup(request, env) {
     if (!env.DB) return apiJson({ error: 'Database is not connected. Please check your D1 binding.' }, 500);
     await initializeDatabase(env.DB);
     const existing = await getSetting(env.DB, 'admin_password');
-    if (existing) return apiJson({ error: 'Admin password is already set. Please sign in.' }, 400);
+    if (existing || env.ADMIN_PASS) return apiJson({ error: 'Admin password is already set. Please sign in.' }, 400);
     const body = await request.json();
     const { botToken, adminPassword } = body;
     if (!adminPassword || adminPassword.length < 6) return apiJson({ error: 'Password must be at least 6 characters.' }, 400);
-    await setSetting(env.DB, 'admin_password', await hashPassword(adminPassword));
+    // Validate the bot token BEFORE saving the password, so a typo doesn't lock setup.
+    let check = null;
     if (botToken) {
-        const check = await validateBotToken(botToken);
+        check = await validateBotToken(botToken);
         if (!check.ok) return apiJson({ error: `Invalid bot token: ${check.error || 'please double-check it'}` }, 400);
+    }
+    if (botToken) {
         const webhookUrl = `${new URL(request.url).origin}/webhook`;
         const secret = crypto.randomUUID();
         try { await registerWebhook(botToken, webhookUrl, secret); }
         catch (e) { return apiJson({ error: `Could not register webhook: ${e.message}` }, 500); }
+        await setSetting(env.DB, 'admin_password', await hashPassword(adminPassword));
         await setSetting(env.DB, 'bot_token', botToken);
         await setSetting(env.DB, 'webhook_url', webhookUrl);
         await setSetting(env.DB, 'webhook_secret', secret);
         if (check.username) await setSetting(env.DB, 'bot_username', check.username);
         if (check.name) await setSetting(env.DB, 'bot_name', check.name);
+    } else {
+        await setSetting(env.DB, 'admin_password', await hashPassword(adminPassword));
     }
     return apiJson({ success: true });
 }
@@ -9251,7 +9431,7 @@ async function handleLogin(request, env) {
     if (fails && fails.n >= 20) return apiJson({ error: 'Too many failed attempts. Please wait a few minutes and try again.' }, 429);
     const envPass = env.ADMIN_PASS || null;
     const stored = await getSetting(env.DB, 'admin_password');
-    let ok = envPass ? envPass === password : false;
+    let ok = envPass ? timingSafeEqual(String(envPass), String(password)) : false;
     if (!ok) ok = !!(stored && await verifyPassword(stored, password));
     if (!ok) {
         await env.DB.prepare('INSERT INTO login_attempts (minute, count) VALUES (?, 1) ON CONFLICT(minute) DO UPDATE SET count = count + 1').bind(minute).run();
@@ -9276,6 +9456,7 @@ async function handleLogout(request, env) {
         const token = part.split('=')[1].trim();
         await env.DB.prepare('DELETE FROM sessions WHERE token = ?').bind(token).run();
         invalidateSessionCache(token);
+        csrfCache.delete(token);
     }
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: { 'Set-Cookie': 'session=; Path=/; Max-Age=0', ...JSON_HEADERS } });
 }
@@ -9287,13 +9468,13 @@ async function getVersionInfo(env, fresh) {
     if (!fresh && versionCache.data && (now - versionCache.fetchedAt) < VERSION_CACHE_TTL_MS) return apiJson({ current, ...versionCache.data });
     let latest = null, released = null, notes = null, workerUrl = null;
     try {
-        const res = await fetch('https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/version.json');
+        const res = await fetch('https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/version.json', { signal: AbortSignal.timeout(5000) });
         if (res.ok) {
             const data = await res.json();
             latest = data.version || null; released = data.released || null;
             notes = data.notes || null; workerUrl = data.worker_url || null;
         } else {
-            const workerRes = await fetch('https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/worker.js');
+            const workerRes = await fetch('https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/worker.js', { signal: AbortSignal.timeout(8000) });
             if (workerRes.ok) {
                 const text = await workerRes.text();
                 const match = text.match(/const\s+VERSION\s*=\s*['"]([^'"]+)['"]/);
@@ -9428,10 +9609,20 @@ const CONTACT_KEYS = [
     'contact_rate_limit', 'contact_last_read_at'
 ];
 async function getContactSettingsFromDb(db) {
-    const placeholders = CONTACT_KEYS.map(() => '?').join(', ');
-    const rows = await db.prepare(`SELECT key, value FROM settings WHERE key IN (${placeholders})`).bind(...CONTACT_KEYS).all();
     const out = {};
     for (const k of CONTACT_KEYS) out[k] = '';
+    // Prime the cache if not already loaded (single table-wide read).
+    try { await getSetting(db, 'contact_notify_enabled'); } catch (e) {}
+    if (settingsCache.data) {
+        for (const k of CONTACT_KEYS) {
+            const v = settingsCache.data[k];
+            if (v !== undefined && v !== null) out[k] = v;
+        }
+        return out;
+    }
+    // Fallback before the cache primes.
+    const placeholders = CONTACT_KEYS.map(() => '?').join(', ');
+    const rows = await db.prepare(`SELECT key, value FROM settings WHERE key IN (${placeholders})`).bind(...CONTACT_KEYS).all();
     for (const row of (rows.results || [])) out[row.key] = row.value;
     return out;
 }
@@ -9470,7 +9661,7 @@ async function saveContactSettings(request, env) {
         if (body.rate_limit !== undefined) {
             const n = parseInt(body.rate_limit); if (!isNaN(n)) push('contact_rate_limit', String(Math.min(Math.max(n, 0), 1000)));
         }
-        for (const [k, v] of writes) await setSetting(env.DB, k, v);
+        await setSettingsBatch(env.DB, writes);
         await logAction(env.DB, null, 'Contact settings updated');
         return apiJson({ success: true, settings: await getContactSettingsFromDb(env.DB) });
     } catch (err) { return internalError(err); }
@@ -9482,29 +9673,24 @@ async function getContactMessages(env, url) {
         const limit = Math.min(parseInt(url.searchParams.get('limit')) || 50, 200);
         const search = (url.searchParams.get('search') || '').trim();
         const unreadOnly = url.searchParams.get('unread') === '1';
-        let where = "source = 'featured' AND direction = 'in'";
+        let where = "m.source = 'featured' AND m.direction = 'in'";
         const params = [];
-        if (unreadOnly) where += ' AND read_at IS NULL';
-        if (search) { where += ' AND text LIKE ?'; params.push('%' + search + '%'); }
+        if (unreadOnly) where += ' AND m.read_at IS NULL';
+        if (search) { where += ' AND m.text LIKE ?'; params.push('%' + search + '%'); }
+        // Single JOIN — one round-trip instead of messages-then-users.
         const rows = await env.DB.prepare(
-            `SELECT id, chat_id, text, created_at, read_at FROM dm_messages WHERE ${where} ORDER BY id DESC LIMIT ?`
+            `SELECT m.id, m.chat_id, m.text, m.created_at, m.read_at,
+                    u.first_name, u.username
+             FROM dm_messages m
+             LEFT JOIN users u ON u.id = m.chat_id
+             WHERE ${where}
+             ORDER BY m.id DESC LIMIT ?`
         ).bind(...params, limit).all();
-        const messages = rows.results || [];
-        const userIds = [...new Set(messages.map(m => m.chat_id))];
-        const userMap = {};
-        if (userIds.length) {
-            const ph = userIds.map(() => '?').join(', ');
-            const users = await env.DB.prepare(`SELECT id, first_name, username, role FROM users WHERE id IN (${ph})`).bind(...userIds).all();
-            for (const u of (users.results || [])) userMap[u.id] = u;
-        }
-        const out = messages.map(m => {
-            const u = userMap[m.chat_id] || {};
-            return {
-                id: m.id, userId: m.chat_id, text: m.text || '', created_at: m.created_at,
-                first_name: u.first_name || 'Unknown', username: u.username || '',
-                is_unread: (m.read_at === null || m.read_at === undefined),
-            };
-        });
+        const out = (rows.results || []).map(m => ({
+            id: m.id, userId: m.chat_id, text: m.text || '', created_at: m.created_at,
+            first_name: m.first_name || 'Unknown', username: m.username || '',
+            is_unread: (m.read_at === null || m.read_at === undefined),
+        }));
         return apiJson({ success: true, messages: out });
     } catch (err) { return internalError(err); }
 }
@@ -9535,18 +9721,23 @@ async function getContactStats(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
-        const [unreadRow, todayRow, weekRow, totalRow] = await Promise.all([
-            env.DB.prepare("SELECT COUNT(*) as n FROM dm_messages WHERE source = 'featured' AND direction = 'in' AND read_at IS NULL").first(),
-            env.DB.prepare("SELECT COUNT(*) as n FROM dm_messages WHERE source = 'featured' AND direction = 'in' AND created_at > datetime('now', '-1 day')").first(),
-            env.DB.prepare("SELECT COUNT(*) as n FROM dm_messages WHERE source = 'featured' AND direction = 'in' AND created_at > datetime('now', '-7 day')").first(),
-            env.DB.prepare("SELECT COUNT(*) as n FROM dm_messages WHERE source = 'featured' AND direction = 'in'").first(),
-        ]);
+        // Single query with conditional aggregates — 4 round-trips → 1.
+        // Uses idx_dm_contact / idx_dm_unread from migration 18.
+        const row = await env.DB.prepare(`
+            SELECT
+                COUNT(*) FILTER (WHERE read_at IS NULL)                           as unread,
+                COUNT(*) FILTER (WHERE created_at > datetime('now', '-1 day'))    as today,
+                COUNT(*) FILTER (WHERE created_at > datetime('now', '-7 day'))    as week,
+                COUNT(*)                                                          as total
+            FROM dm_messages
+            WHERE source = 'featured' AND direction = 'in'
+        `).first();
         return apiJson({
             success: true,
-            unread: unreadRow ? unreadRow.n : 0,
-            today: todayRow ? todayRow.n : 0,
-            week: weekRow ? weekRow.n : 0,
-            total: totalRow ? totalRow.n : 0
+            unread: row ? (row.unread || 0) : 0,
+            today: row ? (row.today || 0) : 0,
+            week: row ? (row.week || 0) : 0,
+            total: row ? (row.total || 0) : 0
         });
     } catch (err) { return internalError(err); }
 }
@@ -10007,26 +10198,31 @@ async function mergeReplyActions(db, actions) {
         let merged = {};
         const raw = await getSetting(db, 'reply_actions');
         if (raw) { try { merged = JSON.parse(raw) || {}; } catch (e) { merged = {}; } }
-        for (const [text, command] of Object.entries(actions)) { if (text && command) merged[text] = command; }
+        let changed = false;
+        for (const [text, command] of Object.entries(actions)) {
+            if (text && command && merged[text] !== command) { merged[text] = command; changed = true; }
+        }
+        // Skip the write (and its epoch bump) when nothing actually changed —
+        // this is the common case on every command execution.
+        if (!changed) return;
         const keys = Object.keys(merged);
         if (keys.length > 500) { for (const k of keys.slice(0, keys.length - 500)) delete merged[k]; }
         await setSetting(db, 'reply_actions', JSON.stringify(merged));
-        replyActionsCache = { data: merged, fetchedAt: Date.now() };
     } catch (e) {}
 }
-let replyActionsCache = { data: null, fetchedAt: 0 };
-const REPLY_ACTIONS_TTL_MS = 60 * 1000;
+let replyActionsCache = { data: null, epoch: null };
 async function getReplyActions(db) {
-    if (replyActionsCache.data && Date.now() - replyActionsCache.fetchedAt < REPLY_ACTIONS_TTL_MS) return replyActionsCache.data;
+    const currentEpoch = await getCurrentEpoch(db);
+    if (replyActionsCache.data && replyActionsCache.epoch === currentEpoch) return replyActionsCache.data;
     let map = {};
     try { const raw = await getSetting(db, 'reply_actions'); if (raw) map = JSON.parse(raw) || {}; } catch (e) {}
-    replyActionsCache = { data: map, fetchedAt: Date.now() };
+    replyActionsCache = { data: map, epoch: currentEpoch };
     return map;
 }
-let replyButtonMapCache = { data: null, fetchedAt: 0 };
-const REPLY_BUTTON_MAP_TTL_MS = 60000;
+let replyButtonMapCache = { data: null, epoch: null };
 async function getReplyButtonMap(db) {
-    if (replyButtonMapCache.data && (Date.now() - replyButtonMapCache.fetchedAt) < REPLY_BUTTON_MAP_TTL_MS) return replyButtonMapCache.data;
+    const currentEpoch = await getCurrentEpoch(db);
+    if (replyButtonMapCache.data && replyButtonMapCache.epoch === currentEpoch) return replyButtonMapCache.data;
     const map = {};
     try {
         const rows = await db.prepare('SELECT reply_keyboard_json FROM commands WHERE enabled = 1 AND show_reply_keyboard = 1').all();
@@ -10042,10 +10238,9 @@ async function getReplyButtonMap(db) {
             }
         }
     } catch (e) {}
-    replyButtonMapCache = { data: map, fetchedAt: Date.now() };
+    replyButtonMapCache = { data: map, epoch: currentEpoch };
     return map;
 }
-function invalidateReplyButtonMap() { replyButtonMapCache = { data: null, fetchedAt: 0 }; }
 
 // ============================================================================
 // COMMANDS
@@ -10118,7 +10313,7 @@ async function createCommand(request, env) {
             }
             throw e;
         }
-        invalidateReplyButtonMap();
+        await bumpEpoch(env.DB);
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
 }
@@ -10173,7 +10368,7 @@ async function updateCommand(request, env) {
             await env.DB.prepare(`UPDATE commands SET parent = ?, response_type = ?, content = ?, media_url = ?, file_id = ?, media_meta = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ? WHERE command = ?`)
                 .bind(parent || null, rtype, content || '', media_url || '', file_id || '', media_meta || '', buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', command).run();
         }
-        invalidateReplyButtonMap();
+        await bumpEpoch(env.DB);
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
 }
@@ -10191,7 +10386,7 @@ async function deleteCommand(request, env) {
             idx++;
         }
         await runBatchChunks(env.DB, toDelete.map(c => env.DB.prepare('DELETE FROM commands WHERE command = ?').bind(c)));
-        invalidateReplyButtonMap();
+        await bumpEpoch(env.DB);
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
 }
@@ -10202,6 +10397,7 @@ async function reorderCommands(request, env) {
         if (!Array.isArray(order)) return apiJson({ error: 'Invalid order.' }, 400);
         await initializeDatabase(env.DB);
         await runBatchChunks(env.DB, order.map((cmd, i) => env.DB.prepare('UPDATE commands SET order_idx = ? WHERE command = ?').bind(i, cmd)));
+        await bumpEpoch(env.DB);
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
 }
@@ -10253,7 +10449,7 @@ async function importCommandPack(request, env) {
             const ok = data.menu.filter(m => m && m.command && m.description);
             if (ok.length) await setSetting(env.DB, 'menu_commands', JSON.stringify(ok));
         }
-        invalidateReplyButtonMap();
+        await bumpEpoch(env.DB);
         await logAction(env.DB, null, `Command pack imported (${valid.length})`);
         return apiJson({ success: true, imported: valid.length });
     } catch (err) { return internalError(err); }
@@ -10335,6 +10531,7 @@ async function createFeatured(request, env) {
             if (String(e.message || '').includes('UNIQUE')) return apiJson({ error: `A featured command with the command "${command}" already exists.` }, 400);
             throw e;
         }
+        await bumpEpoch(env.DB);
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
 }
@@ -10371,6 +10568,7 @@ async function updateFeatured(request, env, url) {
             : (existing.delete_user_message !== undefined && existing.delete_user_message !== null ? (existing.delete_user_message ? 1 : 0) : 1);
         await env.DB.prepare('UPDATE featured_replies SET command = ?, kind = ?, content = ?, buttons_json = NULL, success_text = ?, failure_text = ?, admin_only = ?, access_level = ?, delete_user_message = ?, enabled = ?, button_style = ? WHERE id = ?')
             .bind(command, kind, content, successText, failureText, adminOnly, access, deleteTrigger, enabled, buttonStyle, id).run();
+        await bumpEpoch(env.DB);
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
 }
@@ -10380,6 +10578,7 @@ async function deleteFeatured(env, url) {
         const id = parseInt(url.pathname.split('/').pop());
         await initializeDatabase(env.DB);
         await env.DB.prepare('DELETE FROM featured_replies WHERE id = ?').bind(id).run();
+        await bumpEpoch(env.DB);
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
 }
@@ -10563,7 +10762,9 @@ async function updateUserRole(request, env) {
         if (!['user', 'moderator', 'admin'].includes(role)) return apiJson({ error: 'Invalid role. Must be user, moderator, or admin.' }, 400);
         await initializeDatabase(env.DB);
         await env.DB.prepare('UPDATE users SET role = ? WHERE id = ?').bind(role, userId).run();
+        await bumpEpoch(env.DB);
         await logAction(env.DB, userId, `Role changed to ${role}`);
+        userRoleCache.delete(userId);
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
 }
@@ -10600,6 +10801,7 @@ async function deleteUser(request, env, url) {
             env.DB.prepare('DELETE FROM broadcast_recipients WHERE chat_id = ?').bind(id),
             env.DB.prepare("DELETE FROM sessions WHERE user_id = ? AND token LIKE 'bot-%'").bind(id),
         ]);
+        await bumpEpoch(env.DB);
         await logAction(env.DB, id, 'User deleted');
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
@@ -10631,6 +10833,7 @@ async function deleteUnreachableUsers(env) {
                 env.DB.prepare(`DELETE FROM sessions      WHERE user_id IN (${ph}) AND token LIKE 'bot-%'`).bind(...slice),
             ]);
         }
+        await bumpEpoch(env.DB);
         await logAction(env.DB, null, `Deleted ${ids.length} unreachable users`);
         return apiJson({ success: true, deleted: ids.length });
     } catch (err) { return internalError(err); }
@@ -10643,6 +10846,7 @@ async function blockUser(request, env) {
         const type = blockType === 'ai_only' ? 'ai_only' : 'full';
         await initializeDatabase(env.DB);
         await env.DB.prepare('INSERT INTO blocked_users (user_id, block_type) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET block_type = excluded.block_type, blocked_at = CURRENT_TIMESTAMP').bind(userId, type).run();
+        await bumpEpoch(env.DB);
         await logAction(env.DB, userId, `Blocked (${type})`);
         return apiJson({ success: true, block_type: type });
     } catch (err) { return internalError(err); }
@@ -10654,6 +10858,7 @@ async function unblockUser(request, env) {
         if (!userId) return apiJson({ error: 'Missing userId.' }, 400);
         await initializeDatabase(env.DB);
         await env.DB.prepare('DELETE FROM blocked_users WHERE user_id = ?').bind(userId).run();
+        await bumpEpoch(env.DB);
         await logAction(env.DB, userId, 'Unblocked');
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
@@ -10667,12 +10872,23 @@ async function getBlockStatus(env, url) {
         return apiJson({ blocked: !!row, block_type: row ? row.block_type : null });
     } catch (err) { return internalError(err); }
 }
+// Block-status cache — epoch-checked. Blocks change rarely but must be
+// visible cross-isolate within EPOCH_CHECK_INTERVAL_MS.
+const blockedCache = new Map();
 async function isUserBlocked(env, userId) {
     if (!env.DB) return null;
+    const currentEpoch = await getCurrentEpoch(env.DB);
+    const cached = blockedCache.get(userId);
+    if (cached && cached.epoch === currentEpoch) return cached.type;
     try {
         await initializeDatabase(env.DB);
         const row = await env.DB.prepare('SELECT block_type FROM blocked_users WHERE user_id = ?').bind(userId).first();
-        return row ? row.block_type : null;
+        const result = row ? row.block_type : null;
+        blockedCache.set(userId, { type: result, epoch: currentEpoch });
+        if (blockedCache.size > 2000) {
+            for (const [k, v] of blockedCache) if (v.epoch !== currentEpoch) blockedCache.delete(k);
+        }
+        return result;
     } catch (e) { return null; }
 }
 
@@ -10965,6 +11181,7 @@ async function saveGroupSettings(request, env, url) {
         await initializeDatabase(env.DB);
         const clean = normalizeGroupSettings(body);
         await env.DB.prepare('UPDATE groups SET settings_json = ? WHERE id = ?').bind(JSON.stringify(clean), id).run();
+        await bumpEpoch(env.DB);
         await logAction(env.DB, null, `Group ${id} settings updated`);
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
@@ -10975,6 +11192,7 @@ async function deleteGroup(env, url) {
         const id = parseInt(url.pathname.split('/').pop());
         await initializeDatabase(env.DB);
         await env.DB.prepare('DELETE FROM groups WHERE id = ?').bind(id).run();
+        await bumpEpoch(env.DB);
         await logAction(env.DB, null, `Group ${id} removed from dashboard`);
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
@@ -11000,6 +11218,7 @@ async function syncGroupStatus(env, url) {
         await env.DB.prepare(
             'UPDATE groups SET title = ?, type = ?, username = ?, is_active = 1, member_count = ?, last_active = CURRENT_TIMESTAMP WHERE id = ?'
         ).bind(chat.title || '', chat.type || 'group', chat.username || '', memberCount, id).run();
+        await bumpEpoch(env.DB);
         return apiJson({ success: true, is_active: 1, title: chat.title || '', member_count: memberCount });
     } catch (err) { return internalError(err); }
 }
@@ -11155,12 +11374,22 @@ async function sendGroupMessage(request, env, url) {
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
 }
+// Per-group settings cache — epoch-checked. Read on every group message.
+const groupSettingsCache = new Map();
 async function getGroupSettings(db, chatId) {
+    const currentEpoch = await getCurrentEpoch(db);
+    const cached = groupSettingsCache.get(chatId);
+    if (cached && cached.epoch === currentEpoch) return Object.assign({}, cached.data);
     try {
         const row = await db.prepare('SELECT settings_json FROM groups WHERE id = ?').bind(chatId).first();
         let s = {};
         if (row && row.settings_json) { try { s = JSON.parse(row.settings_json); } catch (e) {} }
-        return normalizeGroupSettings(s);
+        const normalized = normalizeGroupSettings(s);
+        groupSettingsCache.set(chatId, { data: normalized, epoch: currentEpoch });
+        if (groupSettingsCache.size > 1000) {
+            for (const [k, v] of groupSettingsCache) if (v.epoch !== currentEpoch) groupSettingsCache.delete(k);
+        }
+        return Object.assign({}, normalized);
     } catch (e) { return normalizeGroupSettings({}); }
 }
 async function upsertGroup(db, chat, isActive) {
@@ -11531,15 +11760,24 @@ async function getAiSettings(env) {
         return apiJson({ success: true, settings: safe });
     } catch (err) { return internalError(err); }
 }
-const aiSettingsCache = { data: null, fetchedAt: 0 };
-const AI_CACHE_TTL_MS = 8000;
+const aiSettingsCache = { data: null, epoch: null };
 async function getAiSettingsFromDb(env) {
-    if (aiSettingsCache.data && (Date.now() - aiSettingsCache.fetchedAt) < AI_CACHE_TTL_MS) return Object.assign({}, aiSettingsCache.data);
+    const currentEpoch = await getCurrentEpoch(env.DB);
+    if (aiSettingsCache.data && aiSettingsCache.epoch === currentEpoch) return Object.assign({}, aiSettingsCache.data);
+    // Prime settingsCache so we can build the AI map from it.
+    try { await getSetting(env.DB, 'ai_enabled'); } catch (e) {}
     const settings = {};
     for (const k of AI_KEYS) settings[k] = '';
-    const placeholders = AI_KEYS.map(() => '?').join(', ');
-    const rows = await env.DB.prepare(`SELECT key, value FROM settings WHERE key IN (${placeholders})`).bind(...AI_KEYS).all();
-    for (const row of (rows.results || [])) if (row.value !== null && row.value !== undefined) settings[row.key] = row.value;
+    if (settingsCache.data) {
+        for (const k of AI_KEYS) {
+            const v = settingsCache.data[k];
+            if (v !== undefined && v !== null) settings[k] = v;
+        }
+    } else {
+        const placeholders = AI_KEYS.map(() => '?').join(', ');
+        const rows = await env.DB.prepare(`SELECT key, value FROM settings WHERE key IN (${placeholders})`).bind(...AI_KEYS).all();
+        for (const row of (rows.results || [])) if (row.value !== null && row.value !== undefined) settings[row.key] = row.value;
+    }
     const defaults = {
         ai_enabled: '0', ai_provider: 'openai', ai_model: '', ai_trigger: 'no_command',
         ai_memory: '0', ai_group_memory: '0', ai_fallback: 'Sorry, I am currently unavailable. Please try again later.',
@@ -11551,10 +11789,9 @@ async function getAiSettingsFromDb(env) {
         ai_use_mcp_tools: '0', ai_mcp_prompt_mode: 'auto', ai_mcp_categories: '',
     };
     for (const [k, v] of Object.entries(defaults)) if (!settings[k]) settings[k] = v;
-    // Backwards compatibility: derive the group trigger from the old mention flag.
     if (!settings.ai_group_trigger) settings.ai_group_trigger = settings.ai_group_mention === '0' ? 'none' : 'mention';
     aiSettingsCache.data = settings;
-    aiSettingsCache.fetchedAt = Date.now();
+    aiSettingsCache.epoch = currentEpoch;
     return Object.assign({}, settings);
 }
 async function saveAiSettings(request, env) {
@@ -11592,7 +11829,7 @@ async function saveAiSettings(request, env) {
             stmts.push(env.DB.prepare(`INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`).bind(k, String(settings[k])));
         }
         await runBatchChunks(env.DB, stmts);
-        aiSettingsCache.data = null;
+        await bumpEpoch(env.DB);
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
 }
@@ -11608,13 +11845,17 @@ async function resetAiSettings(env) {
     try {
         await initializeDatabase(env.DB);
         await runBatchChunks(env.DB, AI_KEYS.map(k => env.DB.prepare('DELETE FROM settings WHERE key = ?').bind(k)));
-        aiSettingsCache.data = null;
+        await bumpEpoch(env.DB);
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
 }
 async function clearAiMemory(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
-    try { await env.DB.prepare('DELETE FROM ai_messages').run(); return apiJson({ success: true }); }
+    try {
+        await env.DB.prepare('DELETE FROM ai_messages').run();
+        await bumpEpoch(env.DB);
+        return apiJson({ success: true });
+    }
     catch (err) { return internalError(err); }
 }
 
@@ -12046,8 +12287,6 @@ async function saveSystemLanguage(request, env) {
         const lang = body.language === 'fa' ? 'fa' : 'en';
         await initializeDatabase(env.DB);
         await setSetting(env.DB, 'system_language', lang);
-        // Update the isolate-level cache so subsequent sysStr() calls use the new language immediately.
-        cachedSystemLang = { lang: lang, at: Date.now() };
         await logAction(env.DB, null, 'System language set to ' + lang);
         return apiJson({ success: true, language: lang });
     } catch (err) { return internalError(err); }
@@ -12166,6 +12405,9 @@ async function handleSchemaHeal(env) {
         // Run heal without the read-through cache, so its version read is
         // accurate even if the app has already cold-started.
         const result = await autoHealSchema(env.DB);
+        // Heal may have inserted settings or rewritten command access_level —
+        // bump the epoch so every cache invalidates across all isolates.
+        await bumpEpoch(env.DB);
         const cleanedCount = Object.values(result.cleanedRows || {}).reduce((a, b) => a + b, 0);
         const nothingHealed = result.tablesCreated.length === 0
             && result.columnsAdded.length === 0
@@ -12198,11 +12440,13 @@ async function changeAdminPassword(request, env) {
             await env.DB.prepare('DELETE FROM sessions WHERE user_id IS NULL AND token != ?').bind(currentToken).run();
             await env.DB.prepare('UPDATE sessions SET password_version = ?, csrf_token = ? WHERE token = ?').bind(newPv, newCsrf, currentToken).run();
             invalidateSessionCache();
+            csrfCache.clear();
             await logAction(env.DB, null, 'Admin password changed');
             return apiJson({ success: true, csrf: newCsrf });
         }
         await env.DB.prepare('DELETE FROM sessions WHERE user_id IS NULL').run();
         invalidateSessionCache();
+        csrfCache.clear();
         await logAction(env.DB, null, 'Admin password changed');
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
@@ -12357,8 +12601,10 @@ async function restoreBackup(request, env) {
             setStmts.push(env.DB.prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value').bind(k, String(v)));
         }
         await runBatchChunks(env.DB, setStmts);
-        aiSettingsCache.data = null;
-        invalidateReplyButtonMap();
+        // Restoring writes settings via raw SQL (not setSetting), so we must
+        // bump the epoch explicitly — otherwise every cached read (settings,
+        // AI, user roles, blocks, group settings) stays stale on all isolates.
+        await bumpEpoch(env.DB);
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
 }
@@ -12376,16 +12622,14 @@ async function factoryReset(request, env) {
         const tables = ['settings', 'users', 'commands', 'sessions', 'logs', 'ai_messages', 'dm_messages', 'ai_rate_limits', 'blocked_users', 'login_attempts', 'broadcast_history', 'broadcast_recipients', 'groups', 'group_flood', 'featured_replies'];
         await runBatchChunks(env.DB, tables.map(t => env.DB.prepare(`DROP TABLE IF EXISTS ${t}`)));
         dbInitCache.delete(env.DB);
+        // Slow path runs again after the DROP TABLEs, and Fix 2 makes it bump
+        // the epoch — every epoch-aware cache (settings, AI, permissions,
+        // roles, blocks, groups, replies, MCP tokens, system lang) will reload.
         await initializeDatabase(env.DB);
+        // Sessions and CSRF are TTL-based, not epoch-aware, so clear them
+        // explicitly to avoid serving stale auth state after a reset.
         invalidateSessionCache();
-        aiSettingsCache.data = null;
-        invalidateReplyButtonMap();
-        replyActionsCache = { data: null, fetchedAt: 0 };
-        botUsernameCache.username = null; botUsernameCache.fetchedAt = 0;
-        botNameCache.name = null; botNameCache.fetchedAt = 0;
-        mcpTokenCache.clear();
-        _permCache.delete(env);
-        cachedSystemLang = { lang: 'en', at: 0 };
+        csrfCache.clear();
         await logAction(env.DB, null, 'FACTORY RESET performed');
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
@@ -12523,7 +12767,7 @@ async function handleFileProxy(request, env, url) {
         const fileRes = await fetch(`https://api.telegram.org/file/bot${token}/${info.result.file_path}`);
         const headers = new Headers();
         headers.set('Content-Type', fileRes.headers.get('Content-Type') || 'application/octet-stream');
-        headers.set('Cache-Control', 'private, max-age=3600');
+        headers.set('Cache-Control', 'private, max-age=31536000, immutable');
         headers.set('X-Content-Type-Options', 'nosniff');
         return new Response(fileRes.body, { status: 200, headers });
     } catch (e) { return new Response('File unavailable', { status: 500 }); }
@@ -12889,14 +13133,21 @@ const MCP_DEFAULT_SETTINGS = {
 };
 const MCP_CATEGORY_KEYS = ['read', 'write', 'outbound', 'dangerous'];
 const mcpTokenCache = new Map();
-const MCP_TOKEN_CACHE_TTL = 30000;
 
 async function getMcpSettingsFromDb(env) {
     const keys = Object.keys(MCP_DEFAULT_SETTINGS).concat(['mcp_ai_api_key']);
-    const placeholders = keys.map(() => '?').join(', ');
-    const rows = await env.DB.prepare(`SELECT key, value FROM settings WHERE key IN (${placeholders})`).bind(...keys).all();
+    try { await getSetting(env.DB, 'mcp_enabled'); } catch (e) {}
     const out = Object.assign({}, MCP_DEFAULT_SETTINGS);
-    for (const row of (rows.results || [])) out[row.key] = row.value;
+    if (settingsCache.data) {
+        for (const k of keys) {
+            const v = settingsCache.data[k];
+            if (v !== undefined && v !== null) out[k] = v;
+        }
+    } else {
+        const placeholders = keys.map(() => '?').join(', ');
+        const rows = await env.DB.prepare(`SELECT key, value FROM settings WHERE key IN (${placeholders})`).bind(...keys).all();
+        for (const row of (rows.results || [])) out[row.key] = row.value;
+    }
     return out;
 }
 
@@ -12942,7 +13193,7 @@ async function saveMcpSettings(request, env) {
         if (body.mcp_memory_ttl_hours !== undefined) writes.push(['mcp_memory_ttl_hours', String(Math.min(Math.max(parseInt(body.mcp_memory_ttl_hours) || 24, 1), 720))]);
         if (body.mcp_rate_limit !== undefined) writes.push(['mcp_rate_limit', String(Math.min(Math.max(parseInt(body.mcp_rate_limit) || 20, 0), 1000))]);
         if (body.mcp_rate_limit_window !== undefined) writes.push(['mcp_rate_limit_window', body.mcp_rate_limit_window === 'hour' ? 'hour' : 'minute']);
-        for (const [k, v] of writes) await setSetting(env.DB, k, v);
+        await setSettingsBatch(env.DB, writes);
         await logAction(env.DB, null, 'MCP settings updated');
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
@@ -12968,7 +13219,6 @@ async function generateMcpTokenHandler(request, env) {
         const hashHex = toHex(hashBuf);
         const prefix = raw.slice(0, 12);
         await env.DB.prepare('INSERT INTO mcp_tokens (label, token_hash, token_prefix) VALUES (?, ?, ?)').bind(label, hashHex, prefix).run();
-        mcpTokenCache.delete(hashHex);
         await logAction(env.DB, null, 'MCP token generated');
         return apiJson({ success: true, token: raw, prefix, label });
     } catch (err) { return internalError(err); }
@@ -12980,7 +13230,7 @@ async function revokeMcpTokens(env) {
         await env.DB.prepare('DELETE FROM mcp_tokens').run();
         await env.DB.prepare("DELETE FROM mcp_sessions WHERE session_key LIKE 'ext:%'").run();
         await env.DB.prepare("DELETE FROM mcp_rate_limits WHERE session_key LIKE 'ext:%'").run();
-        mcpTokenCache.clear();
+        await bumpEpoch(env.DB);  // invalidate mcpTokenCache cluster-wide
         await logAction(env.DB, null, 'All MCP tokens revoked');
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
@@ -13010,13 +13260,16 @@ async function verifyMcpToken(env, rawToken) {
     if (!rawToken) return null;
     const hashBuf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(rawToken));
     const hashHex = toHex(hashBuf);
+    const currentEpoch = await getCurrentEpoch(env.DB);
     const cached = mcpTokenCache.get(hashHex);
-    if (cached && (Date.now() - cached.at) < MCP_TOKEN_CACHE_TTL) return cached.row;
+    if (cached && cached.epoch === currentEpoch) return cached.row;
     const row = await env.DB.prepare('SELECT id, token_prefix, last_used_at FROM mcp_tokens WHERE token_hash = ?').bind(hashHex).first();
-    if (!row) return null;
-    mcpTokenCache.set(hashHex, { row, at: Date.now() });
+    if (!row) { mcpTokenCache.delete(hashHex); return null; }
+    mcpTokenCache.set(hashHex, { row, epoch: currentEpoch });
+    if (mcpTokenCache.size > 200) {
+        for (const [k, v] of mcpTokenCache) if (v.epoch !== currentEpoch) mcpTokenCache.delete(k);
+    }
     // Update last_used_at at most once per minute.
-    // D1/SQLite returns 'YYYY-MM-DD HH:MM:SS' (UTC, no Z). Some rows may be ISO.
     const last = parseDbTimestamp(row.last_used_at);
     if (Date.now() - last > 60000) {
         try { await env.DB.prepare('UPDATE mcp_tokens SET last_used_at = CURRENT_TIMESTAMP WHERE id = ?').bind(row.id).run(); } catch (e) {}
@@ -14048,6 +14301,7 @@ async function executeMcpTool(name, args, env, categories) {
             try { existing = JSON.parse(row.settings_json || '{}'); } catch (e) {}
             const merged = normalizeGroupSettings(Object.assign({}, existing, patch));
             await env.DB.prepare('UPDATE groups SET settings_json = ? WHERE id = ?').bind(JSON.stringify(merged), gid).run();
+            await bumpEpoch(env.DB);
             return { success: true, groupId: gid, settings: merged };
         }
 
@@ -14060,6 +14314,7 @@ async function executeMcpTool(name, args, env, categories) {
             if (!user) throw new Error(`User ${uid} not found.`);
             if (user.role === role) return { success: true, userId: uid, role: role, note: 'Already at this role.' };
             await env.DB.prepare('UPDATE users SET role = ? WHERE id = ?').bind(role, uid).run();
+            await bumpEpoch(env.DB);
             return {
                 success: true, userId: uid,
                 first_name: user.first_name || '', username: user.username || '',
@@ -14080,6 +14335,7 @@ async function executeMcpTool(name, args, env, categories) {
             }
             const newRole = user.role === 'admin' ? 'moderator' : 'user';
             await env.DB.prepare('UPDATE users SET role = ? WHERE id = ?').bind(newRole, uid).run();
+            await bumpEpoch(env.DB);
             return {
                 success: true, userId: uid,
                 first_name: user.first_name || '', username: user.username || '',
@@ -14095,6 +14351,7 @@ async function executeMcpTool(name, args, env, categories) {
             await env.DB.prepare(
                 'INSERT INTO blocked_users (user_id, block_type) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET block_type = excluded.block_type, blocked_at = CURRENT_TIMESTAMP'
             ).bind(uid, type).run();
+            await bumpEpoch(env.DB);
             return { success: true, userId: uid, blockType: type };
         }
 
@@ -14103,6 +14360,7 @@ async function executeMcpTool(name, args, env, categories) {
             const uid = parseInt(args.userId);
             if (!uid) throw new Error('userId is required.');
             await env.DB.prepare('DELETE FROM blocked_users WHERE user_id = ?').bind(uid).run();
+            await bumpEpoch(env.DB);
             return { success: true, userId: uid };
         }
 
@@ -14112,6 +14370,7 @@ async function executeMcpTool(name, args, env, categories) {
             const uid = parseInt(args.userId);
             if (!uid) throw new Error('userId is required.');
             const r = await env.DB.prepare('DELETE FROM ai_messages WHERE chat_id = ?').bind(uid).run();
+            await bumpEpoch(env.DB);
             return { success: true, userId: uid, deleted: (r && r.meta && r.meta.changes) || 0 };
         }
 
@@ -15143,18 +15402,14 @@ async function sendChatMessage(request, env, url) {
 // ============================================================================
 // TELEGRAM ENGINE
 // ============================================================================
-const botUsernameCache = { username: null, fetchedAt: 0 };
-const BOT_USERNAME_TTL_MS = 60 * 60 * 1000;
 async function getBotUsername(env, BOT_TOKEN) {
-    const now = Date.now();
-    if (botUsernameCache.username && (now - botUsernameCache.fetchedAt) < BOT_USERNAME_TTL_MS) return botUsernameCache.username;
     const stored = await getSetting(env.DB, 'bot_username');
-    if (stored) { botUsernameCache.username = stored; botUsernameCache.fetchedAt = now; return stored; }
+    if (stored) return stored;
+    // Not stored yet — fetch once from Telegram and persist so subsequent
+    // calls hit settingsCache (epoch-aware, always fresh) instead of the API.
     try {
         const info = await tgFetchJson(`https://api.telegram.org/bot${BOT_TOKEN}/getMe`);
         if (info && info.ok && info.result && info.result.username) {
-            botUsernameCache.username = info.result.username;
-            botUsernameCache.fetchedAt = now;
             try { await setSetting(env.DB, 'bot_username', info.result.username); } catch (e) {}
             return info.result.username;
         }
@@ -15476,18 +15731,17 @@ Guidelines:
         },
     },
 };
-let cachedSystemLang = { lang: 'en', at: 0 };
-const SYS_LANG_CACHE_TTL_MS = 30000;
+let cachedSystemLang = { lang: 'en', epoch: null };
 async function getSystemLanguageFromDb(env) {
     if (!env || !env.DB) return 'en';
-    const now = Date.now();
-    if (cachedSystemLang.lang && (now - cachedSystemLang.at) < SYS_LANG_CACHE_TTL_MS) {
-        return cachedSystemLang.lang;
-    }
     try {
+        const currentEpoch = await getCurrentEpoch(env.DB);
+        if (cachedSystemLang.lang && cachedSystemLang.epoch === currentEpoch) {
+            return cachedSystemLang.lang;
+        }
         const val = await getSetting(env.DB, 'system_language');
         const lang = val === 'fa' ? 'fa' : 'en';
-        cachedSystemLang = { lang: lang, at: now };
+        cachedSystemLang = { lang: lang, epoch: currentEpoch };
         return lang;
     } catch (e) {
         return cachedSystemLang.lang || 'en';
@@ -15569,10 +15823,9 @@ async function handleTelegramWebhook(request, env, ctx) {
     try {
         await initializeDatabase(env.DB);
         const secret = await getSetting(env.DB, 'webhook_secret');
-        if (secret) {
-            const header = request.headers.get('X-Telegram-Bot-Api-Secret-Token');
-            if (!header || !timingSafeEqual(header, secret)) return new Response('OK', { status: 200 });
-        }
+        // Fail closed: without a stored secret no update can be authenticated.
+        const header = request.headers.get('X-Telegram-Bot-Api-Secret-Token');
+        if (!secret || !header || !timingSafeEqual(header, secret)) return new Response('OK', { status: 200 });
     } catch (e) { return new Response('Internal error', { status: 500 }); }
     let update;
     try { update = await request.json(); } catch (e) { return new Response('OK', { status: 200 }); }
@@ -15580,7 +15833,7 @@ async function handleTelegramWebhook(request, env, ctx) {
         if (wasUpdateSeen(update.update_id)) return new Response('OK', { status: 200 });
         markUpdateSeen(update.update_id);
     }
-    return runWithAck(processTelegramUpdate(update, env));
+    return runWithAck(processTelegramUpdate(update, env, ctx));
 }
 const seenUpdateIds = new Map();
 const UPDATE_DEDUP_TTL_MS = 10 * 60 * 1000;
@@ -15591,7 +15844,7 @@ function wasUpdateSeen(id) {
     return ts !== undefined && (now - ts) < UPDATE_DEDUP_TTL_MS;
 }
 function markUpdateSeen(id) { seenUpdateIds.set(id, Date.now()); }
-async function processTelegramUpdate(update, env) {
+async function processTelegramUpdate(update, env, ctx) {
     const BOT_TOKEN = await getSetting(env.DB, 'bot_token');
     if (!BOT_TOKEN) return;
     // Prime the language cache so all subsequent botStrings() calls are correct.
@@ -15951,7 +16204,9 @@ async function processTelegramUpdate(update, env) {
                     saveMode === 'always' || aiSettings.ai_enabled !== '1'
                 );
                 if (shouldLogToDm) {
-                    await logDm(env.DB, userId, 'in', 'user', 'text', text, null, msg.message_id, null);
+                    const p = logDm(env.DB, userId, 'in', 'user', 'text', text, null, msg.message_id, null);
+                    if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(p);
+                    else await p;
                 }
 
                 if (aiWillHandle) {
@@ -15990,7 +16245,9 @@ async function processTelegramUpdate(update, env) {
                 await upsertUser(msg.from, { privateStarted: true });
                 const aiSettings = await getAiSettingsFromDb(env);
                 if (aiSettings.ai_enabled !== '1') {
-                    await logDm(env.DB, msg.from.id, 'in', 'user', 'text', '[media]', null, msg.message_id, null);
+                    const p = logDm(env.DB, msg.from.id, 'in', 'user', 'text', '[media]', null, msg.message_id, null);
+                    if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(p);
+                    else await p;
                 }
                 await sendMessage(chatId, botStrings().not_found, BOT_TOKEN, 'HTML');
                 return;
@@ -16087,18 +16344,18 @@ async function processTelegramUpdate(update, env) {
         }
     } catch (err) { console.error('Webhook error:', err); }
 }
-const botNameCache = { name: null, fetchedAt: 0 };
-const BOT_NAME_TTL_MS = 10 * 60 * 1000;
 async function sendDefaultStart(chatId, env, BOT_TOKEN) {
     let botName = 'Nyxx Bot';
     try {
-        const stored = await getSetting(env.DB, 'bot_name');
-        if (stored) botName = stored;
-        else if (botNameCache.name && (Date.now() - botNameCache.fetchedAt) < BOT_NAME_TTL_MS) botName = botNameCache.name;
-        else {
+        let stored = await getSetting(env.DB, 'bot_name');
+        if (!stored) {
             const nameRes = await tgFetchJson(`https://api.telegram.org/bot${BOT_TOKEN}/getMyName`);
-            if (nameRes.ok && nameRes.result.name) { botName = nameRes.result.name; botNameCache.name = botName; botNameCache.fetchedAt = Date.now(); }
+            if (nameRes.ok && nameRes.result.name) {
+                stored = nameRes.result.name;
+                try { await setSetting(env.DB, 'bot_name', stored); } catch (e) {}
+            }
         }
+        if (stored) botName = stored;
     } catch (e) {}
     let dashboardUrl = 'https://dash.cloudflare.com';
     try { const webhookSetting = await getSetting(env.DB, 'webhook_url'); if (webhookSetting) dashboardUrl = webhookSetting.replace(/\/webhook$/, ''); } catch (e) {}
