@@ -1,8 +1,8 @@
 // ============================================================================
-// NYXX — v4.9.2
+// NYXX — v4.9.3
 // Telegram bot builder + management dashboard for Cloudflare Workers + D1.
 // ============================================================================
-const VERSION = '4.9.2';
+const VERSION = '4.9.3';
 
 const RELAY_BASE = 'https://nyxx-proxy.nova-06272b19.workers.dev';
 const RELAY_EXCHANGE_SECRET = 'SECRET_ULTRA_PRO_MAX'; // Must match proxy.js
@@ -3246,6 +3246,15 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
    ============================================================ */
 var KEEP_SENTINEL = '__NYXX_KEEP__';
 var __setupDone = null;   // null = unknown, true = setup done, false = needs setup
+var __loadedModules = {};
+function ensureModule(name) {
+    if (__loadedModules[name]) return __loadedModules[name];
+    __loadedModules[name] = import('/js/' + name + '.js').catch(function (err) {
+        console.error('[nyxx] failed to load module ' + name, err);
+        delete __loadedModules[name];
+    });
+    return __loadedModules[name];
+}
 function $(id) { return document.getElementById(id); }
 function esc(s) {
     if (s === null || s === undefined) return '';
@@ -3333,8 +3342,12 @@ function isPublicEndpoint(path) {
 }
 
 var __csrf = null;
+var __inFlight = new Map();
 async function api(method, path, body) {
-    var opts = { method: method, headers: {} };
+    // Coalesce identical concurrent GETs — saves round-trips on slow networks.
+    if (method === 'GET' && __inFlight.has(path)) return __inFlight.get(path);
+    var __promise = (async function () {
+        var opts = { method: method, headers: {} };
     if (__csrf && method !== 'GET') opts.headers['X-Nyxx-CSRF'] = __csrf;
     if (body !== undefined) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
     var ctrl = null;
@@ -3386,6 +3399,9 @@ async function api(method, path, body) {
         throw new Error(msg);
     }
     return data;
+    })().finally(function () { if (method === 'GET') __inFlight.delete(path); });
+if (method === 'GET') __inFlight.set(path, __promise);
+return __promise;
 }
 function busy(btn, on) {
     if (!btn) return;
@@ -3543,15 +3559,19 @@ function go(page) {
     if (page === 'contact') loadContact();
     if (page === 'inbox') loadInbox();
     if (page === 'memory') loadMemory();
-    if (page === 'ai') { loadAi(); refreshMemoryCount(); }
+    if (page === 'ai') ensureModule('ai').then(function () {
+        window.loadAi();
+        window.refreshMemoryCount();
+    });
     if (page === 'media') loadMediaLibrary();
-    if (page === 'settings') loadSettings();
-    if (page === 'botinfo') loadBotInfo();
-    if (page === 'cron') loadCron();
-    if (page === 'logs') { loadLogs(); loadLogClean(); }
+    if (page === 'settings') ensureModule('settings').then(function () { window.loadSettings(); });
+    if (page === 'botinfo') ensureModule('settings').then(function () { window.loadBotInfo(); });
+    if (page === 'cron') ensureModule('settings').then(function () { window.loadCron(); });
+    if (page === 'logs') ensureModule('settings').then(function () { window.loadLogs(); window.loadLogClean(); });
+    if (page === 'backup') ensureModule('settings');
     if (page === 'permissions') loadPermissions();
     if (page === 'update') loadUpdateTab();
-    if (page === 'mcp') loadMcp(true);
+    if (page === 'mcp') ensureModule('mcp').then(function () { window.loadMcp(true); });
 }
 function toggleSidebar(force) {
     var app = document.querySelector('.app'); if (!app) return;
@@ -3659,233 +3679,6 @@ async function refreshStatusPill() {
 }
 
 async function tryFetchStatus() { return await api('GET', '/api/status'); }
-
-/* ============================================================
-   MCP TAB
-   ============================================================ */
-var mcpSettings = {};
-
-async function loadMcp(force) {
-    try {
-        var d = await api('GET', '/api/mcp/settings');
-        mcpSettings = (d && d.settings) || {};
-        renderMcp();
-        loadMcpTokens();
-        loadMcpCalls();
-    } catch (e) { toast(e.message, 'error'); }
-}
-
-function renderMcp() {
-    var s = mcpSettings;
-    toggleSwitch('mcp-enabled', s.mcp_enabled === '1');
-    // Endpoint
-    var ep = window.location.origin + '/mcp';
-    if ($('mcp-endpoint')) $('mcp-endpoint').value = ep;
-    // AI provider
-    $('mcp-provider').value = s.mcp_ai_provider || 'openai';
-    $('mcp-api-key').value = '';
-    $('mcp-api-key').placeholder = s.mcp_ai_api_key_set ? (s.mcp_ai_api_key_masked + '  (unchanged — type to replace)') : 'sk-…';
-    $('mcp-model').value = s.mcp_ai_model || '';
-    $('mcp-base').value = s.mcp_ai_base_url || '';
-    onMcpProviderChange();
-    if (s.mcp_ai_api_key_set) $('mcp-key-hint').innerHTML = '<i class="fa-solid fa-circle-check" style="color:var(--green)"></i> Key saved. Leave empty to keep it.';
-    // Categories
-    var cats = Array.isArray(s.mcp_categories) ? s.mcp_categories : ['read', 'write'];
-    toggleSwitch('mcp-cat-read', cats.indexOf('read') >= 0);
-    toggleSwitch('mcp-cat-write', cats.indexOf('write') >= 0);
-    toggleSwitch('mcp-cat-outbound', cats.indexOf('outbound') >= 0);
-    toggleSwitch('mcp-cat-dangerous', cats.indexOf('dangerous') >= 0);
-    // Memory & rate limits
-    const memOn = (parseInt(s.mcp_memory_limit) || 0) > 0;
-    toggleSwitch('mcp-memory-enabled', memOn);
-    show($('mcp-memory-settings'), memOn);
-    if ($('mcp-memory-limit')) $('mcp-memory-limit').value = String(parseInt(s.mcp_memory_limit) || 10);
-    if ($('mcp-memory-ttl')) $('mcp-memory-ttl').value = String(parseInt(s.mcp_memory_ttl_hours) || 24);
-    if ($('mcp-rate-limit')) $('mcp-rate-limit').value = String(parseInt(s.mcp_rate_limit) || 20);
-    if ($('mcp-rate-window')) $('mcp-rate-window').value = s.mcp_rate_limit_window === 'hour' ? 'hour' : 'minute';
-    loadMcpSessionsList();
-    // Snippets
-    renderMcpSnippets();
-}
-
-function toggleMcpMemory() {
-    const on = toggleSwitch('mcp-memory-enabled');
-    show($('mcp-memory-settings'), on);
-}
-
-async function saveMcpMemorySettings() {
-    await withSelfBusy(async function () {
-        try {
-            await api('POST', '/api/mcp/settings', {
-                mcp_memory_limit: sw('mcp-memory-enabled') ? (parseInt($('mcp-memory-limit').value) || 0) : 0,
-                mcp_memory_ttl_hours: parseInt($('mcp-memory-ttl').value) || 24,
-                mcp_rate_limit: parseInt($('mcp-rate-limit').value) || 20,
-                mcp_rate_limit_window: $('mcp-rate-window').value || 'minute',
-            });
-            toast('MCP memory & rate limits saved.');
-            loadMcp(true);
-        } catch (e) { toast(e.message, 'error'); }
-    });
-}
-
-async function loadMcpSessionsList() {
-    const box = $('mcp-sessions-list');
-    if (!box) return;
-    try {
-        const d = await api('GET', '/api/mcp/sessions');
-        const sessions = d.sessions || [];
-        if (!sessions.length) { box.innerHTML = '<span class="muted">No active sessions.</span>'; return; }
-        box.innerHTML = '<div class="muted">Active sessions: ' + sessions.length + '</div>' +
-            sessions.slice(0, 10).map(s => '<div class="muted tiny">' + esc(s.session_key) + ' · ' + fmtTime(s.updated_at) + ' · ' + (s.size_bytes || 0) + ' bytes</div>').join('');
-    } catch (e) { box.innerHTML = ''; }
-}
-
-async function clearAllMcpSessions() {
-    var btn = getClickBtn();
-    const ok = await confirmDialog('Clear every MCP session? Follow-up context is lost.', 'Clear sessions');
-    if (!ok) return;
-    await withBusy(btn, async function () {
-        try {
-            await api('POST', '/api/mcp/sessions/clear');
-            toast('Sessions cleared.');
-            loadMcpSessionsList();
-        } catch (e) { toast(e.message, 'error'); }
-    });
-}
-
-function renderMcpSnippets() {
-    var endpoint = window.location.origin + '/mcp';
-    var tok = 'nyxx_YOUR_TOKEN_HERE';
-    if ($('mcp-snippet-claude')) $('mcp-snippet-claude').textContent =
-        '{\\n  "mcpServers": {\\n    "nyxx": {\\n      "command": "npx",\\n      "args": ["-y", "mcp-remote", "' + endpoint + '",\\n               "--header", "Authorization: Bearer ' + tok + '"]\\n    }\\n  }\\n}';
-    if ($('mcp-snippet-cursor')) $('mcp-snippet-cursor').textContent =
-        '{\\n  "mcpServers": {\\n    "nyxx": {\\n      "url": "' + endpoint + '",\\n      "headers": { "Authorization": "Bearer ' + tok + '" }\\n    }\\n  }\\n}';
-    if ($('mcp-snippet-curl')) $('mcp-snippet-curl').textContent =
-        'curl -X POST ' + endpoint + ' \\\\n  -H "Authorization: Bearer ' + tok + '" \\\\n  -H "Content-Type: application/json" \\\\n  -d \\'{"jsonrpc":"2.0","id":1,"method":"tools/list"}\\'';
-}
-
-function onMcpProviderChange() {
-    var p = $('mcp-provider').value;
-    show($('mcp-base-wrap'), p === 'custom');
-    var defaults = { openai: 'gpt-4o-mini', gemini: 'gemini-2.0-flash', deepseek: 'deepseek-chat', groq: 'llama-3.3-70b-versatile', openrouter: 'openai/gpt-4o-mini' };
-    if (defaults[p] && !$('mcp-model').value) $('mcp-model').value = defaults[p];
-}
-
-async function toggleMcpEnabled() {
-    var on = !sw('mcp-enabled');
-    toggleSwitch('mcp-enabled', on);
-    try { await api('POST', '/api/mcp/settings', { mcp_enabled: on ? '1' : '0' }); toast(on ? 'MCP enabled.' : 'MCP disabled.'); }
-    catch (e) { toast(e.message, 'error'); toggleSwitch('mcp-enabled', !on); }
-}
-
-async function toggleMcpCategory(cat) {
-    var id = 'mcp-cat-' + cat;
-    var on = !sw(id);
-    toggleSwitch(id, on);
-    var cats = [];
-    if (sw('mcp-cat-read')) cats.push('read');
-    if (sw('mcp-cat-write')) cats.push('write');
-    if (sw('mcp-cat-outbound')) cats.push('outbound');
-    if (sw('mcp-cat-dangerous')) cats.push('dangerous');
-    try { await api('POST', '/api/mcp/settings', { mcp_categories: cats }); }
-    catch (e) { toast(e.message, 'error'); }
-}
-
-async function saveMcpAiSettings() {
-    await withSelfBusy(async function () {
-        var body = {
-            mcp_ai_provider: $('mcp-provider').value,
-            mcp_ai_model: $('mcp-model').value.trim(),
-            mcp_ai_base_url: $('mcp-base').value.trim(),
-        };
-        var key = $('mcp-api-key').value.trim();
-        if (key) body.mcp_ai_api_key = key;
-        try { await api('POST', '/api/mcp/settings', body); toast('MCP AI provider saved.'); loadMcp(); }
-        catch (e) { toast(e.message, 'error'); }
-    });
-}
-
-async function testMcpAi() {
-    $('mcp-test-result').innerHTML = '<span class="mini-spinner"></span> Testing…';
-    try {
-        var body = {
-            settings: {
-                mcp_ai_provider: $('mcp-provider').value,
-                mcp_ai_model: $('mcp-model').value.trim(),
-                mcp_ai_base_url: $('mcp-base').value.trim(),
-                mcp_ai_api_key: $('mcp-api-key').value.trim() || KEEP_SENTINEL,
-            }
-        };
-        var d = await api('POST', '/api/mcp/ai/test', body);
-        if (d.success) $('mcp-test-result').innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Connected — reply: <code>' + esc(d.message || '') + '</code></span>';
-        else $('mcp-test-result').innerHTML = '<span style="color:var(--red)"><i class="fa-solid fa-circle-xmark"></i> ' + esc(d.error || 'Failed') + '</span>';
-    } catch (e) { $('mcp-test-result').innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
-}
-
-async function loadMcpTokens() {
-    try {
-        var d = await api('GET', '/api/mcp/tokens');
-        var list = d.tokens || [];
-        var box = $('mcp-tokens-list');
-        if (!list.length) { box.innerHTML = '<div class="muted small">No tokens yet.</div>'; return; }
-        box.innerHTML = list.map(function (t) {
-            return '<div class="list-row" style="border-radius:10px;border:1px solid var(--hairline);margin-bottom:6px;padding:8px 12px;">' +
-                '<i class="fa-solid fa-key" style="color:var(--text-3);"></i>' +
-                '<div class="lr-main"><div class="lr-title mono" style="font-size:13px;">' + esc(t.token_prefix) + '••••••••</div>' +
-                '<div class="lr-sub">Created ' + fmtTime(t.created_at) + ' · Last used ' + (t.last_used_at ? fmtTime(t.last_used_at) : 'never') + '</div></div>' +
-                '</div>';
-        }).join('');
-    } catch (e) { /* silent */ }
-}
-
-async function generateMcpToken() {
-    await withSelfBusy(async function () {
-        try {
-            var d = await api('POST', '/api/mcp/token/generate', { label: 'dashboard' });
-            $('mcp-token-value').value = d.token;
-            show($('mcp-token-once'), true);
-            loadMcpTokens();
-            toast('Token generated — copy it now.', 'info');
-        } catch (e) { toast(e.message, 'error'); }
-    });
-}
-
-async function revokeMcpTokens() {
-    var btn = getClickBtn();
-    var ok = await confirmDialog('Revoke ALL MCP tokens? Every connected client will be disconnected immediately.', 'Revoke tokens');
-    if (!ok) return;
-    await withBusy(btn, async function () {
-        try { await api('POST', '/api/mcp/token/revoke'); toast('All tokens revoked.'); show($('mcp-token-once'), false); loadMcpTokens(); }
-        catch (e) { toast(e.message, 'error'); }
-    });
-}
-
-// Chat with Nyxx now lives at /chat (a dedicated route).
-
-async function loadMcpCalls() {
-    var box = $('mcp-calls-list');
-    if (!box) return;
-    box.innerHTML = '<div class="spinner-page"><span class="mini-spinner"></span></div>';
-    try {
-        var d = await api('GET', '/api/mcp/calls');
-        var list = (d.calls || []).slice(0, 5);
-        if (!list.length) {
-            box.innerHTML = '<div class="muted small">No MCP calls yet.</div>';
-            return;
-        }
-        box.innerHTML = '<div class="list">' + list.map(function (c) {
-            return '<div class="list-row" style="padding:8px 12px;">' +
-                '<div class="lr-main">' +
-                    '<div class="lr-title mono" style="font-size:13px;">' + esc(c.action) + '</div>' +
-                    '<div class="lr-sub">' + fmtTime(c.timestamp) + '</div>' +
-                '</div>' +
-            '</div>';
-        }).join('') + '</div>' +
-        '<div class="tiny muted" style="margin-top:8px;">Showing last 5 · full history in Activity Log</div>';
-    } catch (e) {
-        box.innerHTML = '<div class="small" style="color:var(--red)">Could not load recent calls: ' + esc(e.message) + '</div>';
-    }
-}
 
 /* ============================================================
    FEATURED MODAL — MCP kind support
@@ -4031,9 +3824,9 @@ function enterDashboard() {
   showStep('step-dashboard');
   if (typeof initNav === 'function') initNav();
   go('overview');
-  // Critical: only settings (for the update pill & Settings tab) runs eagerly.
-  loadSettings(true);
-  // Non-critical: defer off the critical path so Overview paints first.
+  // Settings module loads after Overview paints — nothing on the critical
+  // path blocks first meaningful paint now.
+  ensureModule('settings').then(function () { window.loadSettings(true); });
   const deferred = () => { autoCheckUpdate(); updateContactBadge(); };
   if (typeof requestIdleCallback === 'function') {
     requestIdleCallback(deferred, { timeout: 1500 });
@@ -4090,7 +3883,11 @@ async function logout() {
    ============================================================ */
 async function loadOverview(force) {
     var st = $('ov-stats');
-    st.innerHTML = '<div class="stat skl" style="height:120px"></div>'.repeat(5);
+    var skl = '<div class="stat">' +
+        '<div class="st-ic skl" style="width:36px;height:36px;border-radius:10px;"></div>' +
+        '<div class="skl" style="width:60%;height:26px;margin-bottom:10px;border-radius:4px;"></div>' +
+        '<div class="skl" style="width:80%;height:13px;border-radius:4px;"></div></div>';
+    st.innerHTML = skl.repeat(5);
     try {
         var overview = await api('GET', '/api/overview');
         var s = overview.stats || {};
@@ -4193,7 +3990,7 @@ async function loadCommands(force) {
         if (!commands.length || force) {
             box.innerHTML = skeletonRows(3);
             try {
-                var d = await api('GET', '/api/commands');
+                var d = await api('GET', '/api/commands?summary=1');
                 commands = d.commands || [];
             } catch (e) { box.innerHTML = errorState(e.message, 'loadCommands(true)'); return; }
         }
@@ -4479,9 +4276,11 @@ async function openCommandModal(cmd, parent) {
     trackModal('cmd-modal');
 }
 function closeCommandModal() { $('cmd-modal').classList.add('hidden'); untrackModal('cmd-modal'); }
-function editCommand(name) {
-    var c = commands.find(function (x) { return x.command === name; });
-    if (c) openCommandModal(c, null);
+async function editCommand(name) {
+    try {
+        var d = await api('GET', '/api/commands/' + encodeURIComponent(name));
+        if (d && d.command) openCommandModal(d.command, null);
+    } catch (e) { toast(e.message, 'error'); }
 }
 async function saveCommand() {
     var err = $('cmd-error'); err.classList.remove('show');
@@ -4738,6 +4537,11 @@ async function loadInbox() {
     await loadContactMessages();
     updateContactBadge();
 }
+document.addEventListener('change', function (e) {
+    if (e.target && e.target.id === 'ct-notify-admins') {
+        show($('ct-notify-custom-wrap'), e.target.value === 'custom');
+    }
+});
 async function loadContactSettings() {
     try {
         var d = await api('GET', '/api/contact/settings');
@@ -6799,711 +6603,9 @@ async function demoteAdmin(userId) {
 }
 
 /* ============================================================
-   AI
+   UPDATE
    ============================================================ */
-var aiEnabled = false;
-var kbs = [];
-var alts = [];
-var sqs = [];
-var pgHistory = [];
-function toggleAiEnabled() { aiEnabled = toggleSwitch('ai-enable'); }
-async function loadAi(force) {
-    try { var d = await api('GET', '/api/ai_settings'); renderAi(d.settings || {}); }
-    catch (e) { toast(e.message, 'error'); }
-}
-function renderAi(s) {
-    aiEnabled = s.ai_enabled === '1';
-    toggleSwitch('ai-enable', aiEnabled);
-    $('ai-provider').value = s.ai_provider || 'openai';
-    $('ai-key').value = '';
-    $('ai-key').placeholder = s.ai_api_key_set ? (s.ai_api_key_masked + '  (unchanged — type to replace)') : 'sk-… paste your API key here';
-    $('ai-model').value = s.ai_model || '';
-    $('ai-base').value = s.ai_base_url || '';
-    $('ai-headers').value = s.ai_custom_headers || '';
-    $('ai-name').value = s.ai_display_name || '';
-    $('ai-lang').value = s.ai_language || 'auto';
-    $('ai-style').value = s.ai_style || 'friendly';
-    $('ai-length').value = s.ai_length || 'medium';
-    $('ai-temp').value = s.ai_temperature || '0.7';
-    $('ai-maxtok').value = s.ai_max_tokens || '1024';
-    $('ai-topp').value = s.ai_top_p || '1.0';
-    $('ai-fallback').value = s.ai_fallback || '';
-    $('ai-prompt').value = s.ai_system_prompt || '';
-    $('ai-vars').value = s.ai_custom_vars_text || '';
-    $('ai-trigger').value = s.ai_trigger || 'no_command';
-    $('ai-trigger-text').value = s.ai_trigger_text || '';
-    $('ai-prefixes').value = s.ai_ignore_prefixes || '/, !, #';
-    $('ai-ignore-bots').value = s.ai_ignore_bots || '1';
-    $('ai-ignore-fwd').value = s.ai_ignore_forwarded || '1';
-    $('ai-private').value = s.ai_private_reply || '1';
-    $('ai-memory').value = s.ai_memory || '0';
-    $('ai-group').value = s.ai_group_reply || '1';
-    $('ai-group-trigger').value = s.ai_group_trigger || (s.ai_group_mention === '0' ? 'none' : 'mention');
-    $('ai-gmemory').value = s.ai_group_memory || '0';
-    $('ai-rate').value = s.ai_rate_limit || '10';
-    $('ai-grate').value = s.ai_global_rate_limit || '0';
-    $('ai-gwindow').value = s.ai_global_rate_window || 'minute';
-    $('ai-delay').value = s.ai_response_delay || '0';
-    toggleSwitch('ai-typing', s.ai_typing_indicator === '1');
-    toggleSwitch('ai-retry', s.ai_retry_on_failure === '1');
-    toggleSwitch('ai-stream', s.ai_streaming === '1');
-    toggleSwitch('ai-strict', s.ai_strict_mode === '1');
-    toggleSwitch('ai-rtl', s.ai_rtl_support === '1');
-    toggleSwitch('ai-suggest', s.ai_suggested_questions_enabled === '1');
-    toggleSwitch('ai-sq-once', s.ai_suggested_one_time !== '0');
-    const toolsOn = s.ai_use_mcp_tools === '1';
-    toggleSwitch('ai-use-mcp-tools', toolsOn);
-    const promptModeSel = $('ai-mcp-prompt-mode');
-    if (promptModeSel) {
-        promptModeSel.value = s.ai_mcp_prompt_mode || 'auto';
-        promptModeSel.disabled = !toolsOn;
-    }
-    if ($('ai-mcp-categories')) {
-        $('ai-mcp-categories').value = s.ai_mcp_categories || '';
-        $('ai-mcp-categories').disabled = !toolsOn;
-    }
-    const streamBtn = $('ai-stream');
-    if (streamBtn) {
-        streamBtn.disabled = toolsOn;
-        streamBtn.title = toolsOn ? 'Disabled — MCP tools are enabled' : '';
-        if (toolsOn) streamBtn.classList.remove('on');
-    }
-    try { kbs = JSON.parse(s.ai_knowledge_bases || '[]'); } catch (e) { kbs = []; }
-    renderKbs();
-    try { alts = JSON.parse(s.ai_alt_providers || '[]'); } catch (e) { alts = []; }
-    renderAlts();
-    try { sqs = JSON.parse(s.ai_suggested_questions || '[]'); } catch (e) { sqs = []; }
-    renderSqs();
-    onProviderChange(); onTriggerChange();
-    if (s.ai_api_key_set && s.ai_api_key_masked) {
-        $('ai-key-hint').innerHTML = '<i class="fa-solid fa-circle-check" style="color:var(--green)"></i> A key is saved (' + esc(s.ai_api_key_masked) + '). Leave the field empty to keep it.';
-    }
-}
-function onProviderChange() {
-    var p = $('ai-provider').value;
-    show($('ai-base-wrap'), p === 'custom');
-    var defs = { openai: 'gpt-4o-mini', gemini: 'gemini-2.0-flash', deepseek: 'deepseek-chat', groq: 'llama-3.3-70b-versatile', openrouter: 'openai/gpt-4o-mini', ollama: 'llama3' };
-    if (defs[p] && !$('ai-model').value) $('ai-model').value = defs[p];
-    var urls = {
-        openai: { url: 'https://platform.openai.com/api-keys', name: 'OpenAI' },
-        gemini: { url: 'https://aistudio.google.com/app/apikey', name: 'Google AI Studio' },
-        deepseek: { url: 'https://platform.deepseek.com/api_keys', name: 'DeepSeek' },
-        groq: { url: 'https://console.groq.com/keys', name: 'Groq Console' },
-        openrouter: { url: 'https://openrouter.ai/keys', name: 'OpenRouter' },
-        ollama: { url: 'https://ollama.com/', name: 'Ollama' },
-        custom: { url: '', name: 'your provider' }
-    };
-    var u = urls[p];
-    if (u && u.url) $('ai-provider-hint').innerHTML = '<i class="fa-solid fa-arrow-up-right-from-square"></i> Get your key from <a href="' + u.url + '" target="_blank" rel="noopener">' + u.name + '</a>';
-    else $('ai-provider-hint').innerHTML = '';
-    if (defs[p]) $('ai-model-hint').textContent = 'Recommended: ' + defs[p];
-}
-function onTriggerChange() { show($('ai-trigger-text-wrap'), $('ai-trigger').value === 'contains_text'); }
-document.addEventListener('change', function (e) {
-    if (e.target && e.target.id === 'ai-trigger') onTriggerChange();
-    if (e.target && e.target.id === 'ct-notify-admins') {
-        show($('ct-notify-custom-wrap'), e.target.value === 'custom');
-    }
-});
-function renderKbs() {
-    var box = $('kb-list');
-    if (!kbs.length) { box.innerHTML = '<div class="empty" style="padding:14px;">No knowledge bases yet.</div>'; return; }
-    box.innerHTML = kbs.map(function (kb, i) {
-        return '<div class="card compact" style="margin-bottom:10px;box-shadow:none;">' +
-            '<div class="row" style="margin-bottom:8px;">' +
-            '<button class="switch ' + (kb.enabled !== false ? 'on' : '') + '" onclick="toggleKb(' + i + ')" title="Enable" aria-label="Toggle"></button>' +
-            '<input class="input" value="' + esc(kb.label || '') + '" placeholder="Label (e.g. FAQ)" oninput="kbs[' + i + '].label=this.value" style="flex:1;">' +
-            '<button class="icon-btn danger" onclick="delKb(' + i + ')" aria-label="Remove"><i class="fa-regular fa-trash-can"></i></button></div>' +
-            '<textarea class="textarea" rows="4" placeholder="Paste your facts, documentation, FAQ…" oninput="kbs[' + i + '].content=this.value">' + esc(kb.content || '') + '</textarea></div>';
-    }).join('');
-}
-function addKb() { kbs.push({ enabled: true, label: '', content: '' }); renderKbs(); }
-function delKb(i) { kbs.splice(i, 1); renderKbs(); }
-function toggleKb(i) { kbs[i].enabled = kbs[i].enabled === false; renderKbs(); }
-function renderAlts() {
-    var box = $('ai-alts');
-    if (!alts.length) { box.innerHTML = ''; return; }
-    box.innerHTML = alts.map(function (a, i) {
-        var keyPlaceholder = a.apiKeyMasked ? (a.apiKeyMasked + '  (unchanged)') : 'API key';
-        var keyVal = a.apiKey && a.apiKey !== KEEP_SENTINEL ? a.apiKey : '';
-        return '<div class="card compact" style="margin-bottom:10px;box-shadow:none;">' +
-            '<div class="row" style="margin-bottom:8px;"><strong class="small">Fallback ' + (i + 1) + '</strong>' +
-            '<div style="flex:1"></div><button class="icon-btn danger" onclick="delAlt(' + i + ')" aria-label="Remove"><i class="fa-regular fa-trash-can"></i></button></div>' +
-            '<div class="grid grid-2">' +
-            '<select class="input" onchange="alts[' + i + '].provider=this.value">' + ['openai', 'gemini', 'deepseek', 'groq', 'openrouter', 'ollama'].map(function (p) { return '<option value="' + p + '"' + (a.provider === p ? ' selected' : '') + '>' + p + '</option>'; }).join('') + '</select>' +
-            '<input class="input" type="password" value="' + esc(keyVal) + '" placeholder="' + esc(keyPlaceholder) + '" oninput="alts[' + i + '].apiKey=this.value">' +
-            '<input class="input" value="' + esc(a.model || '') + '" placeholder="Model" oninput="alts[' + i + '].model=this.value">' +
-            '</div>' +
-            '<div class="row" style="margin-top:8px;gap:8px;flex-wrap:wrap;">' +
-                '<button class="btn btn-gray btn-sm" onclick="testAltProvider(' + i + ')"><i class="fa-solid fa-plug"></i> Test provider</button>' +
-                '<span class="small" id="alt-test-' + i + '" style="flex:1;min-width:120px;word-break:break-word;"></span>' +
-            '</div>' +
-        '</div>';
-    }).join('');
-    var btn = $('add-alt-provider-btn');
-    if (btn) btn.disabled = alts.length >= 5;
-}
-async function testAltProvider(i) {
-    var res = $('alt-test-' + i);
-    if (res) res.innerHTML = '<span class="mini-spinner"></span> Testing…';
-    try {
-        var d = await api('POST', '/api/ai/test', { settings: collectAi(), provider: 'alt', altIndex: i });
-        if (res) {
-            if (d && d.success) res.innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> OK — ' + esc((d.message || '').slice(0, 80)) + '</span>';
-            else res.innerHTML = '<span style="color:var(--red)"><i class="fa-solid fa-circle-xmark"></i> ' + esc((d && d.error) || 'Failed') + '</span>';
-        }
-    } catch (e) {
-        if (res) res.innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>';
-    }
-}
-function addAltProvider() {
-    if (alts.length >= 5) { toast('Maximum 5 fallback providers allowed.', 'error'); return; }
-    alts.push({ provider: 'openai', apiKey: '', model: 'gpt-4o-mini' });
-    renderAlts();
-}
-function delAlt(i) { alts.splice(i, 1); renderAlts(); }
-function renderSqs() {
-    var box = $('sq-list');
-    if (!sqs.length) { box.innerHTML = '<div class="empty" style="padding:12px;">No quick replies yet.</div>'; return; }
-    box.innerHTML = sqs.map(function (q, i) {
-        return '<div class="kb-chip" style="width:100%;justify-content:space-between;margin-bottom:6px;">' +
-            '<span>' + esc(q.label) + ' <span class="muted">→ ' + esc(q.value) + '</span></span>' +
-            '<button class="arw del" onclick="sqs.splice(' + i + ',1);renderSqs();" aria-label="Remove">&#10005;</button></div>';
-    }).join('');
-}
-function addSq() {
-    var l = $('sq-label').value.trim(), v = $('sq-value').value.trim();
-    if (!l || !v) { toast('Both fields are required.', 'error'); return; }
-    sqs.push({ label: l, value: v }); $('sq-label').value = ''; $('sq-value').value = ''; renderSqs();
-}
-function collectAi() {
-    var keyVal = $('ai-key').value.trim();
-    var altsClean = alts.map(function (a) { var c = Object.assign({}, a); if (!c.apiKey) c.apiKey = KEEP_SENTINEL; return c; });
-    return {
-        ai_enabled: aiEnabled ? '1' : '0',
-        ai_provider: $('ai-provider').value, ai_api_key: keyVal || KEEP_SENTINEL,
-        ai_model: $('ai-model').value.trim(), ai_base_url: $('ai-base').value.trim(),
-        ai_custom_headers: $('ai-headers').value.trim(), ai_alt_providers: JSON.stringify(altsClean),
-        ai_display_name: $('ai-name').value.trim(), ai_language: $('ai-lang').value,
-        ai_style: $('ai-style').value, ai_length: $('ai-length').value,
-        ai_temperature: $('ai-temp').value, ai_max_tokens: $('ai-maxtok').value, ai_top_p: $('ai-topp').value,
-        ai_fallback: $('ai-fallback').value.trim(), ai_system_prompt: $('ai-prompt').value.trim(),
-        ai_knowledge_bases: JSON.stringify(kbs), ai_custom_vars_text: $('ai-vars').value.trim(),
-        ai_trigger: $('ai-trigger').value, ai_trigger_text: $('ai-trigger-text').value.trim(),
-        ai_ignore_prefixes: $('ai-prefixes').value.trim(),
-        ai_ignore_bots: $('ai-ignore-bots').value, ai_ignore_forwarded: $('ai-ignore-fwd').value,
-        ai_private_reply: $('ai-private').value, ai_memory: $('ai-memory').value,
-        ai_group_reply: $('ai-group').value, ai_group_trigger: $('ai-group-trigger').value, ai_group_memory: $('ai-gmemory').value,
-        ai_rate_limit: $('ai-rate').value, ai_global_rate_limit: $('ai-grate').value,
-        ai_global_rate_window: $('ai-gwindow').value, ai_response_delay: $('ai-delay').value,
-        ai_typing_indicator: sw('ai-typing') ? '1' : '0', ai_retry_on_failure: sw('ai-retry') ? '1' : '0',
-        ai_streaming: sw('ai-stream') ? '1' : '0', ai_strict_mode: sw('ai-strict') ? '1' : '0',
-        ai_rtl_support: sw('ai-rtl') ? '1' : '0',
-        ai_suggested_questions_enabled: sw('ai-suggest') ? '1' : '0',
-        ai_suggested_one_time: sw('ai-sq-once') ? '1' : '0',
-        ai_suggested_questions: JSON.stringify(sqs),
-        ai_use_mcp_tools: sw('ai-use-mcp-tools') ? '1' : '0',
-        ai_mcp_prompt_mode: $('ai-mcp-prompt-mode').value || 'auto',
-        ai_mcp_categories: $('ai-mcp-categories').value || ''
-    };
-}
-function toggleAiUseMcp() {
-    const on = toggleSwitch('ai-use-mcp-tools');
-    if ($('ai-mcp-categories')) $('ai-mcp-categories').disabled = !on;
-    if ($('ai-mcp-prompt-mode')) $('ai-mcp-prompt-mode').disabled = !on;
-    const streamBtn = $('ai-stream');
-    if (streamBtn) {
-        streamBtn.disabled = on;
-        streamBtn.title = on ? 'Disabled — MCP tools are enabled' : '';
-        if (on) streamBtn.classList.remove('on');
-    }
-    if (on) toast('Streaming is disabled while tools are on.', 'info');
-}
-async function saveAi() {
-    await withSelfBusy(async function () {
-        try { await api('POST', '/api/ai_settings', collectAi()); toast('AI settings saved.'); refreshMemoryCount(); loadAi(true); }
-        catch (e) { toast(e.message, 'error'); }
-    });
-}
-async function testAi() {
-    await withSelfBusy(async function () {
-        $('ai-test-result').innerHTML = '<span class="mini-spinner"></span> Testing connection…';
-        try {
-            var d = await api('POST', '/api/ai/test', { settings: collectAi(), provider: 'main' });
-            if (d.success) $('ai-test-result').innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Connected successfully — your API key works.</span>';
-            else $('ai-test-result').innerHTML = '<span style="color:var(--red)"><i class="fa-solid fa-circle-xmark"></i> ' + esc(d.error || 'Test failed') + '</span>';
-        } catch (e) { $('ai-test-result').innerHTML = '<span style="color:var(--red)"><i class="fa-solid fa-circle-xmark"></i> ' + esc(e.message) + '</span>'; }
-    });
-}
-async function refreshMemoryCount() {
-    try { var d = await api('GET', '/api/ai/memory_count'); $('mem-count').textContent = d.count + ' messages'; }
-    catch (e) { $('mem-count').textContent = '—'; }
-}
-function renderPgHtml(text) {
-    var parts = String(text || '').split('\`\`\`');
-    var out = '';
-    for (var i = 0; i < parts.length; i++) {
-        if (i % 2 === 1) out += '<pre><code>' + esc(parts[i]) + '</code></pre>';
-        else {
-            var t = esc(parts[i]);
-            t = t.replace(/\`([^\`]+)\`/g, '<code>$1</code>');
-            t = t.replace(/&lt;(\\/?)(b|strong|i|em|u|s|code|blockquote|a[^&]*?)&gt;/g, function (m) { return m.replace(/&lt;/g, '<').replace(/&gt;/g, '>'); });
-            out += t;
-        }
-    }
-    return out;
-}
-async function sendPlayground() {
-    var btn = getClickBtn() || $('pg-send-btn');
-    var text = $('pg-input').value.trim(); if (!text) return;
-    var box = $('pg');
-    if (box.querySelector('.empty')) box.innerHTML = '';
-    box.insertAdjacentHTML('beforeend', '<div class="pg-msg user" dir="auto">' + esc(text) + '</div>');
-    $('pg-input').value = '';
-    var id = 'pg-' + Date.now();
-    box.insertAdjacentHTML('beforeend', '<div class="pg-msg bot" id="' + id + '"><span class="mini-spinner"></span></div>');
-    scrollBottom(box);
-    await withBusy(btn, async function () {
-        try {
-            var d = await api('POST', '/api/ai/playground', { settings: collectAi(), history: pgHistory, message: text });
-            $(id).innerHTML = renderPgHtml(d.response || '');
-            pgHistory.push({ role: 'user', content: text }, { role: 'assistant', content: d.response });
-        } catch (e) { $(id).innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
-        scrollBottom(box);
-    });
-}
-function clearPlayground() { pgHistory = []; $('pg').innerHTML = '<div class="empty">Playground cleared.</div>'; }
-function exportAi() { downloadJson('nyxx-ai-settings.json', collectAi()); }
-function importAi(ev) {
-    var f = ev.target.files[0]; if (!f) return;
-    var r = new FileReader();
-    r.onload = function () { try { renderAi(JSON.parse(r.result)); toast('Imported — press Save to apply.'); } catch (e) { toast('Invalid JSON.', 'error'); } ev.target.value = ''; };
-    r.readAsText(f);
-}
-async function clearAllAiMemory() {
-    var ok = await confirmDialog('Clear every stored AI conversation?', 'Clear AI memory');
-    if (!ok) return;
-    await api('POST', '/api/ai/clear_memory'); toast('AI memory cleared.'); refreshMemoryCount();
-}
-async function resetAi() {
-    var ok = await confirmDialog('Reset all AI settings to defaults?', 'Reset AI');
-    if (!ok) return;
-    await api('POST', '/api/ai/reset'); toast('AI settings reset.'); loadAi(true);
-}
-function applyTemplate() {
-    var t = $('ai-template').value;
-    var p = {
-        assistant: 'You are {{bot_name}}, a helpful assistant. Answer clearly and accurately, and say so when you are unsure.',
-        support: 'You are a support agent for {{company_name}}. Help customers politely and accurately using the information you have.',
-        restaurant: 'You are the assistant for {{company_name}} restaurant. Help with the menu, hours, reservations and policies.',
-        programming: 'You are a programming assistant. Explain concepts, debug code and suggest practical solutions.',
-        school: 'You are a patient tutor. Explain step by step, use examples and check understanding.'
-    };
-    if (p[t]) $('ai-prompt').value = p[t];
-}
-
-/* ============================================================
-   SETTINGS / BOT INFO / CRON / BACKUP / LOGS / UPDATE
-   ============================================================ */
-async function loadSettings(force) {
-    try {
-        var d = await api('GET', '/api/settings');
-        $('set-token').value = d.bot_token_masked || '';
-        $('set-token').type = 'password';
-        $('set-hook').value = d.webhook_url || '';
-        if ($('set-media-storage')) $('set-media-storage').value = d.media_storage_chat_id || '';
-        window.__botTokenSet = d.bot_token_set;
-        if (d.cf_token_set) $('up-token').placeholder = 'Token already stored — click Generate to replace';
-        setSeg('sys-lang', d.system_language || 'en');
-    } catch (e) { /* silent */ }
-}
-async function setSystemLanguage(lang) {
-    lang = lang === 'fa' ? 'fa' : 'en';
-    var out = $('sys-lang-result');
-    var btn = null;
-    try {
-        var seg = $('sys-lang');
-        if (seg) btn = seg.querySelector('button[data-v="' + lang + '"]');
-    } catch (err) {}
-    await withBusy(btn, async function () {
-        try {
-            await api('POST', '/api/settings/system_language', { language: lang });
-            setSeg('sys-lang', lang);
-            out.innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Language set to ' + (lang === 'fa' ? 'فارسی' : 'English') + '.</span>';
-            toast(lang === 'fa' ? 'زبان به فارسی تغییر کرد.' : 'Language switched to English.');
-        } catch (e) {
-            out.innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>';
-        }
-    });
-}
-async function saveMediaStorage() {
-    var out = $('media-storage-result');
-    await withSelfBusy(async function () {
-        var id = $('set-media-storage').value.trim();
-        out.innerHTML = '<span class="mini-spinner"></span> Saving…';
-        try {
-            await api('POST', '/api/settings/media_storage', { chatId: id });
-            out.innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Saved.</span>';
-            toast('Media storage chat saved.');
-        } catch (e) { out.innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
-    });
-}
-async function revealToken() {
-    if (!window.__botTokenSet) { toast('No bot token stored yet.', 'error'); return; }
-    try {
-        var d = await api('POST', '/api/settings/reveal_bot_token', {});
-        $('set-token').value = d.token; $('set-token').type = 'text';
-        toast('Token revealed — this action has been logged.', 'info');
-    } catch (e) { toast(e.message, 'error'); }
-}
 function copyVal(id) { navigator.clipboard.writeText($(id).value); toast('Copied.'); }
-function changeToken() {
-    if (openModals.indexOf('token-modal') >= 0) return;
-    $('token-modal').classList.remove('hidden');
-    $('token-input').value = '';
-    $('token-result').innerHTML = '';
-    trackModal('token-modal');
-}
-function closeTokenModal() {
-    $('token-modal').classList.add('hidden');
-    untrackModal('token-modal');
-}
-async function saveToken() {
-    await withSelfBusy(async function () {
-        var newTok = $('token-input').value.trim();
-        if (!newTok) { $('token-result').innerHTML = '<span style="color:var(--red)">Please paste a token first.</span>'; return; }
-        $('token-result').innerHTML = '<span class="mini-spinner"></span> Validating…';
-        try {
-            var d = await api('POST', '/api/settings/token', { botToken: newTok });
-            toast(d.warning ? d.warning : 'Token updated.', d.warning ? 'error' : 'success');
-            $('token-modal').classList.add('hidden'); untrackModal('token-modal'); loadSettings(true);
-        } catch (e) { $('token-result').innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
-    });
-}
-async function testHook() {
-    $('hook-result').innerHTML = '<span class="mini-spinner"></span> Testing…';
-    try {
-        var d = await api('POST', '/api/settings/webhook-test');
-        if (d.url_matches) $('hook-result').innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Webhook is healthy: ' + esc(d.url) + '</span>';
-        else if (d.url) $('hook-result').innerHTML = '<span style="color:var(--orange)"><i class="fa-solid fa-triangle-exclamation"></i> Webhook points elsewhere: ' + esc(d.url) + '</span>';
-        else $('hook-result').innerHTML = '<span style="color:var(--orange)"><i class="fa-solid fa-triangle-exclamation"></i> No webhook registered. Click Health check to fix.</span>';
-    } catch (e) { $('hook-result').innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
-}
-async function fixHook() {
-    $('hook-result').innerHTML = '<span class="mini-spinner"></span> Checking…';
-    try {
-        var d = await api('POST', '/api/settings/webhook-fix');
-        if (d.fixed) $('hook-result').innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Webhook re-registered: ' + esc(d.url) + '</span>';
-        else $('hook-result').innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Webhook is already healthy.</span>';
-    } catch (e) { $('hook-result').innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
-}
-async function runWebhookDiagnostics() {
-    $('hook-result').innerHTML = '<span class="mini-spinner"></span> Running diagnostics…';
-    try {
-        var d = await api('POST', '/api/settings/webhook-diagnostics');
-        var html = '<div style="display:grid;gap:6px;font-size:13px;margin-top:4px;">';
-        html += '<div><b>Telegram API reachable:</b> ' + (d.getMeOk ? '<span style="color:var(--green)">✅ yes</span>' : '<span style="color:var(--red)">❌ no</span>') + '</div>';
-        html += '<div><b>getMe latency:</b> ' + (d.getMeMs >= 0 ? d.getMeMs + ' ms' : '<span style="color:var(--red)">failed</span>') + '</div>';
-        html += '<div><b>getWebhookInfo latency:</b> ' + (d.webhookMs >= 0 ? d.webhookMs + ' ms' : '<span style="color:var(--red)">failed</span>') + '</div>';
-        html += '<div><b>Registered URL:</b> <code>' + esc(d.webhookUrl || '(none)') + '</code></div>';
-        html += '<div><b>Expected URL:</b> <code>' + esc(d.expectedUrl || '(none)') + '</code></div>';
-        html += '<div><b>URL matches:</b> ' + (d.urlMatches ? '<span style="color:var(--green)">✅ yes</span>' : '<span style="color:var(--orange)">⚠️ no — click Health check</span>') + '</div>';
-        html += '<div><b>Pending updates:</b> ' + (d.pendingUpdates || 0) + '</div>';
-        if (d.lastErrorMessage) html += '<div style="color:var(--red)"><b>Last error:</b> ' + esc(d.lastErrorMessage) + '</div>';
-        html += '</div>';
-        $('hook-result').innerHTML = html;
-    } catch (e) { $('hook-result').innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
-}
-async function checkSchemaHealth() {
-    var box = $('schema-health-result');
-    box.innerHTML = '<span class="mini-spinner"></span> Checking…';
-    try {
-        var d = await api('GET', '/api/schema/health');
-        var drift = d.drift || {};
-        if (d.healthy) {
-            box.innerHTML = '<div style="color:var(--green);font-weight:600;"><i class="fa-solid fa-circle-check"></i> Schema is healthy. Version ' + drift.currentVersion + ' matches expected ' + drift.expectedVersion + '.</div>';
-            return;
-        }
-        var html = '<div style="color:var(--orange);font-weight:600;margin-bottom:6px;"><i class="fa-solid fa-triangle-exclamation"></i> Schema drift detected.</div>';
-        html += '<div class="small" style="margin-bottom:8px;">Version ' + drift.currentVersion + ' (expected ' + drift.expectedVersion + ')</div>';
-        if (drift.missingTables && drift.missingTables.length) {
-            html += '<div><b>Missing tables:</b> <code>' + drift.missingTables.map(esc).join('</code> <code>') + '</code></div>';
-        }
-        if (drift.missingColumns && drift.missingColumns.length) {
-            html += '<div style="margin-top:6px;"><b>Missing columns:</b> <code>' + drift.missingColumns.map(esc).join('</code> <code>') + '</code></div>';
-        }
-        html += '<div style="margin-top:8px;">Click <b>Run auto-heal</b> to fix all of these.</div>';
-        box.innerHTML = html;
-    } catch (e) { box.innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
-}
-
-async function runSchemaHeal() {
-    var ok = await confirmDialog(
-        'Run auto-heal? This will inspect the database and create any missing tables, columns, indexes and settings. It is safe to run multiple times. It might also delete any broken data.',
-        'Run schema auto-heal', false);
-    if (!ok) return;
-    await withSelfBusy(async function () {
-    var box = $('schema-health-result');
-    box.innerHTML = '<span class="mini-spinner"></span> Healing…';
-    try {
-        var d = await api('POST', '/api/schema/heal');
-        var r = d.result || {};
-        var summary = [];
-        if (r.tablesCreated && r.tablesCreated.length) summary.push('<b>' + r.tablesCreated.length + '</b> table(s) created: ' + r.tablesCreated.map(t => '<code>' + esc(t) + '</code>').join(', '));
-        if (r.columnsAdded && r.columnsAdded.length) summary.push('<b>' + r.columnsAdded.length + '</b> column(s) added: ' + r.columnsAdded.map(c => '<code>' + esc(c) + '</code>').join(', '));
-        if (r.settingsInserted && r.settingsInserted.length) summary.push('<b>' + r.settingsInserted.length + '</b> setting(s) inserted: ' + r.settingsInserted.map(s => '<code>' + esc(s) + '</code>').join(', '));
-        var cleanedCount = r.cleanedRows ? Object.values(r.cleanedRows).reduce(function (a, b) { return a + b; }, 0) : 0;
-        if (cleanedCount > 0) {
-            var breakdown = Object.entries(r.cleanedRows).map(function (kv) { return kv[0].replace(/_/g, ' ') + ': ' + kv[1]; }).join(', ');
-            summary.push('<b>' + cleanedCount + '</b> stale / orphaned row(s) deleted (' + esc(breakdown) + ')');
-        }
-        if (r.versionBefore !== null && r.versionAfter !== null && r.versionBefore !== r.versionAfter) {
-            summary.push('Schema version: <b>' + r.versionBefore + '</b> → <b>' + r.versionAfter + '</b>');
-        }
-        if (r.warnings && r.warnings.length) summary.push('<div style="color:var(--orange);margin-top:6px;"><b>Warnings:</b><ul style="margin:4px 0 0 16px;padding:0;">' + r.warnings.map(w => '<li>' + esc(w) + '</li>').join('') + '</ul></div>');
-        if (!summary.length) {
-            box.innerHTML = '<div style="color:var(--green);font-weight:600;"><i class="fa-solid fa-circle-check"></i> Nothing to heal — the schema is already up-to-date.</div>';
-        } else {
-            box.innerHTML = '<div style="color:var(--green);font-weight:600;margin-bottom:6px;"><i class="fa-solid fa-circle-check"></i> Auto-heal complete.</div><div style="font-size:13px;line-height:1.6;">' + summary.join('<br>') + '</div>';
-        }
-        toast('Schema auto-heal finished.', 'success');
-    } catch (e) { box.innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
-    });
-}
-
-async function changePassword() {
-    await withSelfBusy(async function () {
-        $('pw-result').innerHTML = '';
-        if ($('pw1').value !== $('pw2').value) { $('pw-result').innerHTML = '<span style="color:var(--red)">Passwords do not match.</span>'; return; }
-        if ($('pw1').value.length < 6) { $('pw-result').innerHTML = '<span style="color:var(--red)">Password must be at least 6 characters.</span>'; return; }
-        $('pw-result').innerHTML = '<span class="mini-spinner"></span> Updating…';
-        try {
-            var r = await api('POST', '/api/change_password', { newPassword: $('pw1').value });
-            if (r && r.csrf) __csrf = r.csrf;
-            $('pw-result').innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Password updated. Every other browser/device is now signed out.</span>';
-            $('pw1').value = ''; $('pw2').value = '';
-        } catch (e) { $('pw-result').innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
-    });
-}
-async function factoryReset() {
-    var btn = getClickBtn();
-    var ok = await confirmDialog('This permanently deletes everything. Type FACTORY RESET to confirm.', 'Factory reset', true,
-        '<input class="input" id="fr-text" placeholder="FACTORY RESET" style="margin-top:10px;">');
-    if (!ok) return;
-    var t = $('fr-text');
-    if (!t || t.value !== 'FACTORY RESET') { toast('Confirmation text did not match.', 'error'); return; }
-    await withBusy(btn, async function () {
-        try { await api('POST', '/api/reset', { confirmation: 'FACTORY RESET' }); toast('Reset complete — reloading…'); setTimeout(function () { location.reload(); }, 1200); }
-        catch (e) { toast(e.message, 'error'); }
-    });
-}
-async function loadBotInfo(force) {
-    try {
-        var d = await api('GET', '/api/bot_info');
-        $('bi-name').value = d.name || ''; $('bi-desc').value = d.description || ''; $('bi-short').value = d.short_description || '';
-        $('bi-result').innerHTML = '<span style="color:var(--green)">Loaded from Telegram.</span>';
-    } catch (e) { $('bi-result').innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
-}
-async function publishBotInfo() {
-    try {
-        await api('POST', '/api/bot_info', { name: $('bi-name').value, description: $('bi-desc').value, short_description: $('bi-short').value });
-        $('bi-result').innerHTML = '<span style="color:var(--green)">Published.</span>';
-    } catch (e) { $('bi-result').innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
-}
-var CRON_FIELDS = [
-    ['cron_sessions_days', 'Dashboard login sessions', 'days'],
-    ['cron_bot_sessions_days', 'Bot conversation sessions', 'days'],
-    ['cron_login_attempts_hours', 'Login attempt records', 'hours'],
-    ['cron_rate_limits_hours', 'Rate-limit buckets', 'hours'],
-    ['cron_logs_days', 'Activity log entries', 'days'],
-    ['cron_ai_messages_days', 'AI memory', 'days (0 = keep forever)'],
-    ['cron_dm_messages_days', 'Direct messages', 'days (0 = keep forever)'],
-    ['cron_broadcast_days', 'Broadcast history', 'days (0 = keep forever)'],
-    ['cron_inactive_users_days', 'Inactive users', 'days (0 = never delete)']
-];
-async function loadCron() {
-    var box = $('cron-rows');
-    box.innerHTML = CRON_FIELDS.map(function (f) {
-        return '<div class="row nowrap" style="margin-bottom:10px;"><div style="flex:1;"><div class="small" style="font-weight:600;">' + f[1] + '</div><div class="tiny muted">' + f[2] + '</div></div>' +
-            '<input type="number" class="input" id="cf-' + f[0] + '" style="max-width:130px;" min="' + (f[2].indexOf('0 =') >= 0 ? 0 : 1) + '"></div>';
-    }).join('');
-    try {
-        var d = await api('GET', '/api/cron');
-        toggleSwitch('cron-enable', d.settings.cron_enabled === '1');
-        CRON_FIELDS.forEach(function (f) { var el = $('cf-' + f[0]); if (el && d.settings[f[0]] !== undefined) el.value = d.settings[f[0]]; });
-        $('cron-last').textContent = d.last_run ? 'Last run: ' + d.last_run.at : 'Never run yet.';
-    } catch (e) {}
-}
-async function toggleCronEnabled() {
-    var turningOn = !sw('cron-enable');
-    if (turningOn) {
-        var ok = await confirmDialog('Automatic cleanup will permanently delete old data on the schedule below. There is no undo. Continue?', 'Enable cleanup?');
-        if (!ok) return;
-    }
-    toggleSwitch('cron-enable', turningOn);
-}
-async function saveCron() {
-    await withSelfBusy(async function () {
-        var body = { cron_enabled: sw('cron-enable') ? '1' : '0' };
-        CRON_FIELDS.forEach(function (f) { var n = parseInt($('cf-' + f[0]).value); if (!isNaN(n)) body[f[0]] = n; });
-        try { await api('POST', '/api/cron', body); toast('Retention settings saved.'); loadCron(); }
-        catch (e) { toast(e.message, 'error'); }
-    });
-}
-async function runCron() {
-    await withSelfBusy(async function () {
-        try { var r = await api('POST', '/api/cron/run'); if (r && r.skipped) toast(r.message, 'error'); else { toast('Cleanup run complete.'); loadCron(); } }
-        catch (e) { toast(e.message, 'error'); }
-    });
-}
-async function exportBackup() {
-    await withSelfBusy(async function () {
-        try { var d = await api('GET', '/api/backup'); downloadJson('nyxx-backup-' + stamp() + '.json', d.data); }
-        catch (e) { toast(e.message, 'error'); }
-    });
-}
-const BACKUP_ITEMS = [
-    { id: 'commands', title: 'Commands', sub: 'Bot commands and replies' },
-    { id: 'featured', title: 'Featured commands', sub: 'DM commands and Buttons commands' },
-    { id: 'users', title: 'Users', sub: 'User profiles and roles' },
-    { id: 'groups', title: 'Groups', sub: 'Group settings and metadata' },
-    { id: 'ai_messages', title: 'AI memory', sub: 'Every stored AI conversation' },
-    { id: 'dm_messages', title: 'Direct messages', sub: 'Private chat history with your users' },
-    { id: 'ai_settings', title: 'AI settings', sub: 'Providers, prompts, model choices' },
-    { id: 'menu_commands', title: 'Telegram menu', sub: 'Menu button entries' },
-    { id: 'bot_config', title: 'Bot config', sub: 'Name, username, webhook URL (not the token)' },
-    { id: 'blocked_users', title: 'Block list', sub: 'Users you blocked' },
-    { id: 'broadcast_history', title: 'Broadcast history', sub: 'Past broadcast messages' }
-];
-function openCustomBackup() {
-    var box = $('custom-backup-list');
-    box.innerHTML = BACKUP_ITEMS.map(function (it) {
-        return '<label class="backup-item"><input type="checkbox" class="backup-cb" value="' + it.id + '" checked><div><div class="bi-title">' + it.title + '</div><div class="bi-sub">' + it.sub + '</div></div></label>';
-    }).join('');
-    $('backup-modal').classList.remove('hidden');
-    trackModal('backup-modal');
-}
-function closeCustomBackup() { $('backup-modal').classList.add('hidden'); untrackModal('backup-modal'); }
-async function runCustomBackup() {
-    await withSelfBusy(async function () {
-    var checked = Array.from(document.querySelectorAll('.backup-cb:checked')).map(function (c) { return c.value; });
-    if (!checked.length) { toast('Select at least one section.', 'error'); return; }
-    try {
-        var d = await api('GET', '/api/backup');
-        var full = d.data;
-        var custom = {
-            app: 'nyxx', version: full.version, exported_at: full.exported_at, custom: true,
-            selected: checked,
-            commands: checked.indexOf('commands') >= 0 ? (full.commands || []) : [],
-            featured: checked.indexOf('featured') >= 0 ? (full.featured || []) : [],
-            users: checked.indexOf('users') >= 0 ? (full.users || []) : [],
-            groups: checked.indexOf('groups') >= 0 ? (full.groups || []) : [],
-            ai_messages: checked.indexOf('ai_messages') >= 0 ? (full.ai_messages || []) : [],
-            dm_messages: checked.indexOf('dm_messages') >= 0 ? (full.dm_messages || []) : [],
-            blocked_users: checked.indexOf('blocked_users') >= 0 ? (full.blocked_users || []) : [],
-            broadcast_history: checked.indexOf('broadcast_history') >= 0 ? (full.broadcast_history || []) : [],
-            settings: {}
-        };
-        if (full.settings) {
-            if (checked.indexOf('ai_settings') >= 0) {
-                Object.keys(full.settings).forEach(function (k) { if (k.indexOf('ai_') === 0) custom.settings[k] = full.settings[k]; });
-            }
-            if (checked.indexOf('menu_commands') >= 0 && full.settings.menu_commands !== undefined) custom.settings.menu_commands = full.settings.menu_commands;
-            if (checked.indexOf('bot_config') >= 0) {
-                ['bot_name', 'bot_username', 'webhook_url'].forEach(function (k) { if (full.settings[k] !== undefined) custom.settings[k] = full.settings[k]; });
-            }
-        }
-        downloadJson('nyxx-backup-custom-' + stamp() + '.json', custom);
-        closeCustomBackup();
-        toast('Custom backup downloaded.');
-    } catch (e) { toast(e.message, 'error'); }
-    });
-}
-function restoreBackup(ev) {
-    var f = ev.target.files[0]; if (!f) return;
-    var r = new FileReader();
-    r.onload = async function () {
-        try {
-            var parsed = JSON.parse(r.result);
-            if (!parsed || parsed.app !== 'nyxx') throw new Error('Not a valid Nyxx backup.');
-            var sections = [
-                ['Commands', Array.isArray(parsed.commands) ? parsed.commands.length : 0],
-                ['Featured commands', Array.isArray(parsed.featured) ? parsed.featured.length : 0],
-                ['Users', Array.isArray(parsed.users) ? parsed.users.length : 0],
-                ['Groups', Array.isArray(parsed.groups) ? parsed.groups.length : 0],
-                ['AI memory', Array.isArray(parsed.ai_messages) ? parsed.ai_messages.length : 0],
-                ['Direct messages', Array.isArray(parsed.dm_messages) ? parsed.dm_messages.length : 0],
-                ['Block list', Array.isArray(parsed.blocked_users) ? parsed.blocked_users.length : 0],
-                ['Broadcast history', Array.isArray(parsed.broadcast_history) ? parsed.broadcast_history.length : 0],
-                ['Settings keys', parsed.settings ? Object.keys(parsed.settings).length : 0],
-            ].filter(x => x[1] > 0);
-            var html = '<div style="text-align:left;font-size:13px;">';
-            html += '<p style="margin:0 0 8px;">Backup from <b>' + esc(parsed.exported_at || 'unknown date') + '</b> (v' + esc(parsed.version || '?') + ').</p>';
-            if (parsed.custom && Array.isArray(parsed.selected)) {
-                html += '<p style="margin:0 0 8px;color:var(--orange)"><b>Partial backup</b> — only listed sections will be touched.</p>';
-            }
-            html += '<div style="margin-top:8px;"><b>Will replace:</b><ul style="margin:4px 0 0 16px;padding:0;">';
-            sections.forEach(s => html += '<li>' + s[0] + ': <b>' + s[1] + '</b></li>');
-            if (!sections.length) html += '<li>(empty backup)</li>';
-            html += '</ul></div>';
-            html += '<p style="margin-top:10px;color:var(--orange)"><b>Warning:</b> existing data in these sections will be replaced.</p>';
-            html += '</div>';
-            var ok = await confirmDialog('This cannot be undone.', 'Review restore', true, html);
-            if (!ok) return;
-            await api('POST', '/api/backup/restore', { data: parsed });
-            toast('Restored.'); commands = []; loadCommands(true); loadUsers(true); loadFeatured();
-        } catch (e) { toast(e.message, 'error'); }
-        ev.target.value = '';
-    };
-    r.readAsText(f);
-}
-async function loadLogs() {
-    var box = $('logs-list');
-    box.innerHTML = skeletonRows(4);
-    try {
-        var q = ($('log-search') && $('log-search').value || '').trim();
-        var d = await api('GET', '/api/logs?limit=200' + (q ? '&search=' + encodeURIComponent(q) : ''));
-        var logs = d.logs || [];
-        if (!logs.length) { box.innerHTML = emptyState('fa-solid fa-clipboard-list', q ? 'No log entries match your search.' : 'No activity yet.'); return; }
-        box.innerHTML = logs.map(function (l) {
-            return '<div class="list-row"><div class="lr-main"><div class="lr-title" style="font-weight:500;">' + esc(l.action) + '</div>' +
-                '<div class="lr-sub">' + fmtTime(l.timestamp) + (l.user_id ? ' · user ' + l.user_id : '') + '</div></div></div>';
-        }).join('');
-    } catch (e) { box.innerHTML = errorState(e.message, 'loadLogs()'); }
-}
-async function loadLogClean() {
-    try {
-        var d = await api('GET', '/api/logs/settings');
-        toggleSwitch('logclean-toggle', d.enabled === '1');
-        $('logclean-days').value = d.days || 30;
-        show($('logclean-days-wrap'), d.enabled === '1');
-    } catch (e) {}
-}
-async function toggleLogClean() {
-    var on = !sw('logclean-toggle');
-    if (on) {
-        var ok = await confirmDialog('Old activity log entries will be permanently deleted. Turn on auto-cleanup?', 'Enable log cleanup');
-        if (!ok) return;
-    }
-    toggleSwitch('logclean-toggle', on);
-    show($('logclean-days-wrap'), on);
-}
-async function saveLogClean() {
-    await withSelfBusy(async function () {
-        var body = { enabled: sw('logclean-toggle') ? '1' : '0', days: parseInt($('logclean-days').value) || 30 };
-        try { await api('POST', '/api/logs/settings', body); toast('Log cleanup saved.'); }
-        catch (e) { toast(e.message, 'error'); }
-    });
-}
-async function clearLogs() {
-    var btn = getClickBtn();
-    var ok = await confirmDialog('Delete all activity log entries?', 'Clear logs');
-    if (!ok) return;
-    await withBusy(btn, async function () {
-        try { await api('DELETE', '/api/logs'); toast('Cleared.'); loadLogs(); }
-        catch (e) { toast(e.message, 'error'); }
-    });
-}
 var latestVersion = null, updateAvailable = false, workerUrl = null;
 const UPDATE_CHECK_TTL_MS = 30 * 60 * 1000;
 function applyUpdateData(d) {
@@ -7656,7 +6758,8 @@ async function disconnectCfOAuth() {
 }
 
 async function loadUpdateTab() {
-  await loadSettings(true);
+  await ensureModule('settings');
+  await window.loadSettings(true);
   await checkUpdate(true);
   await loadCfOAuthStatus();
 
@@ -7754,6 +6857,36 @@ async function performUpdate(force) {
     if (!app) return;
     if (window.innerWidth > 900) app.classList.add('sidebar-open');
 })();
+
+// Prefetch on hover — when a user hovers over a nav item, warm the data
+// for that tab so it appears instantly. Skipped on touch devices.
+(function initPrefetchOnHover() {
+    if (!window.matchMedia || !window.matchMedia('(hover: hover)').matches) return;
+    var PREFETCHERS = {
+        overview:  function () { return api('GET', '/api/overview'); },
+        commands:  function () { return api('GET', '/api/commands?summary=1'); },
+        users:     function () { return api('GET', '/api/users?filter=all&page=1'); },
+        groups:    function () { return api('GET', '/api/groups'); },
+        featured:  function () { return api('GET', '/api/featured'); },
+        mcp:       function () { return api('GET', '/api/mcp/settings'); },
+        settings:  function () { return api('GET', '/api/settings'); },
+        contact:   function () { return api('GET', '/api/contact/settings'); },
+        inbox:     function () { return api('GET', '/api/contact/messages?limit=50'); },
+        memory:    function () { return api('GET', '/api/memory/overview'); },
+    };
+    document.querySelectorAll('.nav-item[data-page]').forEach(function (item) {
+        var timer;
+        item.addEventListener('mouseenter', function () {
+            var page = item.dataset.page;
+            var fn = PREFETCHERS[page];
+            if (!fn) return;
+            timer = setTimeout(function () {
+                try { fn().catch(function () {}); } catch (e) {}
+            }, 120);
+        });
+        item.addEventListener('mouseleave', function () { clearTimeout(timer); });
+    });
+})();
 window.addEventListener('resize', function () {
     var app = document.querySelector('.app');
     if (!app) return;
@@ -7802,6 +6935,1176 @@ checkStatus();
 </html>`;
 
 // ============================================================================
+// LAZY-LOADED CLIENT MODULE — Settings / Bot Info / Cron / Backup / Logs
+// ============================================================================
+// Served at /js/settings.js. Loaded on demand by the dashboard via
+// import('/js/settings.js'). Exposes its functions on window so the inline
+// script's onclick="..." handlers can call them.
+// ============================================================================
+// LAZY-LOADED CLIENT MODULE — Settings / Bot Info / Cron / Backup / Logs
+// ============================================================================
+// Served at /js/settings.js. Loaded on demand by the dashboard via
+// import('/js/settings.js'). Exposes its functions on window so the inline
+// script's onclick="..." handlers can call them.
+const SETTINGS_JS = `// Nyxx — Settings / Bot Info / Cron / Backup / Logs module
+// Lazy-loaded by the dashboard. Functions are re-exposed on window below.
+
+const $              = window.$;
+const esc            = window.esc;
+const api            = window.api;
+const toast          = window.toast;
+const sw             = window.sw;
+const setSeg         = window.setSeg;
+const getSeg         = window.getSeg;
+const toggleSwitch   = window.toggleSwitch;
+const show           = window.show;
+const confirmDialog  = window.confirmDialog;
+const withBusy       = window.withBusy;
+const withSelfBusy   = window.withSelfBusy;
+const getClickBtn    = window.getClickBtn;
+const downloadJson   = window.downloadJson;
+const stamp          = window.stamp;
+const emptyState     = window.emptyState;
+const errorState     = window.errorState;
+const skeletonRows   = window.skeletonRows;
+const fmtTime        = window.fmtTime;
+const trackModal     = window.trackModal;
+const untrackModal   = window.untrackModal;
+const openModals     = window.openModals;
+
+// ---- Settings page ----
+async function loadSettings(force) {
+    try {
+        var d = await api('GET', '/api/settings');
+        $('set-token').value = d.bot_token_masked || '';
+        $('set-token').type = 'password';
+        $('set-hook').value = d.webhook_url || '';
+        if ($('set-media-storage')) $('set-media-storage').value = d.media_storage_chat_id || '';
+        window.__botTokenSet = d.bot_token_set;
+        if (d.cf_token_set) $('up-token').placeholder = 'Token already stored — click Generate to replace';
+        setSeg('sys-lang', d.system_language || 'en');
+    } catch (e) { /* silent */ }
+}
+
+async function setSystemLanguage(lang) {
+    lang = lang === 'fa' ? 'fa' : 'en';
+    var out = $('sys-lang-result');
+    var btn = null;
+    try {
+        var seg = $('sys-lang');
+        if (seg) btn = seg.querySelector('button[data-v="' + lang + '"]');
+    } catch (err) {}
+    await withBusy(btn, async function () {
+        try {
+            await api('POST', '/api/settings/system_language', { language: lang });
+            setSeg('sys-lang', lang);
+            out.innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Language set to ' + (lang === 'fa' ? 'فارسی' : 'English') + '.</span>';
+            toast(lang === 'fa' ? 'زبان به فارسی تغییر کرد.' : 'Language switched to English.');
+        } catch (e) {
+            out.innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>';
+        }
+    });
+}
+
+async function saveMediaStorage() {
+    var out = $('media-storage-result');
+    await withSelfBusy(async function () {
+        var id = $('set-media-storage').value.trim();
+        out.innerHTML = '<span class="mini-spinner"></span> Saving…';
+        try {
+            await api('POST', '/api/settings/media_storage', { chatId: id });
+            out.innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Saved.</span>';
+            toast('Media storage chat saved.');
+        } catch (e) { out.innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
+    });
+}
+
+async function revealToken() {
+    if (!window.__botTokenSet) { toast('No bot token stored yet.', 'error'); return; }
+    try {
+        var d = await api('POST', '/api/settings/reveal_bot_token', {});
+        $('set-token').value = d.token; $('set-token').type = 'text';
+        toast('Token revealed — this action has been logged.', 'info');
+    } catch (e) { toast(e.message, 'error'); }
+}
+
+function changeToken() {
+    if (openModals.indexOf('token-modal') >= 0) return;
+    $('token-modal').classList.remove('hidden');
+    $('token-input').value = '';
+    $('token-result').innerHTML = '';
+    trackModal('token-modal');
+}
+
+function closeTokenModal() {
+    $('token-modal').classList.add('hidden');
+    untrackModal('token-modal');
+}
+
+async function saveToken() {
+    await withSelfBusy(async function () {
+        var newTok = $('token-input').value.trim();
+        if (!newTok) { $('token-result').innerHTML = '<span style="color:var(--red)">Please paste a token first.</span>'; return; }
+        $('token-result').innerHTML = '<span class="mini-spinner"></span> Validating…';
+        try {
+            var d = await api('POST', '/api/settings/token', { botToken: newTok });
+            toast(d.warning ? d.warning : 'Token updated.', d.warning ? 'error' : 'success');
+            $('token-modal').classList.add('hidden'); untrackModal('token-modal'); loadSettings(true);
+        } catch (e) { $('token-result').innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
+    });
+}
+
+async function testHook() {
+    $('hook-result').innerHTML = '<span class="mini-spinner"></span> Testing…';
+    try {
+        var d = await api('POST', '/api/settings/webhook-test');
+        if (d.url_matches) $('hook-result').innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Webhook is healthy: ' + esc(d.url) + '</span>';
+        else if (d.url) $('hook-result').innerHTML = '<span style="color:var(--orange)"><i class="fa-solid fa-triangle-exclamation"></i> Webhook points elsewhere: ' + esc(d.url) + '</span>';
+        else $('hook-result').innerHTML = '<span style="color:var(--orange)"><i class="fa-solid fa-triangle-exclamation"></i> No webhook registered. Click Health check to fix.</span>';
+    } catch (e) { $('hook-result').innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
+}
+
+async function fixHook() {
+    $('hook-result').innerHTML = '<span class="mini-spinner"></span> Checking…';
+    try {
+        var d = await api('POST', '/api/settings/webhook-fix');
+        if (d.fixed) $('hook-result').innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Webhook re-registered: ' + esc(d.url) + '</span>';
+        else $('hook-result').innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Webhook is already healthy.</span>';
+    } catch (e) { $('hook-result').innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
+}
+
+async function runWebhookDiagnostics() {
+    $('hook-result').innerHTML = '<span class="mini-spinner"></span> Running diagnostics…';
+    try {
+        var d = await api('POST', '/api/settings/webhook-diagnostics');
+        var html = '<div style="display:grid;gap:6px;font-size:13px;margin-top:4px;">';
+        html += '<div><b>Telegram API reachable:</b> ' + (d.getMeOk ? '<span style="color:var(--green)">✅ yes</span>' : '<span style="color:var(--red)">❌ no</span>') + '</div>';
+        html += '<div><b>getMe latency:</b> ' + (d.getMeMs >= 0 ? d.getMeMs + ' ms' : '<span style="color:var(--red)">failed</span>') + '</div>';
+        html += '<div><b>getWebhookInfo latency:</b> ' + (d.webhookMs >= 0 ? d.webhookMs + ' ms' : '<span style="color:var(--red)">failed</span>') + '</div>';
+        html += '<div><b>Registered URL:</b> <code>' + esc(d.webhookUrl || '(none)') + '</code></div>';
+        html += '<div><b>Expected URL:</b> <code>' + esc(d.expectedUrl || '(none)') + '</code></div>';
+        html += '<div><b>URL matches:</b> ' + (d.urlMatches ? '<span style="color:var(--green)">✅ yes</span>' : '<span style="color:var(--orange)">⚠️ no — click Health check</span>') + '</div>';
+        html += '<div><b>Pending updates:</b> ' + (d.pendingUpdates || 0) + '</div>';
+        if (d.lastErrorMessage) html += '<div style="color:var(--red)"><b>Last error:</b> ' + esc(d.lastErrorMessage) + '</div>';
+        html += '</div>';
+        $('hook-result').innerHTML = html;
+    } catch (e) { $('hook-result').innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
+}
+
+async function checkSchemaHealth() {
+    var box = $('schema-health-result');
+    box.innerHTML = '<span class="mini-spinner"></span> Checking…';
+    try {
+        var d = await api('GET', '/api/schema/health');
+        var drift = d.drift || {};
+        if (d.healthy) {
+            box.innerHTML = '<div style="color:var(--green);font-weight:600;"><i class="fa-solid fa-circle-check"></i> Schema is healthy. Version ' + drift.currentVersion + ' matches expected ' + drift.expectedVersion + '.</div>';
+            return;
+        }
+        var html = '<div style="color:var(--orange);font-weight:600;margin-bottom:6px;"><i class="fa-solid fa-triangle-exclamation"></i> Schema drift detected.</div>';
+        html += '<div class="small" style="margin-bottom:8px;">Version ' + drift.currentVersion + ' (expected ' + drift.expectedVersion + ')</div>';
+        if (drift.missingTables && drift.missingTables.length) {
+            html += '<div><b>Missing tables:</b> <code>' + drift.missingTables.map(esc).join('</code> <code>') + '</code></div>';
+        }
+        if (drift.missingColumns && drift.missingColumns.length) {
+            html += '<div style="margin-top:6px;"><b>Missing columns:</b> <code>' + drift.missingColumns.map(esc).join('</code> <code>') + '</code></div>';
+        }
+        html += '<div style="margin-top:8px;">Click <b>Run auto-heal</b> to fix all of these.</div>';
+        box.innerHTML = html;
+    } catch (e) { box.innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
+}
+
+async function runSchemaHeal() {
+    var ok = await confirmDialog(
+        'Run auto-heal? This will inspect the database and create any missing tables, columns, indexes and settings. It is safe to run multiple times. It might also delete any broken data.',
+        'Run schema auto-heal', false);
+    if (!ok) return;
+    await withSelfBusy(async function () {
+        var box = $('schema-health-result');
+        box.innerHTML = '<span class="mini-spinner"></span> Healing…';
+        try {
+            var d = await api('POST', '/api/schema/heal');
+            var r = d.result || {};
+            var summary = [];
+            if (r.tablesCreated && r.tablesCreated.length) summary.push('<b>' + r.tablesCreated.length + '</b> table(s) created: ' + r.tablesCreated.map(t => '<code>' + esc(t) + '</code>').join(', '));
+            if (r.columnsAdded && r.columnsAdded.length) summary.push('<b>' + r.columnsAdded.length + '</b> column(s) added: ' + r.columnsAdded.map(c => '<code>' + esc(c) + '</code>').join(', '));
+            if (r.settingsInserted && r.settingsInserted.length) summary.push('<b>' + r.settingsInserted.length + '</b> setting(s) inserted: ' + r.settingsInserted.map(s => '<code>' + esc(s) + '</code>').join(', '));
+            var cleanedCount = r.cleanedRows ? Object.values(r.cleanedRows).reduce(function (a, b) { return a + b; }, 0) : 0;
+            if (cleanedCount > 0) {
+                var breakdown = Object.entries(r.cleanedRows).map(function (kv) { return kv[0].replace(/_/g, ' ') + ': ' + kv[1]; }).join(', ');
+                summary.push('<b>' + cleanedCount + '</b> stale / orphaned row(s) deleted (' + esc(breakdown) + ')');
+            }
+            if (r.versionBefore !== null && r.versionAfter !== null && r.versionBefore !== r.versionAfter) {
+                summary.push('Schema version: <b>' + r.versionBefore + '</b> → <b>' + r.versionAfter + '</b>');
+            }
+            if (r.warnings && r.warnings.length) summary.push('<div style="color:var(--orange);margin-top:6px;"><b>Warnings:</b><ul style="margin:4px 0 0 16px;padding:0;">' + r.warnings.map(w => '<li>' + esc(w) + '</li>').join('') + '</ul></div>');
+            if (!summary.length) {
+                box.innerHTML = '<div style="color:var(--green);font-weight:600;"><i class="fa-solid fa-circle-check"></i> Nothing to heal — the schema is already up-to-date.</div>';
+            } else {
+                box.innerHTML = '<div style="color:var(--green);font-weight:600;margin-bottom:6px;"><i class="fa-solid fa-circle-check"></i> Auto-heal complete.</div><div style="font-size:13px;line-height:1.6;">' + summary.join('<br>') + '</div>';
+            }
+            toast('Schema auto-heal finished.', 'success');
+        } catch (e) { box.innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
+    });
+}
+
+async function changePassword() {
+    await withSelfBusy(async function () {
+        $('pw-result').innerHTML = '';
+        if ($('pw1').value !== $('pw2').value) { $('pw-result').innerHTML = '<span style="color:var(--red)">Passwords do not match.</span>'; return; }
+        if ($('pw1').value.length < 6) { $('pw-result').innerHTML = '<span style="color:var(--red)">Password must be at least 6 characters.</span>'; return; }
+        $('pw-result').innerHTML = '<span class="mini-spinner"></span> Updating…';
+        try {
+            var r = await api('POST', '/api/change_password', { newPassword: $('pw1').value });
+            // api() reads window.__csrf from classic-script scope; update the global.
+            if (r && r.csrf) window.__csrf = r.csrf;
+            $('pw-result').innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Password updated. Every other browser/device is now signed out.</span>';
+            $('pw1').value = ''; $('pw2').value = '';
+        } catch (e) { $('pw-result').innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
+    });
+}
+
+async function factoryReset() {
+    var btn = getClickBtn();
+    var ok = await confirmDialog('This permanently deletes everything. Type FACTORY RESET to confirm.', 'Factory reset', true,
+        '<input class="input" id="fr-text" placeholder="FACTORY RESET" style="margin-top:10px;">');
+    if (!ok) return;
+    var t = $('fr-text');
+    if (!t || t.value !== 'FACTORY RESET') { toast('Confirmation text did not match.', 'error'); return; }
+    await withBusy(btn, async function () {
+        try { await api('POST', '/api/reset', { confirmation: 'FACTORY RESET' }); toast('Reset complete — reloading…'); setTimeout(function () { location.reload(); }, 1200); }
+        catch (e) { toast(e.message, 'error'); }
+    });
+}
+
+// ---- Bot Info page ----
+async function loadBotInfo(force) {
+    try {
+        var d = await api('GET', '/api/bot_info');
+        $('bi-name').value = d.name || ''; $('bi-desc').value = d.description || ''; $('bi-short').value = d.short_description || '';
+        $('bi-result').innerHTML = '<span style="color:var(--green)">Loaded from Telegram.</span>';
+    } catch (e) { $('bi-result').innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
+}
+
+async function publishBotInfo() {
+    try {
+        await api('POST', '/api/bot_info', { name: $('bi-name').value, description: $('bi-desc').value, short_description: $('bi-short').value });
+        $('bi-result').innerHTML = '<span style="color:var(--green)">Published.</span>';
+    } catch (e) { $('bi-result').innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
+}
+
+// ---- Cron page ----
+var CRON_FIELDS = [
+    ['cron_sessions_days', 'Dashboard login sessions', 'days'],
+    ['cron_bot_sessions_days', 'Bot conversation sessions', 'days'],
+    ['cron_login_attempts_hours', 'Login attempt records', 'hours'],
+    ['cron_rate_limits_hours', 'Rate-limit buckets', 'hours'],
+    ['cron_logs_days', 'Activity log entries', 'days'],
+    ['cron_ai_messages_days', 'AI memory', 'days (0 = keep forever)'],
+    ['cron_dm_messages_days', 'Direct messages', 'days (0 = keep forever)'],
+    ['cron_broadcast_days', 'Broadcast history', 'days (0 = keep forever)'],
+    ['cron_inactive_users_days', 'Inactive users', 'days (0 = never delete)']
+];
+
+async function loadCron() {
+    var box = $('cron-rows');
+    box.innerHTML = CRON_FIELDS.map(function (f) {
+        return '<div class="row nowrap" style="margin-bottom:10px;"><div style="flex:1;"><div class="small" style="font-weight:600;">' + f[1] + '</div><div class="tiny muted">' + f[2] + '</div></div>' +
+            '<input type="number" class="input" id="cf-' + f[0] + '" style="max-width:130px;" min="' + (f[2].indexOf('0 =') >= 0 ? 0 : 1) + '"></div>';
+    }).join('');
+    try {
+        var d = await api('GET', '/api/cron');
+        toggleSwitch('cron-enable', d.settings.cron_enabled === '1');
+        CRON_FIELDS.forEach(function (f) { var el = $('cf-' + f[0]); if (el && d.settings[f[0]] !== undefined) el.value = d.settings[f[0]]; });
+        $('cron-last').textContent = d.last_run ? 'Last run: ' + d.last_run.at : 'Never run yet.';
+    } catch (e) {}
+}
+
+async function toggleCronEnabled() {
+    var turningOn = !sw('cron-enable');
+    if (turningOn) {
+        var ok = await confirmDialog('Automatic cleanup will permanently delete old data on the schedule below. There is no undo. Continue?', 'Enable cleanup?');
+        if (!ok) return;
+    }
+    toggleSwitch('cron-enable', turningOn);
+}
+
+async function saveCron() {
+    await withSelfBusy(async function () {
+        var body = { cron_enabled: sw('cron-enable') ? '1' : '0' };
+        CRON_FIELDS.forEach(function (f) { var n = parseInt($('cf-' + f[0]).value); if (!isNaN(n)) body[f[0]] = n; });
+        try { await api('POST', '/api/cron', body); toast('Retention settings saved.'); loadCron(); }
+        catch (e) { toast(e.message, 'error'); }
+    });
+}
+
+async function runCron() {
+    await withSelfBusy(async function () {
+        try { var r = await api('POST', '/api/cron/run'); if (r && r.skipped) toast(r.message, 'error'); else { toast('Cleanup run complete.'); loadCron(); } }
+        catch (e) { toast(e.message, 'error'); }
+    });
+}
+
+// ---- Backup page ----
+async function exportBackup() {
+    await withSelfBusy(async function () {
+        try { var d = await api('GET', '/api/backup'); downloadJson('nyxx-backup-' + stamp() + '.json', d.data); }
+        catch (e) { toast(e.message, 'error'); }
+    });
+}
+
+const BACKUP_ITEMS = [
+    { id: 'commands', title: 'Commands', sub: 'Bot commands and replies' },
+    { id: 'featured', title: 'Featured commands', sub: 'DM commands and Buttons commands' },
+    { id: 'users', title: 'Users', sub: 'User profiles and roles' },
+    { id: 'groups', title: 'Groups', sub: 'Group settings and metadata' },
+    { id: 'ai_messages', title: 'AI memory', sub: 'Every stored AI conversation' },
+    { id: 'dm_messages', title: 'Direct messages', sub: 'Private chat history with your users' },
+    { id: 'ai_settings', title: 'AI settings', sub: 'Providers, prompts, model choices' },
+    { id: 'menu_commands', title: 'Telegram menu', sub: 'Menu button entries' },
+    { id: 'bot_config', title: 'Bot config', sub: 'Name, username, webhook URL (not the token)' },
+    { id: 'blocked_users', title: 'Block list', sub: 'Users you blocked' },
+    { id: 'broadcast_history', title: 'Broadcast history', sub: 'Past broadcast messages' }
+];
+
+function openCustomBackup() {
+    var box = $('custom-backup-list');
+    box.innerHTML = BACKUP_ITEMS.map(function (it) {
+        return '<label class="backup-item"><input type="checkbox" class="backup-cb" value="' + it.id + '" checked><div><div class="bi-title">' + it.title + '</div><div class="bi-sub">' + it.sub + '</div></div></label>';
+    }).join('');
+    $('backup-modal').classList.remove('hidden');
+    trackModal('backup-modal');
+}
+
+function closeCustomBackup() { $('backup-modal').classList.add('hidden'); untrackModal('backup-modal'); }
+
+async function runCustomBackup() {
+    await withSelfBusy(async function () {
+        var checked = Array.from(document.querySelectorAll('.backup-cb:checked')).map(function (c) { return c.value; });
+        if (!checked.length) { toast('Select at least one section.', 'error'); return; }
+        try {
+            var d = await api('GET', '/api/backup');
+            var full = d.data;
+            var custom = {
+                app: 'nyxx', version: full.version, exported_at: full.exported_at, custom: true,
+                selected: checked,
+                commands: checked.indexOf('commands') >= 0 ? (full.commands || []) : [],
+                featured: checked.indexOf('featured') >= 0 ? (full.featured || []) : [],
+                users: checked.indexOf('users') >= 0 ? (full.users || []) : [],
+                groups: checked.indexOf('groups') >= 0 ? (full.groups || []) : [],
+                ai_messages: checked.indexOf('ai_messages') >= 0 ? (full.ai_messages || []) : [],
+                dm_messages: checked.indexOf('dm_messages') >= 0 ? (full.dm_messages || []) : [],
+                blocked_users: checked.indexOf('blocked_users') >= 0 ? (full.blocked_users || []) : [],
+                broadcast_history: checked.indexOf('broadcast_history') >= 0 ? (full.broadcast_history || []) : [],
+                settings: {}
+            };
+            if (full.settings) {
+                if (checked.indexOf('ai_settings') >= 0) {
+                    Object.keys(full.settings).forEach(function (k) { if (k.indexOf('ai_') === 0) custom.settings[k] = full.settings[k]; });
+                }
+                if (checked.indexOf('menu_commands') >= 0 && full.settings.menu_commands !== undefined) custom.settings.menu_commands = full.settings.menu_commands;
+                if (checked.indexOf('bot_config') >= 0) {
+                    ['bot_name', 'bot_username', 'webhook_url'].forEach(function (k) { if (full.settings[k] !== undefined) custom.settings[k] = full.settings[k]; });
+                }
+            }
+            downloadJson('nyxx-backup-custom-' + stamp() + '.json', custom);
+            closeCustomBackup();
+            toast('Custom backup downloaded.');
+        } catch (e) { toast(e.message, 'error'); }
+    });
+}
+
+function restoreBackup(ev) {
+    var f = ev.target.files[0]; if (!f) return;
+    var r = new FileReader();
+    r.onload = async function () {
+        try {
+            var parsed = JSON.parse(r.result);
+            if (!parsed || parsed.app !== 'nyxx') throw new Error('Not a valid Nyxx backup.');
+            var sections = [
+                ['Commands', Array.isArray(parsed.commands) ? parsed.commands.length : 0],
+                ['Featured commands', Array.isArray(parsed.featured) ? parsed.featured.length : 0],
+                ['Users', Array.isArray(parsed.users) ? parsed.users.length : 0],
+                ['Groups', Array.isArray(parsed.groups) ? parsed.groups.length : 0],
+                ['AI memory', Array.isArray(parsed.ai_messages) ? parsed.ai_messages.length : 0],
+                ['Direct messages', Array.isArray(parsed.dm_messages) ? parsed.dm_messages.length : 0],
+                ['Block list', Array.isArray(parsed.blocked_users) ? parsed.blocked_users.length : 0],
+                ['Broadcast history', Array.isArray(parsed.broadcast_history) ? parsed.broadcast_history.length : 0],
+                ['Settings keys', parsed.settings ? Object.keys(parsed.settings).length : 0],
+            ].filter(x => x[1] > 0);
+            var html = '<div style="text-align:left;font-size:13px;">';
+            html += '<p style="margin:0 0 8px;">Backup from <b>' + esc(parsed.exported_at || 'unknown date') + '</b> (v' + esc(parsed.version || '?') + ').</p>';
+            if (parsed.custom && Array.isArray(parsed.selected)) {
+                html += '<p style="margin:0 0 8px;color:var(--orange)"><b>Partial backup</b> — only listed sections will be touched.</p>';
+            }
+            html += '<div style="margin-top:8px;"><b>Will replace:</b><ul style="margin:4px 0 0 16px;padding:0;">';
+            sections.forEach(s => html += '<li>' + s[0] + ': <b>' + s[1] + '</b></li>');
+            if (!sections.length) html += '<li>(empty backup)</li>';
+            html += '</ul></div>';
+            html += '<p style="margin-top:10px;color:var(--orange)"><b>Warning:</b> existing data in these sections will be replaced.</p>';
+            html += '</div>';
+            var ok = await confirmDialog('This cannot be undone.', 'Review restore', true, html);
+            if (!ok) return;
+            await api('POST', '/api/backup/restore', { data: parsed });
+            toast('Restored.');
+            window.commands = [];
+            if (typeof window.loadCommands === 'function') window.loadCommands(true);
+            if (typeof window.loadUsers === 'function') window.loadUsers(true);
+            if (typeof window.loadFeatured === 'function') window.loadFeatured();
+        } catch (e) { toast(e.message, 'error'); }
+        ev.target.value = '';
+    };
+    r.readAsText(f);
+}
+
+// ---- Logs page ----
+async function loadLogs() {
+    var box = $('logs-list');
+    box.innerHTML = skeletonRows(4);
+    try {
+        var q = ($('log-search') && $('log-search').value || '').trim();
+        var d = await api('GET', '/api/logs?limit=200' + (q ? '&search=' + encodeURIComponent(q) : ''));
+        var logs = d.logs || [];
+        if (!logs.length) { box.innerHTML = emptyState('fa-solid fa-clipboard-list', q ? 'No log entries match your search.' : 'No activity yet.'); return; }
+        box.innerHTML = logs.map(function (l) {
+            return '<div class="list-row"><div class="lr-main"><div class="lr-title" style="font-weight:500;">' + esc(l.action) + '</div>' +
+                '<div class="lr-sub">' + fmtTime(l.timestamp) + (l.user_id ? ' · user ' + l.user_id : '') + '</div></div></div>';
+        }).join('');
+    } catch (e) { box.innerHTML = errorState(e.message, 'loadLogs()'); }
+}
+
+async function loadLogClean() {
+    try {
+        var d = await api('GET', '/api/logs/settings');
+        toggleSwitch('logclean-toggle', d.enabled === '1');
+        $('logclean-days').value = d.days || 30;
+        show($('logclean-days-wrap'), d.enabled === '1');
+    } catch (e) {}
+}
+
+async function toggleLogClean() {
+    var on = !sw('logclean-toggle');
+    if (on) {
+        var ok = await confirmDialog('Old activity log entries will be permanently deleted. Turn on auto-cleanup?', 'Enable log cleanup');
+        if (!ok) return;
+    }
+    toggleSwitch('logclean-toggle', on);
+    show($('logclean-days-wrap'), on);
+}
+
+async function saveLogClean() {
+    await withSelfBusy(async function () {
+        var body = { enabled: sw('logclean-toggle') ? '1' : '0', days: parseInt($('logclean-days').value) || 30 };
+        try { await api('POST', '/api/logs/settings', body); toast('Log cleanup saved.'); }
+        catch (e) { toast(e.message, 'error'); }
+    });
+}
+
+async function clearLogs() {
+    var btn = getClickBtn();
+    var ok = await confirmDialog('Delete all activity log entries?', 'Clear logs');
+    if (!ok) return;
+    await withBusy(btn, async function () {
+        try { await api('DELETE', '/api/logs'); toast('Cleared.'); loadLogs(); }
+        catch (e) { toast(e.message, 'error'); }
+    });
+}
+
+// ---- Expose to inline callers ----
+window.loadSettings          = loadSettings;
+window.setSystemLanguage     = setSystemLanguage;
+window.saveMediaStorage      = saveMediaStorage;
+window.revealToken           = revealToken;
+window.changeToken           = changeToken;
+window.closeTokenModal       = closeTokenModal;
+window.saveToken             = saveToken;
+window.testHook              = testHook;
+window.fixHook               = fixHook;
+window.runWebhookDiagnostics = runWebhookDiagnostics;
+window.checkSchemaHealth     = checkSchemaHealth;
+window.runSchemaHeal         = runSchemaHeal;
+window.changePassword        = changePassword;
+window.factoryReset          = factoryReset;
+window.loadBotInfo           = loadBotInfo;
+window.publishBotInfo        = publishBotInfo;
+window.loadCron              = loadCron;
+window.toggleCronEnabled     = toggleCronEnabled;
+window.saveCron              = saveCron;
+window.runCron               = runCron;
+window.exportBackup          = exportBackup;
+window.openCustomBackup      = openCustomBackup;
+window.closeCustomBackup     = closeCustomBackup;
+window.runCustomBackup       = runCustomBackup;
+window.restoreBackup         = restoreBackup;
+window.loadLogs              = loadLogs;
+window.loadLogClean          = loadLogClean;
+window.toggleLogClean        = toggleLogClean;
+window.saveLogClean          = saveLogClean;
+window.clearLogs             = clearLogs;
+`;
+
+// ============================================================================
+// LAZY-LOADED CLIENT MODULE — AI Assistant
+// ============================================================================
+// Served at /js/ai.js. Loaded on demand when the user opens the AI tab.
+// Exposes every function on window so the inline onclick="..." handlers
+// (and the document change listener for ai-trigger) can reach them.
+const AI_JS = `// Nyxx — AI Assistant module
+// Lazy-loaded by the dashboard. Functions are re-exposed on window below.
+
+const $              = window.$;
+const esc            = window.esc;
+const api            = window.api;
+const toast          = window.toast;
+const sw             = window.sw;
+const toggleSwitch   = window.toggleSwitch;
+const show           = window.show;
+const withBusy       = window.withBusy;
+const withSelfBusy   = window.withSelfBusy;
+const getClickBtn    = window.getClickBtn;
+const downloadJson   = window.downloadJson;
+const confirmDialog  = window.confirmDialog;
+const scrollBottom   = window.scrollBottom;
+const KEEP_SENTINEL  = window.KEEP_SENTINEL;
+
+// ---- Module-scope state ----
+var aiEnabled = false;
+var kbs = [];
+var alts = [];
+var sqs = [];
+var pgHistory = [];
+
+// ---- Enable / load / render ----
+function toggleAiEnabled() { aiEnabled = toggleSwitch('ai-enable'); }
+
+async function loadAi(force) {
+    try { var d = await api('GET', '/api/ai_settings'); renderAi(d.settings || {}); }
+    catch (e) { toast(e.message, 'error'); }
+}
+
+function renderAi(s) {
+    aiEnabled = s.ai_enabled === '1';
+    toggleSwitch('ai-enable', aiEnabled);
+    $('ai-provider').value = s.ai_provider || 'openai';
+    $('ai-key').value = '';
+    $('ai-key').placeholder = s.ai_api_key_set ? (s.ai_api_key_masked + '  (unchanged — type to replace)') : 'sk-… paste your API key here';
+    $('ai-model').value = s.ai_model || '';
+    $('ai-base').value = s.ai_base_url || '';
+    $('ai-headers').value = s.ai_custom_headers || '';
+    $('ai-name').value = s.ai_display_name || '';
+    $('ai-lang').value = s.ai_language || 'auto';
+    $('ai-style').value = s.ai_style || 'friendly';
+    $('ai-length').value = s.ai_length || 'medium';
+    $('ai-temp').value = s.ai_temperature || '0.7';
+    $('ai-maxtok').value = s.ai_max_tokens || '1024';
+    $('ai-topp').value = s.ai_top_p || '1.0';
+    $('ai-fallback').value = s.ai_fallback || '';
+    $('ai-prompt').value = s.ai_system_prompt || '';
+    $('ai-vars').value = s.ai_custom_vars_text || '';
+    $('ai-trigger').value = s.ai_trigger || 'no_command';
+    $('ai-trigger-text').value = s.ai_trigger_text || '';
+    $('ai-prefixes').value = s.ai_ignore_prefixes || '/, !, #';
+    $('ai-ignore-bots').value = s.ai_ignore_bots || '1';
+    $('ai-ignore-fwd').value = s.ai_ignore_forwarded || '1';
+    $('ai-private').value = s.ai_private_reply || '1';
+    $('ai-memory').value = s.ai_memory || '0';
+    $('ai-group').value = s.ai_group_reply || '1';
+    $('ai-group-trigger').value = s.ai_group_trigger || (s.ai_group_mention === '0' ? 'none' : 'mention');
+    $('ai-gmemory').value = s.ai_group_memory || '0';
+    $('ai-rate').value = s.ai_rate_limit || '10';
+    $('ai-grate').value = s.ai_global_rate_limit || '0';
+    $('ai-gwindow').value = s.ai_global_rate_window || 'minute';
+    $('ai-delay').value = s.ai_response_delay || '0';
+    toggleSwitch('ai-typing', s.ai_typing_indicator === '1');
+    toggleSwitch('ai-retry', s.ai_retry_on_failure === '1');
+    toggleSwitch('ai-stream', s.ai_streaming === '1');
+    toggleSwitch('ai-strict', s.ai_strict_mode === '1');
+    toggleSwitch('ai-rtl', s.ai_rtl_support === '1');
+    toggleSwitch('ai-suggest', s.ai_suggested_questions_enabled === '1');
+    toggleSwitch('ai-sq-once', s.ai_suggested_one_time !== '0');
+    const toolsOn = s.ai_use_mcp_tools === '1';
+    toggleSwitch('ai-use-mcp-tools', toolsOn);
+    const promptModeSel = $('ai-mcp-prompt-mode');
+    if (promptModeSel) {
+        promptModeSel.value = s.ai_mcp_prompt_mode || 'auto';
+        promptModeSel.disabled = !toolsOn;
+    }
+    if ($('ai-mcp-categories')) {
+        $('ai-mcp-categories').value = s.ai_mcp_categories || '';
+        $('ai-mcp-categories').disabled = !toolsOn;
+    }
+    const streamBtn = $('ai-stream');
+    if (streamBtn) {
+        streamBtn.disabled = toolsOn;
+        streamBtn.title = toolsOn ? 'Disabled — MCP tools are enabled' : '';
+        if (toolsOn) streamBtn.classList.remove('on');
+    }
+    try { kbs = JSON.parse(s.ai_knowledge_bases || '[]'); } catch (e) { kbs = []; }
+    renderKbs();
+    try { alts = JSON.parse(s.ai_alt_providers || '[]'); } catch (e) { alts = []; }
+    renderAlts();
+    try { sqs = JSON.parse(s.ai_suggested_questions || '[]'); } catch (e) { sqs = []; }
+    renderSqs();
+    onProviderChange(); onTriggerChange();
+    if (s.ai_api_key_set && s.ai_api_key_masked) {
+        $('ai-key-hint').innerHTML = '<i class="fa-solid fa-circle-check" style="color:var(--green)"></i> A key is saved (' + esc(s.ai_api_key_masked) + '). Leave the field empty to keep it.';
+    }
+}
+
+function onProviderChange() {
+    var p = $('ai-provider').value;
+    show($('ai-base-wrap'), p === 'custom');
+    var defs = { openai: 'gpt-4o-mini', gemini: 'gemini-2.0-flash', deepseek: 'deepseek-chat', groq: 'llama-3.3-70b-versatile', openrouter: 'openai/gpt-4o-mini', ollama: 'llama3' };
+    if (defs[p] && !$('ai-model').value) $('ai-model').value = defs[p];
+    var urls = {
+        openai: { url: 'https://platform.openai.com/api-keys', name: 'OpenAI' },
+        gemini: { url: 'https://aistudio.google.com/app/apikey', name: 'Google AI Studio' },
+        deepseek: { url: 'https://platform.deepseek.com/api_keys', name: 'DeepSeek' },
+        groq: { url: 'https://console.groq.com/keys', name: 'Groq Console' },
+        openrouter: { url: 'https://openrouter.ai/keys', name: 'OpenRouter' },
+        ollama: { url: 'https://ollama.com/', name: 'Ollama' },
+        custom: { url: '', name: 'your provider' }
+    };
+    var u = urls[p];
+    if (u && u.url) $('ai-provider-hint').innerHTML = '<i class="fa-solid fa-arrow-up-right-from-square"></i> Get your key from <a href="' + u.url + '" target="_blank" rel="noopener">' + u.name + '</a>';
+    else $('ai-provider-hint').innerHTML = '';
+    if (defs[p]) $('ai-model-hint').textContent = 'Recommended: ' + defs[p];
+}
+
+function onTriggerChange() { show($('ai-trigger-text-wrap'), $('ai-trigger').value === 'contains_text'); }
+
+document.addEventListener('change', function (e) {
+    if (e.target && e.target.id === 'ai-trigger') onTriggerChange();
+});
+
+// ---- Knowledge bases ----
+function renderKbs() {
+    var box = $('kb-list');
+    if (!kbs.length) { box.innerHTML = '<div class="empty" style="padding:14px;">No knowledge bases yet.</div>'; return; }
+    box.innerHTML = kbs.map(function (kb, i) {
+        return '<div class="card compact" style="margin-bottom:10px;box-shadow:none;">' +
+            '<div class="row" style="margin-bottom:8px;">' +
+            '<button class="switch ' + (kb.enabled !== false ? 'on' : '') + '" onclick="toggleKb(' + i + ')" title="Enable" aria-label="Toggle"></button>' +
+            '<input class="input" value="' + esc(kb.label || '') + '" placeholder="Label (e.g. FAQ)" oninput="setKbLabel(' + i + ', this.value)" style="flex:1;">' +
+            '<button class="icon-btn danger" onclick="delKb(' + i + ')" aria-label="Remove"><i class="fa-regular fa-trash-can"></i></button></div>' +
+            '<textarea class="textarea" rows="4" placeholder="Paste your facts, documentation, FAQ…" oninput="setKbContent(' + i + ', this.value)">' + esc(kb.content || '') + '</textarea></div>';
+    }).join('');
+}
+function addKb() { kbs.push({ enabled: true, label: '', content: '' }); renderKbs(); }
+function delKb(i) { kbs.splice(i, 1); renderKbs(); }
+function toggleKb(i) { kbs[i].enabled = kbs[i].enabled === false; renderKbs(); }
+function setKbLabel(i, v) { if (kbs[i]) kbs[i].label = v; }
+function setKbContent(i, v) { if (kbs[i]) kbs[i].content = v; }
+
+// ---- Fallback providers ----
+function renderAlts() {
+    var box = $('ai-alts');
+    if (!alts.length) { box.innerHTML = ''; return; }
+    box.innerHTML = alts.map(function (a, i) {
+        var keyPlaceholder = a.apiKeyMasked ? (a.apiKeyMasked + '  (unchanged)') : 'API key';
+        var keyVal = a.apiKey && a.apiKey !== KEEP_SENTINEL ? a.apiKey : '';
+        return '<div class="card compact" style="margin-bottom:10px;box-shadow:none;">' +
+            '<div class="row" style="margin-bottom:8px;"><strong class="small">Fallback ' + (i + 1) + '</strong>' +
+            '<div style="flex:1"></div><button class="icon-btn danger" onclick="delAlt(' + i + ')" aria-label="Remove"><i class="fa-regular fa-trash-can"></i></button></div>' +
+            '<div class="grid grid-2">' +
+            '<select class="input" onchange="setAltProvider(' + i + ', this.value)">' + ['openai', 'gemini', 'deepseek', 'groq', 'openrouter', 'ollama'].map(function (p) { return '<option value="' + p + '"' + (a.provider === p ? ' selected' : '') + '>' + p + '</option>'; }).join('') + '</select>' +
+            '<input class="input" type="password" value="' + esc(keyVal) + '" placeholder="' + esc(keyPlaceholder) + '" oninput="setAltApiKey(' + i + ', this.value)">' +
+            '<input class="input" value="' + esc(a.model || '') + '" placeholder="Model" oninput="setAltModel(' + i + ', this.value)">' +
+            '</div>' +
+            '<div class="row" style="margin-top:8px;gap:8px;flex-wrap:wrap;">' +
+                '<button class="btn btn-gray btn-sm" onclick="testAltProvider(' + i + ')"><i class="fa-solid fa-plug"></i> Test provider</button>' +
+                '<span class="small" id="alt-test-' + i + '" style="flex:1;min-width:120px;word-break:break-word;"></span>' +
+            '</div>' +
+        '</div>';
+    }).join('');
+    var btn = $('add-alt-provider-btn');
+    if (btn) btn.disabled = alts.length >= 5;
+}
+async function testAltProvider(i) {
+    var res = $('alt-test-' + i);
+    if (res) res.innerHTML = '<span class="mini-spinner"></span> Testing…';
+    try {
+        var d = await api('POST', '/api/ai/test', { settings: collectAi(), provider: 'alt', altIndex: i });
+        if (res) {
+            if (d && d.success) res.innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> OK — ' + esc((d.message || '').slice(0, 80)) + '</span>';
+            else res.innerHTML = '<span style="color:var(--red)"><i class="fa-solid fa-circle-xmark"></i> ' + esc((d && d.error) || 'Failed') + '</span>';
+        }
+    } catch (e) {
+        if (res) res.innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>';
+    }
+}
+function addAltProvider() {
+    if (alts.length >= 5) { toast('Maximum 5 fallback providers allowed.', 'error'); return; }
+    alts.push({ provider: 'openai', apiKey: '', model: 'gpt-4o-mini' });
+    renderAlts();
+}
+function delAlt(i) { alts.splice(i, 1); renderAlts(); }
+function setAltProvider(i, v) { if (alts[i]) alts[i].provider = v; }
+function setAltApiKey(i, v) { if (alts[i]) alts[i].apiKey = v; }
+function setAltModel(i, v) { if (alts[i]) alts[i].model = v; }
+
+// ---- Quick replies ----
+function renderSqs() {
+    var box = $('sq-list');
+    if (!sqs.length) { box.innerHTML = '<div class="empty" style="padding:12px;">No quick replies yet.</div>'; return; }
+    box.innerHTML = sqs.map(function (q, i) {
+        return '<div class="kb-chip" style="width:100%;justify-content:space-between;margin-bottom:6px;">' +
+            '<span>' + esc(q.label) + ' <span class="muted">→ ' + esc(q.value) + '</span></span>' +
+            '<button class="arw del" onclick="removeSq(' + i + ')" aria-label="Remove">&#10005;</button></div>';
+    }).join('');
+}
+function addSq() {
+    var l = $('sq-label').value.trim(), v = $('sq-value').value.trim();
+    if (!l || !v) { toast('Both fields are required.', 'error'); return; }
+    sqs.push({ label: l, value: v }); $('sq-label').value = ''; $('sq-value').value = ''; renderSqs();
+}
+function removeSq(i) { sqs.splice(i, 1); renderSqs(); }
+
+// ---- Collect / save / test ----
+function collectAi() {
+    var keyVal = $('ai-key').value.trim();
+    var altsClean = alts.map(function (a) { var c = Object.assign({}, a); if (!c.apiKey) c.apiKey = KEEP_SENTINEL; return c; });
+    return {
+        ai_enabled: aiEnabled ? '1' : '0',
+        ai_provider: $('ai-provider').value, ai_api_key: keyVal || KEEP_SENTINEL,
+        ai_model: $('ai-model').value.trim(), ai_base_url: $('ai-base').value.trim(),
+        ai_custom_headers: $('ai-headers').value.trim(), ai_alt_providers: JSON.stringify(altsClean),
+        ai_display_name: $('ai-name').value.trim(), ai_language: $('ai-lang').value,
+        ai_style: $('ai-style').value, ai_length: $('ai-length').value,
+        ai_temperature: $('ai-temp').value, ai_max_tokens: $('ai-maxtok').value, ai_top_p: $('ai-topp').value,
+        ai_fallback: $('ai-fallback').value.trim(), ai_system_prompt: $('ai-prompt').value.trim(),
+        ai_knowledge_bases: JSON.stringify(kbs), ai_custom_vars_text: $('ai-vars').value.trim(),
+        ai_trigger: $('ai-trigger').value, ai_trigger_text: $('ai-trigger-text').value.trim(),
+        ai_ignore_prefixes: $('ai-prefixes').value.trim(),
+        ai_ignore_bots: $('ai-ignore-bots').value, ai_ignore_forwarded: $('ai-ignore-fwd').value,
+        ai_private_reply: $('ai-private').value, ai_memory: $('ai-memory').value,
+        ai_group_reply: $('ai-group').value, ai_group_trigger: $('ai-group-trigger').value, ai_group_memory: $('ai-gmemory').value,
+        ai_rate_limit: $('ai-rate').value, ai_global_rate_limit: $('ai-grate').value,
+        ai_global_rate_window: $('ai-gwindow').value, ai_response_delay: $('ai-delay').value,
+        ai_typing_indicator: sw('ai-typing') ? '1' : '0', ai_retry_on_failure: sw('ai-retry') ? '1' : '0',
+        ai_streaming: sw('ai-stream') ? '1' : '0', ai_strict_mode: sw('ai-strict') ? '1' : '0',
+        ai_rtl_support: sw('ai-rtl') ? '1' : '0',
+        ai_suggested_questions_enabled: sw('ai-suggest') ? '1' : '0',
+        ai_suggested_one_time: sw('ai-sq-once') ? '1' : '0',
+        ai_suggested_questions: JSON.stringify(sqs),
+        ai_use_mcp_tools: sw('ai-use-mcp-tools') ? '1' : '0',
+        ai_mcp_prompt_mode: $('ai-mcp-prompt-mode').value || 'auto',
+        ai_mcp_categories: $('ai-mcp-categories').value || ''
+    };
+}
+
+function toggleAiUseMcp() {
+    const on = toggleSwitch('ai-use-mcp-tools');
+    if ($('ai-mcp-categories')) $('ai-mcp-categories').disabled = !on;
+    if ($('ai-mcp-prompt-mode')) $('ai-mcp-prompt-mode').disabled = !on;
+    const streamBtn = $('ai-stream');
+    if (streamBtn) {
+        streamBtn.disabled = on;
+        streamBtn.title = on ? 'Disabled — MCP tools are enabled' : '';
+        if (on) streamBtn.classList.remove('on');
+    }
+    if (on) toast('Streaming is disabled while tools are on.', 'info');
+}
+
+async function saveAi() {
+    await withSelfBusy(async function () {
+        try { await api('POST', '/api/ai_settings', collectAi()); toast('AI settings saved.'); refreshMemoryCount(); loadAi(true); }
+        catch (e) { toast(e.message, 'error'); }
+    });
+}
+
+async function testAi() {
+    await withSelfBusy(async function () {
+        $('ai-test-result').innerHTML = '<span class="mini-spinner"></span> Testing connection…';
+        try {
+            var d = await api('POST', '/api/ai/test', { settings: collectAi(), provider: 'main' });
+            if (d.success) $('ai-test-result').innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Connected successfully — your API key works.</span>';
+            else $('ai-test-result').innerHTML = '<span style="color:var(--red)"><i class="fa-solid fa-circle-xmark"></i> ' + esc(d.error || 'Test failed') + '</span>';
+        } catch (e) { $('ai-test-result').innerHTML = '<span style="color:var(--red)"><i class="fa-solid fa-circle-xmark"></i> ' + esc(e.message) + '</span>'; }
+    });
+}
+
+async function refreshMemoryCount() {
+    try { var d = await api('GET', '/api/ai/memory_count'); $('mem-count').textContent = d.count + ' messages'; }
+    catch (e) { $('mem-count').textContent = '—'; }
+}
+
+// ---- Playground ----
+function renderPgHtml(text) {
+    var parts = String(text || '').split('\`\`\`');
+    var out = '';
+    for (var i = 0; i < parts.length; i++) {
+        if (i % 2 === 1) out += '<pre><code>' + esc(parts[i]) + '</code></pre>';
+        else {
+            var t = esc(parts[i]);
+            t = t.replace(/\`([^\`]+)\`/g, '<code>$1</code>');
+            t = t.replace(/&lt;(\\/?)(b|strong|i|em|u|s|code|blockquote|a[^&]*?)&gt;/g, function (m) { return m.replace(/&lt;/g, '<').replace(/&gt;/g, '>'); });
+            out += t;
+        }
+    }
+    return out;
+}
+
+async function sendPlayground() {
+    var btn = getClickBtn() || $('pg-send-btn');
+    var text = $('pg-input').value.trim(); if (!text) return;
+    var box = $('pg');
+    if (box.querySelector('.empty')) box.innerHTML = '';
+    box.insertAdjacentHTML('beforeend', '<div class="pg-msg user" dir="auto">' + esc(text) + '</div>');
+    $('pg-input').value = '';
+    var id = 'pg-' + Date.now();
+    box.insertAdjacentHTML('beforeend', '<div class="pg-msg bot" id="' + id + '"><span class="mini-spinner"></span></div>');
+    scrollBottom(box);
+    await withBusy(btn, async function () {
+        try {
+            var d = await api('POST', '/api/ai/playground', { settings: collectAi(), history: pgHistory, message: text });
+            $(id).innerHTML = renderPgHtml(d.response || '');
+            pgHistory.push({ role: 'user', content: text }, { role: 'assistant', content: d.response });
+        } catch (e) { $(id).innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
+        scrollBottom(box);
+    });
+}
+
+function clearPlayground() { pgHistory = []; $('pg').innerHTML = '<div class="empty">Playground cleared.</div>'; }
+
+// ---- Import / export / reset ----
+function exportAi() { downloadJson('nyxx-ai-settings.json', collectAi()); }
+
+function importAi(ev) {
+    var f = ev.target.files[0]; if (!f) return;
+    var r = new FileReader();
+    r.onload = function () { try { renderAi(JSON.parse(r.result)); toast('Imported — press Save to apply.'); } catch (e) { toast('Invalid JSON.', 'error'); } ev.target.value = ''; };
+    r.readAsText(f);
+}
+
+async function clearAllAiMemory() {
+    var ok = await confirmDialog('Clear every stored AI conversation?', 'Clear AI memory');
+    if (!ok) return;
+    await api('POST', '/api/ai/clear_memory'); toast('AI memory cleared.'); refreshMemoryCount();
+}
+
+async function resetAi() {
+    var ok = await confirmDialog('Reset all AI settings to defaults?', 'Reset AI');
+    if (!ok) return;
+    await api('POST', '/api/ai/reset'); toast('AI settings reset.'); loadAi(true);
+}
+
+function applyTemplate() {
+    var t = $('ai-template').value;
+    var p = {
+        assistant: 'You are {{bot_name}}, a helpful assistant. Answer clearly and accurately, and say so when you are unsure.',
+        support: 'You are a support agent for {{company_name}}. Help customers politely and accurately using the information you have.',
+        restaurant: 'You are the assistant for {{company_name}} restaurant. Help with the menu, hours, reservations and policies.',
+        programming: 'You are a programming assistant. Explain concepts, debug code and suggest practical solutions.',
+        school: 'You are a patient tutor. Explain step by step, use examples and check understanding.'
+    };
+    if (p[t]) $('ai-prompt').value = p[t];
+}
+
+// ---- Expose to inline callers ----
+window.toggleAiEnabled       = toggleAiEnabled;
+window.loadAi                = loadAi;
+window.renderAi              = renderAi;
+window.onProviderChange      = onProviderChange;
+window.onTriggerChange       = onTriggerChange;
+window.renderKbs             = renderKbs;
+window.addKb                 = addKb;
+window.delKb                 = delKb;
+window.toggleKb              = toggleKb;
+window.setKbLabel            = setKbLabel;
+window.setKbContent          = setKbContent;
+window.renderAlts            = renderAlts;
+window.addAltProvider        = addAltProvider;
+window.delAlt                = delAlt;
+window.testAltProvider       = testAltProvider;
+window.setAltProvider        = setAltProvider;
+window.setAltApiKey          = setAltApiKey;
+window.setAltModel           = setAltModel;
+window.renderSqs             = renderSqs;
+window.addSq                 = addSq;
+window.removeSq              = removeSq;
+window.collectAi             = collectAi;
+window.toggleAiUseMcp        = toggleAiUseMcp;
+window.saveAi                = saveAi;
+window.testAi                = testAi;
+window.refreshMemoryCount    = refreshMemoryCount;
+window.sendPlayground        = sendPlayground;
+window.clearPlayground       = clearPlayground;
+window.exportAi              = exportAi;
+window.importAi              = importAi;
+window.clearAllAiMemory      = clearAllAiMemory;
+window.resetAi               = resetAi;
+window.applyTemplate         = applyTemplate;
+`;
+
+// ============================================================================
+// LAZY-LOADED CLIENT MODULE — MCP tab
+// ============================================================================
+// Served at /js/mcp.js. Loaded on demand when the user opens the MCP tab.
+// Exposes every function on window so the inline onclick="..." handlers work.
+// ============================================================================
+const MCP_JS = `// Nyxx — MCP module
+// Lazy-loaded by the dashboard. Functions are re-exposed on window below.
+
+const $              = window.$;
+const esc            = window.esc;
+const api            = window.api;
+const toast          = window.toast;
+const sw             = window.sw;
+const toggleSwitch   = window.toggleSwitch;
+const show           = window.show;
+const withBusy       = window.withBusy;
+const withSelfBusy   = window.withSelfBusy;
+const getClickBtn    = window.getClickBtn;
+const confirmDialog  = window.confirmDialog;
+const fmtTime        = window.fmtTime;
+const KEEP_SENTINEL  = window.KEEP_SENTINEL;
+const copyVal        = window.copyVal;
+
+// ---- Module-scope state ----
+var mcpSettings = {};
+
+// ---- Load / render ----
+async function loadMcp(force) {
+    try {
+        var d = await api('GET', '/api/mcp/settings');
+        mcpSettings = (d && d.settings) || {};
+        renderMcp();
+        loadMcpTokens();
+        loadMcpCalls();
+    } catch (e) { toast(e.message, 'error'); }
+}
+
+function renderMcp() {
+    var s = mcpSettings;
+    toggleSwitch('mcp-enabled', s.mcp_enabled === '1');
+    // Endpoint
+    var ep = window.location.origin + '/mcp';
+    if ($('mcp-endpoint')) $('mcp-endpoint').value = ep;
+    // AI provider
+    $('mcp-provider').value = s.mcp_ai_provider || 'openai';
+    $('mcp-api-key').value = '';
+    $('mcp-api-key').placeholder = s.mcp_ai_api_key_set ? (s.mcp_ai_api_key_masked + '  (unchanged — type to replace)') : 'sk-…';
+    $('mcp-model').value = s.mcp_ai_model || '';
+    $('mcp-base').value = s.mcp_ai_base_url || '';
+    onMcpProviderChange();
+    if (s.mcp_ai_api_key_set) $('mcp-key-hint').innerHTML = '<i class="fa-solid fa-circle-check" style="color:var(--green)"></i> Key saved. Leave empty to keep it.';
+    // Categories
+    var cats = Array.isArray(s.mcp_categories) ? s.mcp_categories : ['read', 'write'];
+    toggleSwitch('mcp-cat-read', cats.indexOf('read') >= 0);
+    toggleSwitch('mcp-cat-write', cats.indexOf('write') >= 0);
+    toggleSwitch('mcp-cat-outbound', cats.indexOf('outbound') >= 0);
+    toggleSwitch('mcp-cat-dangerous', cats.indexOf('dangerous') >= 0);
+    // Memory & rate limits
+    const memOn = (parseInt(s.mcp_memory_limit) || 0) > 0;
+    toggleSwitch('mcp-memory-enabled', memOn);
+    show($('mcp-memory-settings'), memOn);
+    if ($('mcp-memory-limit')) $('mcp-memory-limit').value = String(parseInt(s.mcp_memory_limit) || 10);
+    if ($('mcp-memory-ttl')) $('mcp-memory-ttl').value = String(parseInt(s.mcp_memory_ttl_hours) || 24);
+    if ($('mcp-rate-limit')) $('mcp-rate-limit').value = String(parseInt(s.mcp_rate_limit) || 20);
+    if ($('mcp-rate-window')) $('mcp-rate-window').value = s.mcp_rate_limit_window === 'hour' ? 'hour' : 'minute';
+    loadMcpSessionsList();
+    // Snippets
+    renderMcpSnippets();
+}
+
+function toggleMcpMemory() {
+    const on = toggleSwitch('mcp-memory-enabled');
+    show($('mcp-memory-settings'), on);
+}
+
+async function saveMcpMemorySettings() {
+    await withSelfBusy(async function () {
+        try {
+            await api('POST', '/api/mcp/settings', {
+                mcp_memory_limit: sw('mcp-memory-enabled') ? (parseInt($('mcp-memory-limit').value) || 0) : 0,
+                mcp_memory_ttl_hours: parseInt($('mcp-memory-ttl').value) || 24,
+                mcp_rate_limit: parseInt($('mcp-rate-limit').value) || 20,
+                mcp_rate_limit_window: $('mcp-rate-window').value || 'minute',
+            });
+            toast('MCP memory & rate limits saved.');
+            loadMcp(true);
+        } catch (e) { toast(e.message, 'error'); }
+    });
+}
+
+async function loadMcpSessionsList() {
+    const box = $('mcp-sessions-list');
+    if (!box) return;
+    try {
+        const d = await api('GET', '/api/mcp/sessions');
+        const sessions = d.sessions || [];
+        if (!sessions.length) { box.innerHTML = '<span class="muted">No active sessions.</span>'; return; }
+        box.innerHTML = '<div class="muted">Active sessions: ' + sessions.length + '</div>' +
+            sessions.slice(0, 10).map(s => '<div class="muted tiny">' + esc(s.session_key) + ' · ' + fmtTime(s.updated_at) + ' · ' + (s.size_bytes || 0) + ' bytes</div>').join('');
+    } catch (e) { box.innerHTML = ''; }
+}
+
+async function clearAllMcpSessions() {
+    var btn = getClickBtn();
+    const ok = await confirmDialog('Clear every MCP session? Follow-up context is lost.', 'Clear sessions');
+    if (!ok) return;
+    await withBusy(btn, async function () {
+        try {
+            await api('POST', '/api/mcp/sessions/clear');
+            toast('Sessions cleared.');
+            loadMcpSessionsList();
+        } catch (e) { toast(e.message, 'error'); }
+    });
+}
+
+function renderMcpSnippets() {
+    var endpoint = window.location.origin + '/mcp';
+    var tok = 'nyxx_YOUR_TOKEN_HERE';
+    if ($('mcp-snippet-claude')) $('mcp-snippet-claude').textContent =
+        '{\\n  "mcpServers": {\\n    "nyxx": {\\n      "command": "npx",\\n      "args": ["-y", "mcp-remote", "' + endpoint + '",\\n               "--header", "Authorization: Bearer ' + tok + '"]\\n    }\\n  }\\n}';
+    if ($('mcp-snippet-cursor')) $('mcp-snippet-cursor').textContent =
+        '{\\n  "mcpServers": {\\n    "nyxx": {\\n      "url": "' + endpoint + '",\\n      "headers": { "Authorization": "Bearer ' + tok + '" }\\n    }\\n  }\\n}';
+    if ($('mcp-snippet-curl')) $('mcp-snippet-curl').textContent =
+        'curl -X POST ' + endpoint + ' \\\\n  -H "Authorization: Bearer ' + tok + '" \\\\n  -H "Content-Type: application/json" \\\\n  -d \\'{"jsonrpc":"2.0","id":1,"method":"tools/list"}\\'';
+}
+
+function onMcpProviderChange() {
+    var p = $('mcp-provider').value;
+    show($('mcp-base-wrap'), p === 'custom');
+    var defaults = { openai: 'gpt-4o-mini', gemini: 'gemini-2.0-flash', deepseek: 'deepseek-chat', groq: 'llama-3.3-70b-versatile', openrouter: 'openai/gpt-4o-mini' };
+    if (defaults[p] && !$('mcp-model').value) $('mcp-model').value = defaults[p];
+}
+
+async function toggleMcpEnabled() {
+    var on = !sw('mcp-enabled');
+    toggleSwitch('mcp-enabled', on);
+    try { await api('POST', '/api/mcp/settings', { mcp_enabled: on ? '1' : '0' }); toast(on ? 'MCP enabled.' : 'MCP disabled.'); }
+    catch (e) { toast(e.message, 'error'); toggleSwitch('mcp-enabled', !on); }
+}
+
+async function toggleMcpCategory(cat) {
+    var id = 'mcp-cat-' + cat;
+    var on = !sw(id);
+    toggleSwitch(id, on);
+    var cats = [];
+    if (sw('mcp-cat-read')) cats.push('read');
+    if (sw('mcp-cat-write')) cats.push('write');
+    if (sw('mcp-cat-outbound')) cats.push('outbound');
+    if (sw('mcp-cat-dangerous')) cats.push('dangerous');
+    try { await api('POST', '/api/mcp/settings', { mcp_categories: cats }); }
+    catch (e) { toast(e.message, 'error'); }
+}
+
+async function saveMcpAiSettings() {
+    await withSelfBusy(async function () {
+        var body = {
+            mcp_ai_provider: $('mcp-provider').value,
+            mcp_ai_model: $('mcp-model').value.trim(),
+            mcp_ai_base_url: $('mcp-base').value.trim(),
+        };
+        var key = $('mcp-api-key').value.trim();
+        if (key) body.mcp_ai_api_key = key;
+        try { await api('POST', '/api/mcp/settings', body); toast('MCP AI provider saved.'); loadMcp(); }
+        catch (e) { toast(e.message, 'error'); }
+    });
+}
+
+async function testMcpAi() {
+    $('mcp-test-result').innerHTML = '<span class="mini-spinner"></span> Testing…';
+    try {
+        var body = {
+            settings: {
+                mcp_ai_provider: $('mcp-provider').value,
+                mcp_ai_model: $('mcp-model').value.trim(),
+                mcp_ai_base_url: $('mcp-base').value.trim(),
+                mcp_ai_api_key: $('mcp-api-key').value.trim() || KEEP_SENTINEL,
+            }
+        };
+        var d = await api('POST', '/api/mcp/ai/test', body);
+        if (d.success) $('mcp-test-result').innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Connected — reply: <code>' + esc(d.message || '') + '</code></span>';
+        else $('mcp-test-result').innerHTML = '<span style="color:var(--red)"><i class="fa-solid fa-circle-xmark"></i> ' + esc(d.error || 'Failed') + '</span>';
+    } catch (e) { $('mcp-test-result').innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
+}
+
+async function loadMcpTokens() {
+    try {
+        var d = await api('GET', '/api/mcp/tokens');
+        var list = d.tokens || [];
+        var box = $('mcp-tokens-list');
+        if (!list.length) { box.innerHTML = '<div class="muted small">No tokens yet.</div>'; return; }
+        box.innerHTML = list.map(function (t) {
+            return '<div class="list-row" style="border-radius:10px;border:1px solid var(--hairline);margin-bottom:6px;padding:8px 12px;">' +
+                '<i class="fa-solid fa-key" style="color:var(--text-3);"></i>' +
+                '<div class="lr-main"><div class="lr-title mono" style="font-size:13px;">' + esc(t.token_prefix) + '••••••••</div>' +
+                '<div class="lr-sub">Created ' + fmtTime(t.created_at) + ' · Last used ' + (t.last_used_at ? fmtTime(t.last_used_at) : 'never') + '</div></div>' +
+                '</div>';
+        }).join('');
+    } catch (e) { /* silent */ }
+}
+
+async function generateMcpToken() {
+    await withSelfBusy(async function () {
+        try {
+            var d = await api('POST', '/api/mcp/token/generate', { label: 'dashboard' });
+            $('mcp-token-value').value = d.token;
+            show($('mcp-token-once'), true);
+            loadMcpTokens();
+            toast('Token generated — copy it now.', 'info');
+        } catch (e) { toast(e.message, 'error'); }
+    });
+}
+
+async function revokeMcpTokens() {
+    var btn = getClickBtn();
+    var ok = await confirmDialog('Revoke ALL MCP tokens? Every connected client will be disconnected immediately.', 'Revoke tokens');
+    if (!ok) return;
+    await withBusy(btn, async function () {
+        try { await api('POST', '/api/mcp/token/revoke'); toast('All tokens revoked.'); show($('mcp-token-once'), false); loadMcpTokens(); }
+        catch (e) { toast(e.message, 'error'); }
+    });
+}
+
+async function loadMcpCalls() {
+    var box = $('mcp-calls-list');
+    if (!box) return;
+    box.innerHTML = '<div class="spinner-page"><span class="mini-spinner"></span></div>';
+    try {
+        var d = await api('GET', '/api/mcp/calls');
+        var list = (d.calls || []).slice(0, 5);
+        if (!list.length) {
+            box.innerHTML = '<div class="muted small">No MCP calls yet.</div>';
+            return;
+        }
+        box.innerHTML = '<div class="list">' + list.map(function (c) {
+            return '<div class="list-row" style="padding:8px 12px;">' +
+                '<div class="lr-main">' +
+                    '<div class="lr-title mono" style="font-size:13px;">' + esc(c.action) + '</div>' +
+                    '<div class="lr-sub">' + fmtTime(c.timestamp) + '</div>' +
+                '</div>' +
+            '</div>';
+        }).join('') + '</div>' +
+        '<div class="tiny muted" style="margin-top:8px;">Showing last 5 · full history in Activity Log</div>';
+    } catch (e) {
+        box.innerHTML = '<div class="small" style="color:var(--red)">Could not load recent calls: ' + esc(e.message) + '</div>';
+    }
+}
+
+// ---- Expose to inline callers ----
+window.loadMcp                = loadMcp;
+window.renderMcp              = renderMcp;
+window.toggleMcpMemory        = toggleMcpMemory;
+window.saveMcpMemorySettings  = saveMcpMemorySettings;
+window.loadMcpSessionsList    = loadMcpSessionsList;
+window.clearAllMcpSessions    = clearAllMcpSessions;
+window.renderMcpSnippets      = renderMcpSnippets;
+window.onMcpProviderChange    = onMcpProviderChange;
+window.toggleMcpEnabled       = toggleMcpEnabled;
+window.toggleMcpCategory      = toggleMcpCategory;
+window.saveMcpAiSettings      = saveMcpAiSettings;
+window.testMcpAi              = testMcpAi;
+window.loadMcpTokens          = loadMcpTokens;
+window.generateMcpToken       = generateMcpToken;
+window.revokeMcpTokens        = revokeMcpTokens;
+window.loadMcpCalls           = loadMcpCalls;
+`;
+
+// ============================================================================
 // SECURITY HELPERS
 // ============================================================================
 const SECURITY_HEADERS = {
@@ -7833,7 +8136,9 @@ const JSON_HEADERS = {
     'Cache-Control': 'no-store',
     ...SECURITY_HEADERS,
 };
-function apiJson(body, status = 200) { return new Response(JSON.stringify(body), { status, headers: JSON_HEADERS }); }
+function apiJson(body, status = 200, extraHeaders) {
+    return new Response(JSON.stringify(body), { status, headers: Object.assign({}, JSON_HEADERS, extraHeaders || {}) });
+}
 function internalError(err) {
     console.error('API error:', err);
     const msg = String((err && err.message) || err || 'Internal server error');
@@ -7928,6 +8233,7 @@ export default {
         try {
             if (request.method === 'GET' && url.pathname === '/') return new Response(DASHBOARD_HTML, { headers: HTML_HEADERS });
             if (request.method === 'GET' && url.pathname === '/sw.js') return await handleServiceWorker(request, env);
+            if (request.method === 'GET' && url.pathname.startsWith('/js/')) return await serveClientModule(url.pathname);
             if (request.method === 'GET' && url.pathname === '/chat') return await handleChatPage(request, env);
             if (request.method === 'GET' && url.pathname === '/oauth/callback') {
                 return await handleCfOAuthCallback(request, env);
@@ -7977,13 +8283,14 @@ export default {
             if (request.method === 'POST' && url.pathname === '/api/logout') return await handleLogout(request, env);
 
             if (url.pathname === '/api/commands') {
-                if (request.method === 'GET') return await getCommands(env);
+                if (request.method === 'GET') return await getCommands(env, url);
                 if (request.method === 'POST') return await createCommand(request, env);
             }
             if (url.pathname === '/api/commands/export' && request.method === 'GET') return await exportCommandPack(env);
             if (url.pathname === '/api/commands/import' && request.method === 'POST') return await importCommandPack(request, env);
             if (url.pathname === '/api/commands/reorder' && request.method === 'POST') return await reorderCommands(request, env);
             if (url.pathname.startsWith('/api/commands/')) {
+                if (request.method === 'GET') return await getCommandDetail(env, url);
                 if (request.method === 'PUT') return await updateCommand(request, env);
                 if (request.method === 'DELETE') return await deleteCommand(request, env);
             }
@@ -8083,7 +8390,7 @@ export default {
             if (request.method === 'POST' && url.pathname === '/api/bot_info') return await setBotInfo(request, env);
 
             if (request.method === 'GET' && url.pathname === '/api/stats') return await getStats(env);
-            if (request.method === 'GET' && url.pathname === '/api/overview') return await getOverview(env);
+            if (request.method === 'GET' && url.pathname === '/api/overview') return await getOverview(env, request);
             if (request.method === 'POST' && url.pathname === '/api/upload_media') return await handleUploadMedia(request, env);
             if (request.method === 'GET' && url.pathname.startsWith('/api/file/')) return await handleFileProxy(request, env, url);
             if (request.method === 'GET'  && url.pathname === '/api/media/library') return await getMediaLibrary(env);
@@ -8133,6 +8440,7 @@ export default {
             if (request.method === 'POST' && url.pathname === '/api/oauth/start')      return await handleCfOAuthStart(request, env);
             if (request.method === 'GET'  && url.pathname === '/api/oauth/status')     return await handleCfOAuthStatus(request, env);
             if (request.method === 'POST' && url.pathname === '/api/oauth/disconnect') return await handleCfOAuthDisconnect(request, env);
+            if (request.method === 'GET' && url.pathname === '/api/bootstrap') return await getBootstrap(env, request);
 
             return new Response('Not Found', { status: 404, headers: SECURITY_HEADERS });
         } catch (error) {
@@ -8342,7 +8650,7 @@ async function getPermissions(env) {
 const userRoleCache = new Map();
 async function getUserRole(env, userId) {
     if (!userId) return null;
-    const currentEpoch = await getCurrentEpoch(env.DB);
+    const currentEpoch = await getDomainEpoch(env.DB, 'roles');
     const cached = userRoleCache.get(userId);
     if (cached && cached.epoch === currentEpoch) return cached.role;
     try {
@@ -8364,7 +8672,7 @@ async function isModeratorOrAbove(env, userId) {
 }
 let _permCache = { data: null, epoch: null };
 async function getPermissionsCached(env) {
-    const currentEpoch = await getCurrentEpoch(env.DB);
+    const currentEpoch = await getDomainEpoch(env.DB, 'perms');
     if (_permCache.data && _permCache.epoch === currentEpoch) return _permCache.data;
     const fresh = await getPermissions(env);
     _permCache = { data: fresh, epoch: currentEpoch };
@@ -8437,7 +8745,7 @@ async function promoteAdminHandler(request, env) {
         if (!userId) return apiJson({ error: 'Invalid userId.' }, 400);
         await initializeDatabase(env.DB);
         await env.DB.prepare('UPDATE users SET role = ? WHERE id = ?').bind(role, userId).run();
-        await bumpEpoch(env.DB);
+        await bumpDomainEpoch(env.DB, 'roles');
         await logAction(env.DB, userId, 'Role set to ' + role);
         userRoleCache.delete(userId);
         return apiJson({ success: true, role });
@@ -8451,7 +8759,7 @@ async function demoteAdminHandler(request, env) {
         if (!userId) return apiJson({ error: 'Invalid userId.' }, 400);
         await initializeDatabase(env.DB);
         await env.DB.prepare("UPDATE users SET role = 'user' WHERE id = ?").bind(userId).run();
-        await bumpEpoch(env.DB);
+        await bumpDomainEpoch(env.DB, 'roles');
         await logAction(env.DB, userId, 'User demoted from admin');
         userRoleCache.delete(userId);
         return apiJson({ success: true });
@@ -9203,80 +9511,120 @@ async function initializeDatabase(db) {
             console.warn('Could not set schema_ready_version:', e.message);
         }
 
-        // Bump the cache epoch so any in-flight caches on other isolates
-        // (or this isolate's settings cache) invalidate after schema changes.
+        // Bump every domain epoch so any in-flight caches on other isolates (or
+        // this isolate) invalidate after schema changes / factory reset / install.
         try {
-            const newEpoch = Date.now() + '_' + Math.random().toString(36).slice(2, 8);
-            await db.prepare("INSERT INTO settings (key, value) VALUES ('cache_epoch', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(newEpoch).run();
-            cachedEpoch = newEpoch;
-            lastEpochCheck = Date.now();
+            await bumpAllEpochs(db);
         } catch (e) {
-            console.warn('Could not bump cache epoch after schema init:', e.message);
+            console.warn('Could not bump cache epochs after schema init:', e.message);
         }
     })();
     dbInitCache.set(db, p);
     try { await p; } catch (e) { dbInitCache.delete(db); throw e; }
 }
 
-// ── EPOCH-BASED CACHE SYSTEM ────────────────────────────────────────────────
-// Every write (dashboard, webhook, MCP, direct SQL) bumps a single counter
-// ("cache_epoch") stored in the settings table. Every cache stamps its entries
-// with the epoch at creation time and checks the current epoch before serving.
-//
-// Guarantees:
-//   • Same-isolate read-after-write: instant (local epoch already bumped)
-//   • Cross-isolate: ≤ EPOCH_CHECK_INTERVAL_MS staleness
-//   • No cache ever serves an entry from a previous epoch
-//
-// Cost: one indexed SELECT per request (first cache access) then free.
-// Set EPOCH_CHECK_INTERVAL_MS = 0 for absolute zero staleness at the cost of
-// ~1-2 ms per read (one indexed SELECT per getCurrentEpoch call, per request).
+// ── EPOCH-BASED CACHE SYSTEM (v4.9.3 — per-domain) ──────────────────────────
+// Each cache uses its own epoch key (epoch:settings, epoch:ai, epoch:roles...).
+// A write to one domain invalidates only that domain's cache — not everything.
+// All domain epochs are refreshed together in one SELECT (cheap: 10 primary-
+// key lookups), cached in memory for EPOCH_CHECK_INTERVAL_MS.
 const EPOCH_CHECK_INTERVAL_MS = 100;
-let cachedEpoch = null;
+const EPOCH_DOMAINS = [
+    'settings',      // misc settings, contact, cron, broadcast, mcp settings, menu, media, bot
+    'ai',            // ai_* settings
+    'perms',         // permissions_json
+    'roles',         // users.role
+    'blocks',        // blocked_users
+    'groups',        // groups.settings_json
+    'mcp_tokens',    // mcp_tokens table
+    'reply_actions', // reply_actions setting
+    'reply_buttons', // commands.reply_keyboard_json / show_reply_keyboard
+    'sys_lang',      // system_language
+];
+const epochCache = {};
 let lastEpochCheck = 0;
+let epochRefreshPromise = null;
 
-async function getCurrentEpoch(db) {
-    const now = Date.now();
-    if (cachedEpoch !== null && (now - lastEpochCheck) < EPOCH_CHECK_INTERVAL_MS) return cachedEpoch;
-    try {
-        const row = await db.prepare("SELECT value FROM settings WHERE key = 'cache_epoch'").first();
-        cachedEpoch = row && row.value ? row.value : '0';
-    } catch (e) {
-        // Settings table missing (fresh install) — treat as epoch 0
-        cachedEpoch = '0';
-    }
-    lastEpochCheck = now;
-    return cachedEpoch;
+// Keys that live in a specific domain. Anything else defaults to 'settings'.
+const DOMAIN_FOR_KEY = {
+    permissions_json: 'perms',
+    reply_actions: 'reply_actions',
+    system_language: 'sys_lang',
+};
+function domainForKey(key) {
+    if (DOMAIN_FOR_KEY[key]) return DOMAIN_FOR_KEY[key];
+    if (key.indexOf('ai_') === 0) return 'ai';
+    return 'settings';
 }
 
-async function bumpEpoch(db) {
-    const newEpoch = Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+async function refreshAllEpochs(db) {
+    // One query fetches all 10 domain epochs — cheaper than N round-trips.
     try {
-        await db.prepare(
-            "INSERT INTO settings (key, value) VALUES ('cache_epoch', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value"
-        ).bind(newEpoch).run();
+        const keys = EPOCH_DOMAINS.map(d => 'epoch:' + d);
+        const ph = keys.map(() => '?').join(', ');
+        const rows = await db.prepare(`SELECT key, value FROM settings WHERE key IN (${ph})`).bind(...keys).all();
+        for (const d of EPOCH_DOMAINS) if (epochCache[d] === undefined) epochCache[d] = '0';
+        for (const row of (rows.results || [])) {
+            const d = String(row.key).slice(6); // strip 'epoch:'
+            if (epochCache[d] !== undefined) epochCache[d] = row.value;
+        }
     } catch (e) {
-        // Only "settings table missing" (fresh install) is expected. Any other
-        // failure means cross-isolate invalidation did NOT propagate — other
-        // isolates will keep serving stale data until some future write bumps.
+        for (const d of EPOCH_DOMAINS) if (epochCache[d] === undefined) epochCache[d] = '0';
+    }
+    lastEpochCheck = Date.now();
+}
+
+async function getDomainEpoch(db, domain) {
+    if (!EPOCH_DOMAINS.includes(domain)) domain = 'settings';
+    const now = Date.now();
+    if (epochCache[domain] !== undefined && (now - lastEpochCheck) < EPOCH_CHECK_INTERVAL_MS) {
+        return epochCache[domain];
+    }
+    if (!epochRefreshPromise) {
+        epochRefreshPromise = refreshAllEpochs(db).finally(() => { epochRefreshPromise = null; });
+    }
+    await epochRefreshPromise;
+    return epochCache[domain] || '0';
+}
+
+async function bumpDomainEpochs(db, domains) {
+    const set = [...new Set(domains)].filter(d => EPOCH_DOMAINS.includes(d));
+    if (!set.length) return null;
+    const newEpoch = Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+    const stmts = set.map(d => db.prepare(
+        `INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`
+    ).bind('epoch:' + d, newEpoch));
+    try {
+        await db.batch(stmts);
+    } catch (e) {
         if (!/no such table/i.test(String(e.message || ''))) {
-            console.warn('bumpEpoch DB write failed — cross-isolate staleness possible:', e.message);
+            console.warn('bumpDomainEpochs DB write failed:', e.message);
         }
     }
-    cachedEpoch = newEpoch;
+    for (const d of set) epochCache[d] = newEpoch;
     lastEpochCheck = Date.now();
     return newEpoch;
 }
 
+async function bumpDomainEpoch(db, domain) {
+    return bumpDomainEpochs(db, [domain]);
+}
+
+async function bumpAllEpochs(db) {
+    return bumpDomainEpochs(db, EPOCH_DOMAINS);
+}
+
+// Kept as an alias so any leftover call sites still work.
+async function bumpEpoch(db) { return bumpDomainEpoch(db, 'settings'); }
+
 let settingsCache = { data: null, epoch: null };
 
 async function getSetting(db, key) {
-    const currentEpoch = await getCurrentEpoch(db);
+    const currentEpoch = await getDomainEpoch(db, 'settings');
     if (settingsCache.data && settingsCache.epoch === currentEpoch) {
         const v = settingsCache.data[key];
         return v !== undefined ? v : null;
     }
-    // Epoch changed or cache empty → reload
     try {
         const rows = await db.prepare('SELECT key, value FROM settings').all();
         const map = {};
@@ -9285,7 +9633,6 @@ async function getSetting(db, key) {
         const v = map[key];
         return v !== undefined ? v : null;
     } catch (e) {
-        // Settings table doesn't exist yet (first cold start)
         const row = await db.prepare('SELECT value FROM settings WHERE key = ?').bind(key).first();
         return row ? row.value : null;
     }
@@ -9293,21 +9640,39 @@ async function getSetting(db, key) {
 
 async function setSetting(db, key, value) {
     const sv = String(value);
-    await db.prepare(`INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`).bind(key, sv).run();
-    await bumpEpoch(db);
-    // Drop the local cache: re-stamping it with the new epoch could mask another
-    // isolate's earlier write. Next read reloads once (one cheap SELECT).
+    const newEpoch = Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+    const domain = domainForKey(key);
+    const stmts = [
+        db.prepare(`INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`).bind(key, sv),
+        db.prepare(`INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`).bind('epoch:settings', newEpoch),
+    ];
+    if (domain !== 'settings') {
+        stmts.push(db.prepare(`INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`).bind('epoch:' + domain, newEpoch));
+    }
+    await db.batch(stmts);
+    epochCache.settings = newEpoch;
+    if (domain !== 'settings') epochCache[domain] = newEpoch;
+    lastEpochCheck = Date.now();
     settingsCache = { data: null, epoch: null };
 }
 
-// Batched variant — one batch write + one epoch bump for N settings.
 async function setSettingsBatch(db, entries) {
     if (!entries || !entries.length) return;
+    const domains = new Set(['settings']);
+    for (const [key] of entries) domains.add(domainForKey(key));
+    const newEpoch = Date.now() + '_' + Math.random().toString(36).slice(2, 8);
     const stmts = entries.map(([key, value]) => db.prepare(
         `INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`
     ).bind(key, String(value)));
-    await db.batch(stmts);
-    await bumpEpoch(db);
+    for (const d of domains) {
+        stmts.push(db.prepare(
+            `INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`
+        ).bind('epoch:' + d, newEpoch));
+    }
+    const CHUNK = 60;
+    for (let i = 0; i < stmts.length; i += CHUNK) await db.batch(stmts.slice(i, i + CHUNK));
+    for (const d of domains) epochCache[d] = newEpoch;
+    lastEpochCheck = Date.now();
     settingsCache = { data: null, epoch: null };
 }
 async function logAction(db, userId, action) {
@@ -9487,13 +9852,67 @@ async function getVersionInfo(env, fresh) {
     return apiJson({ current, latest, released, notes, worker_url: workerUrl });
 }
 
-// ============================================================================
-// STATS
-// ============================================================================
-async function getOverview(env) {
+async function getBootstrap(env, request) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
+        const [settings, statsRow, logsRows, contactStats, version] = await Promise.all([
+            getSettings(env, new URL(request.url).origin).then(r => r.json()).catch(() => ({})),
+            env.DB.prepare(`
+                SELECT
+                    (SELECT COUNT(*) FROM commands) as cmds,
+                    (SELECT COUNT(*) FROM commands WHERE enabled = 1) as enabled_cmds,
+                    (SELECT COUNT(*) FROM users) as users,
+                    (SELECT COUNT(*) FROM users WHERE private_started = 1) as private_users,
+                    (SELECT COUNT(*) FROM users WHERE role = 'admin') as admins,
+                    (SELECT COUNT(*) FROM groups) as groups_total,
+                    (SELECT COUNT(*) FROM groups WHERE is_active = 1) as groups_active,
+                    (SELECT COUNT(*) FROM ai_messages) as ai_count,
+                    (SELECT COUNT(*) FROM ai_messages WHERE role = 'assistant' AND timestamp > datetime('now', '-1 day')) as ai_last_24h,
+                    (SELECT value FROM settings WHERE key = 'bot_token') as bot_token,
+                    (SELECT value FROM settings WHERE key = 'ai_enabled') as ai_enabled,
+                    (SELECT value FROM settings WHERE key = 'bot_username') as bot_username
+            `).first(),
+            env.DB.prepare('SELECT id, user_id, action, timestamp FROM logs ORDER BY id DESC LIMIT 5').all(),
+            env.DB.prepare(`
+                SELECT
+                    COUNT(*) FILTER (WHERE read_at IS NULL) as unread,
+                    COUNT(*) as total
+                FROM dm_messages WHERE source = 'featured' AND direction = 'in'
+            `).first(),
+            getVersionInfo(env, false).then(r => r.json()).catch(() => ({})),
+        ]);
+        return apiJson({
+            success: true,
+            settings,
+            stats: {
+                bot_linked: !!(statsRow && statsRow.bot_token),
+                bot_username: statsRow ? (statsRow.bot_username || '') : '',
+                commands_total: statsRow ? statsRow.cmds : 0, commands_enabled: statsRow ? statsRow.enabled_cmds : 0,
+                users_total: statsRow ? statsRow.users : 0, users_private: statsRow ? statsRow.private_users : 0,
+                admins_total: statsRow ? statsRow.admins : 0,
+                groups_total: statsRow ? statsRow.groups_total : 0, groups_active: statsRow ? statsRow.groups_active : 0,
+                ai_memory_count: statsRow ? statsRow.ai_count : 0, ai_replies_24h: statsRow ? statsRow.ai_last_24h : 0,
+                ai_enabled: !!(statsRow && (statsRow.ai_enabled === '1' || statsRow.ai_enabled === true)),
+            },
+            logs: logsRows.results || [],
+            contact: { unread: contactStats ? contactStats.unread : 0, total: contactStats ? contactStats.total : 0 },
+            version,
+        });
+    } catch (err) { return internalError(err); }
+}
+
+// ============================================================================
+// STATS
+// ============================================================================
+async function getOverview(env, request) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        const etag = 'W/"ov-' + await getDomainEpoch(env.DB, 'settings') + '-' + await getDomainEpoch(env.DB, 'roles') + '"';
+        if (request && request.headers.get('If-None-Match') === etag) {
+            return new Response(null, { status: 304, headers: Object.assign({}, JSON_HEADERS, { 'ETag': etag }) });
+        }
         // One stats query + one logs query → 2 D1 round-trips total.
         // Previously the client fired /api/stats (12 queries) then
         // /api/logs?limit=5 (1 query) as separate HTTP requests.
@@ -9528,7 +9947,7 @@ async function getOverview(env) {
                 ai_enabled: !!(statsRow && (statsRow.ai_enabled === '1' || statsRow.ai_enabled === true)),
             },
             logs: logsRows.results || [],
-        });
+        }, 200, { 'ETag': etag });
     } catch (err) { return internalError(err); }
 }
 
@@ -10212,7 +10631,7 @@ async function mergeReplyActions(db, actions) {
 }
 let replyActionsCache = { data: null, epoch: null };
 async function getReplyActions(db) {
-    const currentEpoch = await getCurrentEpoch(db);
+    const currentEpoch = await getDomainEpoch(db, 'reply_actions');
     if (replyActionsCache.data && replyActionsCache.epoch === currentEpoch) return replyActionsCache.data;
     let map = {};
     try { const raw = await getSetting(db, 'reply_actions'); if (raw) map = JSON.parse(raw) || {}; } catch (e) {}
@@ -10221,7 +10640,7 @@ async function getReplyActions(db) {
 }
 let replyButtonMapCache = { data: null, epoch: null };
 async function getReplyButtonMap(db) {
-    const currentEpoch = await getCurrentEpoch(db);
+    const currentEpoch = await getDomainEpoch(db, 'reply_buttons');
     if (replyButtonMapCache.data && replyButtonMapCache.epoch === currentEpoch) return replyButtonMapCache.data;
     const map = {};
     try {
@@ -10268,12 +10687,31 @@ function resolveCommandAccessInput(value, adminOnlyValue, existing) {
     if (adminOnlyValue !== undefined && adminOnlyValue !== null) return adminOnlyValue ? 'admin' : 'everyone';
     return effectiveCommandAccess(existing);
 }
-async function getCommands(env) {
+async function getCommands(env, url) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
-        const result = await env.DB.prepare('SELECT * FROM commands ORDER BY order_idx, command').all();
+        // Summary mode strips content / buttons_json / reply_keyboard_json /
+        // media fields — the biggest strings on each row. Client asks for
+        // this by default and fetches the full row only when the user opens
+        // the edit modal.
+        const summary = url && url.searchParams.get('summary') === '1';
+        const cols = summary
+            ? "command, parent, response_type, enabled, access_level, is_admin_only, order_idx, CASE WHEN buttons_json != '' THEN 1 ELSE 0 END AS has_buttons, show_reply_keyboard"
+            : '*';
+        const result = await env.DB.prepare(`SELECT ${cols} FROM commands ORDER BY order_idx, command`).all();
         return apiJson({ commands: result.results || [] });
+    } catch (err) { return internalError(err); }
+}
+async function getCommandDetail(env, url) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const command = decodeURIComponent(url.pathname.split('/').pop());
+        if (!command) return apiJson({ error: 'Command name is required.' }, 400);
+        await initializeDatabase(env.DB);
+        const row = await env.DB.prepare('SELECT * FROM commands WHERE command = ?').bind(command).first();
+        if (!row) return apiJson({ error: 'Command not found.' }, 404);
+        return apiJson({ command: row });
     } catch (err) { return internalError(err); }
 }
 async function commandIsDescendant(db, ancestor, candidate) {
@@ -10313,7 +10751,7 @@ async function createCommand(request, env) {
             }
             throw e;
         }
-        await bumpEpoch(env.DB);
+        await bumpDomainEpoch(env.DB, 'reply_buttons');
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
 }
@@ -10366,9 +10804,9 @@ async function updateCommand(request, env) {
         } else {
             if (parent && await commandIsDescendant(env.DB, command, parent)) return apiJson({ error: 'You cannot nest a command inside its own child.' }, 400);
             await env.DB.prepare(`UPDATE commands SET parent = ?, response_type = ?, content = ?, media_url = ?, file_id = ?, media_meta = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ? WHERE command = ?`)
-                .bind(parent || null, rtype, content || '', media_url || '', file_id || '', media_meta || '', buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', command).run();
+            .bind(parent || null, rtype, content || '', media_url || '', file_id || '', media_meta || '', buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', command).run();
         }
-        await bumpEpoch(env.DB);
+        await bumpDomainEpoch(env.DB, 'reply_buttons');
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
 }
@@ -10386,7 +10824,7 @@ async function deleteCommand(request, env) {
             idx++;
         }
         await runBatchChunks(env.DB, toDelete.map(c => env.DB.prepare('DELETE FROM commands WHERE command = ?').bind(c)));
-        await bumpEpoch(env.DB);
+        await bumpDomainEpoch(env.DB, 'reply_buttons');
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
 }
@@ -10397,7 +10835,7 @@ async function reorderCommands(request, env) {
         if (!Array.isArray(order)) return apiJson({ error: 'Invalid order.' }, 400);
         await initializeDatabase(env.DB);
         await runBatchChunks(env.DB, order.map((cmd, i) => env.DB.prepare('UPDATE commands SET order_idx = ? WHERE command = ?').bind(i, cmd)));
-        await bumpEpoch(env.DB);
+        await bumpDomainEpoch(env.DB, 'reply_buttons');
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
 }
@@ -10449,7 +10887,7 @@ async function importCommandPack(request, env) {
             const ok = data.menu.filter(m => m && m.command && m.description);
             if (ok.length) await setSetting(env.DB, 'menu_commands', JSON.stringify(ok));
         }
-        await bumpEpoch(env.DB);
+        await bumpDomainEpoch(env.DB, 'reply_buttons');
         await logAction(env.DB, null, `Command pack imported (${valid.length})`);
         return apiJson({ success: true, imported: valid.length });
     } catch (err) { return internalError(err); }
@@ -10762,7 +11200,7 @@ async function updateUserRole(request, env) {
         if (!['user', 'moderator', 'admin'].includes(role)) return apiJson({ error: 'Invalid role. Must be user, moderator, or admin.' }, 400);
         await initializeDatabase(env.DB);
         await env.DB.prepare('UPDATE users SET role = ? WHERE id = ?').bind(role, userId).run();
-        await bumpEpoch(env.DB);
+        await bumpDomainEpoch(env.DB, 'roles');
         await logAction(env.DB, userId, `Role changed to ${role}`);
         userRoleCache.delete(userId);
         return apiJson({ success: true });
@@ -10846,7 +11284,7 @@ async function blockUser(request, env) {
         const type = blockType === 'ai_only' ? 'ai_only' : 'full';
         await initializeDatabase(env.DB);
         await env.DB.prepare('INSERT INTO blocked_users (user_id, block_type) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET block_type = excluded.block_type, blocked_at = CURRENT_TIMESTAMP').bind(userId, type).run();
-        await bumpEpoch(env.DB);
+        await bumpDomainEpoch(env.DB, 'blocks');
         await logAction(env.DB, userId, `Blocked (${type})`);
         return apiJson({ success: true, block_type: type });
     } catch (err) { return internalError(err); }
@@ -10858,7 +11296,7 @@ async function unblockUser(request, env) {
         if (!userId) return apiJson({ error: 'Missing userId.' }, 400);
         await initializeDatabase(env.DB);
         await env.DB.prepare('DELETE FROM blocked_users WHERE user_id = ?').bind(userId).run();
-        await bumpEpoch(env.DB);
+        await bumpDomainEpoch(env.DB, 'blocks');
         await logAction(env.DB, userId, 'Unblocked');
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
@@ -10877,7 +11315,7 @@ async function getBlockStatus(env, url) {
 const blockedCache = new Map();
 async function isUserBlocked(env, userId) {
     if (!env.DB) return null;
-    const currentEpoch = await getCurrentEpoch(env.DB);
+    const currentEpoch = await getDomainEpoch(env.DB, 'blocks');
     const cached = blockedCache.get(userId);
     if (cached && cached.epoch === currentEpoch) return cached.type;
     try {
@@ -11181,7 +11619,7 @@ async function saveGroupSettings(request, env, url) {
         await initializeDatabase(env.DB);
         const clean = normalizeGroupSettings(body);
         await env.DB.prepare('UPDATE groups SET settings_json = ? WHERE id = ?').bind(JSON.stringify(clean), id).run();
-        await bumpEpoch(env.DB);
+        await bumpDomainEpoch(env.DB, 'groups');
         await logAction(env.DB, null, `Group ${id} settings updated`);
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
@@ -11192,7 +11630,7 @@ async function deleteGroup(env, url) {
         const id = parseInt(url.pathname.split('/').pop());
         await initializeDatabase(env.DB);
         await env.DB.prepare('DELETE FROM groups WHERE id = ?').bind(id).run();
-        await bumpEpoch(env.DB);
+        await bumpDomainEpoch(env.DB, 'groups');
         await logAction(env.DB, null, `Group ${id} removed from dashboard`);
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
@@ -11218,7 +11656,7 @@ async function syncGroupStatus(env, url) {
         await env.DB.prepare(
             'UPDATE groups SET title = ?, type = ?, username = ?, is_active = 1, member_count = ?, last_active = CURRENT_TIMESTAMP WHERE id = ?'
         ).bind(chat.title || '', chat.type || 'group', chat.username || '', memberCount, id).run();
-        await bumpEpoch(env.DB);
+        await bumpDomainEpoch(env.DB, 'groups');
         return apiJson({ success: true, is_active: 1, title: chat.title || '', member_count: memberCount });
     } catch (err) { return internalError(err); }
 }
@@ -11377,7 +11815,7 @@ async function sendGroupMessage(request, env, url) {
 // Per-group settings cache — epoch-checked. Read on every group message.
 const groupSettingsCache = new Map();
 async function getGroupSettings(db, chatId) {
-    const currentEpoch = await getCurrentEpoch(db);
+    const currentEpoch = await getDomainEpoch(db, 'groups');
     const cached = groupSettingsCache.get(chatId);
     if (cached && cached.epoch === currentEpoch) return Object.assign({}, cached.data);
     try {
@@ -11762,7 +12200,7 @@ async function getAiSettings(env) {
 }
 const aiSettingsCache = { data: null, epoch: null };
 async function getAiSettingsFromDb(env) {
-    const currentEpoch = await getCurrentEpoch(env.DB);
+    const currentEpoch = await getDomainEpoch(env.DB, 'ai');
     if (aiSettingsCache.data && aiSettingsCache.epoch === currentEpoch) return Object.assign({}, aiSettingsCache.data);
     // Prime settingsCache so we can build the AI map from it.
     try { await getSetting(env.DB, 'ai_enabled'); } catch (e) {}
@@ -11823,13 +12261,12 @@ async function saveAiSettings(request, env) {
                 settings.ai_alt_providers = JSON.stringify(incoming);
             } catch (e) {}
         }
-        const stmts = [];
+        const entries = [];
         for (const k of AI_KEYS) {
             if (settings[k] === undefined) continue;
-            stmts.push(env.DB.prepare(`INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`).bind(k, String(settings[k])));
+            entries.push([k, String(settings[k])]);
         }
-        await runBatchChunks(env.DB, stmts);
-        await bumpEpoch(env.DB);
+        await setSettingsBatch(env.DB, entries);
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
 }
@@ -11845,7 +12282,7 @@ async function resetAiSettings(env) {
     try {
         await initializeDatabase(env.DB);
         await runBatchChunks(env.DB, AI_KEYS.map(k => env.DB.prepare('DELETE FROM settings WHERE key = ?').bind(k)));
-        await bumpEpoch(env.DB);
+        await bumpDomainEpochs(env.DB, ['settings', 'ai']);
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
 }
@@ -11853,7 +12290,6 @@ async function clearAiMemory(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await env.DB.prepare('DELETE FROM ai_messages').run();
-        await bumpEpoch(env.DB);
         return apiJson({ success: true });
     }
     catch (err) { return internalError(err); }
@@ -12406,8 +12842,8 @@ async function handleSchemaHeal(env) {
         // accurate even if the app has already cold-started.
         const result = await autoHealSchema(env.DB);
         // Heal may have inserted settings or rewritten command access_level —
-        // bump the epoch so every cache invalidates across all isolates.
-        await bumpEpoch(env.DB);
+        // bump every domain epoch so all caches invalidate across all isolates.
+        await bumpAllEpochs(env.DB);
         const cleanedCount = Object.values(result.cleanedRows || {}).reduce((a, b) => a + b, 0);
         const nothingHealed = result.tablesCreated.length === 0
             && result.columnsAdded.length === 0
@@ -12602,9 +13038,10 @@ async function restoreBackup(request, env) {
         }
         await runBatchChunks(env.DB, setStmts);
         // Restoring writes settings via raw SQL (not setSetting), so we must
-        // bump the epoch explicitly — otherwise every cached read (settings,
-        // AI, user roles, blocks, group settings) stays stale on all isolates.
-        await bumpEpoch(env.DB);
+        // bump every domain epoch explicitly — otherwise every cached read
+        // (settings, AI, user roles, blocks, group settings, tokens, …)
+        // stays stale on all isolates.
+        await bumpAllEpochs(env.DB);
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
 }
@@ -13219,6 +13656,7 @@ async function generateMcpTokenHandler(request, env) {
         const hashHex = toHex(hashBuf);
         const prefix = raw.slice(0, 12);
         await env.DB.prepare('INSERT INTO mcp_tokens (label, token_hash, token_prefix) VALUES (?, ?, ?)').bind(label, hashHex, prefix).run();
+        await bumpDomainEpoch(env.DB, 'mcp_tokens');
         await logAction(env.DB, null, 'MCP token generated');
         return apiJson({ success: true, token: raw, prefix, label });
     } catch (err) { return internalError(err); }
@@ -13230,7 +13668,7 @@ async function revokeMcpTokens(env) {
         await env.DB.prepare('DELETE FROM mcp_tokens').run();
         await env.DB.prepare("DELETE FROM mcp_sessions WHERE session_key LIKE 'ext:%'").run();
         await env.DB.prepare("DELETE FROM mcp_rate_limits WHERE session_key LIKE 'ext:%'").run();
-        await bumpEpoch(env.DB);  // invalidate mcpTokenCache cluster-wide
+        await bumpDomainEpoch(env.DB, 'mcp_tokens');
         await logAction(env.DB, null, 'All MCP tokens revoked');
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
@@ -13260,7 +13698,7 @@ async function verifyMcpToken(env, rawToken) {
     if (!rawToken) return null;
     const hashBuf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(rawToken));
     const hashHex = toHex(hashBuf);
-    const currentEpoch = await getCurrentEpoch(env.DB);
+    const currentEpoch = await getDomainEpoch(env.DB, 'mcp_tokens');
     const cached = mcpTokenCache.get(hashHex);
     if (cached && cached.epoch === currentEpoch) return cached.row;
     const row = await env.DB.prepare('SELECT id, token_prefix, last_used_at FROM mcp_tokens WHERE token_hash = ?').bind(hashHex).first();
@@ -14301,7 +14739,7 @@ async function executeMcpTool(name, args, env, categories) {
             try { existing = JSON.parse(row.settings_json || '{}'); } catch (e) {}
             const merged = normalizeGroupSettings(Object.assign({}, existing, patch));
             await env.DB.prepare('UPDATE groups SET settings_json = ? WHERE id = ?').bind(JSON.stringify(merged), gid).run();
-            await bumpEpoch(env.DB);
+            await bumpDomainEpoch(env.DB, 'groups');
             return { success: true, groupId: gid, settings: merged };
         }
 
@@ -14314,7 +14752,7 @@ async function executeMcpTool(name, args, env, categories) {
             if (!user) throw new Error(`User ${uid} not found.`);
             if (user.role === role) return { success: true, userId: uid, role: role, note: 'Already at this role.' };
             await env.DB.prepare('UPDATE users SET role = ? WHERE id = ?').bind(role, uid).run();
-            await bumpEpoch(env.DB);
+            await bumpDomainEpoch(env.DB, 'roles');
             return {
                 success: true, userId: uid,
                 first_name: user.first_name || '', username: user.username || '',
@@ -14335,7 +14773,7 @@ async function executeMcpTool(name, args, env, categories) {
             }
             const newRole = user.role === 'admin' ? 'moderator' : 'user';
             await env.DB.prepare('UPDATE users SET role = ? WHERE id = ?').bind(newRole, uid).run();
-            await bumpEpoch(env.DB);
+            await bumpDomainEpoch(env.DB, 'roles');
             return {
                 success: true, userId: uid,
                 first_name: user.first_name || '', username: user.username || '',
@@ -14351,7 +14789,7 @@ async function executeMcpTool(name, args, env, categories) {
             await env.DB.prepare(
                 'INSERT INTO blocked_users (user_id, block_type) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET block_type = excluded.block_type, blocked_at = CURRENT_TIMESTAMP'
             ).bind(uid, type).run();
-            await bumpEpoch(env.DB);
+            await bumpDomainEpoch(env.DB, 'blocks');
             return { success: true, userId: uid, blockType: type };
         }
 
@@ -14360,7 +14798,7 @@ async function executeMcpTool(name, args, env, categories) {
             const uid = parseInt(args.userId);
             if (!uid) throw new Error('userId is required.');
             await env.DB.prepare('DELETE FROM blocked_users WHERE user_id = ?').bind(uid).run();
-            await bumpEpoch(env.DB);
+            await bumpDomainEpoch(env.DB, 'blocks');
             return { success: true, userId: uid };
         }
 
@@ -14370,7 +14808,6 @@ async function executeMcpTool(name, args, env, categories) {
             const uid = parseInt(args.userId);
             if (!uid) throw new Error('userId is required.');
             const r = await env.DB.prepare('DELETE FROM ai_messages WHERE chat_id = ?').bind(uid).run();
-            await bumpEpoch(env.DB);
             return { success: true, userId: uid, deleted: (r && r.meta && r.meta.changes) || 0 };
         }
 
@@ -15156,6 +15593,7 @@ async function send(){
 </script>
 </body></html>`;
 
+
 async function handleServiceWorker(request, env) {
     // Minimal Service Worker that caches the HTML shell (the DASHBOARD_HTML
     // string) and serves it cache-first on subsequent navigations. HTML
@@ -15165,119 +15603,157 @@ async function handleServiceWorker(request, env) {
     // API/webhook/MCP/chat/oauth traffic is NEVER intercepted — those always
     // hit the network so live data is preserved end-to-end.
     const sw = `// Nyxx Service Worker v${VERSION}
-const CACHE = 'nyxx-shell-v${VERSION}';
+    const CACHE = 'nyxx-shell-v${VERSION}';
 
-self.addEventListener('install', function(event) {
+    self.addEventListener('install', function(event) {
     self.skipWaiting();
     event.waitUntil(
         caches.open(CACHE).then(function(cache) {
             return fetch('/').then(function(res) {
                 if (res && res.ok) return cache.put('/', res.clone());
-            }).catch(function() {});
+                }).catch(function() {});
         })
     );
-});
-
-self.addEventListener('activate', function(event) {
-    event.waitUntil(
-        caches.keys().then(function(keys) {
-            return Promise.all(
-                keys.filter(function(k) { return k !== CACHE; })
+    });
+    
+    self.addEventListener('activate', function(event) {
+        event.waitUntil(
+            caches.keys().then(function(keys) {
+                return Promise.all(
+                    keys.filter(function(k) { return k !== CACHE; })
                     .map(function(k) { return caches.delete(k); })
-            );
-        }).then(function() { return self.clients.claim(); })
-    );
-});
-
-self.addEventListener('fetch', function(event) {
-    const req = event.request;
-    if (req.method !== 'GET') return;
-    const url = new URL(req.url);
-
-    // Never touch dynamic endpoints
-    if (url.pathname.startsWith('/api/')) return;
-    if (url.pathname === '/webhook') return;
-    if (url.pathname === '/mcp') return;
-    if (url.pathname === '/chat') return;
-    if (url.pathname === '/sw.js') return;
-    if (url.pathname.indexOf('/oauth') === 0) return;
-
-    // Navigation → cache-first, background revalidate.
-    if (req.mode === 'navigate' || (url.pathname === '/' && req.headers.get('accept') && req.headers.get('accept').indexOf('text/html') >= 0)) {
-        event.respondWith(
-            caches.open(CACHE).then(function(cache) {
-                return cache.match('/').then(function(cached) {
+                    );
+                    }).then(function() { return self.clients.claim(); })
+                    );
+                    });
+                    
+                    self.addEventListener('fetch', function(event) {
+                        const req = event.request;
+                        if (req.method !== 'GET') return;
+                        const url = new URL(req.url);
+                        
+                        // Stale-while-revalidate for two hot read endpoints. Returning users
+                        // see the last-known body instantly; fresh data is fetched in the
+                        // background and used on the next navigation. The ETag + 304
+                        // coordination in getOverview() means the network fetch is cheap
+                        // when nothing has changed.
+                        if (url.origin === self.location.origin &&
+                        (url.pathname === '/api/overview' || url.pathname === '/api/settings')) {
+                            event.respondWith(
+                                caches.open(CACHE).then(function(cache) {
+                                    return cache.match(req).then(function(cached) {
+                                        const networkFetch = fetch(req).then(function(res) {
+                                            if (res && res.ok) cache.put(req, res.clone());
+                                            return res;
+                                            }).catch(function() { return cached; });
+                                            return cached || networkFetch;
+                                            });
+                                            })
+                                            );
+                                            return;
+                                            }
+                                            
+                                            // Never touch other dynamic endpoints
+                                            if (url.pathname.startsWith('/api/')) return;
+                                            if (url.pathname === '/webhook') return;
+                                            if (url.pathname === '/mcp') return;
+                                            if (url.pathname === '/chat') return;
+                                            if (url.pathname === '/sw.js') return;
+                                            if (url.pathname.indexOf('/oauth') === 0) return;
+                                            
+                                            // Navigation → cache-first, background revalidate.
+                                            if (req.mode === 'navigate' || (url.pathname === '/' && req.headers.get('accept') && req.headers.get('accept').indexOf('text/html') >= 0)) {
+                                                event.respondWith(
+                                                    caches.open(CACHE).then(function(cache) {
+                                                        return cache.match('/').then(function(cached) {
                     const networkFetch = fetch(req).then(function(res) {
                         if (res && res.ok) cache.put('/', res.clone());
                         return res;
-                    }).catch(function() { return cached; });
-                    return cached || networkFetch;
-                });
-            })
-        );
-        return;
-    }
-
-    // Font Awesome CSS → stale-while-revalidate
-    if (url.hostname === 'cdnjs.cloudflare.com') {
-        event.respondWith(
-            caches.open(CACHE).then(function(cache) {
-                return cache.match(req).then(function(cached) {
+                        }).catch(function() { return cached; });
+                        return cached || networkFetch;
+                        });
+                        })
+                        );
+                        return;
+                        }
+                        
+                        // Font Awesome CSS → stale-while-revalidate
+                        if (url.hostname === 'cdnjs.cloudflare.com') {
+                            event.respondWith(
+                                caches.open(CACHE).then(function(cache) {
+                                    return cache.match(req).then(function(cached) {
                     const networkFetch = fetch(req).then(function(res) {
                         if (res && (res.ok || res.type === 'opaque')) cache.put(req, res.clone());
                         return res;
-                    });
-                    return cached || networkFetch;
-                });
-            })
-        );
-    }
-});
-`;
-    return new Response(sw, {
+                        });
+                        return cached || networkFetch;
+                        });
+                        })
+                        );
+                        }
+                        });
+                        `;
+                        return new Response(sw, {
+                            headers: {
+                                'Content-Type': 'application/javascript; charset=utf-8',
+                                'Cache-Control': 'public, max-age=3600',
+                                'Service-Worker-Allowed': '/',
+                                'X-Content-Type-Options': 'nosniff',
+                            },
+                        });
+                    }
+                    
+                    async function handleChatPage(request, env) {
+                        const session = await getSession(request, env);
+                        if (!session) {
+                            return new Response(null, { status: 302, headers: { Location: '/' } });
+                        }
+                        return new Response(CHAT_HTML, { headers: HTML_HEADERS });
+                    }
+                    
+                    async function listChatSessions(env) {
+                        if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+                        try {
+                            await initializeDatabase(env.DB);
+                            const rows = await env.DB.prepare(
+                                "SELECT session_key, title, size_bytes, updated_at FROM mcp_sessions WHERE session_key LIKE 'chat:%' ORDER BY updated_at DESC LIMIT 100"
+                            ).all();
+                            return apiJson({ sessions: rows.results || [] });
+                        } catch (err) { return internalError(err); }
+                    }
+
+                    async function createChatSession(request, env) {
+                        if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+                        try {
+                            await initializeDatabase(env.DB);
+                            await getSystemLanguageFromDb(env);
+                            const mcpOn = await getSetting(env.DB, 'mcp_enabled');
+                            if (mcpOn !== '1') return apiJson({ error: 'MCP is disabled. Enable it in the MCP tab first.' }, 400);
+                            const body = await request.json().catch(() => ({}));
+                            const key = 'chat:' + crypto.randomUUID().slice(0, 8);
+                            const title = String(body.title || 'New chat').slice(0, 60);
+                            await env.DB.prepare(
+                                "INSERT INTO mcp_sessions (session_key, messages_json, size_bytes, title) VALUES (?, '[]', 2, ?)"
+                            ).bind(key, title).run();
+        return apiJson({ success: true, sessionKey: key, title });
+    } catch (err) { return internalError(err); }
+}
+const CLIENT_MODULES = {
+    '/js/settings.js': SETTINGS_JS,
+    '/js/ai.js': AI_JS,
+    '/js/mcp.js': MCP_JS,
+};
+async function serveClientModule(pathname) {
+    const code = CLIENT_MODULES[pathname];
+    if (!code) return new Response('Not Found', { status: 404, headers: SECURITY_HEADERS });
+    return new Response(code, {
         headers: {
             'Content-Type': 'application/javascript; charset=utf-8',
             'Cache-Control': 'public, max-age=3600',
-            'Service-Worker-Allowed': '/',
             'X-Content-Type-Options': 'nosniff',
-        },
+            'Cross-Origin-Resource-Policy': 'same-origin',
+        }
     });
-}
-
-async function handleChatPage(request, env) {
-    const session = await getSession(request, env);
-    if (!session) {
-        return new Response(null, { status: 302, headers: { Location: '/' } });
-    }
-    return new Response(CHAT_HTML, { headers: HTML_HEADERS });
-}
-
-async function listChatSessions(env) {
-    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
-    try {
-        await initializeDatabase(env.DB);
-        const rows = await env.DB.prepare(
-            "SELECT session_key, title, size_bytes, updated_at FROM mcp_sessions WHERE session_key LIKE 'chat:%' ORDER BY updated_at DESC LIMIT 100"
-        ).all();
-        return apiJson({ sessions: rows.results || [] });
-    } catch (err) { return internalError(err); }
-}
-
-async function createChatSession(request, env) {
-    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
-    try {
-        await initializeDatabase(env.DB);
-        await getSystemLanguageFromDb(env);
-        const mcpOn = await getSetting(env.DB, 'mcp_enabled');
-        if (mcpOn !== '1') return apiJson({ error: 'MCP is disabled. Enable it in the MCP tab first.' }, 400);
-        const body = await request.json().catch(() => ({}));
-        const key = 'chat:' + crypto.randomUUID().slice(0, 8);
-        const title = String(body.title || 'New chat').slice(0, 60);
-        await env.DB.prepare(
-            "INSERT INTO mcp_sessions (session_key, messages_json, size_bytes, title) VALUES (?, '[]', 2, ?)"
-        ).bind(key, title).run();
-        return apiJson({ success: true, sessionKey: key, title });
-    } catch (err) { return internalError(err); }
 }
 
 async function getChatSession(env, url) {
@@ -15735,7 +16211,7 @@ let cachedSystemLang = { lang: 'en', epoch: null };
 async function getSystemLanguageFromDb(env) {
     if (!env || !env.DB) return 'en';
     try {
-        const currentEpoch = await getCurrentEpoch(env.DB);
+        const currentEpoch = await getDomainEpoch(env.DB, 'sys_lang');
         if (cachedSystemLang.lang && cachedSystemLang.epoch === currentEpoch) {
             return cachedSystemLang.lang;
         }
