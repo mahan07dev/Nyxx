@@ -476,7 +476,7 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
 .ok-box { background: var(--green-soft); color: var(--green); border-radius: var(--r-sm); padding: 10px 14px; font-size: var(--fs-footnote); margin-top: var(--s3); display: none; }
 .ok-box.show { display: block; }
 .warn-box { background: var(--orange-soft); color: var(--orange); border-radius: var(--r-sm); padding: 10px 14px; font-size: var(--fs-footnote); margin-top: var(--s3); }
-@media (max-width: 640px) { .modal { padding: 0; align-items: flex-end; } .sheet { max-width: 100%; border-radius: var(--r-xl) var(--r-xl) 0 0; max-height: 94vh; } }
+@media (max-width: 640px) { .modal { padding: 0; align-items: flex-end; } .sheet { max-width: 100%; border-radius: var(--r-xl) var(--r-xl) 0 0; max-height: 94vh; } .segmented_mobile{display: inline-table !important;} .demote-text{display: none !important;} }
 
 .kb-wrap { display: flex; flex-direction: column; gap: 2px; }
 .kb-rowchips { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: stretch; padding: 8px 0; border-bottom: 1px dashed var(--hairline); }
@@ -2053,12 +2053,16 @@ body { overflow-x: hidden; }
                 </div>
 
                 <details class="help">
-                    <summary><i class="fa-solid fa-lightbulb"></i> Best practices for infinite storage, selling documents &amp; user access</summary>
+                    <summary><i class="fa-solid fa-lightbulb"></i> Best practices for infinite storage, 2 GB uploads, selling documents &amp; user access</summary>
                     <div>
                         <b>1. Infinite Telegram storage:</b> Create a private Telegram <b>Channel</b> (recommended), add your bot as an admin with <i>Post Messages</i>, and paste its ID (<code>-100…</code>) or <code>@username</code> below. Keep <b>Delete after upload</b> OFF so Telegram retains the original file permanently.<br><br>
-                        <b>2. Lossless quality (selling PDFs, ZIPs, videos, high-res images):</b> Upload as <b>Document</b> instead of Photo/Video so Telegram does not compress or strip metadata.<br><br>
-                        <b>3. User-based access &amp; expiration:</b> Set <b>Allowed User IDs</b> or an <b>Expiration</b> on any media item (or in bulk) AND/OR on a command. Whenever a user runs a command linked to that <code>file_id</code>, Nyxx automatically checks both command and media allowances &amp; expirations.<br><br>
-                        <b>4. Validation:</b> Click <b>Validate</b> anytime to verify via Telegram's <code>getFile</code> that your stored <code>file_id</code>s are still live and deliverable.
+                        <b>2. Uploading files up to 2 GB (beyond the 45 MB web limit):</b> Browser uploads go through the Worker and Telegram Bot API (capped at 45 MB). For large files up to <b>2 GB</b>, either:<br>
+                        • <b>Post directly to your Storage Channel</b> from Telegram Desktop/Mobile — Nyxx auto-indexes it into your Media Library.<br>
+                        • <b>Send or forward the file to your bot in Private DM (as an admin)</b> — Nyxx auto-saves it and replies with its <code>file_id</code> (add a caption to pre-fill the label/caption).<br>
+                        • Or paste an existing <code>file_id</code> manually via <b>Add file_id</b>.<br><br>
+                        <b>3. Lossless quality (selling PDFs, ZIPs, videos, high-res images):</b> Upload as <b>Document</b> instead of Photo/Video so Telegram does not compress or strip metadata.<br><br>
+                        <b>4. User-based access &amp; expiration:</b> Set <b>Allowed User IDs</b> or an <b>Expiration</b> on any media item (or in bulk) AND/OR on a command. Whenever a user runs a command linked to that <code>file_id</code>, Nyxx automatically checks both command and media allowances &amp; expirations.<br><br>
+                        <b>5. Validation &amp; 20 MB preview limit:</b> Click <b>Validate</b> anytime to check via Telegram's <code>getFile</code> that your stored <code>file_id</code>s are live. Files over <b>20 MB</b> cannot be previewed in the browser (Telegram's Bot API download cap), but validation still treats them as <b>valid</b> and your bot delivers them normally up to 2 GB.
                     </div>
                 </details>
 
@@ -16322,8 +16326,6 @@ html,body{margin:0;padding:0;height:100vh;height:100dvh;overflow:hidden;backgrou
     .msg .actions{opacity:1}
     .empty-chat h2{font-size:20px}
     .empty-chat p{font-size:13px}
-    .segmented_mobile{display: inline-table !important;}
-    .demote-text{display: none !important;}
 }
 </style></head>
 <body>
