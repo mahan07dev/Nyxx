@@ -1,8 +1,8 @@
 // ============================================================================
-// NYXX — v4.9.4
+// NYXX — v4.9.5
 // Telegram bot builder + management dashboard for Cloudflare Workers + D1.
 // ============================================================================
-const VERSION = '4.9.4';
+const VERSION = '4.9.5';
 
 const RELAY_BASE = 'https://nyxx-proxy.nova-06272b19.workers.dev';
 // Forks: set the RELAY_BASE variable (or edit the line above) to point at your own relay.
@@ -808,22 +808,104 @@ details.help > div { padding: 0 16px 14px; font-size: var(--fs-footnote); line-h
 .compose-status .cs-clear:hover { background: var(--fill-1); color: var(--text); }
 
 /* ===== Media library ===== */
-.media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
-.media-card { background: var(--surface); border: 1px solid var(--hairline); border-radius: 12px; overflow: hidden; position: relative; transition: transform 0.15s, border-color 0.15s; }
-.media-card:hover { transform: translateY(-2px); border-color: var(--accent); }
-.media-card .media-thumb { aspect-ratio: 1; background: var(--surface-2); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.media-dropzone {
+    border: 1.5px dashed var(--hairline); border-radius: var(--r-md);
+    padding: 18px 16px; text-align: center; background: var(--surface-2);
+    cursor: pointer; transition: border-color 0.15s, background 0.15s;
+}
+.media-dropzone:hover, .media-dropzone.dragover {
+    border-color: var(--accent); background: var(--accent-soft);
+}
+.media-dropzone i { font-size: 24px; color: var(--accent); margin-bottom: 6px; display: block; }
+.media-bulk-bar {
+    display: none; align-items: center; gap: 8px; flex-wrap: wrap;
+    padding: 10px 14px; margin-bottom: 12px; border-radius: var(--r-md);
+    background: var(--accent-soft); border: 1px solid var(--accent);
+}
+.media-bulk-bar.show { display: flex; }
+.media-cb { width: 17px; height: 17px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
+.media-badges { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; margin-top: 4px; }
+.media-badges .badge { font-size: 10px; padding: 2px 6px; }
+
+/* Grid view (flat, border-based, no shadows) */
+.media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)); gap: 10px; }
+.media-card {
+    background: var(--surface); border: 1px solid var(--hairline);
+    border-radius: var(--r-md); overflow: hidden; position: relative;
+    transition: border-color 0.15s, background 0.15s;
+    display: flex; flex-direction: column;
+}
+.media-card:hover { border-color: var(--accent); }
+.media-card.selected { border-color: var(--accent); background: var(--accent-soft); }
+.media-card.invalid { border-color: var(--red); }
+.media-card .media-thumb {
+    aspect-ratio: 4/3; background: var(--surface-2);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; position: relative; cursor: pointer;
+}
+.media-card .media-thumb.no-preview { aspect-ratio: auto; height: 64px; }
 .media-card .media-thumb img, .media-card .media-thumb video { width: 100%; height: 100%; object-fit: cover; display: block; }
-.media-card .media-thumb .fa-solid, .media-card .media-thumb .fa-regular { font-size: 32px; color: var(--text-4); }
-.media-card .media-info { padding: 10px 12px; }
-.media-card .media-title { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.media-card .media-sub { font-size: 11px; color: var(--text-4); margin-top: 2px; display: flex; justify-content: space-between; }
-.media-card .media-actions { position: absolute; top: 6px; right: 6px; display: flex; gap: 4px; opacity: 0; transition: opacity 0.15s; }
-.media-card:hover .media-actions { opacity: 1; }
-.media-card .media-actions button { background: rgba(0,0,0,0.7); color: #fff; border: none; width: 28px; height: 28px; border-radius: 6px; cursor: pointer; font-size: 12px; display: inline-flex; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
-.media-card .media-actions button:hover { background: var(--accent); }
-.media-card .media-actions button.danger:hover { background: var(--red); }
-.media-type-tag { position: absolute; top: 6px; left: 6px; background: rgba(0,0,0,0.7); color: #fff; font-size: 10px; font-weight: 700; padding: 3px 7px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.04em; backdrop-filter: blur(8px); }
-@media (max-width: 640px) { .media-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; } .media-card .media-actions { opacity: 1; } }
+.media-card .media-thumb .fa-solid, .media-card .media-thumb .fa-regular { font-size: 26px; color: var(--text-3); }
+.media-card .media-info { padding: 9px 11px; flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.media-card .media-title { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+.media-card .media-sub { font-size: 11px; color: var(--text-4); margin-top: 2px; display: flex; justify-content: space-between; gap: 6px; }
+.media-card .media-card-foot { display: flex; gap: 4px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--hairline); }
+.media-card .media-card-foot .icon-btn { width: 28px; height: 28px; font-size: 12px; flex: 1; }
+.media-card .media-cb-wrap {
+    position: absolute; top: 6px; left: 6px; z-index: 2;
+    background: var(--surface); border: 1px solid var(--hairline);
+    border-radius: 6px; padding: 3px; display: inline-flex; align-items: center; justify-content: center;
+}
+.media-type-tag {
+    position: absolute; top: 6px; right: 6px; z-index: 2;
+    background: rgba(0,0,0,0.72); color: #fff; font-size: 10px; font-weight: 700;
+    padding: 2px 7px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.04em;
+}
+
+/* List view (ultra-fast, dense, ideal for 100+ files) */
+.media-list { background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--r-md); overflow: hidden; }
+.media-list-row {
+    display: flex; align-items: center; gap: 12px; padding: 10px 14px;
+    border-bottom: 1px solid var(--hairline); transition: background 0.12s;
+}
+.media-list-row:last-child { border-bottom: none; }
+.media-list-row:hover { background: var(--surface-2); }
+.media-list-row.selected { background: var(--accent-soft); }
+.media-list-thumb {
+    width: 44px; height: 44px; border-radius: 8px; background: var(--surface-2);
+    border: 1px solid var(--hairline); flex-shrink: 0; overflow: hidden;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.media-list-thumb img, .media-list-thumb video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.media-list-thumb i { font-size: 18px; color: var(--text-3); }
+.media-list-main { flex: 1; min-width: 0; cursor: pointer; }
+.media-list-title { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.media-list-sub { font-size: 12px; color: var(--text-4); margin-top: 2px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.media-list-actions { display: flex; gap: 4px; flex-shrink: 0; }
+
+/* Detail view */
+.media-detail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+.media-detail-card {
+    background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--r-md);
+    padding: 12px; display: flex; flex-direction: column; gap: 10px;
+}
+.media-detail-card.selected { border-color: var(--accent); background: var(--accent-soft); }
+.media-detail-top { display: flex; gap: 12px; align-items: flex-start; }
+.media-detail-thumb {
+    width: 72px; height: 72px; border-radius: 10px; background: var(--surface-2);
+    border: 1px solid var(--hairline); flex-shrink: 0; overflow: hidden;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.media-detail-thumb img, .media-detail-thumb video { width: 100%; height: 100%; object-fit: cover; }
+.media-detail-thumb i { font-size: 24px; color: var(--text-3); }
+.media-detail-caption { font-size: 12px; color: var(--text-3); background: var(--surface-2); padding: 7px 10px; border-radius: 8px; word-break: break-word; }
+
+@media (max-width: 640px) {
+    .media-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+    .media-detail-grid { grid-template-columns: 1fr; }
+    .media-list-row { padding: 10px; gap: 8px; }
+    .media-list-actions .hide-sm { display: none; }
+}
 
 /* ===== AUTH GATEWAY ===== */
 .auth-shell { min-height: calc(100vh - 200px); display: flex; align-items: center; justify-content: center; padding: var(--s6) 0; }
@@ -1150,6 +1232,7 @@ body { overflow-x: hidden; }
                     </div>
                     <button class="btn btn-primary btn-block btn-lg" id="setup-submit" onclick="submitSetup()"><i class="fa-solid fa-check"></i> Save &amp; continue<span class="btn-spinner"><span class="mini-spinner"></span></span></button>
                     <div class="err-box" id="setup-error"></div>
+                    <div class="auth-help"><i class="fa-solid fa-circle-info"></i> Tip: You can also set an <code>ADMIN_PASS</code> environment variable / secret in Cloudflare Worker settings to override or bypass D1 password setup.</div>
                 </div>
             </div>
         </div>
@@ -1174,6 +1257,7 @@ body { overflow-x: hidden; }
                         <button type="submit" class="btn btn-primary btn-block btn-lg" id="login-submit"><i class="fa-solid fa-arrow-right-to-bracket"></i> Sign in<span class="btn-spinner"><span class="mini-spinner"></span></span></button>
                         <div class="err-box" id="login-error"></div>
                     </form>
+                    <div class="auth-help"><i class="fa-solid fa-key"></i> Forgot your password? Set an <code>ADMIN_PASS</code> environment variable / secret in your Cloudflare Worker settings to sign in with it anytime (it works over/alongside the D1 password).</div>
                 </div>
             </div>
         </div>
@@ -1959,35 +2043,134 @@ body { overflow-x: hidden; }
 
             <section class="page" id="page-media">
                 <div class="page-head">
-                    <div class="lead"><h1>Media Library</h1><p>Every file you have uploaded. Reuse them anywhere media is accepted.</p></div>
+                    <div class="lead"><h1>Media Library</h1><p>Upload, organize, gate by user ID, expire, and validate Telegram files for commands &amp; digital delivery.</p></div>
                     <div class="page-actions">
+                        <button class="btn btn-gray btn-sm" onclick="openAddFileIdModal()"><i class="fa-solid fa-plus"></i> Add file_id</button>
+                        <button class="btn btn-gray btn-sm" onclick="validateAllVisibleMedia()"><i class="fa-solid fa-shield-check"></i> Validate</button>
                         <button class="btn btn-gray btn-sm" onclick="loadMediaLibrary(true)"><i class="fa-solid fa-rotate"></i> Refresh</button>
-                        <button class="btn btn-danger btn-sm" onclick="clearMediaLibrary()"><i class="fa-solid fa-trash-can"></i> Clear library</button>
+                        <button class="btn btn-danger btn-sm" onclick="clearMediaLibrary()"><i class="fa-solid fa-trash-can"></i> Clear</button>
                     </div>
                 </div>
-                <div class="hint-banner">
-                    <i class="fa-solid fa-circle-info"></i>
-                    <div>Files are stored on Telegram and referenced by <code>file_id</code> — they cost nothing to keep. The library is populated automatically whenever you upload media through this dashboard.</div>
-                </div>
+
+                <details class="help">
+                    <summary><i class="fa-solid fa-lightbulb"></i> Best practices for infinite storage, selling documents &amp; user access</summary>
+                    <div>
+                        <b>1. Infinite Telegram storage:</b> Create a private Telegram <b>Channel</b> (recommended), add your bot as an admin with <i>Post Messages</i>, and paste its ID (<code>-100…</code>) or <code>@username</code> below. Keep <b>Delete after upload</b> OFF so Telegram retains the original file permanently.<br><br>
+                        <b>2. Lossless quality (selling PDFs, ZIPs, videos, high-res images):</b> Upload as <b>Document</b> instead of Photo/Video so Telegram does not compress or strip metadata.<br><br>
+                        <b>3. User-based access &amp; expiration:</b> Set <b>Allowed User IDs</b> or an <b>Expiration</b> on any media item (or in bulk) AND/OR on a command. Whenever a user runs a command linked to that <code>file_id</code>, Nyxx automatically checks both command and media allowances &amp; expirations.<br><br>
+                        <b>4. Validation:</b> Click <b>Validate</b> anytime to verify via Telegram's <code>getFile</code> that your stored <code>file_id</code>s are still live and deliverable.
+                    </div>
+                </details>
+
                 <div class="card" id="media-storage-card">
-                    <div class="card-head"><div class="card-title c-green"><i class="fa-solid fa-database"></i> Storage chat</div></div>
+                    <div class="card-head">
+                        <div class="card-title c-green"><i class="fa-solid fa-database"></i> Media storage destination</div>
+                    </div>
+                    <div class="field">
+                        <label class="field-label">Storage chat ID or @username (DM, Channel, or Group)</label>
+                        <div class="input-with-btn">
+                            <input class="input mono" id="set-media-storage" placeholder="e.g. -1001234567890, @myarchive, or your user ID">
+                            <button class="btn btn-primary btn-sm" id="save-media-storage-btn" onclick="saveMediaStorage()"><i class="fa-solid fa-check"></i> Save</button>
+                        </div>
+                        <span class="field-hint"><i class="fa-solid fa-circle-info"></i> Use a private channel (<code>-100…</code>, bot must be admin), a group chat (<code>-…</code>), or your own numeric Telegram user ID (start the bot first).</span>
+                    </div>
+                    <div class="switch-row" style="margin-bottom:12px;">
+                        <div>
+                            <div class="sw-label">Delete message from storage chat right after upload</div>
+                            <div class="sw-sub"><b>Off by default (recommended):</b> keeps uploaded messages in your storage chat for infinite Telegram archive &amp; visual backup.</div>
+                        </div>
+                        <button class="switch" id="media-delete-after" onclick="toggleMediaDeleteAfter()"></button>
+                    </div>
                     <div id="media-storage-info" class="small muted">Loading…</div>
-                    <div class="field-hint" style="margin-top:8px;">Set or change this in <a href="#" onclick="go('settings');return false;">Settings → Media storage</a>. Changes appear here automatically.</div>
+                    <div id="media-storage-result" class="small" style="margin-top:6px;"></div>
                 </div>
+
+                <div class="card" id="media-upload-card">
+                    <div class="card-head">
+                        <div class="card-title"><i class="fa-solid fa-cloud-arrow-up"></i> Upload media</div>
+                        <div style="flex:1"></div>
+                        <select class="input" id="media-upload-type" style="width:auto;height:32px;font-size:13px;">
+                            <option value="auto">Auto-detect type</option>
+                            <option value="document">Document (uncompressed)</option>
+                            <option value="photo">Photo</option>
+                            <option value="video">Video</option>
+                            <option value="animation">Animation (GIF)</option>
+                            <option value="audio">Audio / Music</option>
+                            <option value="voice">Voice message</option>
+                            <option value="video_note">Round video</option>
+                            <option value="sticker">Sticker</option>
+                        </select>
+                    </div>
+                    <div class="media-dropzone" id="media-dropzone" onclick="document.getElementById('media-tab-file').click()" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="handleMediaDrop(event)">
+                        <i class="fa-solid fa-file-arrow-up"></i>
+                        <div style="font-weight:600;font-size:14px;">Click or drag files here to upload</div>
+                        <div class="tiny muted" style="margin-top:3px;">Up to 45 MB per file · Supports selecting multiple files · Use <b>Document</b> for lossless PDFs, ZIPs &amp; originals</div>
+                        <input type="file" id="media-tab-file" multiple class="hidden" onchange="handleMediaTabFiles(this.files)">
+                    </div>
+                    <div class="grid grid-3" style="margin-top:12px;">
+                        <div class="field" style="margin-bottom:0;">
+                            <label class="field-label tiny">Optional label prefix</label>
+                            <input class="input" id="media-up-label" placeholder="Leave blank to use filename">
+                        </div>
+                        <div class="field" style="margin-bottom:0;">
+                            <label class="field-label tiny">Allowed user IDs (optional)</label>
+                            <input class="input mono" id="media-up-allowed" placeholder="e.g. 123456, 789012">
+                        </div>
+                        <div class="field" style="margin-bottom:0;">
+                            <label class="field-label tiny">Expires at (optional)</label>
+                            <input type="datetime-local" class="input" id="media-up-expires">
+                        </div>
+                    </div>
+                    <div class="field" style="margin-top:10px;margin-bottom:0;">
+                        <label class="field-label tiny">Default caption / notes (optional)</label>
+                        <input class="input" id="media-up-caption" placeholder="Default caption used when creating commands or describing this file">
+                    </div>
+                    <div id="media-upload-status" class="small" style="margin-top:10px;"></div>
+                </div>
+
                 <div class="toolbar">
-                    <div class="search"><i class="fa-solid fa-magnifying-glass"></i><input id="media-search" placeholder="Search by file name or label" oninput="debouncedMedia()"></div>
+                    <div class="search"><i class="fa-solid fa-magnifying-glass"></i><input id="media-search" placeholder="Search by label, filename, caption, or user ID…" oninput="debouncedMedia()"></div>
+                    <select class="input" id="media-access-filter" onchange="renderMediaGrid()" style="width:auto;">
+                        <option value="all">All access</option>
+                        <option value="restricted">Restricted (has user IDs)</option>
+                        <option value="expiring">Has expiration</option>
+                        <option value="expired">Expired</option>
+                        <option value="invalid">Invalid / failed check</option>
+                    </select>
+                    <div class="segmented" id="media-view-seg" title="Switch view">
+                        <button data-v="list" onclick="setMediaView('list')" title="Compact list"><i class="fa-solid fa-list"></i></button>
+                        <button data-v="grid" onclick="setMediaView('grid')" title="Grid view"><i class="fa-solid fa-grip"></i></button>
+                        <button data-v="detail" onclick="setMediaView('detail')" title="Detailed cards"><i class="fa-solid fa-table-list"></i></button>
+                    </div>
+                    <button class="btn btn-gray btn-sm" id="media-preview-toggle" onclick="toggleMediaPreviews()" title="Toggle thumbnail previews for faster browsing">
+                        <i class="fa-regular fa-eye"></i> <span class="hide-mobile">Previews</span>
+                    </button>
                 </div>
-                <div class="chips" id="media-filters" style="margin-bottom:14px;">
+
+                <div class="chips" id="media-filters" style="margin-bottom:12px;">
                     <button class="chip active" data-mt="all" onclick="setMediaFilter('all')">All</button>
                     <button class="chip" data-mt="photo" onclick="setMediaFilter('photo')">Photos</button>
                     <button class="chip" data-mt="video" onclick="setMediaFilter('video')">Videos</button>
                     <button class="chip" data-mt="animation" onclick="setMediaFilter('animation')">GIFs</button>
                     <button class="chip" data-mt="voice" onclick="setMediaFilter('voice')">Voice</button>
                     <button class="chip" data-mt="audio" onclick="setMediaFilter('audio')">Audio</button>
-                    <button class="chip" data-mt="document" onclick="setMediaFilter('document')">Files</button>
+                    <button class="chip" data-mt="document" onclick="setMediaFilter('document')">Documents</button>
                     <button class="chip" data-mt="sticker" onclick="setMediaFilter('sticker')">Stickers</button>
                 </div>
-                <div id="media-grid" class="media-grid"></div>
+
+                <div class="media-bulk-bar" id="media-bulk-bar">
+                    <span class="badge blue" id="media-bulk-count">0 selected</span>
+                    <button class="btn btn-gray btn-sm" onclick="selectAllVisibleMedia()">Select visible</button>
+                    <button class="btn btn-gray btn-sm" onclick="clearMediaSelection()">Clear</button>
+                    <div style="flex:1"></div>
+                    <button class="btn btn-gray btn-sm" onclick="bulkMediaValidate()"><i class="fa-solid fa-shield-check"></i> Validate</button>
+                    <button class="btn btn-gray btn-sm" onclick="bulkMediaUserAccess('grant')"><i class="fa-solid fa-user-plus"></i> Grant user</button>
+                    <button class="btn btn-gray btn-sm" onclick="bulkMediaUserAccess('revoke')"><i class="fa-solid fa-user-minus"></i> Revoke user</button>
+                    <button class="btn btn-gray btn-sm" onclick="bulkMediaSetExpiry()"><i class="fa-regular fa-clock"></i> Expiration</button>
+                    <button class="btn btn-danger btn-sm" onclick="bulkMediaDelete()"><i class="fa-regular fa-trash-can"></i> Delete</button>
+                </div>
+
+                <div id="media-grid"></div>
             </section>
 
             <section class="page" id="page-ai">
@@ -2514,26 +2697,10 @@ body { overflow-x: hidden; }
                     <div id="hook-result" class="small" style="margin-top:10px;"></div>
                 </div>
                 <div class="card">
-                    <div class="card-head"><div class="card-title c-purple"><i class="fa-solid fa-file-arrow-up"></i> Media storage</div></div>
-                    <div class="hint-banner">
-                        <i class="fa-solid fa-circle-info"></i>
-                        <div>Uploads from the panel are stored on Telegram and referenced by <code>file_id</code>. Set a chat where the bot can post the file temporarily (deleted right after). <b>Easiest:</b> paste your own Telegram numeric user ID — start a chat with the bot first.</div>
-                    </div>
-                    <div class="field">
-                        <label class="field-label">Media storage chat ID</label>
-                        <div class="input-with-btn">
-                            <input class="input" id="set-media-storage" placeholder="e.g. 123456789">
-                            <button class="btn btn-primary btn-sm" onclick="saveMediaStorage()"><i class="fa-solid fa-check"></i> Save</button>
-                        </div>
-                        <span class="field-hint">The bot must be able to message this chat. Your own user ID is the easiest choice.</span>
-                    </div>
-                    <div id="media-storage-result" class="small"></div>
-                </div>
-                <div class="card">
                     <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-lock"></i> Admin password</div></div>
                     <div class="hint-banner">
                         <i class="fa-solid fa-circle-info"></i>
-                        <div>Changing your password <b>signs out every other browser and device</b> immediately. Your current tab stays signed in.</div>
+                        <div>Changing your password updates the password stored in D1 and <b>signs out every other browser and device</b> immediately (your current tab stays signed in).<br><b>Environment override:</b> You can also set an <code>ADMIN_PASS</code> environment variable / secret in your Cloudflare Worker settings — useful if you ever forget your D1 password or want a master password over it.</div>
                     </div>
                     <div class="grid grid-2" style="max-width:460px;">
                         <div class="field" style="margin-bottom:0;"><label class="field-label">New password</label>
@@ -2967,11 +3134,25 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
             <div class="field">
                 <label class="field-label">Who can run it?</label>
                 <div class="segmented" id="cmd-access">
-                    <button data-v="everyone" onclick="setSeg('cmd-access','everyone')">Everyone</button>
-                    <button data-v="moderator" onclick="setSeg('cmd-access','moderator')">Moderator+</button>
-                    <button data-v="admin" onclick="setSeg('cmd-access','admin')">Admin only</button>
+                    <button data-v="everyone" onclick="setSeg('cmd-access','everyone');onCmdAccessChange()">Everyone</button>
+                    <button data-v="specific" onclick="setSeg('cmd-access','specific');onCmdAccessChange()">Specific users</button>
+                    <button data-v="moderator" onclick="setSeg('cmd-access','moderator');onCmdAccessChange()">Moderator+</button>
+                    <button data-v="admin" onclick="setSeg('cmd-access','admin');onCmdAccessChange()">Admin only</button>
                 </div>
-                <span class="field-hint">Moderator+ allows moderators and admins. Group permission overrides still apply.</span>
+                <span class="field-hint">Pick <b>Specific users</b> to restrict this command (or paid content) to listed Telegram user IDs. Admins can always run it.</span>
+            </div>
+            <div class="field" id="cmd-allowed-users-wrap">
+                <label class="field-label">Allowed user IDs <span class="muted small">(optional unless Specific users)</span></label>
+                <textarea class="textarea mono" id="cmd-allowed-users" rows="2" placeholder="123456789, 987654321 (comma or newline separated)"></textarea>
+                <span class="field-hint"><i class="fa-solid fa-user-lock"></i> If filled, only these Telegram user IDs (plus admins and role-permitted users if Moderator+) can access it. Also respects any allowance/expiration set on the attached Media Library file.</span>
+            </div>
+            <div class="field">
+                <label class="field-label">Expiration <span class="muted small">(optional)</span></label>
+                <div class="input-with-btn">
+                    <input type="datetime-local" class="input" id="cmd-expires-at">
+                    <button type="button" class="btn btn-gray btn-sm" onclick="$('cmd-expires-at').value=''">Clear</button>
+                </div>
+                <span class="field-hint">After this date/time, non-admins can no longer run this command. Leave blank for no expiration.</span>
             </div>
             <div class="switch-row" style="margin-bottom:0;"><div><div class="sw-label">Enabled</div><div class="sw-sub">Disabled commands are hidden.</div></div><button class="switch on" id="cmd-enabled" onclick="toggleSwitch('cmd-enabled')"></button></div>
             <div class="err-box" id="cmd-error"></div>
@@ -3164,15 +3345,16 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
         <div class="sheet-head">
             <button class="btn btn-plain" onclick="closeMediaPicker()">Cancel</button>
             <div class="sheet-title" id="media-picker-title">Pick media</div>
-            <button class="btn btn-plain" onclick="closeMediaPicker();go('media');">Open library</button>
+            <button class="btn btn-plain" onclick="closeMediaPicker();go('media');">Library</button>
         </div>
         <div class="sheet-body">
-            <div class="hint-banner">
-                <i class="fa-solid fa-circle-info"></i>
-                <div>Files uploaded through this dashboard. Click any card to attach its <code>file_id</code>.</div>
-            </div>
             <div class="toolbar">
-                <div class="search"><i class="fa-solid fa-magnifying-glass"></i><input id="media-picker-search" placeholder="Search…" oninput="renderMediaPicker()"></div>
+                <div class="search"><i class="fa-solid fa-magnifying-glass"></i><input id="media-picker-search" placeholder="Search by label, filename, or caption…" oninput="renderMediaPicker()"></div>
+                <div class="segmented" id="media-picker-view-seg">
+                    <button data-v="list" onclick="setMediaPickerView('list')" title="List"><i class="fa-solid fa-list"></i></button>
+                    <button data-v="grid" onclick="setMediaPickerView('grid')" title="Grid"><i class="fa-solid fa-grip"></i></button>
+                </div>
+                <button class="btn btn-gray btn-sm" id="media-picker-preview-toggle" onclick="toggleMediaPreviews()" title="Toggle previews"><i class="fa-regular fa-eye"></i></button>
             </div>
             <div class="chips" id="media-picker-filters">
                 <button class="chip active" data-mt="all" onclick="setMediaPickerFilter('all')">All</button>
@@ -3181,10 +3363,88 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                 <button class="chip" data-mt="animation" onclick="setMediaPickerFilter('animation')">GIFs</button>
                 <button class="chip" data-mt="voice" onclick="setMediaPickerFilter('voice')">Voice</button>
                 <button class="chip" data-mt="audio" onclick="setMediaPickerFilter('audio')">Audio</button>
-                <button class="chip" data-mt="document" onclick="setMediaPickerFilter('document')">Files</button>
+                <button class="chip" data-mt="document" onclick="setMediaPickerFilter('document')">Documents</button>
                 <button class="chip" data-mt="sticker" onclick="setMediaPickerFilter('sticker')">Stickers</button>
             </div>
-            <div id="media-picker-grid" class="media-grid"></div>
+            <div id="media-picker-grid"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal hidden" id="media-edit-modal" role="dialog" aria-modal="true" aria-labelledby="media-edit-title">
+    <div class="modal-bg" onclick="closeMediaEditModal()"></div>
+    <div class="sheet">
+        <div class="sheet-head">
+            <button class="btn btn-plain" onclick="closeMediaEditModal()">Cancel</button>
+            <div class="sheet-title" id="media-edit-title">Manage media</div>
+            <button class="btn btn-plain" id="media-edit-save" onclick="saveMediaEdit()">Save</button>
+        </div>
+        <div class="sheet-body">
+            <div id="media-edit-preview-box" style="margin-bottom:14px;"></div>
+            <div class="field">
+                <label class="field-label">Label</label>
+                <input class="input" id="me-label" placeholder="Friendly name">
+            </div>
+            <div class="field">
+                <label class="field-label">Default caption / notes</label>
+                <textarea class="textarea" id="me-caption" rows="2" placeholder="Optional caption or product description (HTML allowed)"></textarea>
+            </div>
+            <div class="field">
+                <label class="field-label">Allowed user IDs <span class="muted small">(user-based allowance)</span></label>
+                <textarea class="textarea mono" id="me-allowed" rows="2" placeholder="Leave empty for unrestricted, or enter buyer IDs: 123456, 789012"></textarea>
+                <span class="field-hint"><i class="fa-solid fa-shield-halved"></i> Any command serving this file automatically blocks users not in this list (admins always allowed).</span>
+            </div>
+            <div class="field">
+                <label class="field-label">Expiration <span class="muted small">(optional)</span></label>
+                <div class="input-with-btn">
+                    <input type="datetime-local" class="input" id="me-expires">
+                    <button type="button" class="btn btn-gray btn-sm" onclick="$('me-expires').value=''">Clear</button>
+                </div>
+                <div class="row" style="margin-top:6px;gap:6px;">
+                    <button type="button" class="btn btn-gray btn-sm" onclick="setMediaEditExpiryPreset(24)">+24h</button>
+                    <button type="button" class="btn btn-gray btn-sm" onclick="setMediaEditExpiryPreset(168)">+7d</button>
+                    <button type="button" class="btn btn-gray btn-sm" onclick="setMediaEditExpiryPreset(720)">+30d</button>
+                </div>
+            </div>
+            <div class="field">
+                <label class="field-label">Telegram file_id</label>
+                <div class="input-with-btn">
+                    <input class="input mono" id="me-fileid" readonly>
+                    <button type="button" class="btn btn-gray btn-sm" onclick="copyVal('me-fileid')"><i class="fa-regular fa-copy"></i></button>
+                </div>
+                <div class="tiny muted" id="me-meta-info" style="margin-top:6px;"></div>
+            </div>
+            <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px;">
+                <button type="button" class="btn btn-gray btn-sm" onclick="validateEditingMedia()"><i class="fa-solid fa-shield-check"></i> Validate file_id</button>
+                <button type="button" class="btn btn-gray btn-sm" onclick="testSendEditingMedia()"><i class="fa-solid fa-paper-plane"></i> Test send</button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="createCommandFromEditingMedia()"><i class="fa-solid fa-terminal"></i> Create command</button>
+            </div>
+            <div id="me-status" class="small" style="margin-top:8px;"></div>
+            <div class="err-box" id="me-error"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal hidden" id="media-fileid-modal" role="dialog" aria-modal="true">
+    <div class="modal-bg" onclick="closeAddFileIdModal()"></div>
+    <div class="sheet small">
+        <div class="sheet-head"><div class="sheet-title">Add existing file_id</div></div>
+        <div class="sheet-body">
+            <div class="field"><label class="field-label">Telegram file_id</label><input class="input mono" id="mf-fileid" placeholder="BQACAgQAAxk…"></div>
+            <div class="field"><label class="field-label">Media type</label>
+                <select class="input" id="mf-type">
+                    <option value="document">Document</option><option value="photo">Photo</option><option value="video">Video</option>
+                    <option value="animation">Animation (GIF)</option><option value="audio">Audio</option><option value="voice">Voice</option>
+                    <option value="video_note">Round video</option><option value="sticker">Sticker</option>
+                </select>
+            </div>
+            <div class="field"><label class="field-label">Label</label><input class="input" id="mf-label" placeholder="e.g. Course PDF v1"></div>
+            <div class="field"><label class="field-label">Allowed user IDs (optional)</label><input class="input mono" id="mf-allowed" placeholder="123456, 789012"></div>
+            <div class="err-box" id="mf-error"></div>
+        </div>
+        <div class="sheet-foot">
+            <button class="btn btn-gray" onclick="closeAddFileIdModal()">Cancel</button>
+            <button class="btn btn-primary" id="mf-save" onclick="saveAddFileId()">Validate &amp; Add</button>
         </div>
     </div>
 </div>
@@ -3977,11 +4237,37 @@ var currentParent = null;
 var editingCmd = null;
 function commandAccessLevel(c) {
     var level = c && c.access_level;
-    if (level === 'admin' || level === 'moderator' || level === 'everyone') {
+    if (level === 'admin' || level === 'moderator' || level === 'specific' || level === 'everyone') {
         if (level === 'everyone' && c.is_admin_only) return 'admin';
         return level;
     }
     return c && c.is_admin_only ? 'admin' : 'everyone';
+}
+function toIsoFromLocalInput(val) {
+    if (!val) return '';
+    var d = new Date(val);
+    return isNaN(d.getTime()) ? '' : d.toISOString();
+}
+function toLocalInputFromIso(iso) {
+    if (!iso) return '';
+    var s = String(iso);
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(s)) s = s.replace(' ', 'T') + 'Z';
+    var d = new Date(s);
+    if (isNaN(d.getTime())) return '';
+    var pad = function (n) { return String(n).padStart(2, '0'); };
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+function parseIsoMs(iso) {
+    if (!iso) return 0;
+    var s = String(iso);
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(s)) s = s.replace(' ', 'T') + 'Z';
+    var t = new Date(s).getTime();
+    return isNaN(t) ? 0 : t;
+}
+function onCmdAccessChange() {
+    var lvl = getSeg('cmd-access') || 'everyone';
+    var el = $('cmd-allowed-users-wrap');
+    if (el) el.style.opacity = (lvl === 'specific' || ($('cmd-allowed-users') && $('cmd-allowed-users').value.trim())) ? '1' : '0.85';
 }
 
 var _commandsLoading = false;
@@ -4029,7 +4315,23 @@ function renderCommands() {
                 '<div class="lr-sub">' + (function(){ var t = c.response_type || 'text'; return t.charAt(0).toUpperCase() + t.slice(1).replace('_',' '); })() + (kids ? ' · ' + kids + ' sub-command' + (kids > 1 ? 's' : '') : '') + '</div>' +
             '</div>' +
             '<span class="badge ' + (c.enabled == 1 ? 'green' : 'red') + '">' + (c.enabled == 1 ? 'On' : 'Off') + '</span>' +
-            (commandAccessLevel(c) === 'admin' ? '<span class="badge purple">Admin</span>' : (commandAccessLevel(c) === 'moderator' ? '<span class="badge purple">Mod+</span>' : '')) +
+            (function () {
+                var lvl = commandAccessLevel(c);
+                var b = '';
+                if (lvl === 'admin') b += '<span class="badge purple">Admin</span>';
+                else if (lvl === 'moderator') b += '<span class="badge purple">Mod+</span>';
+                else if (lvl === 'specific') b += '<span class="badge blue"><i class="fa-solid fa-user-lock"></i> Specific</span>';
+                if (c.allowed_users && String(c.allowed_users).trim()) {
+                    var cnt = String(c.allowed_users).trim().split(/[\s,;]+/).filter(Boolean).length;
+                    if (cnt) b += '<span class="badge blue">' + cnt + ' user' + (cnt > 1 ? 's' : '') + '</span>';
+                }
+                if (c.expires_at) {
+                    var ms = parseIsoMs(c.expires_at);
+                    if (ms && Date.now() > ms) b += '<span class="badge red">Expired</span>';
+                    else if (ms) b += '<span class="badge orange">Expires</span>';
+                }
+                return b;
+            })() +
             '<div class="lr-actions">' +
                 '<div class="lr-actions-desktop" style="display:flex;gap:4px;">' +
                     '<button class="icon-btn" onclick="moveCmd(' + i + ',-1)" ' + (i === 0 ? 'disabled' : '') + ' aria-label="Move up"><i class="fa-solid fa-arrow-up"></i></button>' +
@@ -4261,6 +4563,8 @@ async function openCommandModal(cmd, parent) {
         setSeg('cmd-media-source', editingCmd.file_id ? 'file' : 'url');
         parentSel.value = editingCmd.parent || '';
         setSeg('cmd-access', commandAccessLevel(editingCmd));
+        if ($('cmd-allowed-users')) $('cmd-allowed-users').value = editingCmd.allowed_users || '';
+        if ($('cmd-expires-at')) $('cmd-expires-at').value = toLocalInputFromIso(editingCmd.expires_at || '');
         toggleSwitch('cmd-enabled', editingCmd.enabled != 0);
         if (editingCmd.buttons_json) { kbCmd.loadInline(editingCmd.buttons_json); toggleSwitch('cmd-inline-toggle', true); show($('cmd-inline-section'), true); }
         if (editingCmd.show_reply_keyboard) { kbCmd.loadReply(editingCmd.reply_keyboard_json); toggleSwitch('cmd-reply-toggle', true); show($('cmd-reply-section'), true); }
@@ -4268,10 +4572,13 @@ async function openCommandModal(cmd, parent) {
         $('cmd-modal-title').textContent = 'New command';
         $('cmd-name').value = ''; $('cmd-type').value = 'text';
         $('cmd-content').value = ''; $('cmd-media').value = '';
+        if ($('cmd-allowed-users')) $('cmd-allowed-users').value = '';
+        if ($('cmd-expires-at')) $('cmd-expires-at').value = '';
         setSeg('cmd-media-source', 'url');
         parentSel.value = parent || currentParent || '';
         setSeg('cmd-access', 'everyone'); toggleSwitch('cmd-enabled', true);
     }
+    onCmdAccessChange();
     var label = $('cmd-content-label');
     if (label) label.textContent = $('cmd-type').value === 'text' ? 'Content' : 'Caption';
     toggleMedia();
@@ -4309,6 +4616,8 @@ async function saveCommand() {
         file_id: fileId,
         media_meta: mediaType !== 'text' ? ($('cmd-media-meta').value || '') : '',
         access_level: accessLevel,
+        allowed_users: $('cmd-allowed-users') ? $('cmd-allowed-users').value.trim() : '',
+        expires_at: $('cmd-expires-at') ? toIsoFromLocalInput($('cmd-expires-at').value) : '',
         is_admin_only: accessLevel === 'admin' ? 1 : 0,
         enabled: sw('cmd-enabled') ? 1 : 0,
         buttons_json: kbCmd.inlineJSON() ? JSON.stringify(kbCmd.inlineJSON()) : '',
@@ -5641,18 +5950,123 @@ async function clearGroupMemory() {
 var mediaLibrary = [];
 var mediaFilter = 'all';
 var mediaSearchTimer = null;
-function debouncedMedia() { clearTimeout(mediaSearchTimer); mediaSearchTimer = setTimeout(function () { renderMediaGrid(); }, 200); }
+var mediaSelected = new Set();
+var mediaView = 'list';
+var mediaPreviews = true;
+var mediaPickerView = 'list';
+var editingMediaItem = null;
+
+try {
+    mediaView = localStorage.getItem('nyxx-media-view') || 'list';
+    mediaPickerView = localStorage.getItem('nyxx-media-picker-view') || 'list';
+    mediaPreviews = localStorage.getItem('nyxx-media-previews') !== '0';
+} catch (e) {}
+
+function debouncedMedia() { clearTimeout(mediaSearchTimer); mediaSearchTimer = setTimeout(function () { renderMediaGrid(); }, 180); }
 function setMediaFilter(t) {
     mediaFilter = t;
     document.querySelectorAll('#media-filters .chip').forEach(function (c) { c.classList.toggle('active', c.dataset.mt === t); });
     renderMediaGrid();
 }
+function setMediaView(v) {
+    mediaView = v;
+    try { localStorage.setItem('nyxx-media-view', v); } catch (e) {}
+    setSeg('media-view-seg', v);
+    renderMediaGrid();
+}
+function setMediaPickerView(v) {
+    mediaPickerView = v;
+    try { localStorage.setItem('nyxx-media-picker-view', v); } catch (e) {}
+    setSeg('media-picker-view-seg', v);
+    renderMediaPicker();
+}
+function updatePreviewToggleButtons() {
+    ['media-preview-toggle', 'media-picker-preview-toggle'].forEach(function (id) {
+        var btn = $(id); if (!btn) return;
+        btn.classList.toggle('btn-primary', mediaPreviews);
+        btn.classList.toggle('btn-gray', !mediaPreviews);
+        btn.innerHTML = (mediaPreviews ? '<i class="fa-regular fa-eye"></i>' : '<i class="fa-regular fa-eye-slash"></i>') +
+            (id === 'media-preview-toggle' ? ' <span class="hide-mobile">' + (mediaPreviews ? 'Previews on' : 'Previews off') + '</span>' : '');
+    });
+}
+function toggleMediaPreviews() {
+    mediaPreviews = !mediaPreviews;
+    try { localStorage.setItem('nyxx-media-previews', mediaPreviews ? '1' : '0'); } catch (e) {}
+    updatePreviewToggleButtons();
+    renderMediaGrid();
+    if (!$('media-picker-modal').classList.contains('hidden')) renderMediaPicker();
+}
+function mediaTypeIcon(kind) {
+    var icons = {
+        photo: 'fa-regular fa-image', video: 'fa-solid fa-video', animation: 'fa-solid fa-film',
+        voice: 'fa-solid fa-microphone', audio: 'fa-solid fa-music', document: 'fa-regular fa-file-lines',
+        video_note: 'fa-regular fa-circle-play', sticker: 'fa-regular fa-note-sticky'
+    };
+    return icons[kind] || 'fa-regular fa-file';
+}
+function mediaThumbHtml(m, sizeMode) {
+    var kind = m.media_type || 'photo';
+    if (!mediaPreviews) return '<i class="' + mediaTypeIcon(kind) + '"></i>';
+    var src = '/api/file/' + encodeURIComponent(m.file_id);
+    if (kind === 'photo' || kind === 'sticker') return '<img src="' + esc(src) + '" alt="" loading="lazy" decoding="async">';
+    if ((kind === 'video' || kind === 'animation' || kind === 'video_note') && sizeMode === 'detail') {
+        return '<video src="' + esc(src) + '" muted playsinline preload="none" poster=""></video>';
+    }
+    return '<i class="' + mediaTypeIcon(kind) + '"></i>';
+}
+function mediaSizeLabel(m) {
+    var meta = {};
+    try { meta = m.media_meta ? (typeof m.media_meta === 'string' ? JSON.parse(m.media_meta) : m.media_meta) : {}; } catch (e) {}
+    var bytes = m.file_size || meta.file_size || 0;
+    if (!bytes) return '';
+    if (bytes >= 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    return Math.max(1, Math.round(bytes / 1024)) + ' KB';
+}
+function mediaAllowedList(m) {
+    if (!m || !m.allowed_users) return [];
+    return String(m.allowed_users).trim().split(/[\s,;]+/).filter(Boolean);
+}
+function mediaStatusBadges(m) {
+    var b = '';
+    if (m.is_valid === 0) b += '<span class="badge red"><i class="fa-solid fa-circle-xmark"></i> Invalid</span>';
+    var allowed = mediaAllowedList(m);
+    if (allowed.length) b += '<span class="badge blue"><i class="fa-solid fa-user-lock"></i> ' + allowed.length + ' user' + (allowed.length > 1 ? 's' : '') + '</span>';
+    if (m.expires_at) {
+        var ms = parseIsoMs(m.expires_at);
+        if (ms && Date.now() > ms) b += '<span class="badge red">Expired</span>';
+        else if (ms) b += '<span class="badge orange">Expires ' + fmtTime(m.expires_at) + '</span>';
+    }
+    return b;
+}
+function getFilteredMediaList() {
+    var q = ($('media-search') && $('media-search').value || '').toLowerCase().trim();
+    var af = ($('media-access-filter') && $('media-access-filter').value) || 'all';
+    return mediaLibrary.filter(function (m) {
+        if (mediaFilter !== 'all' && m.media_type !== mediaFilter) return false;
+        var allowed = mediaAllowedList(m);
+        var expMs = m.expires_at ? parseIsoMs(m.expires_at) : 0;
+        var isExpired = !!(expMs && Date.now() > expMs);
+        if (af === 'restricted' && !allowed.length) return false;
+        if (af === 'expiring' && !m.expires_at) return false;
+        if (af === 'expired' && !isExpired) return false;
+        if (af === 'invalid' && m.is_valid !== 0) return false;
+        if (q) {
+            var hay = (String(m.label || '') + ' ' + String(m.file_name || '') + ' ' + String(m.caption || '') + ' ' + String(m.allowed_users || '')).toLowerCase();
+            if (hay.indexOf(q) < 0) return false;
+        }
+        return true;
+    });
+}
 async function loadMediaLibrary(force) {
+    setSeg('media-view-seg', mediaView);
+    updatePreviewToggleButtons();
     var box = $('media-grid');
     if (box) box.innerHTML = '<div class="spinner-page"><span class="mini-spinner"></span></div>';
     try {
         var d = await api('GET', '/api/media/library');
         mediaLibrary = (d && d.items) || [];
+        var validIds = new Set(mediaLibrary.map(function (m) { return m.id; }));
+        Array.from(mediaSelected).forEach(function (id) { if (!validIds.has(id)) mediaSelected.delete(id); });
         renderMediaGrid();
         loadMediaStorageInfo();
     } catch (e) {
@@ -5665,85 +6079,427 @@ async function loadMediaStorageInfo() {
     try {
         var d = await api('GET', '/api/settings');
         var chatId = d.media_storage_chat_id || '';
-        if (!chatId) { box.innerHTML = '<span style="color:var(--orange)"><i class="fa-solid fa-triangle-exclamation"></i> No storage chat is set yet. Add one in Settings → Media storage before uploading files.</span>'; return; }
+        if ($('set-media-storage')) $('set-media-storage').value = chatId;
+        if ($('media-delete-after')) toggleSwitch('media-delete-after', d.media_storage_delete_after_upload === '1');
+        if (!chatId) {
+            box.innerHTML = '<span style="color:var(--orange)"><i class="fa-solid fa-triangle-exclamation"></i> No storage chat set yet. Paste a private channel ID (<code>-100…</code>), <code>@channel</code>, group ID, or your own user ID above and press <b>Save</b>.</span>';
+            return;
+        }
         try {
             var info = await api('GET', '/api/media/storage_chat?id=' + encodeURIComponent(chatId));
-            box.innerHTML = '<div style="display:flex;align-items:center;gap:10px;"><i class="fa-solid fa-circle-check" style="color:var(--green);font-size:18px;"></i><div><div style="font-weight:600;">' + esc(info.title || ('Chat ' + chatId)) + '</div><div class="tiny muted">ID <code>' + esc(chatId) + '</code> · ' + esc(info.type || 'unknown') + (info.username ? ' · @' + esc(info.username) : '') + '</div></div></div>';
+            var typeLabel = info.type === 'channel' ? 'Channel' : (info.type === 'supergroup' ? 'Supergroup' : (info.type === 'group' ? 'Group' : 'Private DM'));
+            var warn = info.warning ? '<div class="tiny" style="color:var(--orange);margin-top:4px;"><i class="fa-solid fa-triangle-exclamation"></i> ' + esc(info.warning) + '</div>' : '';
+            box.innerHTML = '<div style="display:flex;align-items:center;gap:10px;"><i class="fa-solid fa-circle-check" style="color:var(--green);font-size:18px;"></i><div><div style="font-weight:600;">' + esc(info.title || ('Chat ' + chatId)) + ' <span class="badge blue" style="margin-left:4px;">' + esc(typeLabel) + '</span></div><div class="tiny muted">ID <code>' + esc(info.id || chatId) + '</code>' + (info.username ? ' · @' + esc(info.username) : '') + '</div>' + warn + '</div></div>';
         } catch (e) {
-            box.innerHTML = '<div style="color:var(--orange)"><i class="fa-solid fa-triangle-exclamation"></i> Chat ID <code>' + esc(chatId) + '</code> is set, but could not be verified: ' + esc(e.message) + '</div>';
+            box.innerHTML = '<div style="color:var(--orange)"><i class="fa-solid fa-triangle-exclamation"></i> Chat <code>' + esc(chatId) + '</code> is saved, but could not be verified: ' + esc(e.message) + '</div>';
         }
     } catch (e) { box.innerHTML = ''; }
 }
+async function saveMediaStorage() {
+    var out = $('media-storage-result');
+    var btn = $('save-media-storage-btn');
+    await withBusy(btn, async function () {
+        var id = $('set-media-storage').value.trim();
+        var delAfter = sw('media-delete-after') ? '1' : '0';
+        if (out) out.innerHTML = '<span class="mini-spinner"></span> Saving…';
+        try {
+            await api('POST', '/api/settings/media_storage', { chatId: id, deleteAfterUpload: delAfter });
+            if (out) out.innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Saved.</span>';
+            toast('Media storage settings saved.');
+            loadMediaStorageInfo();
+        } catch (e) { if (out) out.innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
+    });
+}
+async function toggleMediaDeleteAfter() {
+    var on = toggleSwitch('media-delete-after');
+    try {
+        await api('POST', '/api/settings/media_storage', {
+            chatId: $('set-media-storage') ? $('set-media-storage').value.trim() : '',
+            deleteAfterUpload: on ? '1' : '0'
+        });
+        toast(on ? 'Uploads will be deleted from storage chat after upload.' : 'Uploads will stay in storage chat (infinite archive).', 'info');
+    } catch (e) {
+        toggleSwitch('media-delete-after', !on);
+        toast(e.message, 'error');
+    }
+}
+function handleMediaDrop(ev) {
+    ev.preventDefault();
+    var dz = $('media-dropzone'); if (dz) dz.classList.remove('dragover');
+    if (ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files.length) handleMediaTabFiles(ev.dataTransfer.files);
+}
+async function handleMediaTabFiles(fileList) {
+    var files = Array.from(fileList || []);
+    if (!files.length) return;
+    var status = $('media-upload-status');
+    var chosenType = ($('media-upload-type') && $('media-upload-type').value) || 'auto';
+    var labelPrefix = ($('media-up-label') && $('media-up-label').value.trim()) || '';
+    var caption = ($('media-up-caption') && $('media-up-caption').value.trim()) || '';
+    var allowedUsers = ($('media-up-allowed') && $('media-up-allowed').value.trim()) || '';
+    var expiresAt = ($('media-up-expires') && $('media-up-expires').value) ? toIsoFromLocalInput($('media-up-expires').value) : '';
+    var okCount = 0, failCount = 0;
+    for (var i = 0; i < files.length; i++) {
+        var file = files[i];
+        if (file.size > 45 * 1024 * 1024) {
+            failCount++;
+            toast(file.name + ' exceeds 45 MB limit.', 'error');
+            continue;
+        }
+        status.innerHTML = '<span class="mini-spinner"></span> Uploading ' + (i + 1) + '/' + files.length + ': <b>' + esc(file.name) + '</b>…';
+        try {
+            var fd = new FormData();
+            fd.append('file', file);
+            fd.append('media_type', chosenType);
+            fd.append('label', labelPrefix ? (files.length > 1 ? labelPrefix + ' - ' + file.name : labelPrefix) : file.name);
+            if (caption) fd.append('caption', caption);
+            if (allowedUsers) fd.append('allowed_users', allowedUsers);
+            if (expiresAt) fd.append('expires_at', expiresAt);
+            var res = await fetch('/api/upload_media', { method: 'POST', body: fd, credentials: 'same-origin', headers: __csrf ? { 'X-Nyxx-CSRF': __csrf } : {} });
+            var data = await res.json().catch(function () { return {}; });
+            if (!res.ok || !data.success) throw new Error(data.error || 'Upload failed.');
+            okCount++;
+        } catch (e) {
+            failCount++;
+            toast(file.name + ': ' + e.message, 'error');
+        }
+    }
+    if ($('media-tab-file')) $('media-tab-file').value = '';
+    status.innerHTML = '<span style="color:' + (failCount ? 'var(--orange)' : 'var(--green)') + '"><i class="fa-solid fa-circle-check"></i> Uploaded ' + okCount + (failCount ? (', ' + failCount + ' failed') : '') + '.</span>';
+    loadMediaLibrary(true);
+}
+
+function updateBulkBar() {
+    var bar = $('media-bulk-bar');
+    var cnt = $('media-bulk-count');
+    if (!bar) return;
+    bar.classList.toggle('show', mediaSelected.size > 0);
+    if (cnt) cnt.textContent = mediaSelected.size + ' selected';
+}
+function toggleMediaSelect(id, ev) {
+    if (ev) ev.stopPropagation();
+    if (mediaSelected.has(id)) mediaSelected.delete(id); else mediaSelected.add(id);
+    updateBulkBar();
+    renderMediaGrid();
+}
+function selectAllVisibleMedia() {
+    getFilteredMediaList().forEach(function (m) { mediaSelected.add(m.id); });
+    updateBulkBar();
+    renderMediaGrid();
+}
+function clearMediaSelection() {
+    mediaSelected.clear();
+    updateBulkBar();
+    renderMediaGrid();
+}
+
 function renderMediaGrid() {
     var box = $('media-grid');
     if (!box) return;
-    var q = ($('media-search') && $('media-search').value || '').toLowerCase().trim();
-    var list = mediaLibrary.filter(function (m) {
-        if (mediaFilter !== 'all' && m.media_type !== mediaFilter) return false;
-        if (q) {
-            var hay = (String(m.label || '') + ' ' + String(m.file_name || '')).toLowerCase();
-            if (hay.indexOf(q) < 0) return false;
-        }
-        return true;
-    });
-    if (!list.length) { box.innerHTML = emptyState('fa-solid fa-photo-film', mediaLibrary.length ? 'No media match this filter.' : 'No media in the library yet.', 'Upload a file in any editor (command, DM, broadcast, group) and it will appear here automatically.'); return; }
+    updateBulkBar();
+    var list = getFilteredMediaList();
+    if (!list.length) {
+        box.className = '';
+        box.innerHTML = emptyState('fa-solid fa-photo-film', mediaLibrary.length ? 'No media match these filters.' : 'No media in the library yet.', 'Drop files above or upload from any command/message editor.');
+        return;
+    }
+    if (mediaView === 'list') {
+        box.className = 'media-list';
+        box.innerHTML = list.map(function (m) {
+            var sel = mediaSelected.has(m.id);
+            var sizeStr = mediaSizeLabel(m);
+            var title = m.label || m.file_name || 'Untitled';
+            return '<div class="media-list-row' + (sel ? ' selected' : '') + '">' +
+                '<input type="checkbox" class="media-cb" ' + (sel ? 'checked' : '') + ' onchange="toggleMediaSelect(' + m.id + ',event)" aria-label="Select">' +
+                '<div class="media-list-thumb" onclick="openMediaEditModal(' + m.id + ')">' + mediaThumbHtml(m, 'list') + '</div>' +
+                '<div class="media-list-main" onclick="openMediaEditModal(' + m.id + ')">' +
+                    '<div class="media-list-title">' + esc(title) + '</div>' +
+                    '<div class="media-list-sub">' +
+                        '<span class="badge">' + esc(m.media_type || 'file') + '</span>' +
+                        (sizeStr ? '<span>' + esc(sizeStr) + '</span>' : '') +
+                        '<span>' + fmtTime(m.uploaded_at) + '</span>' +
+                        mediaStatusBadges(m) +
+                    '</div>' +
+                '</div>' +
+                '<div class="media-list-actions">' +
+                    '<button class="icon-btn hide-sm" onclick="createCommandFromMedia(' + m.id + ')" title="Create command"><i class="fa-solid fa-terminal"></i></button>' +
+                    '<button class="icon-btn" onclick="reuseMedia(' + m.id + ')" title="Copy file_id"><i class="fa-regular fa-copy"></i></button>' +
+                    '<button class="icon-btn" onclick="openMediaEditModal(' + m.id + ')" title="Manage / Access / Expiry"><i class="fa-regular fa-pen-to-square"></i></button>' +
+                    '<button class="icon-btn danger" onclick="deleteMedia(' + m.id + ')" title="Delete"><i class="fa-regular fa-trash-can"></i></button>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+        return;
+    }
+    if (mediaView === 'detail') {
+        box.className = 'media-detail-grid';
+        box.innerHTML = list.map(function (m) {
+            var sel = mediaSelected.has(m.id);
+            var sizeStr = mediaSizeLabel(m);
+            var title = m.label || m.file_name || 'Untitled';
+            return '<div class="media-detail-card' + (sel ? ' selected' : '') + '">' +
+                '<div class="media-detail-top">' +
+                    '<input type="checkbox" class="media-cb" ' + (sel ? 'checked' : '') + ' onchange="toggleMediaSelect(' + m.id + ',event)" aria-label="Select">' +
+                    '<div class="media-detail-thumb" onclick="openMediaEditModal(' + m.id + ')">' + mediaThumbHtml(m, 'detail') + '</div>' +
+                    '<div style="flex:1;min-width:0;">' +
+                        '<div style="font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;" onclick="openMediaEditModal(' + m.id + ')">' + esc(title) + '</div>' +
+                        '<div class="tiny muted" style="margin-top:2px;">' + esc(m.media_type || 'file') + (sizeStr ? ' · ' + esc(sizeStr) : '') + ' · ' + fmtTime(m.uploaded_at) + '</div>' +
+                        '<div class="media-badges">' + mediaStatusBadges(m) + '</div>' +
+                    '</div>' +
+                '</div>' +
+                (m.caption ? '<div class="media-detail-caption">' + esc(m.caption) + '</div>' : '') +
+                '<div class="tiny mono muted" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(m.file_id) + '</div>' +
+                '<div class="row" style="gap:6px;">' +
+                    '<button class="btn btn-gray btn-sm" onclick="openMediaEditModal(' + m.id + ')"><i class="fa-solid fa-sliders"></i> Manage</button>' +
+                    '<button class="btn btn-gray btn-sm" onclick="createCommandFromMedia(' + m.id + ')"><i class="fa-solid fa-terminal"></i> Cmd</button>' +
+                    '<button class="btn btn-gray btn-sm" onclick="reuseMedia(' + m.id + ')"><i class="fa-regular fa-copy"></i></button>' +
+                    '<div style="flex:1"></div>' +
+                    '<button class="btn btn-danger btn-sm" onclick="deleteMedia(' + m.id + ')"><i class="fa-regular fa-trash-can"></i></button>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+        return;
+    }
+    // Grid view
+    box.className = 'media-grid';
     box.innerHTML = list.map(function (m) {
         var kind = m.media_type || 'photo';
-        var src = '/api/file/' + encodeURIComponent(m.file_id);
-        var thumb = '';
-        if (kind === 'photo' || kind === 'sticker') thumb = '<img src="' + esc(src) + '" alt="" loading="lazy">';
-        else if (kind === 'video' || kind === 'animation' || kind === 'video_note') thumb = '<video src="' + esc(src) + '" muted playsinline preload="metadata"></video>';
-        else if (kind === 'voice' || kind === 'audio') thumb = '<i class="fa-solid fa-volume-high"></i>';
-        else if (kind === 'document') thumb = '<i class="fa-regular fa-file-lines"></i>';
-        else thumb = '<i class="fa-solid fa-file"></i>';
-        var meta = {};
-        try { meta = m.media_meta ? (typeof m.media_meta === 'string' ? JSON.parse(m.media_meta) : m.media_meta) : {}; } catch (e) {}
-        var sizeStr = meta.file_size ? (Math.round(meta.file_size / 1024) + ' KB') : '';
-        return '<div class="media-card">' +
+        var sel = mediaSelected.has(m.id);
+        var sizeStr = mediaSizeLabel(m);
+        var title = m.label || m.file_name || 'Untitled';
+        return '<div class="media-card' + (sel ? ' selected' : '') + (m.is_valid === 0 ? ' invalid' : '') + '">' +
+            '<div class="media-cb-wrap"><input type="checkbox" class="media-cb" ' + (sel ? 'checked' : '') + ' onchange="toggleMediaSelect(' + m.id + ',event)" aria-label="Select"></div>' +
             '<span class="media-type-tag">' + esc(kind) + '</span>' +
-            '<div class="media-actions">' +
-                '<button onclick="reuseMedia(' + m.id + ')" title="Copy file_id"><i class="fa-solid fa-recycle"></i></button>' +
-                '<button onclick="renameMedia(' + m.id + ')" title="Rename"><i class="fa-solid fa-pen"></i></button>' +
-                '<button class="danger" onclick="deleteMedia(' + m.id + ')" title="Delete"><i class="fa-regular fa-trash-can"></i></button>' +
-            '</div>' +
-            '<div class="media-thumb">' + thumb + '</div>' +
+            '<div class="media-thumb' + (mediaPreviews ? '' : ' no-preview') + '" onclick="openMediaEditModal(' + m.id + ')">' + mediaThumbHtml(m, 'grid') + '</div>' +
             '<div class="media-info">' +
-                '<div class="media-title" title="' + esc(m.label || m.file_name || 'Untitled') + '">' + esc(m.label || m.file_name || 'Untitled') + '</div>' +
+                '<div class="media-title" title="' + esc(title) + '" onclick="openMediaEditModal(' + m.id + ')">' + esc(title) + '</div>' +
                 '<div class="media-sub"><span>' + esc(sizeStr || kind) + '</span><span>' + fmtTime(m.uploaded_at) + '</span></div>' +
+                '<div class="media-badges">' + mediaStatusBadges(m) + '</div>' +
+                '<div class="media-card-foot">' +
+                    '<button class="icon-btn" onclick="openMediaEditModal(' + m.id + ')" title="Manage"><i class="fa-regular fa-pen-to-square"></i></button>' +
+                    '<button class="icon-btn" onclick="createCommandFromMedia(' + m.id + ')" title="Create command"><i class="fa-solid fa-terminal"></i></button>' +
+                    '<button class="icon-btn" onclick="reuseMedia(' + m.id + ')" title="Copy file_id"><i class="fa-regular fa-copy"></i></button>' +
+                    '<button class="icon-btn danger" onclick="deleteMedia(' + m.id + ')" title="Delete"><i class="fa-regular fa-trash-can"></i></button>' +
+                '</div>' +
             '</div>' +
         '</div>';
     }).join('');
 }
+
+function openMediaEditModal(id) {
+    var m = mediaLibrary.find(function (x) { return x.id === id; });
+    if (!m) return;
+    editingMediaItem = m;
+    $('me-error').classList.remove('show');
+    $('me-status').innerHTML = '';
+    $('media-edit-title').textContent = m.label || m.file_name || 'Manage media';
+    $('me-label').value = m.label || '';
+    $('me-caption').value = m.caption || '';
+    $('me-allowed').value = m.allowed_users || '';
+    $('me-expires').value = toLocalInputFromIso(m.expires_at || '');
+    $('me-fileid').value = m.file_id || '';
+    var info = [];
+    if (m.media_type) info.push('Type: ' + m.media_type);
+    var sz = mediaSizeLabel(m);
+    if (sz) info.push('Size: ' + sz);
+    if (m.storage_chat_id) info.push('Stored in: ' + m.storage_chat_id + (m.storage_message_id ? ' (msg #' + m.storage_message_id + ')' : ''));
+    if (m.last_validated_at) info.push('Validated: ' + fmtTime(m.last_validated_at) + (m.is_valid === 0 ? ' (FAILED)' : ' (OK)'));
+    $('me-meta-info').textContent = info.join(' · ');
+
+    var pBox = $('media-edit-preview-box');
+    if (mediaPreviews) {
+        var src = '/api/file/' + encodeURIComponent(m.file_id);
+        var kind = m.media_type || 'document';
+        if (kind === 'photo' || kind === 'sticker') pBox.innerHTML = '<img src="' + esc(src) + '" style="max-width:100%;max-height:200px;border-radius:10px;display:block;margin:0 auto;">';
+        else if (kind === 'video' || kind === 'animation' || kind === 'video_note') pBox.innerHTML = '<video src="' + esc(src) + '" controls preload="metadata" style="max-width:100%;max-height:200px;border-radius:10px;display:block;margin:0 auto;"></video>';
+        else if (kind === 'voice' || kind === 'audio') pBox.innerHTML = '<audio src="' + esc(src) + '" controls preload="metadata" style="width:100%;"></audio>';
+        else pBox.innerHTML = '<a class="btn btn-gray btn-sm" href="' + esc(src) + '" target="_blank" rel="noopener"><i class="fa-solid fa-download"></i> Download / Open file</a>';
+    } else {
+        pBox.innerHTML = '';
+    }
+
+    $('media-edit-modal').classList.remove('hidden');
+    trackModal('media-edit-modal');
+}
+function closeMediaEditModal() { $('media-edit-modal').classList.add('hidden'); untrackModal('media-edit-modal'); editingMediaItem = null; }
+function setMediaEditExpiryPreset(hours) {
+    var d = new Date(Date.now() + hours * 3600 * 1000);
+    $('me-expires').value = toLocalInputFromIso(d.toISOString());
+}
+async function saveMediaEdit() {
+    if (!editingMediaItem) return;
+    var err = $('me-error'); err.classList.remove('show');
+    await withBusy($('media-edit-save'), async function () {
+        try {
+            await api('POST', '/api/media/update', {
+                id: editingMediaItem.id,
+                label: $('me-label').value.trim(),
+                caption: $('me-caption').value,
+                allowed_users: $('me-allowed').value.trim(),
+                expires_at: toIsoFromLocalInput($('me-expires').value)
+            });
+            toast('Media updated.');
+            closeMediaEditModal();
+            loadMediaLibrary(true);
+        } catch (e) { err.textContent = e.message; err.classList.add('show'); }
+    });
+}
+async function validateEditingMedia() {
+    if (!editingMediaItem) return;
+    $('me-status').innerHTML = '<span class="mini-spinner"></span> Checking with Telegram…';
+    try {
+        var d = await api('POST', '/api/media/validate', { ids: [editingMediaItem.id] });
+        var r = (d.results && d.results[0]) || {};
+        $('me-status').innerHTML = r.valid
+            ? '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> file_id is live and valid on Telegram.</span>'
+            : '<span style="color:var(--red)"><i class="fa-solid fa-circle-xmark"></i> Invalid or unreachable: ' + esc(r.error || 'unknown') + '</span>';
+        loadMediaLibrary(true);
+    } catch (e) { $('me-status').innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
+}
+async function testSendEditingMedia() {
+    if (!editingMediaItem) return;
+    var target = prompt('Enter Telegram user ID or chat ID to test-send this file to:');
+    if (!target) return;
+    $('me-status').innerHTML = '<span class="mini-spinner"></span> Sending…';
+    try {
+        await api('POST', '/api/media/send_test', { id: editingMediaItem.id, chatId: target.trim() });
+        $('me-status').innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Sent test message!</span>';
+    } catch (e) { $('me-status').innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
+}
+async function createCommandFromMedia(id) {
+    var m = mediaLibrary.find(function (x) { return x.id === id; });
+    if (!m) return;
+    await openCommandModal(null, null);
+    $('cmd-type').value = m.media_type || 'document';
+    $('cmd-file-id').value = m.file_id || '';
+    $('cmd-media-meta').value = typeof m.media_meta === 'string' ? m.media_meta : JSON.stringify(m.media_meta || {});
+    $('cmd-content').value = m.caption || '';
+    if ($('cmd-allowed-users')) $('cmd-allowed-users').value = m.allowed_users || '';
+    if ($('cmd-expires-at')) $('cmd-expires-at').value = toLocalInputFromIso(m.expires_at || '');
+    if (m.allowed_users && String(m.allowed_users).trim()) setSeg('cmd-access', 'specific');
+    onCmdAccessChange();
+    setSeg('cmd-media-source', 'file');
+    toggleMedia();
+    renderMediaPreview('cmd');
+}
+function createCommandFromEditingMedia() {
+    if (!editingMediaItem) return;
+    var id = editingMediaItem.id;
+    closeMediaEditModal();
+    createCommandFromMedia(id);
+}
+
+function openAddFileIdModal() {
+    $('mf-error').classList.remove('show');
+    $('mf-fileid').value = ''; $('mf-label').value = ''; $('mf-allowed').value = '';
+    $('mf-type').value = 'document';
+    $('media-fileid-modal').classList.remove('hidden');
+    trackModal('media-fileid-modal');
+}
+function closeAddFileIdModal() { $('media-fileid-modal').classList.add('hidden'); untrackModal('media-fileid-modal'); }
+async function saveAddFileId() {
+    var err = $('mf-error'); err.classList.remove('show');
+    var fid = $('mf-fileid').value.trim();
+    if (!fid) { err.textContent = 'file_id is required.'; err.classList.add('show'); return; }
+    await withBusy($('mf-save'), async function () {
+        try {
+            await api('POST', '/api/media/add_file_id', {
+                file_id: fid, media_type: $('mf-type').value,
+                label: $('mf-label').value.trim(), allowed_users: $('mf-allowed').value.trim()
+            });
+            toast('file_id validated and added.');
+            closeAddFileIdModal();
+            loadMediaLibrary(true);
+        } catch (e) { err.textContent = e.message; err.classList.add('show'); }
+    });
+}
+
+async function validateAllVisibleMedia() {
+    var list = getFilteredMediaList();
+    if (!list.length) { toast('No media to validate.', 'info'); return; }
+    var ids = list.slice(0, 40).map(function (m) { return m.id; });
+    await withSelfBusy(async function () {
+        try {
+            var d = await api('POST', '/api/media/validate', { ids: ids });
+            toast('Validated ' + d.checked + ' item(s): ' + d.valid + ' valid, ' + d.invalid + ' invalid.', d.invalid ? 'error' : 'success');
+            loadMediaLibrary(true);
+        } catch (e) { toast(e.message, 'error'); }
+    });
+}
+async function bulkMediaValidate() {
+    var ids = Array.from(mediaSelected);
+    if (!ids.length) return;
+    await withSelfBusy(async function () {
+        try {
+            var d = await api('POST', '/api/media/validate', { ids: ids.slice(0, 40) });
+            toast('Validated ' + d.checked + ' item(s): ' + d.valid + ' valid, ' + d.invalid + ' invalid.', d.invalid ? 'error' : 'success');
+            loadMediaLibrary(true);
+        } catch (e) { toast(e.message, 'error'); }
+    });
+}
+async function bulkMediaUserAccess(mode) {
+    var ids = Array.from(mediaSelected);
+    if (!ids.length) return;
+    var raw = prompt((mode === 'grant' ? 'Grant access — enter Telegram user ID(s) to ADD' : 'Revoke access — enter Telegram user ID(s) to REMOVE') + ' (comma separated):');
+    if (!raw) return;
+    try {
+        await api('POST', '/api/media/bulk', { action: mode === 'grant' ? 'grant_access' : 'revoke_access', ids: ids, userIds: raw });
+        toast('Updated access on ' + ids.length + ' item(s).');
+        loadMediaLibrary(true);
+    } catch (e) { toast(e.message, 'error'); }
+}
+async function bulkMediaSetExpiry() {
+    var ids = Array.from(mediaSelected);
+    if (!ids.length) return;
+    var hoursStr = prompt('Set expiration in hours from now (e.g. 24, 168 for 7 days, or 0 to CLEAR expiration):', '168');
+    if (hoursStr === null) return;
+    var h = parseFloat(hoursStr);
+    if (isNaN(h) || h < 0) { toast('Enter 0 or a positive number of hours.', 'error'); return; }
+    var expiresAt = h === 0 ? '' : new Date(Date.now() + h * 3600 * 1000).toISOString();
+    try {
+        await api('POST', '/api/media/bulk', { action: 'set_expiration', ids: ids, expires_at: expiresAt });
+        toast(h === 0 ? 'Cleared expiration on ' + ids.length + ' item(s).' : 'Expiration set on ' + ids.length + ' item(s).');
+        loadMediaLibrary(true);
+    } catch (e) { toast(e.message, 'error'); }
+}
+async function bulkMediaDelete() {
+    var ids = Array.from(mediaSelected);
+    if (!ids.length) return;
+    var ok = await confirmDialog('Delete ' + ids.length + ' selected item(s) from the Media Library?', 'Bulk delete', true,
+        '<label class="check" style="margin-top:10px;"><input type="checkbox" id="bulk-del-tg"> <span>Also delete stored messages from Telegram storage chat (when available)</span></label>');
+    if (!ok) return;
+    var delTg = !!($('bulk-del-tg') && $('bulk-del-tg').checked);
+    try {
+        await api('POST', '/api/media/bulk', { action: 'delete', ids: ids, delete_telegram_messages: delTg });
+        mediaSelected.clear();
+        toast('Deleted ' + ids.length + ' item(s).');
+        loadMediaLibrary(true);
+    } catch (e) { toast(e.message, 'error'); }
+}
+
 async function deleteMedia(id) {
     if (!await confirmDialog('Remove this file from the library? The file_id itself stays valid on Telegram.', 'Delete from library')) return;
-    try { await api('POST', '/api/media/delete', { id: id }); toast('Removed from library.'); loadMediaLibrary(true); }
+    try { await api('POST', '/api/media/delete', { id: id }); mediaSelected.delete(id); toast('Removed from library.'); loadMediaLibrary(true); }
     catch (e) { toast(e.message, 'error'); }
 }
 async function clearMediaLibrary() {
     var btn = getClickBtn();
     if (!await confirmDialog('Remove ALL files from the library? This does not delete the underlying Telegram files, but removes all references from this dashboard.', 'Clear library', true)) return;
     await withBusy(btn, async function () {
-        try { await api('POST', '/api/media/clear'); toast('Library cleared.'); loadMediaLibrary(true); }
+        try { await api('POST', '/api/media/clear'); mediaSelected.clear(); toast('Library cleared.'); loadMediaLibrary(true); }
         catch (e) { toast(e.message, 'error'); }
     });
-}
-async function renameMedia(id) {
-    var item = mediaLibrary.find(function (m) { return m.id === id; });
-    if (!item) return;
-    var newLabel = prompt('Rename:', item.label || item.file_name || '');
-    if (newLabel === null) return;
-    try { await api('POST', '/api/media/rename', { id: id, label: String(newLabel).slice(0, 80) }); loadMediaLibrary(true); }
-    catch (e) { toast(e.message, 'error'); }
 }
 function reuseMedia(id) {
     var item = mediaLibrary.find(function (m) { return m.id === id; });
     if (!item) return;
-    navigator.clipboard.writeText(item.file_id).then(function () { toast('file_id copied. Paste it anywhere a file_id is accepted.'); });
+    navigator.clipboard.writeText(item.file_id).then(function () { toast('file_id copied.'); });
 }
 var mediaPickerTarget = null;
 var mediaPickerFilter = 'all';
 async function openMediaPicker(targetPrefix) {
     mediaPickerTarget = targetPrefix;
+    setSeg('media-picker-view-seg', mediaPickerView);
+    updatePreviewToggleButtons();
     if (!mediaLibrary.length) await loadMediaLibrary();
     $('media-picker-modal').classList.remove('hidden');
     trackModal('media-picker-modal');
@@ -5765,23 +6521,32 @@ function renderMediaPicker() {
     var q = ($('media-picker-search') && $('media-picker-search').value || '').toLowerCase();
     var list = mediaLibrary.filter(function (m) {
         if (mediaPickerFilter !== 'all' && m.media_type !== mediaPickerFilter) return false;
-        if (q && (String(m.label || '') + ' ' + String(m.file_name || '')).toLowerCase().indexOf(q) < 0) return false;
+        if (q && (String(m.label || '') + ' ' + String(m.file_name || '') + ' ' + String(m.caption || '')).toLowerCase().indexOf(q) < 0) return false;
         return true;
     });
-    if (!list.length) { box.innerHTML = emptyState('fa-solid fa-photo-film', 'No media in the library.', 'Upload something first.'); return; }
+    if (!list.length) { box.className = ''; box.innerHTML = emptyState('fa-solid fa-photo-film', 'No media in the library.', 'Upload something first.'); return; }
+    if (mediaPickerView === 'list') {
+        box.className = 'media-list';
+        box.innerHTML = list.map(function (m) {
+            var sizeStr = mediaSizeLabel(m);
+            return '<div class="media-list-row" style="cursor:pointer;" onclick="pickMedia(' + m.id + ')">' +
+                '<div class="media-list-thumb">' + mediaThumbHtml(m, 'list') + '</div>' +
+                '<div class="media-list-main">' +
+                    '<div class="media-list-title">' + esc(m.label || m.file_name || 'Untitled') + '</div>' +
+                    '<div class="media-list-sub"><span class="badge">' + esc(m.media_type || 'file') + '</span>' + (sizeStr ? '<span>' + esc(sizeStr) + '</span>' : '') + mediaStatusBadges(m) + '</div>' +
+                '</div>' +
+                '<span class="btn btn-gray btn-sm">Attach</span>' +
+            '</div>';
+        }).join('');
+        return;
+    }
+    box.className = 'media-grid';
     box.innerHTML = list.map(function (m) {
         var kind = m.media_type || 'photo';
-        var src = '/api/file/' + encodeURIComponent(m.file_id);
-        var thumb = '';
-        if (kind === 'photo' || kind === 'sticker') thumb = '<img src="' + esc(src) + '" alt="" loading="lazy">';
-        else if (kind === 'video' || kind === 'animation' || kind === 'video_note') thumb = '<video src="' + esc(src) + '" muted playsinline preload="metadata"></video>';
-        else if (kind === 'voice' || kind === 'audio') thumb = '<i class="fa-solid fa-volume-high"></i>';
-        else if (kind === 'document') thumb = '<i class="fa-regular fa-file-lines"></i>';
-        else thumb = '<i class="fa-solid fa-file"></i>';
         return '<div class="media-card" style="cursor:pointer;" onclick="pickMedia(' + m.id + ')">' +
             '<span class="media-type-tag">' + esc(kind) + '</span>' +
-            '<div class="media-thumb">' + thumb + '</div>' +
-            '<div class="media-info"><div class="media-title">' + esc(m.label || m.file_name || 'Untitled') + '</div></div>' +
+            '<div class="media-thumb' + (mediaPreviews ? '' : ' no-preview') + '">' + mediaThumbHtml(m, 'grid') + '</div>' +
+            '<div class="media-info"><div class="media-title">' + esc(m.label || m.file_name || 'Untitled') + '</div><div class="media-badges">' + mediaStatusBadges(m) + '</div></div>' +
         '</div>';
     }).join('');
 }
@@ -5796,8 +6561,16 @@ function pickMedia(id) {
     if (metaEl) metaEl.value = typeof item.media_meta === 'string' ? item.media_meta : JSON.stringify(item.media_meta || {});
     if (typeEl) typeEl.value = item.media_type || 'photo';
     setSeg(prefix + '-media-source', 'file');
-    if (prefix === 'cmd') toggleCmdMediaSource();
-    else toggleMsgMediaSource();
+    if (prefix === 'cmd') {
+        if (item.caption && !$('cmd-content').value.trim()) $('cmd-content').value = item.caption;
+        if (item.allowed_users && $('cmd-allowed-users') && !$('cmd-allowed-users').value.trim()) $('cmd-allowed-users').value = item.allowed_users;
+        if (item.expires_at && $('cmd-expires-at') && !$('cmd-expires-at').value) $('cmd-expires-at').value = toLocalInputFromIso(item.expires_at);
+        toggleMedia();
+        toggleCmdMediaSource();
+    } else {
+        toggleMsgMedia();
+        toggleMsgMediaSource();
+    }
     renderMediaPreview(prefix);
     closeMediaPicker();
     toast('Media attached.');
@@ -6982,7 +7755,6 @@ async function loadSettings(force) {
         $('set-token').value = d.bot_token_masked || '';
         $('set-token').type = 'password';
         $('set-hook').value = d.webhook_url || '';
-        if ($('set-media-storage')) $('set-media-storage').value = d.media_storage_chat_id || '';
         window.__botTokenSet = d.bot_token_set;
         if (d.cf_token_set) $('up-token').placeholder = 'Token already stored — click Generate to replace';
         setSeg('sys-lang', d.system_language || 'en');
@@ -7006,19 +7778,6 @@ async function setSystemLanguage(lang) {
         } catch (e) {
             out.innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>';
         }
-    });
-}
-
-async function saveMediaStorage() {
-    var out = $('media-storage-result');
-    await withSelfBusy(async function () {
-        var id = $('set-media-storage').value.trim();
-        out.innerHTML = '<span class="mini-spinner"></span> Saving…';
-        try {
-            await api('POST', '/api/settings/media_storage', { chatId: id });
-            out.innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Saved.</span>';
-            toast('Media storage chat saved.');
-        } catch (e) { out.innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
     });
 }
 
@@ -7259,6 +8018,7 @@ async function exportBackup() {
 const BACKUP_ITEMS = [
     { id: 'commands', title: 'Commands', sub: 'Bot commands and replies' },
     { id: 'featured', title: 'Featured commands', sub: 'DM commands and Buttons commands' },
+    { id: 'media_library', title: 'Media library', sub: 'Stored file_ids, captions, allowances and expirations' },
     { id: 'users', title: 'Users', sub: 'User profiles and roles' },
     { id: 'groups', title: 'Groups', sub: 'Group settings and metadata' },
     { id: 'ai_messages', title: 'AI memory', sub: 'Every stored AI conversation' },
@@ -7293,6 +8053,7 @@ async function runCustomBackup() {
                 selected: checked,
                 commands: checked.indexOf('commands') >= 0 ? (full.commands || []) : [],
                 featured: checked.indexOf('featured') >= 0 ? (full.featured || []) : [],
+                media_library: checked.indexOf('media_library') >= 0 ? (full.media_library || []) : [],
                 users: checked.indexOf('users') >= 0 ? (full.users || []) : [],
                 groups: checked.indexOf('groups') >= 0 ? (full.groups || []) : [],
                 ai_messages: checked.indexOf('ai_messages') >= 0 ? (full.ai_messages || []) : [],
@@ -7416,7 +8177,6 @@ async function clearLogs() {
 // ---- Expose to inline callers ----
 window.loadSettings          = loadSettings;
 window.setSystemLanguage     = setSystemLanguage;
-window.saveMediaStorage      = saveMediaStorage;
 window.revealToken           = revealToken;
 window.changeToken           = changeToken;
 window.closeTokenModal       = closeTokenModal;
@@ -8400,6 +9160,11 @@ export default {
             if (request.method === 'POST' && url.pathname === '/api/media/delete') return await deleteMediaLibraryItem(request, env);
             if (request.method === 'POST' && url.pathname === '/api/media/clear') return await clearMediaLibraryDb(env);
             if (request.method === 'POST' && url.pathname === '/api/media/rename') return await renameMediaLibraryItem(request, env);
+            if (request.method === 'POST' && url.pathname === '/api/media/update') return await updateMediaLibraryItem(request, env);
+            if (request.method === 'POST' && url.pathname === '/api/media/validate') return await validateMediaLibraryItems(request, env);
+            if (request.method === 'POST' && url.pathname === '/api/media/bulk') return await bulkMediaLibraryAction(request, env);
+            if (request.method === 'POST' && url.pathname === '/api/media/add_file_id') return await addMediaByFileId(request, env);
+            if (request.method === 'POST' && url.pathname === '/api/media/send_test') return await sendMediaTest(request, env);
             if (request.method === 'GET'  && url.pathname === '/api/media/storage_chat') return await getMediaStorageChatInfo(env, url);
             // ---- MCP dashboard API ----
             if (request.method === 'GET'  && url.pathname === '/api/mcp/settings') return await getMcpSettings(request, env);
@@ -8773,7 +9538,7 @@ async function demoteAdminHandler(request, env) {
 // DATABASE
 // ============================================================================
 const dbInitCache = new WeakMap();
-const SCHEMA_VERSION = 18;
+const SCHEMA_VERSION = 19;
 
 const MIGRATIONS = {
     2: [
@@ -8923,6 +9688,19 @@ const MIGRATIONS = {
         // Blocked users — broadcast recipient scan
         `CREATE INDEX IF NOT EXISTS idx_blocked_type ON blocked_users(block_type)`,
     ],
+    19: [
+        `ALTER TABLE commands ADD COLUMN allowed_users TEXT DEFAULT ''`,
+        `ALTER TABLE commands ADD COLUMN expires_at DATETIME`,
+        `ALTER TABLE media_library ADD COLUMN allowed_users TEXT DEFAULT ''`,
+        `ALTER TABLE media_library ADD COLUMN expires_at DATETIME`,
+        `ALTER TABLE media_library ADD COLUMN caption TEXT DEFAULT ''`,
+        `ALTER TABLE media_library ADD COLUMN storage_chat_id TEXT DEFAULT ''`,
+        `ALTER TABLE media_library ADD COLUMN storage_message_id INTEGER`,
+        `ALTER TABLE media_library ADD COLUMN is_valid INTEGER DEFAULT 1`,
+        `ALTER TABLE media_library ADD COLUMN last_validated_at DATETIME`,
+        `INSERT INTO settings (key, value) VALUES ('media_storage_delete_after_upload', '0') ON CONFLICT(key) DO NOTHING`,
+        `CREATE INDEX IF NOT EXISTS idx_media_library_file_id ON media_library(file_id)`,
+    ],
 };
 
 // ============================================================================
@@ -8962,6 +9740,8 @@ const DESIRED_SCHEMA = {
         buttons_json: { type: 'TEXT' },
         is_admin_only: { type: 'BOOLEAN', default: '0' },
         access_level: { type: 'TEXT', default: "'everyone'" },
+        allowed_users: { type: 'TEXT', default: "''" },
+        expires_at: { type: 'DATETIME' },
         enabled: { type: 'BOOLEAN', default: '1' },
         show_reply_keyboard: { type: 'BOOLEAN', default: '0' },
         reply_keyboard_json: { type: 'TEXT' },
@@ -9112,8 +9892,15 @@ const DESIRED_SCHEMA = {
         media_type: { type: 'TEXT', default: "'photo'" },
         media_meta: { type: 'TEXT', default: "'{}'" },
         label: { type: 'TEXT', default: "''" },
+        caption: { type: 'TEXT', default: "''" },
         file_name: { type: 'TEXT', default: "''" },
         file_size: { type: 'INTEGER', default: '0' },
+        allowed_users: { type: 'TEXT', default: "''" },
+        expires_at: { type: 'DATETIME' },
+        storage_chat_id: { type: 'TEXT', default: "''" },
+        storage_message_id: { type: 'INTEGER' },
+        is_valid: { type: 'INTEGER', default: '1' },
+        last_validated_at: { type: 'DATETIME' },
         uploaded_at: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' }
     }}
 };
@@ -9141,6 +9928,7 @@ const SCHEMA_INDEXES = [
     'CREATE INDEX IF NOT EXISTS idx_commands_parent_order ON commands(parent, order_idx)',
     'CREATE INDEX IF NOT EXISTS idx_mcp_updated ON mcp_sessions(updated_at DESC)',
     'CREATE INDEX IF NOT EXISTS idx_blocked_type ON blocked_users(block_type)',
+    'CREATE INDEX IF NOT EXISTS idx_media_library_file_id ON media_library(file_id)',
 ];
 
 // Safe, idempotent cleanups that remove expired and orphaned rows.
@@ -9243,7 +10031,8 @@ const REQUIRED_SETTINGS = {
     contact_away_start_hour: '22',
     contact_away_end_hour: '8',
     contact_rate_limit: '5',
-    contact_last_read_at: ''
+    contact_last_read_at: '',
+    media_storage_delete_after_upload: '0'
 };
 
 function buildCreateTableSql(tableName, spec) {
@@ -9455,15 +10244,32 @@ async function initializeDatabase(db) {
                 media_type TEXT DEFAULT 'photo',
                 media_meta TEXT DEFAULT '{}',
                 label TEXT DEFAULT '',
+                caption TEXT DEFAULT '',
                 file_name TEXT DEFAULT '',
                 file_size INTEGER DEFAULT 0,
+                allowed_users TEXT DEFAULT '',
+                expires_at DATETIME,
+                storage_chat_id TEXT DEFAULT '',
+                storage_message_id INTEGER,
+                is_valid INTEGER DEFAULT 1,
+                last_validated_at DATETIME,
                 uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )`).run();
             await db.prepare('CREATE INDEX IF NOT EXISTS idx_media_library_uploaded ON media_library(uploaded_at)').run();
+            await db.prepare('CREATE INDEX IF NOT EXISTS idx_media_library_file_id ON media_library(file_id)').run();
         } catch (e) { /* ignore */ }
 
         const SCHEMA_HEALS = [
             `ALTER TABLE commands ADD COLUMN access_level TEXT DEFAULT 'everyone'`,
+            `ALTER TABLE commands ADD COLUMN allowed_users TEXT DEFAULT ''`,
+            `ALTER TABLE commands ADD COLUMN expires_at DATETIME`,
+            `ALTER TABLE media_library ADD COLUMN allowed_users TEXT DEFAULT ''`,
+            `ALTER TABLE media_library ADD COLUMN expires_at DATETIME`,
+            `ALTER TABLE media_library ADD COLUMN caption TEXT DEFAULT ''`,
+            `ALTER TABLE media_library ADD COLUMN storage_chat_id TEXT DEFAULT ''`,
+            `ALTER TABLE media_library ADD COLUMN storage_message_id INTEGER`,
+            `ALTER TABLE media_library ADD COLUMN is_valid INTEGER DEFAULT 1`,
+            `ALTER TABLE media_library ADD COLUMN last_validated_at DATETIME`,
             `ALTER TABLE commands ADD COLUMN file_id TEXT DEFAULT ''`,
             `ALTER TABLE commands ADD COLUMN media_meta TEXT DEFAULT ''`,
             `ALTER TABLE dm_messages ADD COLUMN file_id TEXT DEFAULT ''`,
@@ -10667,9 +11473,21 @@ async function getReplyButtonMap(db) {
 // ============================================================================
 // COMMANDS
 // ============================================================================
-const COMMAND_ACCESS_LEVELS = ['everyone', 'moderator', 'admin'];
+const COMMAND_ACCESS_LEVELS = ['everyone', 'specific', 'moderator', 'admin'];
 function normalizeCommandAccessLevel(value) {
     return COMMAND_ACCESS_LEVELS.includes(value) ? value : null;
+}
+function parseAllowedUserIds(raw) {
+    const set = new Set();
+    if (!raw) return set;
+    for (const part of String(raw).split(/[\s,;]+/)) {
+        const n = Number(part.trim());
+        if (Number.isInteger(n) && n > 0) set.add(n);
+    }
+    return set;
+}
+function normalizeAllowedUsersStr(raw) {
+    return Array.from(parseAllowedUserIds(raw)).join(', ');
 }
 function effectiveCommandAccess(row) {
     if (!row) return 'everyone';
@@ -10682,6 +11500,7 @@ function effectiveCommandAccess(row) {
 async function canUseCommandAccess(env, userId, access) {
     if (access === 'admin') return await isAdminUser(env, userId);
     if (access === 'moderator') return await isModeratorOrAbove(env, userId);
+    if (access === 'specific') return await isAdminUser(env, userId);
     return true;
 }
 function resolveCommandAccessInput(value, adminOnlyValue, existing) {
@@ -10694,13 +11513,9 @@ async function getCommands(env, url) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
-        // Summary mode strips content / buttons_json / reply_keyboard_json /
-        // media fields — the biggest strings on each row. Client asks for
-        // this by default and fetches the full row only when the user opens
-        // the edit modal.
         const summary = url && url.searchParams.get('summary') === '1';
         const cols = summary
-            ? "command, parent, response_type, enabled, access_level, is_admin_only, order_idx, CASE WHEN buttons_json != '' THEN 1 ELSE 0 END AS has_buttons, show_reply_keyboard"
+            ? "command, parent, response_type, enabled, access_level, allowed_users, expires_at, is_admin_only, order_idx, CASE WHEN buttons_json != '' THEN 1 ELSE 0 END AS has_buttons, show_reply_keyboard"
             : '*';
         const result = await env.DB.prepare(`SELECT ${cols} FROM commands ORDER BY order_idx, command`).all();
         return apiJson({ commands: result.results || [] });
@@ -10739,11 +11554,13 @@ async function createCommand(request, env) {
         await initializeDatabase(env.DB);
         if (parent && await commandIsDescendant(env.DB, command, parent)) return apiJson({ error: 'You cannot nest a command inside its own child.' }, 400);
         const accessLevel = resolveCommandAccessInput(body.access_level, is_admin_only, null);
+        const allowedUsers = normalizeAllowedUsersStr(body.allowed_users);
+        const expiresAt = body.expires_at ? String(body.expires_at).trim() : null;
         const maxOrder = await env.DB.prepare('SELECT MAX(order_idx) as max FROM commands').first();
         const orderIdx = (maxOrder && maxOrder.max !== null) ? maxOrder.max + 1 : 0;
         try {
-            await env.DB.prepare(`INSERT INTO commands (command, parent, response_type, content, media_url, file_id, media_meta, buttons_json, is_admin_only, access_level, enabled, show_reply_keyboard, reply_keyboard_json, order_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-                .bind(command, parent || null, rtype, content || '', media_url || '', file_id || '', media_meta || '', buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', orderIdx).run();
+            await env.DB.prepare(`INSERT INTO commands (command, parent, response_type, content, media_url, file_id, media_meta, buttons_json, is_admin_only, access_level, allowed_users, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, order_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+                .bind(command, parent || null, rtype, content || '', media_url || '', file_id || '', media_meta || '', buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', orderIdx).run();
         } catch (e) {
             const m = String(e.message || '');
             console.error('createCommand INSERT failed:', m);
@@ -10787,14 +11604,16 @@ async function updateCommand(request, env) {
         if (rtype !== 'text' && !content && !media_url && !file_id) return apiJson({ error: 'Provide a caption, media URL, or uploaded file.' }, 400);
         if (parent && parent === command) return apiJson({ error: 'A command cannot be its own parent.' }, 400);
         await initializeDatabase(env.DB);
-        const existing = await env.DB.prepare('SELECT access_level, is_admin_only FROM commands WHERE command = ?').bind(oldCommand).first();
+        const existing = await env.DB.prepare('SELECT access_level, allowed_users, expires_at, is_admin_only FROM commands WHERE command = ?').bind(oldCommand).first();
         const accessLevel = resolveCommandAccessInput(body.access_level, is_admin_only, existing);
+        const allowedUsers = body.allowed_users !== undefined ? normalizeAllowedUsersStr(body.allowed_users) : ((existing && existing.allowed_users) || '');
+        const expiresAt = body.expires_at !== undefined ? (body.expires_at ? String(body.expires_at).trim() : null) : (existing ? existing.expires_at : null);
         if (command !== oldCommand) {
             const clash = await env.DB.prepare('SELECT command FROM commands WHERE command = ?').bind(command).first();
             if (clash) return apiJson({ error: `A command named "${command}" already exists.` }, 400);
             if (parent && await commandIsDescendant(env.DB, command, parent)) return apiJson({ error: 'You cannot nest a command inside its own child.' }, 400);
-            await env.DB.prepare(`UPDATE commands SET command = ?, parent = ?, response_type = ?, content = ?, media_url = ?, file_id = ?, media_meta = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ? WHERE command = ?`)
-                .bind(command, parent || null, rtype, content || '', media_url || '', file_id || '', media_meta || '', buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', oldCommand).run();
+            await env.DB.prepare(`UPDATE commands SET command = ?, parent = ?, response_type = ?, content = ?, media_url = ?, file_id = ?, media_meta = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, allowed_users = ?, expires_at = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ? WHERE command = ?`)
+                .bind(command, parent || null, rtype, content || '', media_url || '', file_id || '', media_meta || '', buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', oldCommand).run();
             await env.DB.prepare('UPDATE commands SET parent = ? WHERE parent = ?').bind(command, oldCommand).run();
             const refRows = await env.DB.prepare('SELECT command, buttons_json, reply_keyboard_json FROM commands WHERE buttons_json LIKE ? OR reply_keyboard_json LIKE ?').bind(`%${oldCommand}%`, `%${oldCommand}%`).all();
             for (const row of refRows.results) {
@@ -10806,8 +11625,8 @@ async function updateCommand(request, env) {
             }
         } else {
             if (parent && await commandIsDescendant(env.DB, command, parent)) return apiJson({ error: 'You cannot nest a command inside its own child.' }, 400);
-            await env.DB.prepare(`UPDATE commands SET parent = ?, response_type = ?, content = ?, media_url = ?, file_id = ?, media_meta = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ? WHERE command = ?`)
-            .bind(parent || null, rtype, content || '', media_url || '', file_id || '', media_meta || '', buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', command).run();
+            await env.DB.prepare(`UPDATE commands SET parent = ?, response_type = ?, content = ?, media_url = ?, file_id = ?, media_meta = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, allowed_users = ?, expires_at = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ? WHERE command = ?`)
+            .bind(parent || null, rtype, content || '', media_url || '', file_id || '', media_meta || '', buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', command).run();
         }
         await bumpDomainEpoch(env.DB, 'reply_buttons');
         return apiJson({ success: true });
@@ -10853,7 +11672,7 @@ async function exportCommandPack(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
-        const commands = await env.DB.prepare('SELECT command, parent, response_type, content, media_url, file_id, media_meta, buttons_json, is_admin_only, access_level, enabled, show_reply_keyboard, reply_keyboard_json FROM commands ORDER BY order_idx, command').all();
+        const commands = await env.DB.prepare('SELECT command, parent, response_type, content, media_url, file_id, media_meta, buttons_json, is_admin_only, access_level, allowed_users, expires_at, enabled, show_reply_keyboard, reply_keyboard_json FROM commands ORDER BY order_idx, command').all();
         let menu = [];
         const raw = await getSetting(env.DB, 'menu_commands');
         if (raw) { try { menu = JSON.parse(raw); } catch (e) {} }
@@ -10875,15 +11694,17 @@ async function importCommandPack(request, env) {
         const stmts = valid.map((c, i) => {
             const access = effectiveCommandAccess(c);
             return env.DB.prepare(`
-            INSERT INTO commands (command, parent, response_type, content, media_url, file_id, media_meta, buttons_json, is_admin_only, access_level, enabled, show_reply_keyboard, reply_keyboard_json, order_idx)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO commands (command, parent, response_type, content, media_url, file_id, media_meta, buttons_json, is_admin_only, access_level, allowed_users, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, order_idx)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(command) DO UPDATE SET
                 parent = excluded.parent, response_type = excluded.response_type, content = excluded.content,
                 media_url = excluded.media_url, file_id = excluded.file_id, media_meta = excluded.media_meta,
                 buttons_json = excluded.buttons_json,
-                is_admin_only = excluded.is_admin_only, access_level = excluded.access_level, enabled = excluded.enabled,
+                is_admin_only = excluded.is_admin_only, access_level = excluded.access_level,
+                allowed_users = excluded.allowed_users, expires_at = excluded.expires_at,
+                enabled = excluded.enabled,
                 show_reply_keyboard = excluded.show_reply_keyboard, reply_keyboard_json = excluded.reply_keyboard_json
-        `).bind(c.command, c.parent || null, c.response_type || 'text', c.content || '', c.media_url || '', c.file_id || '', c.media_meta || '', c.buttons_json || '', access === 'admin' ? 1 : 0, access, c.enabled != 0 ? 1 : 0, c.show_reply_keyboard ? 1 : 0, c.reply_keyboard_json || '', i);
+        `).bind(c.command, c.parent || null, c.response_type || 'text', c.content || '', c.media_url || '', c.file_id || '', c.media_meta || '', c.buttons_json || '', access === 'admin' ? 1 : 0, access, normalizeAllowedUsersStr(c.allowed_users), c.expires_at || null, c.enabled != 0 ? 1 : 0, c.show_reply_keyboard ? 1 : 0, c.reply_keyboard_json || '', i);
         });
         await runBatchChunks(env.DB, stmts);
         if (Array.isArray(data.menu) && data.menu.length) {
@@ -12625,8 +13446,8 @@ async function getSettings(env, originUrl) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
-        const [token, webhook, cfToken, language, mediaStorage] = await Promise.all([
-            getSetting(env.DB, 'bot_token'), getSetting(env.DB, 'webhook_url'), getSetting(env.DB, 'cf_api_token'), getSetting(env.DB, 'system_language'), getSetting(env.DB, 'media_storage_chat_id'),
+        const [token, webhook, cfToken, language, mediaStorage, mediaDeleteAfter] = await Promise.all([
+            getSetting(env.DB, 'bot_token'), getSetting(env.DB, 'webhook_url'), getSetting(env.DB, 'cf_api_token'), getSetting(env.DB, 'system_language'), getSetting(env.DB, 'media_storage_chat_id'), getSetting(env.DB, 'media_storage_delete_after_upload'),
         ]);
         const systemLanguage = language || 'en';
         return apiJson({
@@ -12636,6 +13457,7 @@ async function getSettings(env, originUrl) {
             cf_token_masked: maskSecret(cfToken),
             cf_token_set: !!cfToken,
             media_storage_chat_id: mediaStorage || '',
+            media_storage_delete_after_upload: mediaDeleteAfter === '1' ? '1' : '0',
             system_language: systemLanguage === 'fa' ? 'fa' : 'en',
         });
     } catch (err) { return internalError(err); }
@@ -12714,8 +13536,13 @@ async function saveMediaStorageChat(request, env) {
         const body = await request.json();
         const chatId = String(body.chatId || '').trim();
         await initializeDatabase(env.DB);
-        await setSetting(env.DB, 'media_storage_chat_id', chatId);
-        await logAction(env.DB, null, 'Media storage chat updated');
+        const updates = [['media_storage_chat_id', chatId]];
+        if (body.deleteAfterUpload !== undefined) {
+            const del = (body.deleteAfterUpload === '1' || body.deleteAfterUpload === 1 || body.deleteAfterUpload === true) ? '1' : '0';
+            updates.push(['media_storage_delete_after_upload', del]);
+        }
+        await setSettingsBatch(env.DB, updates);
+        await logAction(env.DB, null, 'Media storage settings updated');
         return apiJson({ success: true, chat_id: chatId });
     } catch (err) { return internalError(err); }
 }
@@ -12935,9 +13762,10 @@ async function exportBackup(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
-        const [commands, featured, users, messages, settingsRows, broadcastRows, groupsRows, dmRows] = await Promise.all([
+        const [commands, featured, mediaLib, users, messages, settingsRows, broadcastRows, groupsRows, dmRows] = await Promise.all([
             env.DB.prepare('SELECT * FROM commands').all(),
             env.DB.prepare('SELECT command, kind, content, buttons_json, success_text, failure_text, admin_only, access_level, enabled, button_style FROM featured_replies').all(),
+            env.DB.prepare('SELECT file_id, media_type, media_meta, label, caption, file_name, file_size, allowed_users, expires_at, storage_chat_id, storage_message_id, is_valid, last_validated_at, uploaded_at FROM media_library ORDER BY id').all(),
             env.DB.prepare('SELECT * FROM users').all(),
             env.DB.prepare('SELECT chat_id, role, content, timestamp FROM ai_messages ORDER BY id').all(),
             env.DB.prepare('SELECT key, value FROM settings').all(),
@@ -12955,6 +13783,7 @@ async function exportBackup(env) {
             data: {
                 app: 'nyxx', version: VERSION, exported_at: new Date().toISOString(),
                 commands: commands.results || [], featured: featured.results || [],
+                media_library: mediaLib.results || [],
                 users: users.results || [],
                 ai_messages: messages.results || [], dm_messages: dmRows.results || [],
                 groups: groupsRows.results || [], settings,
@@ -12975,6 +13804,7 @@ async function restoreBackup(request, env) {
         const clearOps = [];
         if (wants('commands')) clearOps.push(env.DB.prepare('DELETE FROM commands'));
         if (wants('featured')) clearOps.push(env.DB.prepare('DELETE FROM featured_replies'));
+        if (wants('media_library') && Array.isArray(data.media_library)) clearOps.push(env.DB.prepare('DELETE FROM media_library'));
         if (wants('users')) clearOps.push(env.DB.prepare('DELETE FROM users'));
         if (wants('ai_messages')) clearOps.push(env.DB.prepare('DELETE FROM ai_messages'));
         if (wants('dm_messages')) clearOps.push(env.DB.prepare('DELETE FROM dm_messages'));
@@ -12983,9 +13813,15 @@ async function restoreBackup(request, env) {
         if (wants('commands') && Array.isArray(data.commands)) {
             await runBatchChunks(env.DB, data.commands.filter(c => c && c.command).map(c => {
                 const access = effectiveCommandAccess(c);
-                return env.DB.prepare(`INSERT INTO commands (command, parent, response_type, content, media_url, file_id, media_meta, buttons_json, is_admin_only, access_level, enabled, show_reply_keyboard, reply_keyboard_json, order_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-                    .bind(c.command, c.parent || null, c.response_type || 'text', c.content || '', c.media_url || '', c.file_id || '', c.media_meta || '', c.buttons_json || '', access === 'admin' ? 1 : 0, access, c.enabled !== undefined ? c.enabled : 1, c.show_reply_keyboard ? 1 : 0, c.reply_keyboard_json || '', c.order_idx || 0);
+                return env.DB.prepare(`INSERT INTO commands (command, parent, response_type, content, media_url, file_id, media_meta, buttons_json, is_admin_only, access_level, allowed_users, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, order_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+                    .bind(c.command, c.parent || null, c.response_type || 'text', c.content || '', c.media_url || '', c.file_id || '', c.media_meta || '', c.buttons_json || '', access === 'admin' ? 1 : 0, access, normalizeAllowedUsersStr(c.allowed_users), c.expires_at || null, c.enabled !== undefined ? c.enabled : 1, c.show_reply_keyboard ? 1 : 0, c.reply_keyboard_json || '', c.order_idx || 0);
             }));
+        }
+        if (wants('media_library') && Array.isArray(data.media_library)) {
+            await runBatchChunks(env.DB, data.media_library.filter(m => m && m.file_id).map(m =>
+                env.DB.prepare('INSERT INTO media_library (file_id, media_type, media_meta, label, caption, file_name, file_size, allowed_users, expires_at, storage_chat_id, storage_message_id, is_valid, last_validated_at, uploaded_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+                    .bind(m.file_id, m.media_type || 'document', m.media_meta || '{}', m.label || '', m.caption || '', m.file_name || '', m.file_size || 0, normalizeAllowedUsersStr(m.allowed_users), m.expires_at || null, m.storage_chat_id || '', m.storage_message_id || null, m.is_valid !== undefined ? m.is_valid : 1, m.last_validated_at || null, m.uploaded_at || new Date().toISOString())
+            ));
         }
         if (wants('featured') && Array.isArray(data.featured)) {
             await runBatchChunks(env.DB, data.featured.filter(f => f && f.command).map(f => {
@@ -13078,6 +13914,19 @@ async function factoryReset(request, env) {
 // ============================================================================
 // UPLOAD & FILE PROXY (media for commands/messages)
 // ============================================================================
+function detectMediaTypeFromFile(file) {
+    const name = String((file && file.name) || '').toLowerCase();
+    const mime = String((file && file.type) || '').toLowerCase();
+    if (mime === 'image/gif' || name.endsWith('.gif')) return 'animation';
+    if (mime.startsWith('image/')) {
+        if (name.endsWith('.webp')) return 'document';
+        return 'photo';
+    }
+    if (mime.startsWith('video/')) return 'video';
+    if (mime === 'audio/ogg' || name.endsWith('.ogg') || name.endsWith('.oga') || name.endsWith('.opus')) return 'voice';
+    if (mime.startsWith('audio/')) return 'audio';
+    return 'document';
+}
 async function handleUploadMedia(request, env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
@@ -13085,36 +13934,49 @@ async function handleUploadMedia(request, env) {
         const token = await getSetting(env.DB, 'bot_token');
         if (!token) return apiJson({ error: 'Bot token is not set. Add it in Settings first.' }, 400);
         const storageChat = (await getSetting(env.DB, 'media_storage_chat_id')) || '';
-        if (!storageChat) return apiJson({ error: 'Set a "Media storage chat ID" in Settings → Media storage. Use your own Telegram user ID after you have started the bot.' }, 400);
+        if (!storageChat) return apiJson({ error: 'Set a storage chat (DM, channel, or group) in the Media Library tab before uploading.' }, 400);
+        const deleteAfterUpload = (await getSetting(env.DB, 'media_storage_delete_after_upload')) === '1';
 
         const contentType = request.headers.get('Content-Type') || '';
         if (!contentType.includes('multipart/form-data')) return apiJson({ error: 'Upload must be multipart/form-data.' }, 400);
         const form = await request.formData();
         const file = form.get('file');
-        const mediaType = normalizeMediaType(form.get('media_type'));
         if (!file || typeof file === 'string') return apiJson({ error: 'No file attached.' }, 400);
+
+        const rawType = String(form.get('media_type') || 'auto').toLowerCase().trim();
+        let mediaType = rawType === 'auto' ? detectMediaTypeFromFile(file) : normalizeMediaType(rawType);
+        if (mediaType === 'text') mediaType = 'document';
         const def = MEDIA_TYPE_METHODS[mediaType];
         if (!def) return apiJson({ error: 'Unsupported media type for upload.' }, 400);
+
+        const caption = form.get('caption') ? String(form.get('caption')).slice(0, 1024) : '';
+        const labelIn = form.get('label') ? String(form.get('label')).trim().slice(0, 120) : '';
+        const allowedUsers = normalizeAllowedUsersStr(form.get('allowed_users') || '');
+        const expiresAt = form.get('expires_at') ? String(form.get('expires_at')).trim() : null;
 
         const tgForm = new FormData();
         tgForm.append('chat_id', String(storageChat));
         tgForm.append('disable_notification', 'true');
         tgForm.append(def.field, file, file.name || 'upload.bin');
+        if (caption && mediaType !== 'video_note' && mediaType !== 'sticker') {
+            tgForm.append('caption', caption);
+            tgForm.append('parse_mode', 'HTML');
+        }
         if (mediaType === 'video' || mediaType === 'animation' || mediaType === 'video_note') {
             tgForm.append('supports_streaming', 'true');
         }
 
         const res = await fetch(`https://api.telegram.org/bot${token}/${def.method}`, { method: 'POST', body: tgForm });
         const data = await res.json().catch(() => null);
-        if (!data || !data.ok) return apiJson({ error: (data && data.description) || 'Telegram rejected the upload.' }, 500);
+        if (!data || !data.ok) return apiJson({ error: (data && data.description) || 'Telegram rejected the upload. Make sure the bot has permission to post in your storage chat.' }, 500);
 
         const sent = data.result || {};
-        // Telegram returns PhotoSize as an ARRAY for `photo` (one entry per
-        // resolution), so `sent.photo.file_id` is always undefined. Pick the
-        // largest variant. All other media types are plain objects.
-        const mediaObj = mediaType === 'photo'
+        let mediaObj = mediaType === 'photo'
             ? (Array.isArray(sent.photo) ? sent.photo[sent.photo.length - 1] : sent.photo)
             : sent[mediaType];
+        if (!mediaObj) {
+            mediaObj = sent.animation || sent.document || sent.video || sent.audio || sent.voice || sent.video_note || sent.sticker || (Array.isArray(sent.photo) ? sent.photo[sent.photo.length - 1] : null);
+        }
         const fileId = mediaObj && mediaObj.file_id ? mediaObj.file_id : '';
         if (!fileId) return apiJson({ error: 'Telegram accepted the upload but returned no file_id. Try again.' }, 500);
         const mediaMeta = {};
@@ -13124,29 +13986,34 @@ async function handleUploadMedia(request, env) {
         if (mediaType === 'video')     { mediaMeta.duration   = sent.video && sent.video.duration; mediaMeta.width = sent.video && sent.video.width; mediaMeta.height = sent.video && sent.video.height; mediaMeta.file_name = sent.video && sent.video.file_name; }
         if (mediaType === 'animation') { mediaMeta.duration   = sent.animation && sent.animation.duration; mediaMeta.width = sent.animation && sent.animation.width; mediaMeta.height = sent.animation && sent.animation.height; }
         if (mediaType === 'video_note'){ mediaMeta.duration   = sent.video_note && sent.video_note.duration; mediaMeta.length = sent.video_note && sent.video_note.length; }
-        if (mediaType === 'photo')     { mediaMeta.width      = sent.photo && sent.photo[0] && sent.photo[0].width; mediaMeta.height = sent.photo && sent.photo[0] && sent.photo[0].height; }
+        if (mediaType === 'photo')     { const p = Array.isArray(sent.photo) ? sent.photo[sent.photo.length - 1] : sent.photo; mediaMeta.width = p && p.width; mediaMeta.height = p && p.height; }
         if (mediaType === 'document')  { mediaMeta.file_name  = sent.document && sent.document.file_name; }
 
-        // Clean up the storage chat so it doesn't fill up.
-        if (sent.message_id) await tgCall(token, 'deleteMessage', { chat_id: storageChat, message_id: sent.message_id }, { retry: false });
+        let storedMsgId = sent.message_id || null;
+        if (deleteAfterUpload && sent.message_id) {
+            await tgCall(token, 'deleteMessage', { chat_id: storageChat, message_id: sent.message_id }, { retry: false });
+            storedMsgId = null;
+        }
 
-        // Save to the media library for reuse.
         try {
             const fileName = String(file.name || '').slice(0, 200);
-            const fileSize = file.size || 0;
+            const fileSize = (mediaObj && mediaObj.file_size) || file.size || 0;
             const metaStr = JSON.stringify(Object.assign({}, mediaMeta, { file_size: fileSize }));
-            await env.DB.prepare('INSERT INTO media_library (file_id, media_type, media_meta, label, file_name, file_size) VALUES (?, ?, ?, ?, ?, ?)')
-                .bind(fileId, mediaType, metaStr, fileName || mediaType, fileName, fileSize).run();
+            await env.DB.prepare(
+                'INSERT INTO media_library (file_id, media_type, media_meta, label, caption, file_name, file_size, allowed_users, expires_at, storage_chat_id, storage_message_id, is_valid, last_validated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP)'
+            ).bind(fileId, mediaType, metaStr, labelIn || fileName || mediaType, caption, fileName, fileSize, allowedUsers, expiresAt, String(storageChat), storedMsgId).run();
         } catch (e) { console.warn('media library insert failed:', e.message); }
 
-        return apiJson({ success: true, file_id: fileId, media_type: mediaType, media_meta: mediaMeta });
+        return apiJson({ success: true, file_id: fileId, media_type: mediaType, media_meta: mediaMeta, kept_in_storage: !deleteAfterUpload });
     } catch (err) { return internalError(err); }
 }
 async function getMediaLibrary(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
-        const rows = await env.DB.prepare('SELECT id, file_id, media_type, media_meta, label, file_name, file_size, uploaded_at FROM media_library ORDER BY id DESC LIMIT 500').all();
+        const rows = await env.DB.prepare(
+            'SELECT id, file_id, media_type, media_meta, label, caption, file_name, file_size, allowed_users, expires_at, storage_chat_id, storage_message_id, is_valid, last_validated_at, uploaded_at FROM media_library ORDER BY id DESC LIMIT 500'
+        ).all();
         return apiJson({ items: rows.results || [] });
     } catch (err) { return internalError(err); }
 }
@@ -13172,9 +14039,151 @@ async function renameMediaLibraryItem(request, env) {
     try {
         const body = await request.json();
         const id = parseInt(body.id);
-        const label = String(body.label || '').slice(0, 80);
+        const label = String(body.label || '').slice(0, 120);
         if (!id) return apiJson({ error: 'Invalid id.' }, 400);
         await env.DB.prepare('UPDATE media_library SET label = ? WHERE id = ?').bind(label, id).run();
+        return apiJson({ success: true });
+    } catch (err) { return internalError(err); }
+}
+async function updateMediaLibraryItem(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const body = await request.json();
+        const id = parseInt(body.id);
+        if (!id) return apiJson({ error: 'Invalid id.' }, 400);
+        await initializeDatabase(env.DB);
+        const existing = await env.DB.prepare('SELECT id FROM media_library WHERE id = ?').bind(id).first();
+        if (!existing) return apiJson({ error: 'Media item not found.' }, 404);
+        const label = body.label !== undefined ? String(body.label).trim().slice(0, 120) : undefined;
+        const caption = body.caption !== undefined ? String(body.caption).slice(0, 1024) : undefined;
+        const allowedUsers = body.allowed_users !== undefined ? normalizeAllowedUsersStr(body.allowed_users) : undefined;
+        const expiresAt = body.expires_at !== undefined ? (body.expires_at ? String(body.expires_at).trim() : null) : undefined;
+
+        const sets = [];
+        const vals = [];
+        if (label !== undefined) { sets.push('label = ?'); vals.push(label); }
+        if (caption !== undefined) { sets.push('caption = ?'); vals.push(caption); }
+        if (allowedUsers !== undefined) { sets.push('allowed_users = ?'); vals.push(allowedUsers); }
+        if (expiresAt !== undefined) { sets.push('expires_at = ?'); vals.push(expiresAt); }
+        if (!sets.length) return apiJson({ success: true });
+        vals.push(id);
+        await env.DB.prepare(`UPDATE media_library SET ${sets.join(', ')} WHERE id = ?`).bind(...vals).run();
+        return apiJson({ success: true });
+    } catch (err) { return internalError(err); }
+}
+async function validateMediaLibraryItems(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const body = await request.json().catch(() => ({}));
+        const ids = Array.isArray(body.ids) ? body.ids.map(Number).filter(n => n > 0).slice(0, 40) : [];
+        if (!ids.length) return apiJson({ error: 'No media IDs provided.' }, 400);
+        await initializeDatabase(env.DB);
+        const token = await getSetting(env.DB, 'bot_token');
+        if (!token) return apiJson({ error: 'Bot token is not set.' }, 400);
+        const ph = ids.map(() => '?').join(', ');
+        const rows = await env.DB.prepare(`SELECT id, file_id FROM media_library WHERE id IN (${ph})`).bind(...ids).all();
+        const results = [];
+        let validCount = 0, invalidCount = 0;
+        for (const r of (rows.results || [])) {
+            let valid = false, errMsg = '';
+            try {
+                const info = await tgFetchJson(`https://api.telegram.org/bot${token}/getFile?file_id=${encodeURIComponent(r.file_id)}`);
+                if (info && info.ok && info.result && info.result.file_id) valid = true;
+                else errMsg = (info && info.description) || 'Not found';
+            } catch (e) { errMsg = e.message || 'Check failed'; }
+            if (valid) validCount++; else invalidCount++;
+            await env.DB.prepare('UPDATE media_library SET is_valid = ?, last_validated_at = CURRENT_TIMESTAMP WHERE id = ?').bind(valid ? 1 : 0, r.id).run();
+            results.push({ id: r.id, valid, error: errMsg });
+        }
+        return apiJson({ success: true, checked: results.length, valid: validCount, invalid: invalidCount, results });
+    } catch (err) { return internalError(err); }
+}
+async function bulkMediaLibraryAction(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const body = await request.json();
+        const action = String(body.action || '');
+        const ids = Array.isArray(body.ids) ? body.ids.map(Number).filter(n => n > 0) : [];
+        if (!ids.length) return apiJson({ error: 'No items selected.' }, 400);
+        await initializeDatabase(env.DB);
+        const ph = ids.map(() => '?').join(', ');
+
+        if (action === 'delete') {
+            if (body.delete_telegram_messages) {
+                const token = await getSetting(env.DB, 'bot_token');
+                if (token) {
+                    const rows = await env.DB.prepare(`SELECT storage_chat_id, storage_message_id FROM media_library WHERE id IN (${ph})`).bind(...ids).all();
+                    for (const r of (rows.results || [])) {
+                        if (r.storage_chat_id && r.storage_message_id) {
+                            try { await tgCall(token, 'deleteMessage', { chat_id: r.storage_chat_id, message_id: r.storage_message_id }, { retry: false }); } catch (e) {}
+                        }
+                    }
+                }
+            }
+            await env.DB.prepare(`DELETE FROM media_library WHERE id IN (${ph})`).bind(...ids).run();
+            return apiJson({ success: true, count: ids.length });
+        }
+        if (action === 'set_expiration') {
+            const expiresAt = body.expires_at ? String(body.expires_at).trim() : null;
+            await env.DB.prepare(`UPDATE media_library SET expires_at = ? WHERE id IN (${ph})`).bind(expiresAt, ...ids).run();
+            return apiJson({ success: true, count: ids.length });
+        }
+        if (action === 'grant_access' || action === 'revoke_access') {
+            const deltaIds = parseAllowedUserIds(body.userIds || '');
+            if (!deltaIds.size) return apiJson({ error: 'Enter at least one valid numeric Telegram user ID.' }, 400);
+            const rows = await env.DB.prepare(`SELECT id, allowed_users FROM media_library WHERE id IN (${ph})`).bind(...ids).all();
+            const stmts = [];
+            for (const r of (rows.results || [])) {
+                const current = parseAllowedUserIds(r.allowed_users);
+                if (action === 'grant_access') for (const u of deltaIds) current.add(u);
+                else for (const u of deltaIds) current.delete(u);
+                stmts.push(env.DB.prepare('UPDATE media_library SET allowed_users = ? WHERE id = ?').bind(Array.from(current).join(', '), r.id));
+            }
+            if (stmts.length) await runBatchChunks(env.DB, stmts);
+            return apiJson({ success: true, count: stmts.length });
+        }
+        return apiJson({ error: 'Unknown bulk action.' }, 400);
+    } catch (err) { return internalError(err); }
+}
+async function addMediaByFileId(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const body = await request.json();
+        const fileId = String(body.file_id || '').trim();
+        const mediaType = normalizeMediaType(body.media_type || 'document');
+        const label = String(body.label || '').trim().slice(0, 120);
+        const allowedUsers = normalizeAllowedUsersStr(body.allowed_users || '');
+        if (!fileId) return apiJson({ error: 'file_id is required.' }, 400);
+        await initializeDatabase(env.DB);
+        const token = await getSetting(env.DB, 'bot_token');
+        if (!token) return apiJson({ error: 'Bot token is not set.' }, 400);
+        const info = await tgFetchJson(`https://api.telegram.org/bot${token}/getFile?file_id=${encodeURIComponent(fileId)}`);
+        if (!info || !info.ok || !info.result) {
+            return apiJson({ error: (info && info.description) || 'Telegram could not validate this file_id.' }, 400);
+        }
+        const fileSize = (info.result && info.result.file_size) || 0;
+        const filePath = (info.result && info.result.file_path) || '';
+        const baseName = filePath ? filePath.split('/').pop() : '';
+        await env.DB.prepare(
+            'INSERT INTO media_library (file_id, media_type, media_meta, label, file_name, file_size, allowed_users, is_valid, last_validated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP)'
+        ).bind(fileId, mediaType === 'text' ? 'document' : mediaType, JSON.stringify({ file_size: fileSize }), label || baseName || mediaType, baseName, fileSize, allowedUsers).run();
+        return apiJson({ success: true });
+    } catch (err) { return internalError(err); }
+}
+async function sendMediaTest(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const body = await request.json();
+        const id = parseInt(body.id);
+        const chatId = String(body.chatId || '').trim();
+        if (!id || !chatId) return apiJson({ error: 'Missing media id or target chat ID.' }, 400);
+        await initializeDatabase(env.DB);
+        const token = await getSetting(env.DB, 'bot_token');
+        if (!token) return apiJson({ error: 'Bot token is not set.' }, 400);
+        const row = await env.DB.prepare('SELECT file_id, media_type, media_meta, caption FROM media_library WHERE id = ?').bind(id).first();
+        if (!row) return apiJson({ error: 'Media item not found.' }, 404);
+        const res = await sendMediaMessage(token, chatId, row.media_type || 'document', row.file_id, row.caption || '', null, parseMediaMeta(row.media_meta));
+        if (!res || !res.ok) return apiJson({ error: (res && res.description) || 'Telegram failed to send.' }, 400);
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
 }
@@ -13189,7 +14198,26 @@ async function getMediaStorageChatInfo(env, url) {
         if (!res || !res.ok) return apiJson({ error: (res && res.description) || 'getChat failed' }, 400);
         const chat = res.result || {};
         const title = chat.title || (chat.first_name ? chat.first_name + (chat.last_name ? ' ' + chat.last_name : '') : '');
-        return apiJson({ success: true, title: title, type: chat.type, username: chat.username || '', id: chat.id });
+        let warning = '';
+        if (chat.type === 'channel' || chat.type === 'supergroup' || chat.type === 'group') {
+            try {
+                const me = await tgFetchJson(`https://api.telegram.org/bot${token}/getMe`);
+                if (me && me.ok && me.result && me.result.id) {
+                    const member = await tgCall(token, 'getChatMember', { chat_id: chat.id, user_id: me.result.id });
+                    if (member && member.ok && member.result) {
+                        const st = member.result.status;
+                        if (chat.type === 'channel' && st !== 'administrator' && st !== 'creator') {
+                            warning = 'Bot is not an administrator in this channel. Make it an admin with Post Messages permission.';
+                        } else if (chat.type === 'channel' && st === 'administrator' && member.result.can_post_messages === false) {
+                            warning = 'Bot lacks "Post Messages" permission in this channel.';
+                        } else if ((chat.type === 'group' || chat.type === 'supergroup') && (st === 'left' || st === 'kicked')) {
+                            warning = 'Bot is not a member of this group.';
+                        }
+                    }
+                }
+            } catch (e) {}
+        }
+        return apiJson({ success: true, title: title, type: chat.type, username: chat.username || '', id: chat.id, warning });
     } catch (err) { return internalError(err); }
 }
 async function handleFileProxy(request, env, url) {
@@ -16103,6 +17131,8 @@ const SYSTEM_STRINGS = {
         // Bot-level user-facing strings
         not_found: 'Command not found. Use /start to see available options.',
         unauthorized: '⚠️ You are not authorised to use this command.',
+        command_expired: '⏳ This content or command has expired and is no longer available.',
+        media_unavailable: '⚠️ This file is currently unavailable.',
         back: 'Back',
         rate_limited: '⏳ Too many requests. Please wait a moment.',
         rate_limited_global: '🌍 The bot is busy right now. Please try again shortly.',
@@ -16163,6 +17193,8 @@ Guidelines:
         // Bot-level user-facing strings
         not_found: 'دستور یافت نشد. برای مشاهده گزینه‌های موجود از /start استفاده کنید.',
         unauthorized: '⚠️ شما مجاز به استفاده از این دستور نیستید.',
+        command_expired: '⏳ مهلت دسترسی به این محتوا یا دستور به پایان رسیده است.',
+        media_unavailable: '⚠️ این فایل در حال حاضر در دسترس نیست.',
         back: 'بازگشت',
         rate_limited: '⏳ درخواست‌های بیش از حد. لطفاً کمی صبر کنید.',
         rate_limited_global: '🌍 ربات در حال حاضر مشغول است. لطفاً کمی بعد دوباره تلاش کنید.',
@@ -16860,10 +17892,60 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatTyp
         await sendMessage(chatId, strings.unauthorized, BOT_TOKEN, 'HTML');
         return;
     }
+    const isAdmin = await isAdminUser(env, userId);
     const access = effectiveCommandAccess(cmdRecord);
-    if (access !== 'everyone' && !await canUseCommandAccess(env, userId, access)) {
-        await sendMessage(chatId, strings.unauthorized, BOT_TOKEN, 'HTML');
-        return;
+    const cmdAllowed = parseAllowedUserIds(cmdRecord.allowed_users);
+
+    if (!isAdmin) {
+        if (cmdRecord.expires_at) {
+            const expMs = parseDbTimestamp(cmdRecord.expires_at);
+            if (expMs && Date.now() > expMs) {
+                await sendMessage(chatId, strings.command_expired, BOT_TOKEN, 'HTML');
+                return;
+            }
+        }
+        const userExplicitlyAllowed = cmdAllowed.has(Number(userId));
+        if (access === 'specific') {
+            if (!userExplicitlyAllowed) {
+                await sendMessage(chatId, strings.unauthorized, BOT_TOKEN, 'HTML');
+                return;
+            }
+        } else if (access !== 'everyone') {
+            if (!userExplicitlyAllowed && !await canUseCommandAccess(env, userId, access)) {
+                await sendMessage(chatId, strings.unauthorized, BOT_TOKEN, 'HTML');
+                return;
+            }
+        } else if (cmdAllowed.size > 0 && !userExplicitlyAllowed) {
+            await sendMessage(chatId, strings.unauthorized, BOT_TOKEN, 'HTML');
+            return;
+        }
+    }
+
+    // Enforce linked Media Library item allowance, expiration, and validity.
+    if (cmdRecord.file_id && String(cmdRecord.file_id).trim() && !isAdmin) {
+        try {
+            const mediaRow = await env.DB.prepare(
+                'SELECT is_valid, allowed_users, expires_at FROM media_library WHERE file_id = ? LIMIT 1'
+            ).bind(String(cmdRecord.file_id).trim()).first();
+            if (mediaRow) {
+                if (mediaRow.is_valid === 0) {
+                    await sendMessage(chatId, strings.media_unavailable, BOT_TOKEN, 'HTML');
+                    return;
+                }
+                if (mediaRow.expires_at) {
+                    const mExpMs = parseDbTimestamp(mediaRow.expires_at);
+                    if (mExpMs && Date.now() > mExpMs) {
+                        await sendMessage(chatId, strings.command_expired, BOT_TOKEN, 'HTML');
+                        return;
+                    }
+                }
+                const mediaAllowed = parseAllowedUserIds(mediaRow.allowed_users);
+                if (mediaAllowed.size > 0 && !mediaAllowed.has(Number(userId))) {
+                    await sendMessage(chatId, strings.unauthorized, BOT_TOKEN, 'HTML');
+                    return;
+                }
+            }
+        } catch (e) {}
     }
     await env.DB.prepare(`
         INSERT INTO sessions (token, user_id, command, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)
