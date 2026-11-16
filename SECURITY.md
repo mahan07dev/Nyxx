@@ -15,6 +15,9 @@ whoever operates it. If that matters, self-host it (below) or use the API token 
 3. Create your own Cloudflare OAuth client; set its redirect URL to `https://<your-proxy>/oauth/callback`.
 4. Variables (all optional): `CF_OAUTH_CLIENT_ID`, `RELAY_ALLOWED_CALLBACKS` (e.g. `*.workers.dev`),
    `ALLOWED_HOSTS` / `ALLOW_ALL` (proxy allow-list). Bind a Rate Limiting namespace as `RATE_LIMITER` to throttle abuse.
+   `RELAY_REQUEST_REFRESH=true` makes the relay request `offline_access` so panels stay connected after the
+   access token expires. Your OAuth client must allow the `refresh_token` grant (Manage Account → OAuth clients);
+   if Cloudflare rejects the scope the relay retries once without it. Off by default.
 5. In `worker.js` set `RELAY_BASE` (or the `RELAY_BASE` variable) to your proxy URL, and update
    `DEFAULT_PROXY` / `OAUTH.CLIENT_ID` / `OAUTH.REDIRECT_URI` in `installer.html`.
 

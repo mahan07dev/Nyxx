@@ -450,6 +450,11 @@ async function handleRequest(request, env) {
 //   RELAY_ALLOWED_CALLBACKS  Comma-separated hostnames/patterns allowed as tenant
 //                            callbacks, e.g. "*.workers.dev,panel.example.com".
 //                            Unset = any https host (the confirmation page still applies).
+//   RELAY_REQUEST_REFRESH    "true" = also request offline_access so tenants get a
+//                            refresh token and stay connected. Requires the OAuth
+//                            client to allow the refresh_token grant (Manage Account →
+//                            OAuth clients). If Cloudflare rejects the scope the relay
+//                            retries once without it. Default: off.
 const RELAY_OAUTH_KEYS = {
   AUTH_URL: 'https://dash.cloudflare.com/oauth2/auth',
   TOKEN_URL: 'https://dash.cloudflare.com/oauth2/token',
@@ -469,6 +474,9 @@ const RELAY_MAX_PENDING = 2000;
 
 function relayClientId(env) {
   return (env && env.CF_OAUTH_CLIENT_ID) || RELAY_OAUTH_KEYS.CLIENT_ID_FALLBACK;
+}
+function relayWantsRefresh(env) {
+  return !!env && String(env.RELAY_REQUEST_REFRESH).toLowerCase() === 'true';
 }
 
 // Returns the normalized callback URL, or null if it is not acceptable.
@@ -591,11 +599,25 @@ async function discoverRelayAccount(accessToken, tenantCallback) {
     const accounts = (accData && accData.success && accData.result) || [];
     if (accounts.length) {
       accountId = accounts[0].id;
-      if (accounts.length > 1 && scriptName) {
+      if (scriptName) {
+        if (accounts.length > 1) {
+          const hits = await Promise.all(accounts.slice(0, 10).map(a =>
+            fetch('https://api.cloudflare.com/client/v4/accounts/' + a.id + '/workers/scripts/' + encodeURIComponent(scriptName) + '/settings', { headers: auth })
+              .then(r => (r.ok ? a.id : null)).catch(() => null)));
+          accountId = hits.find(Boolean) || accountId;
+        }
+      } else if (!host.endsWith('.workers.dev')) {
+        // Custom domain: ask Cloudflare which worker serves this hostname.
         const hits = await Promise.all(accounts.slice(0, 10).map(a =>
-          fetch('https://api.cloudflare.com/client/v4/accounts/' + a.id + '/workers/scripts/' + encodeURIComponent(scriptName) + '/settings', { headers: auth })
-            .then(r => (r.ok ? a.id : null)).catch(() => null)));
-        accountId = hits.find(Boolean) || accountId;
+          fetch('https://api.cloudflare.com/client/v4/accounts/' + a.id + '/workers/domains?hostname=' + encodeURIComponent(host), { headers: auth })
+            .then(r => (r.ok ? r.json() : null))
+            .then(j => {
+              const d = j && j.success && (j.result || []).find(x => x && x.hostname === host && x.service);
+              return d ? { id: a.id, service: d.service } : null;
+            })
+            .catch(() => null)));
+        const hit = hits.find(Boolean);
+        if (hit) { accountId = hit.id; scriptName = hit.service; }
       }
     }
   } catch (e) { /* best effort */ }
@@ -647,12 +669,15 @@ async function handleRelayOAuthContinue(request, env) {
     return relayPage('Link expired',
       '<h1>This sign-in link expired</h1><p>Go back to your Nyxx dashboard and click <b>Connect Cloudflare</b> again.</p>', 400);
   }
+  // '~' after the state marks the retry without offline_access (see callback).
+  const noRefresh = url.searchParams.get('norefresh') === '1';
+  const scopes = RELAY_OAUTH_KEYS.SCOPES.concat(relayWantsRefresh(env) && !noRefresh ? ['offline_access'] : []);
   const p = new URLSearchParams({
     response_type: 'code',
     client_id: relayClientId(env),
     redirect_uri: url.origin + '/oauth/callback',
-    scope: RELAY_OAUTH_KEYS.SCOPES.join(' '),
-    state,
+    scope: scopes.join(' '),
+    state: state + (relayWantsRefresh(env) && noRefresh ? '~' : ''),
     code_challenge: await pkceChallenge(row.verifier),
     code_challenge_method: 'S256',
   });
@@ -664,9 +689,15 @@ async function handleRelayOAuthCallback(request, env) {
   if (!env.DB) return relayJson({ error: 'DB binding missing on relay.' }, 500);
   const url = new URL(request.url);
   const code = url.searchParams.get('code');
-  const state = url.searchParams.get('state');
+  const rawState = url.searchParams.get('state') || '';
+  const retried = rawState.endsWith('~');
+  const state = retried ? rawState.slice(0, -1) : rawState;
   const error = url.searchParams.get('error');
   if (error) {
+    // The OAuth client may not allow refresh tokens: retry once without offline_access.
+    if (!retried && state && relayWantsRefresh(env) && ['invalid_scope', 'invalid_request', 'unauthorized_client'].includes(error)) {
+      return Response.redirect(url.origin + '/oauth/continue?state=' + encodeURIComponent(state) + '&norefresh=1', 302);
+    }
     return relayPage('Sign-in cancelled',
       '<h1>Sign-in was not completed</h1><p>Cloudflare reported: <code>' + escapeHtml(error) + '</code></p><p>Go back to your Nyxx dashboard to try again.</p>', 400);
   }
@@ -737,5 +768,6 @@ async function handleRelayExchange(request, env) {
     expires_at: row.expires_at,
     account_id: row.account_id,
     script_name: row.script_name,
+    client_id: relayClientId(env), // public; lets tenants refresh without hardcoding it
   });
 }

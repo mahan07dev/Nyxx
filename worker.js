@@ -30,6 +30,7 @@ const CF_OAUTH_KEYS = {
   scope:         'cf_oauth_scope',
   account_id:    'cf_oauth_account_id',
   script_name:   'cf_oauth_script_name',
+  client_id:     'cf_oauth_client_id',
   pkce:          'cf_oauth_pkce',
 };
 
@@ -13337,11 +13338,12 @@ async function getStoredCfOAuth(db) {
   for (const r of (rows.results || [])) m[r.key] = r.value;
   return {
     access_token:  m[CF_OAUTH_KEYS.access_token]  || '',
-    refresh_token: m[CF_OAUTH_KEYS.refresh_token] || '',
+    refresh_token: (m[CF_OAUTH_KEYS.refresh_token] && m[CF_OAUTH_KEYS.refresh_token] !== 'null') ? m[CF_OAUTH_KEYS.refresh_token] : '',
     expires_at:    parseInt(m[CF_OAUTH_KEYS.expires_at] || '0', 10) || 0,
     scope:         m[CF_OAUTH_KEYS.scope]         || '',
     account_id:    m[CF_OAUTH_KEYS.account_id]    || '',
     script_name:   m[CF_OAUTH_KEYS.script_name]   || '',
+    client_id:     m[CF_OAUTH_KEYS.client_id]     || '',
   };
 }
 async function saveCfOAuth(db, tokens) {
@@ -13361,12 +13363,13 @@ async function clearCfOAuth(db) {
   await db.prepare(`DELETE FROM settings WHERE key IN (${ph})`).bind(...keys).run();
 }
 async function refreshCfOAuthToken(db, tokens) {
-  if (!tokens.refresh_token || !CF_OAUTH.CLIENT_ID) return null;
+  const clientId = tokens.client_id || CF_OAUTH.CLIENT_ID;
+  if (!tokens.refresh_token || !clientId) return null;
   try {
     const body = new URLSearchParams({
       grant_type:    'refresh_token',
       refresh_token: tokens.refresh_token,
-      client_id:     CF_OAUTH.CLIENT_ID,
+      client_id:     clientId,
     });
     const res = await fetch(CF_OAUTH.TOKEN_URL, {
       method:  'POST',
@@ -13374,7 +13377,11 @@ async function refreshCfOAuthToken(db, tokens) {
       body:    body.toString(),
     });
     const json = await res.json().catch(() => null);
-    if (!res.ok || !json || !json.access_token) { await clearCfOAuth(db); return null; }
+    if (!res.ok || !json || !json.access_token) {
+      // Only drop the session when Cloudflare rejects the refresh token; keep it on 5xx/outages.
+      if (res.status >= 400 && res.status < 500) await clearCfOAuth(db);
+      return null;
+    }
     const next = {
       access_token:  json.access_token,
       refresh_token: json.refresh_token || tokens.refresh_token,
@@ -13382,6 +13389,7 @@ async function refreshCfOAuthToken(db, tokens) {
       scope:         json.scope || tokens.scope,
       account_id:    tokens.account_id,
       script_name:   tokens.script_name,
+      client_id:     clientId,
     };
     await saveCfOAuth(db, next);
     return next;
@@ -13439,10 +13447,11 @@ async function handleCfOAuthCallback(request, env) {
   await initializeDatabase(env.DB);
   await saveCfOAuth(env.DB, {
     access_token: tokens.access_token,
-    refresh_token: tokens.refresh_token,
+    refresh_token: tokens.refresh_token || '',
     expires_at: tokens.expires_at,
     account_id: tokens.account_id,
     script_name: tokens.script_name,
+    client_id: tokens.client_id || '',
   });
   await logAction(env.DB, null, 'Cloudflare OAuth connected via relay');
   return Response.redirect(new URL(request.url).origin + '/?oauth=success', 302);
@@ -13456,7 +13465,7 @@ async function handleCfOAuthStatus(request, env) {
     return apiJson({
       success:    true,
       configured: !!relayBase(env),
-      connected:  !!t.access_token && (!t.expires_at || t.expires_at > Date.now() || !!(t.refresh_token && CF_OAUTH.CLIENT_ID)),
+      connected:  !!t.access_token && (!t.expires_at || t.expires_at > Date.now() || !!(t.refresh_token && (t.client_id || CF_OAUTH.CLIENT_ID))),
       account_id: t.account_id,
       script_name:t.script_name,
       expires_at: t.expires_at || 0,
@@ -13470,12 +13479,12 @@ async function handleCfOAuthDisconnect(request, env) {
   try {
     await initializeDatabase(env.DB);
     const t = await getStoredCfOAuth(env.DB);
-    if (t.refresh_token && CF_OAUTH.CLIENT_ID) {
+    if (t.refresh_token && (t.client_id || CF_OAUTH.CLIENT_ID)) {
       // Best-effort revoke — user can also revoke from their Cloudflare profile.
       const body = new URLSearchParams({
         token: t.refresh_token,
         token_type_hint: 'refresh_token',
-        client_id: CF_OAUTH.CLIENT_ID,
+        client_id: t.client_id || CF_OAUTH.CLIENT_ID,
       });
       fetch(CF_OAUTH.REVOKE_URL, {
         method:  'POST',
