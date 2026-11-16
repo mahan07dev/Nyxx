@@ -17474,6 +17474,13 @@ async function processTelegramUpdate(update, env, ctx) {
             const chatId = msg.chat.id;
             const isGroup = msg.chat.type === 'group' || msg.chat.type === 'supergroup';
             const isPrivate = msg.chat.type === 'private';
+            if (isGroup) {
+                const storageChat = String((await getSetting(env.DB, 'media_storage_chat_id')) || '').trim();
+                if (storageChat && String(msg.chat.id) === storageChat) {
+                    const extracted = extractMediaFromTgMsg(msg);
+                    if (extracted) await saveCapturedMedia(msg, extracted);
+                }
+            }
             let groupSettings = null;
             if (isGroup) {
                 await initializeDatabase(env.DB);
