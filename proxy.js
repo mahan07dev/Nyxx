@@ -26,9 +26,14 @@
 //
 // Setup (Cloudflare dashboard → Workers & Pages → <this worker> → Settings → Bindings)
 // -----------------------------------------------------------------------------------
-// The OAuth relay endpoints (/oauth/start, /oauth/callback, /oauth/exchange) need
-// a D1 binding named DB. Create a D1 database (e.g. nyxx-relay) and bind it as DB.
-// Relay tables are created automatically on first use — no migrations needed.
+// The OAuth relay endpoints (/oauth/start, /oauth/continue, /oauth/callback,
+// /oauth/exchange) need a D1 binding named DB. Create a D1 database (e.g.
+// nyxx-relay) and bind it as DB. Relay tables are created automatically on
+// first use — no migrations needed.
+//
+// Optional: bind a Workers Rate Limiting namespace as RATE_LIMITER to throttle
+// abuse per client IP (every route, fails open). See the relay section below
+// for the other optional variables.
 
 const DEFAULT_ALLOWED_HOSTS = [
   'api.cloudflare.com',
@@ -74,6 +79,11 @@ const DROP_REQUEST_HEADERS = new Set([
   'cf-visitor',
   'cf-worker',
   'x-real-ip',
+  // Never forward browser cookies to the upstream. The proxy authenticates
+  // with a Bearer token; a stray CF session cookie would at best confuse the
+  // upstream and at worst authenticate the wrong session. ACAO:* should mean
+  // the browser doesn't send cookies, but a same-origin caller can.
+  'cookie',
 ]);
 
 // Headers that must NOT be copied from the upstream response.
@@ -86,6 +96,7 @@ const DROP_RESPONSE_HEADERS = new Set([
   'trailer',
   'transfer-encoding',
   'upgrade',
+  'set-cookie',       // never let an upstream set cookies on the proxy origin
   'content-encoding', // body is delivered decoded by the runtime
   'content-length',   // recomputed by the runtime
 ]);
@@ -159,6 +170,13 @@ function ipv6ToBytes(ip) {
 function ipInRange(ipBytes, rangeStart, prefixLen) {
   const rangeBytes = rangeStart.includes(':') ? ipv6ToBytes(rangeStart) : ipv4ToBytes(rangeStart);
   if (!rangeBytes) return false;
+  // Never compare an IPv4 address against an IPv6 range (or vice versa):
+  // byte 0 of a v4-in-v6 address like ::2 is 0x00 and would otherwise
+  // match the first byte of 0.0.0.0/8, blocking/allow-listing the wrong
+  // family. The mapped-IPv4 case is already sliced down to 4 bytes in
+  // isBlockedIp() before reaching here, so this is a straight family
+  // mismatch guard.
+  if (ipBytes.length !== rangeBytes.length) return false;
   const byteLen = Math.floor(prefixLen / 8);
   for (let i = 0; i < byteLen; i++) {
     if (ipBytes[i] !== rangeBytes[i]) return false;
@@ -213,22 +231,36 @@ async function resolvesToBlockedAddress(hostname) {
 
   let result = { known: false, blocked: false };
   try {
-    const resp = await fetch(
-      'https://cloudflare-dns.com/dns-query?name=' + encodeURIComponent(hostname) + '&type=A',
+    // Query A and AAAA in parallel. The DoH JSON endpoint returns only the
+    // requested type, so a single type=A query can miss an IPv6-only
+    // hostname whose only answer is e.g. fc00:: — i.e. a silent SSRF
+    // bypass.
+    const q = (type) => fetch(
+      'https://cloudflare-dns.com/dns-query?name=' + encodeURIComponent(hostname) + '&type=' + type,
       { headers: { accept: 'application/dns-json' } }
-    );
-    if (resp.ok) {
-      const data = await resp.json();
+    ).catch(() => null);
+    const [aResp, aaaaResp] = await Promise.all([q('A'), q('AAAA')]);
+    const ips = [];
+    for (const resp of [aResp, aaaaResp]) {
+      if (!resp || !resp.ok) continue;
+      const data = await resp.json().catch(() => null);
       const answers = (data && data.Answer) || [];
-      const ips = answers.filter(a => a.type === 1 || a.type === 28).map(a => a.data);
-      if (ips.length > 0) {
-        result = { known: true, blocked: ips.every(isBlockedIp) };
+      for (const a of answers) {
+        if ((a.type === 1 || a.type === 28) && typeof a.data === 'string') ips.push(a.data);
       }
+    }
+    if (ips.length > 0) {
+      // some(), not every(): any single private answer blocks. A hostname
+      // with mixed public/private records could be used for a rebinding
+      // race, and every() would let it through the first time.
+      result = { known: true, blocked: ips.some(isBlockedIp) };
     }
   } catch (e) {
     // DNS lookup failed: leave as unknown and let the upstream fetch surface it.
   }
-  dnsCache.set(hostname, { result, ts: now });
+  // Only cache definite answers. Caching a transient DoH failure would
+  // pin an allow decision for DNS_TTL_MS.
+  if (result.known) dnsCache.set(hostname, { result, ts: now });
   return result;
 }
 
@@ -256,11 +288,27 @@ async function handleRequest(request, env) {
 
   // Preflight — always answer, always with CORS.
   if (request.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: CORS_HEADERS });
+    const headers = new Headers(CORS_HEADERS);
+    // '*' does not cover Authorization in browsers, so echo what was requested.
+    const reqHeaders = request.headers.get('Access-Control-Request-Headers');
+    if (reqHeaders) {
+      headers.set('Access-Control-Allow-Headers', reqHeaders);
+      headers.append('Vary', 'Access-Control-Request-Headers');
+    }
+    return new Response(null, { status: 204, headers });
+  }
+
+  // Optional abuse protection (RATE_LIMITER binding). Fails open.
+  if (env.RATE_LIMITER && typeof env.RATE_LIMITER.limit === 'function') {
+    try {
+      const { success } = await env.RATE_LIMITER.limit({ key: request.headers.get('cf-connecting-ip') || 'anon' });
+      if (!success) return errorResponse('Rate limit exceeded. Try again shortly.', 429);
+    } catch (e) { /* ignore limiter failures */ }
   }
 
   // OAuth relay routes.
   if (url.pathname === '/oauth/start')    return handleRelayOAuthStart(request, env);
+  if (url.pathname === '/oauth/continue') return handleRelayOAuthContinue(request, env);
   if (url.pathname === '/oauth/callback') return handleRelayOAuthCallback(request, env);
   if (url.pathname === '/oauth/exchange') return handleRelayExchange(request, env);
 
@@ -336,7 +384,13 @@ async function handleRequest(request, env) {
   const auth = request.headers.get('authorization');
   if (auth) fwdHeaders.set('Authorization', auth);
 
-  const init = { method, headers: fwdHeaders, redirect: 'follow' };
+  // redirect:'manual' — never follow upstream redirects inside the worker.
+  // A server-side follow bypasses the SSRF allow-list: an allow-listed host
+  // could 302 to 169.254.169.254 and Workers would fetch it. With 'manual'
+  // the 3xx is returned to the browser (with CORS), and the browser's own
+  // CORS + Private Network Access protections apply to the target. The
+  // worker never issues a second request.
+  const init = { method, headers: fwdHeaders, redirect: 'manual' };
   if (bodyBuffer !== null) init.body = bodyBuffer;
 
   // Abort hung upstream requests so the browser's fetch never silently dies.
@@ -364,6 +418,8 @@ async function handleRequest(request, env) {
   }
   for (const [k, v] of Object.entries(CORS_HEADERS)) outHeaders.set(k, v);
   outHeaders.set('X-Content-Type-Options', 'nosniff');
+  // If a proxied page is ever opened directly, it must not run script on this origin.
+  outHeaders.set('Content-Security-Policy', "sandbox; default-src 'none'");
 
   return new Response(upstream.body, {
     status: upstream.status,
@@ -378,8 +434,23 @@ async function handleRequest(request, env) {
 // This section turns proxy.js into the single OAuth callback target for all
 // Nyxx tenants. Tenant workers redirect here to start the flow, and retrieve
 // tokens afterwards via a secure server-to-server exchange.
+// There is NO shared secret between relay and tenants. This repo is public, so
+// any secret compiled into it would be public too. Instead:
+//   1. Each login is bound to the tenant that started it (PKCE-style). The tenant
+//      keeps a random verifier private and sends only SHA-256(verifier) to
+//      /oauth/start. /oauth/exchange releases tokens only for a matching verifier.
+//   2. /oauth/start shows a confirmation page naming the host that will receive
+//      the sign-in result, so a link sent by an attacker cannot silently
+//      deliver a victim's tokens elsewhere.
+//   3. All single-use records are consumed atomically (DELETE ... RETURNING) and
+//      expire server-side: state 10 min, exchange code 5 min.
+//
+// Optional variables (Settings → Variables):
+//   CF_OAUTH_CLIENT_ID       OAuth client ID (public). Defaults to the one below.
+//   RELAY_ALLOWED_CALLBACKS  Comma-separated hostnames/patterns allowed as tenant
+//                            callbacks, e.g. "*.workers.dev,panel.example.com".
+//                            Unset = any https host (the confirmation page still applies).
 const RELAY_OAUTH_KEYS = {
-  CLIENT_ID: '87f4c44a2c2d4df7af66628871fc7502', // Paste from Cloudflare Dashboard
   AUTH_URL: 'https://dash.cloudflare.com/oauth2/auth',
   TOKEN_URL: 'https://dash.cloudflare.com/oauth2/token',
   SCOPES: [
@@ -389,38 +460,103 @@ const RELAY_OAUTH_KEYS = {
     'workers-scripts.content_read',
     'd1.write',
   ],
-  // The exchange secret prevents arbitrary callers from grabbing tokens.
-  // It must match the value used by the tenant worker.
-  EXCHANGE_SECRET: 'SECRET_ULTRA_PRO_MAX',
+  CLIENT_ID_FALLBACK: '87f4c44a2c2d4df7af66628871fc7502',
 };
+const RELAY_STATE_TTL_MS = 10 * 60 * 1000;
+const RELAY_CODE_TTL_MS = 5 * 60 * 1000;
+// Upper bound on unfinished logins so /oauth/start cannot be used to fill D1.
+const RELAY_MAX_PENDING = 2000;
 
-// D1 schema for the relay.
+function relayClientId(env) {
+  return (env && env.CF_OAUTH_CLIENT_ID) || RELAY_OAUTH_KEYS.CLIENT_ID_FALLBACK;
+}
+
+// Returns the normalized callback URL, or null if it is not acceptable.
+function validTenantCallback(raw, env) {
+  let u;
+  try { u = new URL(raw); } catch (e) { return null; }
+  if (u.protocol !== 'https:' || u.username || u.password || u.port || u.search || u.hash) return null;
+  if (u.pathname !== '/oauth/callback') return null;
+  const allow = ((env && env.RELAY_ALLOWED_CALLBACKS) || '')
+    .split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+  if (allow.length && !allow.some(p => hostMatches(u.hostname.toLowerCase(), p))) return null;
+  return u.origin + u.pathname;
+}
+
+// D1 schema for the relay. DDL runs once per isolate; GC runs on every start.
+let relayDbReady = false;
 async function initializeRelayDB(db) {
-  await db.prepare(`
-    CREATE TABLE IF NOT EXISTS relay_oauth_state (
-      state TEXT PRIMARY KEY,
-      tenant_callback TEXT NOT NULL,
-      verifier TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-  `).run();
-  await db.prepare(`
-    CREATE TABLE IF NOT EXISTS relay_oauth_tokens (
-      exchange_code TEXT PRIMARY KEY,
-      access_token TEXT NOT NULL,
-      refresh_token TEXT,
-      expires_at INTEGER,
-      account_id TEXT,
-      script_name TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-  `).run();
+  if (!relayDbReady) {
+    await db.batch([
+      db.prepare(`CREATE TABLE IF NOT EXISTS relay_state_v2 (
+        state TEXT PRIMARY KEY,
+        tenant_callback TEXT NOT NULL,
+        tenant_challenge TEXT NOT NULL,
+        verifier TEXT NOT NULL,
+        created_at INTEGER NOT NULL
+      )`),
+      db.prepare(`CREATE TABLE IF NOT EXISTS relay_tokens_v2 (
+        exchange_code TEXT PRIMARY KEY,
+        tenant_challenge TEXT NOT NULL,
+        access_token TEXT NOT NULL,
+        refresh_token TEXT,
+        expires_at INTEGER,
+        account_id TEXT,
+        script_name TEXT,
+        created_at INTEGER NOT NULL
+      )`),
+      // Legacy tables have no tenant binding and may still hold live tokens.
+      db.prepare('DROP TABLE IF EXISTS relay_oauth_state'),
+      db.prepare('DROP TABLE IF EXISTS relay_oauth_tokens'),
+    ]);
+    relayDbReady = true;
+  }
+  try {
+    const now = Date.now();
+    await db.batch([
+      db.prepare('DELETE FROM relay_state_v2 WHERE created_at < ?').bind(now - RELAY_STATE_TTL_MS),
+      db.prepare('DELETE FROM relay_tokens_v2 WHERE created_at < ?').bind(now - RELAY_CODE_TTL_MS),
+    ]);
+  } catch (e) { /* best-effort GC */ }
 }
 
 function relayJson(body, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Content-Type-Options': 'nosniff',
+      // /oauth/exchange returns access tokens, so never let anything cache them.
+      'Cache-Control': 'no-store',
+      ...CORS_HEADERS,
+    },
+  });
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// Browser-facing page. Callers must escape any dynamic value they put in bodyHtml.
+function relayPage(title, bodyHtml, status = 200) {
+  const html = '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">' +
+    '<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">' +
+    '<title>' + escapeHtml(title) + '</title><style>' +
+    ':root{color-scheme:light dark}' +
+    'body{font:16px/1.5 system-ui,sans-serif;max-width:30rem;margin:12vh auto;padding:0 1.25rem}' +
+    'h1{font-size:1.3rem}code{padding:.15em .4em;border-radius:4px;background:rgba(127,127,127,.2);word-break:break-all}' +
+    '.btn{display:inline-block;margin-top:1rem;padding:.65rem 1.2rem;border-radius:8px;background:#2563eb;color:#fff;text-decoration:none;font-weight:600}' +
+    '</style></head><body>' + bodyHtml + '</body></html>';
+  return new Response(html, {
+    status,
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store',
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'Referrer-Policy': 'no-referrer',
+      'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'",
+    },
   });
 }
 
@@ -439,106 +575,161 @@ async function pkceChallenge(verifier) {
   return b64url(new Uint8Array(d));
 }
 
+// Best-effort: find the account that owns the tenant's worker. With several
+// accounts, probe each for the script (same endpoint the updater uses).
+async function discoverRelayAccount(accessToken, tenantCallback) {
+  let accountId = '', scriptName = '';
+  try {
+    const host = new URL(tenantCallback).hostname;
+    if (host.endsWith('.workers.dev')) {
+      const parts = host.split('.');
+      if (parts.length >= 3) scriptName = parts[0];
+    }
+    const auth = { Authorization: 'Bearer ' + accessToken };
+    const accRes = await fetch('https://api.cloudflare.com/client/v4/accounts?per_page=50', { headers: auth });
+    const accData = await accRes.json();
+    const accounts = (accData && accData.success && accData.result) || [];
+    if (accounts.length) {
+      accountId = accounts[0].id;
+      if (accounts.length > 1 && scriptName) {
+        const hits = await Promise.all(accounts.slice(0, 10).map(a =>
+          fetch('https://api.cloudflare.com/client/v4/accounts/' + a.id + '/workers/scripts/' + encodeURIComponent(scriptName) + '/settings', { headers: auth })
+            .then(r => (r.ok ? a.id : null)).catch(() => null)));
+        accountId = hits.find(Boolean) || accountId;
+      }
+    }
+  } catch (e) { /* best effort */ }
+  return { accountId, scriptName };
+}
+
 async function handleRelayOAuthStart(request, env) {
+  if (request.method !== 'GET') return relayJson({ error: 'Method not allowed.' }, 405);
   if (!env.DB) return relayJson({ error: 'DB binding missing on relay.' }, 500);
-  await initializeRelayDB(env.DB);
   const url = new URL(request.url);
-  const tenantCallback = url.searchParams.get('tenant_callback');
-  if (!tenantCallback || !tenantCallback.startsWith('https://')) {
-    return relayJson({ error: 'Missing or invalid tenant_callback.' }, 400);
+  const tenantCallback = validTenantCallback(url.searchParams.get('tenant_callback') || '', env);
+  if (!tenantCallback) return relayJson({ error: 'Missing or invalid tenant_callback.' }, 400);
+  const tenantChallenge = url.searchParams.get('tenant_challenge') || '';
+  if (!/^[A-Za-z0-9_-]{43}$/.test(tenantChallenge)) {
+    return relayJson({ error: 'Missing or invalid tenant_challenge. Update your Nyxx worker.' }, 400);
   }
+  await initializeRelayDB(env.DB);
+
+  const pending = await env.DB.prepare('SELECT COUNT(*) AS n FROM relay_state_v2').first();
+  if (pending && pending.n >= RELAY_MAX_PENDING) {
+    return relayPage('Try again later', '<h1>Too many sign-ins in progress</h1><p>Please try again in a few minutes.</p>', 429);
+  }
+
   const verifier = randomB64url(48);
   const state = randomB64url(24);
-  const challenge = await pkceChallenge(verifier);
-
   await env.DB.prepare(
-    'INSERT INTO relay_oauth_state (state, tenant_callback, verifier) VALUES (?, ?, ?)'
-  ).bind(state, tenantCallback, verifier).run();
+    'INSERT INTO relay_state_v2 (state, tenant_callback, tenant_challenge, verifier, created_at) VALUES (?, ?, ?, ?, ?)'
+  ).bind(state, tenantCallback, tenantChallenge, verifier, Date.now()).run();
 
+  const host = new URL(tenantCallback).host;
+  return relayPage('Connect Cloudflare to Nyxx',
+    '<h1>Connect your Cloudflare account to Nyxx?</h1>' +
+    '<p>Nyxx will be able to manage Workers and D1 databases on your Cloudflare account, and the sign-in result will be sent to:</p>' +
+    '<p><code>' + escapeHtml(host) + '</code></p>' +
+    '<p>Continue only if you started this from your own Nyxx dashboard at that address. If someone sent you this link, close this tab.</p>' +
+    '<a class="btn" href="/oauth/continue?state=' + encodeURIComponent(state) + '">Continue to Cloudflare</a>');
+}
+
+async function handleRelayOAuthContinue(request, env) {
+  if (request.method !== 'GET') return relayJson({ error: 'Method not allowed.' }, 405);
+  if (!env.DB) return relayJson({ error: 'DB binding missing on relay.' }, 500);
+  const url = new URL(request.url);
+  const state = url.searchParams.get('state') || '';
+  const row = /^[A-Za-z0-9_-]{20,64}$/.test(state)
+    ? await env.DB.prepare('SELECT verifier FROM relay_state_v2 WHERE state = ? AND created_at > ?')
+        .bind(state, Date.now() - RELAY_STATE_TTL_MS).first()
+    : null;
+  if (!row) {
+    return relayPage('Link expired',
+      '<h1>This sign-in link expired</h1><p>Go back to your Nyxx dashboard and click <b>Connect Cloudflare</b> again.</p>', 400);
+  }
   const p = new URLSearchParams({
     response_type: 'code',
-    client_id: RELAY_OAUTH_KEYS.CLIENT_ID,
-    redirect_uri: new URL(request.url).origin + '/oauth/callback',
+    client_id: relayClientId(env),
+    redirect_uri: url.origin + '/oauth/callback',
     scope: RELAY_OAUTH_KEYS.SCOPES.join(' '),
     state,
-    code_challenge: challenge,
+    code_challenge: await pkceChallenge(row.verifier),
     code_challenge_method: 'S256',
   });
   return Response.redirect(RELAY_OAUTH_KEYS.AUTH_URL + '?' + p.toString(), 302);
 }
 
 async function handleRelayOAuthCallback(request, env) {
+  if (request.method !== 'GET') return relayJson({ error: 'Method not allowed.' }, 405);
   if (!env.DB) return relayJson({ error: 'DB binding missing on relay.' }, 500);
   const url = new URL(request.url);
   const code = url.searchParams.get('code');
   const state = url.searchParams.get('state');
   const error = url.searchParams.get('error');
-  if (error) return relayJson({ error: 'Cloudflare denied: ' + error }, 400);
-  if (!code || !state) return relayJson({ error: 'Missing code or state.' }, 400);
+  if (error) {
+    return relayPage('Sign-in cancelled',
+      '<h1>Sign-in was not completed</h1><p>Cloudflare reported: <code>' + escapeHtml(error) + '</code></p><p>Go back to your Nyxx dashboard to try again.</p>', 400);
+  }
+  if (!code || !state) return relayPage('Invalid request', '<h1>Missing code or state</h1>', 400);
 
-  const row = await env.DB.prepare('SELECT tenant_callback, verifier FROM relay_oauth_state WHERE state = ?').bind(state).first();
-  if (!row) return relayJson({ error: 'Invalid or expired state.' }, 400);
-  await env.DB.prepare('DELETE FROM relay_oauth_state WHERE state = ?').bind(state).run();
+  // Atomic single-use: only one request can ever consume a given state.
+  const { results } = await env.DB.prepare(
+    'DELETE FROM relay_state_v2 WHERE state = ? AND created_at > ? RETURNING tenant_callback, tenant_challenge, verifier'
+  ).bind(state, Date.now() - RELAY_STATE_TTL_MS).all();
+  const row = results && results[0];
+  if (!row) {
+    return relayPage('Link expired',
+      '<h1>This sign-in link expired or was already used</h1><p>Go back to your Nyxx dashboard and click <b>Connect Cloudflare</b> again.</p>', 400);
+  }
 
   const body = new URLSearchParams({
     grant_type: 'authorization_code',
     code,
     redirect_uri: url.origin + '/oauth/callback',
-    client_id: RELAY_OAUTH_KEYS.CLIENT_ID,
+    client_id: relayClientId(env),
     code_verifier: row.verifier,
   });
-
   const tokenRes = await fetch(RELAY_OAUTH_KEYS.TOKEN_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: body.toString(),
   });
-  const tokenData = await tokenRes.json();
+  const tokenData = await tokenRes.json().catch(() => ({}));
   if (!tokenRes.ok || !tokenData.access_token) {
-    return relayJson({ error: 'Token exchange failed: ' + (tokenData.error_description || tokenData.error || 'unknown') }, 400);
+    return relayPage('Sign-in failed',
+      '<h1>Cloudflare sign-in failed</h1><p><code>' + escapeHtml(tokenData.error_description || tokenData.error || 'unknown error') + '</code></p><p>Go back to your Nyxx dashboard to try again.</p>', 400);
   }
 
-  // Best-effort discovery of account and script.
-  let accountId = '', scriptName = '';
-  try {
-    const accRes = await fetch('https://api.cloudflare.com/client/v4/accounts', {
-      headers: { Authorization: 'Bearer ' + tokenData.access_token },
-    });
-    const accData = await accRes.json();
-    if (accData.success && accData.result?.length) {
-      accountId = accData.result[0].id;
-      const host = new URL(row.tenant_callback).hostname;
-      if (host.endsWith('.workers.dev')) {
-        const parts = host.split('.');
-        if (parts.length >= 3) scriptName = parts[0];
-      }
-    }
-  } catch (e) { /* best effort */ }
+  const { accountId, scriptName } = await discoverRelayAccount(tokenData.access_token, row.tenant_callback);
 
   const exchangeCode = randomB64url(24);
   const expiresAt = tokenData.expires_in ? Date.now() + Number(tokenData.expires_in) * 1000 : 0;
-
   await env.DB.prepare(`
-    INSERT INTO relay_oauth_tokens (exchange_code, access_token, refresh_token, expires_at, account_id, script_name)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `).bind(exchangeCode, tokenData.access_token, tokenData.refresh_token || null, expiresAt, accountId, scriptName).run();
+    INSERT INTO relay_tokens_v2 (exchange_code, tenant_challenge, access_token, refresh_token, expires_at, account_id, script_name, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).bind(exchangeCode, row.tenant_challenge, tokenData.access_token, tokenData.refresh_token || null, expiresAt, accountId, scriptName, Date.now()).run();
 
   return Response.redirect(row.tenant_callback + '?exchange_code=' + exchangeCode, 302);
 }
 
 async function handleRelayExchange(request, env) {
+  if (request.method !== 'POST') return relayJson({ error: 'Method not allowed.' }, 405);
   if (!env.DB) return relayJson({ error: 'DB binding missing on relay.' }, 500);
-  const auth = request.headers.get('Authorization') || '';
-  if (auth !== 'Bearer ' + RELAY_OAUTH_KEYS.EXCHANGE_SECRET) {
-    return relayJson({ error: 'Unauthorized.' }, 401);
+  const { exchange_code, tenant_verifier } = await request.json().catch(() => ({}));
+  if (typeof exchange_code !== 'string' || !exchange_code ||
+      typeof tenant_verifier !== 'string' || !/^[A-Za-z0-9_-]{43,128}$/.test(tenant_verifier)) {
+    return relayJson({ error: 'Missing exchange_code or tenant_verifier.' }, 400);
   }
-  const { exchange_code } = await request.json().catch(() => ({}));
-  if (!exchange_code) return relayJson({ error: 'Missing exchange_code.' }, 400);
+  const challenge = await pkceChallenge(tenant_verifier);
 
-  const row = await env.DB.prepare('SELECT * FROM relay_oauth_tokens WHERE exchange_code = ?').bind(exchange_code).first();
+  // Atomic single-use: the row is deleted only if code, verifier hash and TTL
+  // all match. A wrong verifier matches nothing and reveals nothing.
+  const { results } = await env.DB.prepare(
+    'DELETE FROM relay_tokens_v2 WHERE exchange_code = ? AND tenant_challenge = ? AND created_at > ? ' +
+    'RETURNING access_token, refresh_token, expires_at, account_id, script_name'
+  ).bind(exchange_code, challenge, Date.now() - RELAY_CODE_TTL_MS).all();
+  const row = results && results[0];
   if (!row) return relayJson({ error: 'Invalid or expired exchange code.' }, 404);
-  // Single use.
-  await env.DB.prepare('DELETE FROM relay_oauth_tokens WHERE exchange_code = ?').bind(exchange_code).run();
 
   return relayJson({
     access_token: row.access_token,

@@ -1,11 +1,13 @@
 // ============================================================================
-// NYXX — v4.9.3
+// NYXX — v4.9.4
 // Telegram bot builder + management dashboard for Cloudflare Workers + D1.
 // ============================================================================
-const VERSION = '4.9.3';
+const VERSION = '4.9.4';
 
 const RELAY_BASE = 'https://nyxx-proxy.nova-06272b19.workers.dev';
-const RELAY_EXCHANGE_SECRET = 'SECRET_ULTRA_PRO_MAX'; // Must match proxy.js
+// Forks: set the RELAY_BASE variable (or edit the line above) to point at your own relay.
+const RELAY_VERIFIER_KEY = 'cf_oauth_relay_verifier';
+const relayBase = (env) => String((env && env.RELAY_BASE) || RELAY_BASE).replace(/\/+$/, '');
 
 // ============================================================================
 // CLOUDFLARE OAUTH (dashboard updater)
@@ -14,7 +16,7 @@ const RELAY_EXCHANGE_SECRET = 'SECRET_ULTRA_PRO_MAX'; // Must match proxy.js
 // OAuth clients and fill CLIENT_ID here, then redeploy. The redirect URL must
 // be `https://<your-worker>.workers.dev/oauth/callback` — add it to the client.
 const CF_OAUTH = {
-  CLIENT_ID: '',                              // ← paste your OAuth client ID
+  CLIENT_ID: '87f4c44a2c2d4df7af66628871fc7502',                              // ← paste your OAuth client ID
   SCOPES: ['account-settings.read', 'workers-scripts.edit'],
   REQUEST_REFRESH_TOKEN: true,                // set false to skip offline_access
   AUTH_URL:  'https://dash.cloudflare.com/oauth2/auth',
@@ -12927,7 +12929,7 @@ async function setBotInfo(request, env) {
 // Bot token and webhook secret stay excluded from backups. AI keys are INCLUDED by
 // user request, but the frontend warns loudly before exporting them.
 const SECRET_SETTING_KEYS = ['bot_token', 'webhook_secret', 'cf_api_token',
-    'cf_oauth_access_token', 'cf_oauth_refresh_token', 'cf_oauth_expires_at', 'cf_oauth_scope'];
+    'cf_oauth_access_token', 'cf_oauth_refresh_token', 'cf_oauth_expires_at', 'cf_oauth_scope', 'cf_oauth_relay_verifier'];
 async function exportBackup(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
@@ -13401,9 +13403,14 @@ async function handleCfOAuthStart(request, env) {
   await initializeDatabase(env.DB);
   const origin = new URL(request.url).origin;
   const tenantCallback = origin + '/oauth/callback';
+  const b64u = (bytes) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  // Per-flow secret stays here; only its SHA-256 goes to the relay.
+  const verifier = b64u(crypto.getRandomValues(new Uint8Array(48)));
+  const challenge = b64u(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))));
+  await setSetting(env.DB, RELAY_VERIFIER_KEY, verifier);
   return apiJson({
     success: true,
-    authorize_url: `${RELAY_BASE}/oauth/start?tenant_callback=${encodeURIComponent(tenantCallback)}`,
+    authorize_url: `${relayBase(env)}/oauth/start?tenant_callback=${encodeURIComponent(tenantCallback)}&tenant_challenge=${challenge}`,
   });
 }
 
@@ -13416,16 +13423,13 @@ async function handleCfOAuthCallback(request, env) {
 
   let res, tokens;
   try {
-    // Prefer env.RELAY_SECRET; fall back to the compiled-in default so
-    // existing deployments keep working until the secret is rotated.
-    const relaySecret = (env && env.RELAY_SECRET) ? String(env.RELAY_SECRET) : RELAY_EXCHANGE_SECRET;
-    res = await fetch(`${RELAY_BASE}/oauth/exchange`, {
+    const verifier = await getSetting(env.DB, RELAY_VERIFIER_KEY);
+    if (!verifier) return new Response('Connection session expired. Start "Connect Cloudflare" again from the dashboard.', { status: 400 });
+    await setSetting(env.DB, RELAY_VERIFIER_KEY, ''); // single use
+    res = await fetch(`${relayBase(env)}/oauth/exchange`, {
       method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + relaySecret,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ exchange_code: exchangeCode }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ exchange_code: exchangeCode, tenant_verifier: verifier }),
     });
     if (!res.ok) return new Response('Token exchange failed', { status: 502 });
     tokens = await res.json();
@@ -13451,7 +13455,7 @@ async function handleCfOAuthStatus(request, env) {
     const t = await getStoredCfOAuth(env.DB);
     return apiJson({
       success:    true,
-      configured: !!RELAY_BASE,
+      configured: !!relayBase(env),
       connected:  !!t.access_token && (!t.expires_at || t.expires_at > Date.now() || !!(t.refresh_token && CF_OAUTH.CLIENT_ID)),
       account_id: t.account_id,
       script_name:t.script_name,

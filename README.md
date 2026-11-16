@@ -115,6 +115,8 @@ Open the worker URL and complete the setup wizard. The database schema is create
 
 Deploy `proxy.js` to a Cloudflare Worker, update the proxy URL inside `installer.html`, and use the installer as normal. This removes any dependency on the hosted proxy.
 
+To also self-host the **Connect Cloudflare** OAuth relay, bind a D1 database as `DB`, create your own Cloudflare OAuth client, and point `RELAY_BASE` in `worker.js` (or the `RELAY_BASE` variable) at your proxy. Full steps are in [SECURITY.md](SECURITY.md).
+
 ---
 
 ## Updating
@@ -127,6 +129,8 @@ Open the **Update** tab in your dashboard. Nyxx will:
 4. Deploy it and rotate the webhook secret automatically
 
 Your bot token, D1 data, and configuration stay intact. You can also force-redeploy the current version if a deployment feels broken.
+
+> **Upgrading from a version before 4.9.4?** The **Connect Cloudflare** button in the dashboard stops working until the worker is updated, because the OAuth relay no longer uses a shared secret. Update once through the installer (OAuth or API token); everything else keeps working in the meantime.
 
 If the dashboard ever shows **"Database schema is out of date"** after an update, open **Settings → Schema health → Run auto-heal** — it fixes missing tables, columns, indexes and settings without touching live data.
 
@@ -146,7 +150,7 @@ Direct URLs still work everywhere — the upload option is only for files that d
 
 ## Security
 
-- API tokens stay in your browser during install — only sent to Cloudflare's API
+- API tokens stay in your browser during install and are forwarded to Cloudflare's API through the CORS proxy (hosted default or your own). The proxy never stores them
 - **In-dashboard updater** stores the Cloudflare token / OAuth session in your own D1 database, never on a third-party server
 - PBKDF2 password hashing (SHA-256, 100k iterations)
 - Webhook secret tokens, rotated automatically on updates
@@ -154,7 +158,9 @@ Direct URLs still work everywhere — the upload option is only for files that d
 - **Distributed session invalidation** — changing the admin password signs out every browser on every worker isolate immediately
 - HttpOnly, SameSite session cookies
 - MCP bearer tokens hashed in D1, shown only once
-- CORS proxy hardened against SSRF (allow-list + DNS-over-HTTPS resolution)
+- CORS proxy hardened against SSRF (allow-list + DNS-over-HTTPS resolution), no upstream redirects or cookies, sandboxed responses, optional rate limiting
+- **OAuth relay with no shared secret** — each login is bound to the worker that started it (PKCE-style verifier), requires a confirmation click naming the receiving host, and uses single-use, short-lived (≤ 5 min) exchange codes
+- The hosted proxy/relay is operated by the maintainer; if you would rather not trust it, [self-host it](SECURITY.md) or use the API token method
 - Standard security headers on all responses (CSP, HSTS, X-Frame-Options, etc.)
 - Destructive MCP tools require explicit `confirm: true` and are off by default
 
@@ -179,7 +185,7 @@ Yes, and it's designed to run on Cloudflare's free tier.
 No. Everything runs on Cloudflare Workers.
 
 **Is my Cloudflare token stored?**
-Not by the installer. When you use the in-dashboard updater, the token (or OAuth session) is stored in your own D1 database, not on any third-party server.
+Not by the installer. When you use the in-dashboard updater, the token (or OAuth session) is stored in your own D1 database. With **Connect Cloudflare**, the hosted relay holds the access token for up to 5 minutes until your worker collects it (single use), then deletes it. See [SECURITY.md](SECURITY.md) for the trust model and how to self-host the relay.
 
 **Which AI providers are supported?**
 OpenAI, Gemini, DeepSeek, Groq, OpenRouter, Ollama (local), and any OpenAI-compatible API — with up to 5 fallbacks.
@@ -210,7 +216,8 @@ Yes. `worker.js` is fully open source and meant to be modified.
 |---|---|
 | `worker.js` | The Nyxx panel — bot engine, dashboard, REST API, AI, MCP server, `/chat` UI |
 | `installer.html` | The install / update / delete wizard |
-| `proxy.js` | Hardened CORS proxy + optional OAuth relay |
+| `proxy.js` | Hardened CORS proxy + central OAuth relay (OAuth needs a D1 binding named `DB`) |
+| `SECURITY.md` | Trust model, self-hosting the proxy / relay, vulnerability reporting |
 | `version.json` | Release metadata |
 | `logo.webp` | Project logo |
 
