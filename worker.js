@@ -2046,7 +2046,7 @@ body { overflow-x: hidden; }
                     <div class="lead"><h1>Media Library</h1><p>Upload, organize, gate by user ID, expire, and validate Telegram files for commands &amp; digital delivery.</p></div>
                     <div class="page-actions">
                         <button class="btn btn-gray btn-sm" onclick="openAddFileIdModal()"><i class="fa-solid fa-plus"></i> Add file_id</button>
-                        <button class="btn btn-gray btn-sm" onclick="validateAllVisibleMedia()"><i class="fa-solid fa-shield-check"></i> Validate</button>
+                        <button class="btn btn-gray btn-sm" onclick="validateAllVisibleMedia()"><i class="fa-regular fa-square-check"></i> Validate</button>
                         <button class="btn btn-gray btn-sm" onclick="loadMediaLibrary(true)"><i class="fa-solid fa-rotate"></i> Refresh</button>
                         <button class="btn btn-danger btn-sm" onclick="clearMediaLibrary()"><i class="fa-solid fa-trash-can"></i> Clear</button>
                     </div>
@@ -2163,7 +2163,7 @@ body { overflow-x: hidden; }
                     <button class="btn btn-gray btn-sm" onclick="selectAllVisibleMedia()">Select visible</button>
                     <button class="btn btn-gray btn-sm" onclick="clearMediaSelection()">Clear</button>
                     <div style="flex:1"></div>
-                    <button class="btn btn-gray btn-sm" onclick="bulkMediaValidate()"><i class="fa-solid fa-shield-check"></i> Validate</button>
+                    <button class="btn btn-gray btn-sm" onclick="bulkMediaValidate()"><i class="fa-regular fa-square-check"></i> Validate</button>
                     <button class="btn btn-gray btn-sm" onclick="bulkMediaUserAccess('grant')"><i class="fa-solid fa-user-plus"></i> Grant user</button>
                     <button class="btn btn-gray btn-sm" onclick="bulkMediaUserAccess('revoke')"><i class="fa-solid fa-user-minus"></i> Revoke user</button>
                     <button class="btn btn-gray btn-sm" onclick="bulkMediaSetExpiry()"><i class="fa-regular fa-clock"></i> Expiration</button>
@@ -3133,7 +3133,7 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
             </div>
             <div class="field">
                 <label class="field-label">Who can run it?</label>
-                <div class="segmented" id="cmd-access">
+                <div class="segmented segmented_mobile" id="cmd-access">
                     <button data-v="everyone" onclick="setSeg('cmd-access','everyone');onCmdAccessChange()">Everyone</button>
                     <button data-v="specific" onclick="setSeg('cmd-access','specific');onCmdAccessChange()">Specific users</button>
                     <button data-v="moderator" onclick="setSeg('cmd-access','moderator');onCmdAccessChange()">Moderator+</button>
@@ -3415,7 +3415,7 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                 <div class="tiny muted" id="me-meta-info" style="margin-top:6px;"></div>
             </div>
             <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px;">
-                <button type="button" class="btn btn-gray btn-sm" onclick="validateEditingMedia()"><i class="fa-solid fa-shield-check"></i> Validate file_id</button>
+                <button type="button" class="btn btn-gray btn-sm" onclick="validateEditingMedia()"><i class="fa-regular fa-square-check"></i> Validate file_id</button>
                 <button type="button" class="btn btn-gray btn-sm" onclick="testSendEditingMedia()"><i class="fa-solid fa-paper-plane"></i> Test send</button>
                 <button type="button" class="btn btn-primary btn-sm" onclick="createCommandFromEditingMedia()"><i class="fa-solid fa-terminal"></i> Create command</button>
             </div>
@@ -6006,7 +6006,8 @@ function mediaTypeIcon(kind) {
 }
 function mediaThumbHtml(m, sizeMode) {
     var kind = m.media_type || 'photo';
-    if (!mediaPreviews) return '<i class="' + mediaTypeIcon(kind) + '"></i>';
+    var sz = m.file_size || 0;
+    if (!mediaPreviews || sz > 20 * 1024 * 1024) return '<i class="' + mediaTypeIcon(kind) + '"></i>';
     var src = '/api/file/' + encodeURIComponent(m.file_id);
     if (kind === 'photo' || kind === 'sticker') return '<img src="' + esc(src) + '" alt="" loading="lazy" decoding="async">';
     if ((kind === 'video' || kind === 'animation' || kind === 'video_note') && sizeMode === 'detail') {
@@ -6306,7 +6307,9 @@ function openMediaEditModal(id) {
     $('me-meta-info').textContent = info.join(' · ');
 
     var pBox = $('media-edit-preview-box');
-    if (mediaPreviews) {
+    if ((m.file_size || 0) > 20 * 1024 * 1024) {
+        pBox.innerHTML = '<div class="hint-banner" style="margin-bottom:0;"><i class="fa-solid fa-circle-info"></i><div>This file is over <b>20 MB</b>. Telegram disables Bot API downloads/previews above 20 MB, but your bot can still send it to users normally.</div></div>';
+    } else if (mediaPreviews) {
         var src = '/api/file/' + encodeURIComponent(m.file_id);
         var kind = m.media_type || 'document';
         if (kind === 'photo' || kind === 'sticker') pBox.innerHTML = '<img src="' + esc(src) + '" style="max-width:100%;max-height:200px;border-radius:10px;display:block;margin:0 auto;">';
@@ -6350,7 +6353,7 @@ async function validateEditingMedia() {
         var d = await api('POST', '/api/media/validate', { ids: [editingMediaItem.id] });
         var r = (d.results && d.results[0]) || {};
         $('me-status').innerHTML = r.valid
-            ? '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> file_id is live and valid on Telegram.</span>'
+            ? '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> ' + esc(r.note || 'file_id is live and valid on Telegram.') + '</span>'
             : '<span style="color:var(--red)"><i class="fa-solid fa-circle-xmark"></i> Invalid or unreachable: ' + esc(r.error || 'unknown') + '</span>';
         loadMediaLibrary(true);
     } catch (e) { $('me-status').innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
@@ -7349,7 +7352,7 @@ async function loadAdmins() {
                 '<div class="lr-main"><div class="lr-title">' + esc(a.first_name || 'User') + (a.username ? ' <span class="muted">@' + esc(a.username) + '</span>' : '') + '</div>' +
                 '<div class="lr-sub">ID ' + esc(a.id) + ' · last active ' + fmtTime(a.last_active) + '</div></div>' +
                 roleBadge +
-                '<button class="btn btn-gray btn-sm" onclick="demoteAdmin(' + a.id + ')"><i class="fa-solid fa-user-minus"></i> Demote</button>' +
+                '<button class="btn btn-gray btn-sm" onclick="demoteAdmin(' + a.id + ')"><i class="fa-solid fa-user-minus"></i> <span class="demote-text">Demote</span></button>' +
             '</div>';
         }).join('') + '</div>';
     } catch (e) { box.innerHTML = errorState(e.message, 'loadAdmins()'); }
@@ -14085,15 +14088,21 @@ async function validateMediaLibraryItems(request, env) {
         const results = [];
         let validCount = 0, invalidCount = 0;
         for (const r of (rows.results || [])) {
-            let valid = false, errMsg = '';
+            let valid = false, errMsg = '', note = '';
             try {
                 const info = await tgFetchJson(`https://api.telegram.org/bot${token}/getFile?file_id=${encodeURIComponent(r.file_id)}`);
-                if (info && info.ok && info.result && info.result.file_id) valid = true;
-                else errMsg = (info && info.description) || 'Not found';
+                if (info && info.ok && info.result && info.result.file_id) {
+                    valid = true;
+                } else if (info && /file is too big/i.test(info.description || '')) {
+                    valid = true;
+                    note = 'Valid (>20 MB — bot delivery works, preview disabled by Telegram).';
+                } else {
+                    errMsg = (info && info.description) || 'Not found';
+                }
             } catch (e) { errMsg = e.message || 'Check failed'; }
             if (valid) validCount++; else invalidCount++;
             await env.DB.prepare('UPDATE media_library SET is_valid = ?, last_validated_at = CURRENT_TIMESTAMP WHERE id = ?').bind(valid ? 1 : 0, r.id).run();
-            results.push({ id: r.id, valid, error: errMsg });
+            results.push({ id: r.id, valid, error: errMsg, note });
         }
         return apiJson({ success: true, checked: results.length, valid: validCount, invalid: invalidCount, results });
     } catch (err) { return internalError(err); }
@@ -14158,16 +14167,17 @@ async function addMediaByFileId(request, env) {
         const token = await getSetting(env.DB, 'bot_token');
         if (!token) return apiJson({ error: 'Bot token is not set.' }, 400);
         const info = await tgFetchJson(`https://api.telegram.org/bot${token}/getFile?file_id=${encodeURIComponent(fileId)}`);
-        if (!info || !info.ok || !info.result) {
+        const tooBig = !!(info && !info.ok && /file is too big/i.test(info.description || ''));
+        if (!tooBig && (!info || !info.ok || !info.result)) {
             return apiJson({ error: (info && info.description) || 'Telegram could not validate this file_id.' }, 400);
         }
-        const fileSize = (info.result && info.result.file_size) || 0;
-        const filePath = (info.result && info.result.file_path) || '';
+        const fileSize = (info && info.result && info.result.file_size) || 0;
+        const filePath = (info && info.result && info.result.file_path) || '';
         const baseName = filePath ? filePath.split('/').pop() : '';
         await env.DB.prepare(
             'INSERT INTO media_library (file_id, media_type, media_meta, label, file_name, file_size, allowed_users, is_valid, last_validated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP)'
-        ).bind(fileId, mediaType === 'text' ? 'document' : mediaType, JSON.stringify({ file_size: fileSize }), label || baseName || mediaType, baseName, fileSize, allowedUsers).run();
-        return apiJson({ success: true });
+        ).bind(fileId, mediaType === 'text' ? 'document' : mediaType, JSON.stringify({ file_size: fileSize, large_file: tooBig }), label || baseName || mediaType, baseName, fileSize, allowedUsers).run();
+        return apiJson({ success: true, large_file: tooBig });
     } catch (err) { return internalError(err); }
 }
 async function sendMediaTest(request, env) {
@@ -16312,6 +16322,8 @@ html,body{margin:0;padding:0;height:100vh;height:100dvh;overflow:hidden;backgrou
     .msg .actions{opacity:1}
     .empty-chat h2{font-size:20px}
     .empty-chat p{font-size:13px}
+    .segmented_mobile{display: inline-table !important;}
+    .demote-text{display: none !important;}
 }
 </style></head>
 <body>
@@ -17383,7 +17395,67 @@ async function processTelegramUpdate(update, env, ctx) {
                 last_group_id = COALESCE(excluded.last_group_id, users.last_group_id)
         `).bind(from.id, from.username || '', from.first_name || '', privateStarted, groupId).run();
     };
+    const extractMediaFromTgMsg = (m) => {
+        if (!m) return null;
+        if (m.animation) {
+            const a = m.animation;
+            return { mediaType: 'animation', fileId: a.file_id, fileName: a.file_name || 'animation.mp4', fileSize: a.file_size || 0, meta: { duration: a.duration, width: a.width, height: a.height, file_name: a.file_name, file_size: a.file_size || 0 } };
+        }
+        if (m.document) {
+            const d = m.document;
+            return { mediaType: 'document', fileId: d.file_id, fileName: d.file_name || 'document', fileSize: d.file_size || 0, meta: { file_name: d.file_name, mime_type: d.mime_type, file_size: d.file_size || 0 } };
+        }
+        if (m.video) {
+            const v = m.video;
+            return { mediaType: 'video', fileId: v.file_id, fileName: v.file_name || 'video.mp4', fileSize: v.file_size || 0, meta: { duration: v.duration, width: v.width, height: v.height, file_name: v.file_name, file_size: v.file_size || 0 } };
+        }
+        if (m.audio) {
+            const au = m.audio;
+            return { mediaType: 'audio', fileId: au.file_id, fileName: au.file_name || au.title || 'audio', fileSize: au.file_size || 0, meta: { duration: au.duration, performer: au.performer, title: au.title, file_name: au.file_name, file_size: au.file_size || 0 } };
+        }
+        if (m.voice) {
+            const vo = m.voice;
+            return { mediaType: 'voice', fileId: vo.file_id, fileName: 'voice.ogg', fileSize: vo.file_size || 0, meta: { duration: vo.duration, file_size: vo.file_size || 0 } };
+        }
+        if (m.video_note) {
+            const vn = m.video_note;
+            return { mediaType: 'video_note', fileId: vn.file_id, fileName: 'video_note.mp4', fileSize: vn.file_size || 0, meta: { duration: vn.duration, length: vn.length, file_size: vn.file_size || 0 } };
+        }
+        if (m.sticker) {
+            const st = m.sticker;
+            return { mediaType: 'sticker', fileId: st.file_id, fileName: 'sticker.webp', fileSize: st.file_size || 0, meta: { width: st.width, height: st.height, file_size: st.file_size || 0 } };
+        }
+        if (Array.isArray(m.photo) && m.photo.length) {
+            const p = m.photo[m.photo.length - 1];
+            return { mediaType: 'photo', fileId: p.file_id, fileName: 'photo.jpg', fileSize: p.file_size || 0, meta: { width: p.width, height: p.height, file_size: p.file_size || 0 } };
+        }
+        return null;
+    };
+    const saveCapturedMedia = async (m, extracted) => {
+        if (!extracted || !extracted.fileId) return false;
+        const dup = await env.DB.prepare('SELECT id FROM media_library WHERE file_id = ? LIMIT 1').bind(extracted.fileId).first();
+        if (dup) return false;
+        const caption = m.caption ? String(m.caption).slice(0, 1024) : '';
+        const label = (caption ? caption.split('\n')[0].slice(0, 80) : '') || extracted.fileName || extracted.mediaType;
+        await env.DB.prepare(
+            'INSERT INTO media_library (file_id, media_type, media_meta, label, caption, file_name, file_size, storage_chat_id, storage_message_id, is_valid, last_validated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP)'
+        ).bind(extracted.fileId, extracted.mediaType, JSON.stringify(extracted.meta), label, caption, extracted.fileName, extracted.fileSize, String(m.chat.id), m.message_id || null).run();
+        return true;
+    };
     try {
+        if (update.channel_post && update.channel_post.chat) {
+            const cp = update.channel_post;
+            const storageChat = String((await getSetting(env.DB, 'media_storage_chat_id')) || '').trim();
+            if (storageChat) {
+                const matchesId = String(cp.chat.id) === storageChat;
+                const matchesUser = cp.chat.username && ('@' + cp.chat.username.toLowerCase()) === storageChat.toLowerCase();
+                if (matchesId || matchesUser) {
+                    const extracted = extractMediaFromTgMsg(cp);
+                    if (extracted) await saveCapturedMedia(cp, extracted);
+                }
+            }
+            return;
+        }
         if (update.my_chat_member) {
             const m = update.my_chat_member;
             const chat = m.chat;
@@ -17764,6 +17836,22 @@ async function processTelegramUpdate(update, env, ctx) {
                 const blockType = await isUserBlocked(env, msg.from.id);
                 if (blockType === 'full') return;
                 await upsertUser(msg.from, { privateStarted: true });
+                if (await isAdminUser(env, msg.from.id)) {
+                    const extracted = extractMediaFromTgMsg(msg);
+                    if (extracted) {
+                        const inserted = await saveCapturedMedia(msg, extracted);
+                        const mb = extracted.fileSize ? (extracted.fileSize / (1024 * 1024)).toFixed(2) + ' MB' : 'unknown size';
+                        await sendRichText(
+                            BOT_TOKEN,
+                            chatId,
+                            (inserted ? '✅ <b>Saved to Media Library</b>' : 'ℹ️ <b>Already in Media Library</b>') +
+                            '\n• Type: <code>' + escapeTelegramHTML(extracted.mediaType) + '</code>' +
+                            '\n• File: <code>' + escapeTelegramHTML(extracted.fileName) + '</code> (' + mb + ')' +
+                            '\n• <code>' + escapeTelegramHTML(extracted.fileId) + '</code>'
+                        );
+                        return;
+                    }
+                }
                 const aiSettings = await getAiSettingsFromDb(env);
                 if (aiSettings.ai_enabled !== '1') {
                     const p = logDm(env.DB, msg.from.id, 'in', 'user', 'text', '[media]', null, msg.message_id, null);
