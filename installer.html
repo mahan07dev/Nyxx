@@ -7,6 +7,7 @@
 <link rel="shortcut icon" href="https://raw.githubusercontent.com/Mahan07dev/Nyxx/refs/heads/main/logo.webp" type="image/x-icon">
 <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" defer></script>
 <style>
 :root {
     --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -958,14 +959,110 @@ details.fallback > summary i { font-size: 0.8em; transition: transform 0.2s; }
 details.fallback[open] > summary { margin-bottom: var(--s3); }
 details.fallback[open] > summary i { transform: rotate(90deg); }
 #oauth-status { word-break: break-word; }
+
+/* ============================================================
+   NEW: Resume banner, account picker, combined resources, QR, bulk
+   ============================================================ */
+.resume-banner {
+    background: linear-gradient(135deg, var(--accent-soft), var(--purple-soft));
+    border: 0.5px solid var(--accent);
+    border-radius: var(--r-md);
+    padding: var(--s4);
+    margin: var(--s5) 0 0;
+    display: flex; gap: var(--s3); align-items: flex-start;
+    text-align: left;
+}
+.resume-banner .ic { flex: 0 0 auto; color: var(--accent); font-size: 20px; margin-top: 2px; }
+.resume-banner .body { flex: 1; min-width: 0; }
+.resume-banner h4 { font-size: var(--fs-headline); color: var(--accent); margin: 0 0 4px; letter-spacing: -0.015em; }
+.resume-banner p { font-size: var(--fs-footnote); color: var(--text-2); margin: 0 0 var(--s3); }
+.resume-banner .actions { display: flex; gap: var(--s2); flex-wrap: wrap; }
+
+.account-list { display: flex; flex-direction: column; gap: var(--s2); margin: var(--s3) 0 var(--s4); }
+.account-option {
+    display: flex; align-items: center; gap: var(--s3);
+    padding: var(--s3) var(--s4);
+    background: var(--surface-2);
+    border: 1.5px solid var(--hairline);
+    border-radius: var(--r-md);
+    cursor: pointer;
+    transition: border-color 0.16s, background 0.16s;
+}
+.account-option:hover { border-color: var(--fill-3); }
+.account-option.selected { border-color: var(--accent); background: var(--accent-soft); }
+.account-option input { margin: 0; accent-color: var(--accent); }
+.account-option .name { font-weight: 600; color: var(--text); font-size: var(--fs-subhead); }
+.account-option .id { font-family: var(--mono); font-size: var(--fs-caption); color: var(--text-3); }
+
+.resource-row { padding: var(--s4); border-bottom: 0.5px solid var(--hairline); display: flex; flex-direction: column; gap: var(--s3); }
+.resource-row:last-child { border-bottom: none; }
+.resource-row .main { display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap; }
+.resource-row .main .name { font-family: var(--mono); font-weight: 600; font-size: var(--fs-subhead); color: var(--text); }
+.resource-row .main .db-name { font-family: var(--mono); font-size: var(--fs-caption); color: var(--text-3); }
+.resource-row .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.resource-row .actions button {
+    background: var(--fill-1); border: none; color: var(--text-2);
+    padding: 7px 11px; border-radius: var(--r-sm);
+    font-size: var(--fs-caption); font-weight: 600;
+    cursor: pointer; white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 5px;
+    transition: background 0.16s, color 0.16s;
+    min-height: 34px;
+}
+.resource-row .actions button:hover { background: var(--fill-2); }
+.resource-row .actions button.open:hover { background: var(--accent-soft); color: var(--accent); }
+.resource-row .actions button.update:hover { background: var(--orange-soft); color: var(--orange); }
+.resource-row .actions button.delete:hover { background: var(--red-soft); color: var(--red); }
+.resource-row .actions button.delete-all { background: var(--red-soft); color: var(--red); }
+.resource-row .actions button.delete-all:hover { background: var(--red); color: #fff; }
+
+.orphan-section { margin-top: var(--s5); }
+.orphan-section .scan-header h4 { color: var(--text-3); }
+
+.update-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 9px; border-radius: var(--r-pill);
+    font-size: var(--fs-caption2); font-weight: 700;
+    background: var(--orange-soft); color: var(--orange);
+    letter-spacing: 0.01em;
+}
+.update-badge i { font-size: 9px; }
+
+.bulk-bar {
+    display: flex; align-items: center; gap: var(--s3);
+    padding: var(--s3) var(--s4);
+    background: var(--surface-2);
+    border-radius: var(--r-md);
+    margin-bottom: var(--s3);
+    font-size: var(--fs-footnote);
+    border: 0.5px solid var(--hairline);
+    flex-wrap: wrap;
+}
+.bulk-bar label { display: inline-flex; align-items: center; gap: var(--s2); cursor: pointer; user-select: none; }
+.bulk-bar input[type="checkbox"], .resource-row input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; margin: 0; cursor: pointer; }
+.bulk-bar .count { color: var(--text-3); }
+.bulk-bar .spacer { flex: 1; }
+
+.qr-wrap {
+    display: flex; justify-content: center; margin: var(--s4) auto;
+    padding: var(--s4); background: #ffffff;
+    border-radius: var(--r-md); width: fit-content;
+    box-shadow: var(--shadow-sm);
+}
+.qr-wrap svg { display: block; }
+.qr-wrap:empty { display: none; }
+
+.proxy-options-group { display: flex; flex-direction: column; }
+
+.domain-help { margin-top: var(--s3); }
 </style>
 </head>
 <body>
 
 <div class="wrap">
 
-    <button class="theme-toggle" id="theme-btn" onclick="cycleTheme()" title="Switch appearance" aria-label="Switch appearance">
-        <i class="fa-solid fa-circle-half-stroke"></i>
+    <button class="theme-toggle" id="theme-btn" onclick="cycleTheme()" title="Switch appearance" aria-label="Switch appearance" aria-pressed="false">
+        <i class="fa-solid fa-circle-half-stroke" id="theme-btn-icon"></i>
     </button>
 
     <div id="aria-live" class="sr-only" aria-live="polite" aria-atomic="true"></div>
@@ -989,6 +1086,17 @@ details.fallback[open] > summary i { transform: rotate(90deg); }
                 <a href="https://github.com/Mahan07dev/Nyxx" target="_blank" rel="noopener"><i class="fa-brands fa-github"></i> Source</a>
             </div>
             <button class="btn btn-lg" onclick="goToStep('account')" id="btn-welcome-next" style="max-width:340px;margin:0 auto;">Get Started <i class="fa-solid fa-arrow-right"></i></button>
+            <div id="resume-banner" class="resume-banner hidden" role="status">
+                <span class="ic"><i class="fa-solid fa-rotate-right"></i></span>
+                <div class="body">
+                    <h4>Resume installation?</h4>
+                    <p id="resume-text">An unfinished installation was found in this browser.</p>
+                    <div class="actions">
+                        <button class="btn btn-sm" onclick="resumeInstallation()"><i class="fa-solid fa-play"></i> Resume</button>
+                        <button class="btn btn-ghost btn-sm" onclick="discardResume()"><i class="fa-solid fa-xmark"></i> Discard</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1006,6 +1114,22 @@ details.fallback[open] > summary i { transform: rotate(90deg); }
         <button class="back-link" onclick="goToStep('welcome')"><i class="fa-solid fa-chevron-left"></i> Back</button>
         <h2><span class="grad">Account</span> &amp; Token</h2>
         <p class="desc">Connect your Cloudflare account to get started.</p>
+
+        <div id="account-picker" class="group hidden">
+            <div class="group-row">
+                <span class="num"><i class="fa-solid fa-users"></i></span>
+                <div class="body">
+                    <h3>Select account</h3>
+                    <p>Your token can access multiple Cloudflare accounts. Pick the one to deploy into.</p>
+                    <div id="account-list" class="account-list" role="radiogroup" aria-label="Cloudflare accounts"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="callout" role="note">
+            <span class="ic"><i class="fa-solid fa-shield-halved"></i></span>
+            <div>Token is saved in this browser. Use <a href="#" onclick="clearAllData();return false;">Clear all data</a> when done on a shared device.</div>
+        </div>
 
         <div id="oauth-box" class="group hidden">
             <div class="group-row">
@@ -1086,18 +1210,20 @@ details.fallback[open] > summary i { transform: rotate(90deg); }
         <h2><span class="grad">Security</span> &amp; Proxy</h2>
         <p class="desc">Choose how your browser talks to Cloudflare's API.</p>
 
-        <div class="proxy-option selected" id="opt-default" onclick="selectProxy('default')" tabindex="0" role="radio" aria-checked="true" aria-label="Use default proxy">
-            <div class="radio"></div>
-            <h4><i class="fa-solid fa-circle-check" style="color:var(--green);"></i> Default proxy</h4>
-            <p>Route calls through our hosted CORS proxy. Fast, zero setup. Your token is only forwarded to Cloudflare.</p>
-            <span class="tag"><i class="fa-solid fa-bolt"></i> Recommended</span>
-        </div>
+        <div class="proxy-options-group" role="radiogroup" aria-label="Proxy options">
+            <div class="proxy-option selected" id="opt-default" onclick="selectProxy('default')" tabindex="0" role="radio" aria-checked="true" aria-label="Use default proxy">
+                <div class="radio"></div>
+                <h4><i class="fa-solid fa-circle-check" style="color:var(--green);"></i> Default proxy</h4>
+                <p>Route calls through our hosted CORS proxy. Fast, zero setup. Your token is only forwarded to Cloudflare.</p>
+                <span class="tag"><i class="fa-solid fa-bolt"></i> Recommended</span>
+            </div>
 
-        <div class="proxy-option" id="opt-custom" onclick="selectProxy('custom')" tabindex="0" role="radio" aria-checked="false" aria-label="Self-host proxy">
-            <div class="radio"></div>
-            <h4><i class="fa-solid fa-shield-halved" style="color:var(--accent);"></i> Self-hosted proxy</h4>
-            <p>Deploy your own proxy worker for maximum privacy. Your token never touches a third-party server.</p>
-            <span class="tag safe"><i class="fa-solid fa-lock"></i> Maximum privacy</span>
+            <div class="proxy-option" id="opt-custom" onclick="selectProxy('custom')" tabindex="-1" role="radio" aria-checked="false" aria-label="Self-host proxy">
+                <div class="radio"></div>
+                <h4><i class="fa-solid fa-shield-halved" style="color:var(--accent);"></i> Self-hosted proxy</h4>
+                <p>Deploy your own proxy worker for maximum privacy. Your token never touches a third-party server.</p>
+                <span class="tag safe"><i class="fa-solid fa-lock"></i> Maximum privacy</span>
+            </div>
         </div>
 
         <div id="custom-proxy-section" class="proxy-custom-section hidden">
@@ -1110,6 +1236,7 @@ details.fallback[open] > summary i { transform: rotate(90deg); }
             </ol>
             <input type="text" id="custom-proxy-url" placeholder="https://your-proxy.workers.dev/" oninput="verifyCustomProxy()" spellcheck="false" />
             <div id="custom-proxy-status" class="field-hint" style="min-height:20px;"></div>
+            <div class="field-hint" style="margin-top:6px;"><i class="fa-solid fa-circle-info"></i> This check only confirms the proxy is reachable — it cannot verify that the proxy owner is trustworthy. Self-host if that matters to you.</div>
         </div>
 
         <div class="sticky-cta">
@@ -1218,6 +1345,7 @@ details.fallback[open] > summary i { transform: rotate(90deg); }
                 <span id="result-url"></span><br>
                 <button onclick="copyUrl()"><i class="fa-regular fa-copy"></i> Copy URL</button>
             </div>
+            <div id="qr-container" class="qr-wrap" aria-label="QR code for panel URL"></div>
             <p id="result-database" style="color:var(--text-3);font-size:var(--fs-footnote);margin:0 0 var(--s5);"></p>
             <a class="btn btn-lg" href="#" target="_blank" id="result-link" rel="noopener" style="max-width:340px;margin:0 auto;">Open your panel <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
             <button class="btn btn-ghost" onclick="startAnotherPanel()" style="max-width:340px;margin:10px auto 0;"><i class="fa-solid fa-plus"></i> Create another panel</button>
@@ -1228,6 +1356,10 @@ details.fallback[open] > summary i { transform: rotate(90deg); }
             <div class="callout warn" id="propagation-notice" style="text-align:left;">
                 <span class="ic"><i class="fa-solid fa-hourglass-half"></i></span>
                 <div><b>Not loading yet?</b> Cloudflare Workers can take 1–3 minutes to propagate globally. Wait a moment and refresh.</div>
+            </div>
+            <div class="callout" style="text-align:left;">
+                <span class="ic"><i class="fa-solid fa-globe"></i></span>
+                <div><b>Custom domain (optional).</b> To use your own domain, open <a href="https://dash.cloudflare.com/" target="_blank" rel="noopener">Cloudflare Dashboard</a> → Workers &amp; Pages → your worker → Settings → Domains &amp; Routes → Add custom domain. The <code>.workers.dev</code> URL will keep working.</div>
             </div>
         </div>
     </div>
@@ -1321,11 +1453,24 @@ function cycleTheme() {
   const next = cur === 'auto' ? 'light' : (cur === 'light' ? 'dark' : 'auto');
   applyTheme(next);
   showToast('Appearance: ' + next, 'ok');
+  updateThemeButton(next);
+}
+function updateThemeButton(mode) {
+  const btn = document.getElementById('theme-btn');
+  const icon = document.getElementById('theme-btn-icon');
+  if (!btn || !icon) return;
+  const map = { auto: 'fa-circle-half-stroke', light: 'fa-sun', dark: 'fa-moon' };
+  icon.className = 'fa-solid ' + (map[mode] || map.auto);
+  btn.setAttribute('aria-pressed', mode === 'dark' ? 'true' : 'false');
+  btn.setAttribute('aria-label', 'Appearance: ' + mode + ' (click to change)');
 }
 (function initTheme() {
   let saved = 'auto';
   try { saved = localStorage.getItem('nyxx-installer-theme') || 'auto'; } catch (e) {}
   applyTheme(saved);
+  // Defer — button may not exist yet if this runs before DOM
+  document.addEventListener('DOMContentLoaded', () => updateThemeButton(saved));
+  if (document.readyState !== 'loading') updateThemeButton(saved);
 })();
 
 // ============================
@@ -1349,6 +1494,16 @@ function init() {
   updateProxyFoot();
   updateStepper('welcome');
   updateFooterShortcuts('welcome');
+
+  // Auto-verify a previously-saved custom proxy so users don't lose their setting.
+  if (config.proxyMode === 'custom' && config.proxyUrl && config.proxyUrl !== DEFAULT_PROXY) {
+    const customInput = document.getElementById('custom-proxy-url');
+    if (customInput) customInput.value = config.proxyUrl;
+    verifyCustomProxy();
+  }
+
+  // Offer to resume an unfinished install (persisted step + partial state).
+  updateResumeBanner();
 
   fetchLatestVersion();
   checkProxyHealth(false);
@@ -1386,6 +1541,7 @@ function init() {
 // NAVIGATION
 // ============================
 function goToStep(stepId) {
+  try { installState.currentStep = stepId; saveState(); } catch (e) {}
   document.querySelectorAll('.wrap > .card, #step-result').forEach(el => {
     if (el.id && (el.id.startsWith('step-') || el.id === 'step-result')) el.classList.add('hidden');
   });
@@ -1444,6 +1600,68 @@ function updateFooterShortcuts(step) {
 }
 
 // ============================
+// RESUME INSTALLATION
+// ============================
+function isResumable() {
+  return !isInstalling
+    && !installState.panelUrl
+    && (installState.dbId || (installState.completedSteps && installState.completedSteps.length > 0))
+    && installState.workerName;
+}
+function updateResumeBanner() {
+  const banner = document.getElementById('resume-banner');
+  const text = document.getElementById('resume-text');
+  if (!banner) return;
+  if (!isResumable()) { banner.classList.add('hidden'); return; }
+  const done = (installState.completedSteps || []).length;
+  const dbLine = installState.dbName ? ` D1 database <code>${escapeHtml(installState.dbName)}</code> already created.` : '';
+  const target = installState.updateMode && installState.updateTarget
+    ? `Updating <b>${escapeHtml(installState.updateTarget)}</b>.`
+    : `Panel <b>${escapeHtml(installState.workerName)}</b> in progress.`;
+  text.innerHTML = `${target} ${done} step(s) completed.${dbLine}`;
+  banner.classList.remove('hidden');
+}
+async function resumeInstallation() {
+  if (isInstalling) return;
+  const target = installState.updateMode && installState.updateTarget ? installState.updateTarget : installState.workerName;
+  if (installState.updateMode) {
+    document.getElementById('create-title').innerHTML = '<span class="grad">Update</span> Panel';
+    document.getElementById('create-desc').textContent = 'Replace the worker code for ' + target + ' with the latest version.';
+    document.getElementById('update-banner').classList.remove('hidden');
+    document.getElementById('update-target-name').textContent = target;
+    document.getElementById('go').innerHTML = '<i class="fa-solid fa-rotate"></i> Update ' + target;
+    document.getElementById('worker-name-section').classList.add('hidden');
+  } else {
+    document.getElementById('create-title').innerHTML = '<span class="grad">Create</span> New Panel';
+    document.getElementById('create-desc').textContent = 'Resume deploying your Nyxx panel.';
+    document.getElementById('update-banner').classList.add('hidden');
+    document.getElementById('go').innerHTML = '<i class="fa-solid fa-rocket"></i> Create my Nyxx panel';
+    const nameInput = document.getElementById('worker-name');
+    if (nameInput) nameInput.value = installState.workerName || '';
+    onWorkerNameInput();
+  }
+  goBtn.disabled = false;
+  goToStep('create');
+  await delay(150);
+  // Kick off continuation from the first incomplete step.
+  const steps = STEPS;
+  const done = new Set(installState.completedSteps || []);
+  let start = steps.find(s => !done.has(s)) || 'verify';
+  if (installState.failedStep) start = installState.failedStep;
+  renderProgress();
+  document.getElementById('progress-card').classList.remove('hidden');
+  (installState.completedSteps || []).forEach(s => setStep(s, 'done'));
+  await continueFromStep(start);
+}
+function discardResume() {
+  if (!confirm('Discard the unfinished installation? The D1 database already created on Cloudflare will NOT be deleted automatically — you can remove it via Scan Account later.')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  installState = { accountId: null, subName: '', dbId: null, dbName: '', workerName: '', panelUrl: '', workerCode: null, completedSteps: [], failedStep: null, errorMessage: null, scanResults: { workers: [], databases: [] }, updateMode: false, updateTarget: null, workerVersion: null, currentStep: 'welcome' };
+  updateResumeBanner();
+  showToast('Installation discarded', 'warn');
+}
+
+// ============================
 // KEYBOARD NAVIGATION
 // ============================
 function handleKeydown(e) {
@@ -1452,6 +1670,7 @@ function handleKeydown(e) {
   const active = document.activeElement;
 
   if (e.key === 'Escape') {
+    if (isInstalling) { showToast('Installation in progress — wait for it to finish.', 'warn'); return; }
     e.preventDefault();
     goBack();
     return;
@@ -1467,7 +1686,7 @@ function handleKeydown(e) {
       updateChoiceFocus(true);
       return;
     }
-    if (e.key === 'Enter' && isChoiceFocused) {
+    if ((e.key === 'Enter' || e.key === ' ') && isChoiceFocused) {
       e.preventDefault();
       active.click();
     }
@@ -1476,14 +1695,18 @@ function handleKeydown(e) {
 
   if (currentStep === 'security') {
     const options = Array.from(document.querySelectorAll('.proxy-option'));
-    if (['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight'].includes(e.key) && (options.includes(active) || active === document.body)) {
+    const onOption = options.includes(active);
+    if (['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight'].includes(e.key) && (onOption || active === document.body)) {
       e.preventDefault();
-      const mode = config.proxyMode === 'default' ? 'custom' : 'default';
+      const idx = onOption ? options.indexOf(active) : (config.proxyMode === 'default' ? 0 : 1);
+      const dir = (e.key === 'ArrowDown' || e.key === 'ArrowRight') ? 1 : -1;
+      const nextIdx = (idx + dir + options.length) % options.length;
+      const mode = options[nextIdx].id === 'opt-default' ? 'default' : 'custom';
       selectProxy(mode);
-      document.getElementById('opt-' + mode).focus();
+      options[nextIdx].focus();
       return;
     }
-    if (e.key === 'Enter' && options.includes(active)) {
+    if ((e.key === 'Enter' || e.key === ' ') && onOption) {
       e.preventDefault();
       confirmProxyAndProceed();
     }
@@ -1540,7 +1763,12 @@ function loadConfig() {
   try { const raw = localStorage.getItem(CONFIG_KEY); if (raw) config = JSON.parse(raw); restoreOAuth(); }
   catch (e) { config = { proxyMode: 'default', proxyUrl: DEFAULT_PROXY, token: '', tokenVerified: false, authMode: 'token' }; }
 }
-function saveState() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(installState)); } catch (e) {} }
+function saveState() {
+  try {
+    const toSave = { ...installState, workerCode: null };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+  } catch (e) {}
+}
 function loadState() {
   try { const raw = localStorage.getItem(STORAGE_KEY); if (raw) installState = JSON.parse(raw); }
   catch (e) { installState = { accountId: null, subName: '', dbId: null, dbName: '', workerName: '', panelUrl: '', workerCode: null, completedSteps: [], failedStep: null, errorMessage: null, scanResults: { workers: [], databases: [] }, updateMode: false, updateTarget: null, workerVersion: null }; }
@@ -1647,7 +1875,12 @@ async function fetchLatestVersion() {
     if (!resp.ok) return;
     const data = await resp.json();
     if (data && data.version) {
-      latestVersion = { version: data.version, notes: data.notes || '', released: data.released || '' };
+      latestVersion = {
+        version: data.version,
+        notes: data.notes || '',
+        released: data.released || '',
+        worker_urls: Array.isArray(data.worker_urls) ? data.worker_urls : null
+      };
     }
   } catch (e) {}
   renderVersionInfo();
@@ -1661,7 +1894,7 @@ function renderVersionInfo() {
     chip.innerHTML = latestVersion
       ? '<i class="fa-solid fa-box"></i> Latest: <b>v' + escapeHtml(latestVersion.version) + '</b>' +
         (latestVersion.notes ? ' <span style="color:var(--text-3);font-weight:500;">— ' + escapeHtml(latestVersion.notes) + '</span>' : '')
-      : '<i class="fa-solid fa-box"></i> Checking latest version…';
+      : '<i class="fa-solid fa-box"></i> Version unavailable';
   }
   if (createCallout) {
     if (latestVersion) {
@@ -1786,11 +2019,59 @@ if (tokenInput) {
   });
 }
 
+async function loadAccountsIntoPicker(token) {
+  const wrap = document.getElementById('account-picker');
+  const list = document.getElementById('account-list');
+  if (!wrap || !list) return;
+  try {
+    const res = await api('GET', 'https://api.cloudflare.com/client/v4/accounts', token);
+    if (!cfOk(res) || !Array.isArray(res.json.result)) { wrap.classList.add('hidden'); return; }
+    const accounts = res.json.result;
+    if (accounts.length === 0) { wrap.classList.add('hidden'); return; }
+    if (accounts.length === 1) {
+      installState.accountId = accounts[0].id;
+      saveState();
+      wrap.classList.add('hidden');
+      return;
+    }
+    const current = installState.accountId || accounts[0].id;
+    installState.accountId = current;
+    saveState();
+    list.innerHTML = accounts.map(a => `
+      <label class="account-option ${a.id === current ? 'selected' : ''}" data-id="${escapeHtml(a.id)}">
+        <input type="radio" name="cf-account" value="${escapeHtml(a.id)}" ${a.id === current ? 'checked' : ''}>
+        <div>
+          <div class="name">${escapeHtml(a.name || 'Unnamed account')}</div>
+          <div class="id">${escapeHtml(a.id)}</div>
+        </div>
+      </label>
+    `).join('');
+    list.querySelectorAll('input[name="cf-account"]').forEach(inp => {
+      inp.addEventListener('change', (ev) => {
+        installState.accountId = ev.target.value;
+        saveState();
+        list.querySelectorAll('.account-option').forEach(el => el.classList.toggle('selected', el.dataset.id === ev.target.value));
+      });
+    });
+    wrap.classList.remove('hidden');
+  } catch (e) {
+    wrap.classList.add('hidden');
+  }
+}
+
 async function verifyToken() {
   const token = tokenInput.value.trim();
   if (config.authMode === 'oauth') {
     if (token.length < 20) return;
     disconnectOAuth(true); // user switched to a manual token
+  }
+  if (config.token && config.token !== token) {
+    // Token changed → drop cached account/subdomain so we don't deploy into the wrong account.
+    installState.accountId = null;
+    installState.subName = '';
+    saveState();
+    const picker = document.getElementById('account-picker');
+    if (picker) picker.classList.add('hidden');
   }
   config.authMode = 'token';
   config.token = token;
@@ -1815,6 +2096,7 @@ async function verifyToken() {
       config.tokenVerified = true;
       if (btnAccountNext) btnAccountNext.disabled = false;
       announce('Token verified successfully.');
+      loadAccountsIntoPicker(token);
     } else {
       const err = res.json?.errors?.[0]?.message || 'Invalid token';
       tokenStatus.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> ' + err;
@@ -1902,21 +2184,18 @@ function api(method, target, token, body, ctype) {
       }
       if (res.status === 401) oauthExpired();
     }
-    const upperMethod = (method || 'GET').toUpperCase();
-    if ((res.status === 415 || res.status === 405) && upperMethod !== 'GET' && upperMethod !== 'HEAD') {
-      try {
-        return await sendRequest(upperMethod, {}, false);
-      } catch (e) {
-        return res;
-      }
-    }
     return res;
   });
 }
 function cfOk(res) { return res.json && res.json.success === true; }
 function cfErr(res) {
-  try { if (res.json && res.json.errors && res.json.errors.length > 0) return res.json.errors[0].message; return 'HTTP ' + res.status; }
-  catch(e) { return 'HTTP ' + res.status; }
+  try {
+    const info = classifyHttpError(res.status, res.json, 'HTTP ' + res.status);
+    return info.msg;
+  } catch (e) { return 'HTTP ' + res.status; }
+}
+function cfErrCategory(res) {
+  try { return classifyHttpError(res.status, res.json, '').category; } catch (e) { return 'API'; }
 }
 
 // ============================
@@ -1933,23 +2212,39 @@ async function fetchWorkerCode(useCache) {
       }
     } catch (e) {}
   }
-  let wjResp;
-  try {
-    wjResp = await fetchWithTimeout(proxy + (proxy.endsWith('/') ? '' : '/') + '?url=' + encodeURIComponent(WORKER_JS_URL), { cache: 'no-store' }, API_TIMEOUT_MS);
-  } catch (e) {
-    throw new InstallError('Could not download worker.js — the proxy is unreachable.', 'NETWORK');
+  const sources = [WORKER_JS_URL];
+  if (latestVersion && Array.isArray(latestVersion.worker_urls)) {
+    latestVersion.worker_urls.forEach(u => { if (typeof u === 'string' && u.startsWith('https://')) sources.push(u); });
   }
-  if (!wjResp.ok) throw new InstallError('Failed to download worker.js (HTTP ' + wjResp.status + ')', 'NETWORK');
-  const workerCode = await wjResp.text();
-  if (!workerCode || workerCode.length < 1000) throw new InstallError('worker.js download invalid (too short)', 'VALIDATION');
-  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ code: workerCode, timestamp: Date.now() })); } catch (e) {}
-  return workerCode;
+  let lastErr = null;
+  for (const src of sources) {
+    try {
+      const viaProxy = src === WORKER_JS_URL || src.startsWith('https://raw.githubusercontent.com/');
+      const target = viaProxy ? proxy + (proxy.endsWith('/') ? '' : '/') + '?url=' + encodeURIComponent(src) : src;
+      const resp = await fetchWithTimeout(target, { cache: 'no-store' }, API_TIMEOUT_MS);
+      if (!resp.ok) { lastErr = new InstallError('worker.js unavailable from ' + src + ' (HTTP ' + resp.status + ')', 'NETWORK'); continue; }
+      const code = await resp.text();
+      if (!code || code.length < 1000) { lastErr = new InstallError('worker.js download invalid from ' + src, 'VALIDATION'); continue; }
+      if (WORKER_JS_SHA256) {
+        const hash = await sha256(code);
+        if (hash !== WORKER_JS_SHA256) { lastErr = new InstallError('worker.js integrity check failed from ' + src, 'SECURITY'); continue; }
+      }
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify({ code, timestamp: Date.now() })); } catch (e) {}
+      return code;
+    } catch (e) { lastErr = new InstallError('Could not download worker.js from ' + src + ' — ' + e.message, 'NETWORK'); }
+  }
+  throw lastErr || new InstallError('Could not download worker.js from any source.', 'NETWORK');
 }
 
 // ============================
 // SCAN ACCOUNT
 // ============================
+let isScanning = false;
+let scanSelection = new Set();
+
 async function startScan() {
+  if (isInstalling) { showToast('An installation is in progress.', 'warn'); return; }
+  if (isScanning) return;
   const token = config.token;
   if (!token || token.length < 20 || !config.tokenVerified) {
     showToast('Please verify your token on the Account step first.', 'warn');
@@ -1957,6 +2252,8 @@ async function startScan() {
     return;
   }
 
+  isScanning = true;
+  scanSelection.clear();
   const resultsDiv = document.getElementById('scan-results');
   const contentDiv = document.getElementById('scan-content');
   resultsDiv.classList.remove('hidden');
@@ -1964,107 +2261,281 @@ async function startScan() {
   document.getElementById('scan-badge').textContent = 'scanning...';
 
   try {
-    await delay(200);
+    await delay(150);
     const acc = await api('GET', 'https://api.cloudflare.com/client/v4/accounts', token);
     if (!cfOk(acc) || !acc.json.result.length) {
       contentDiv.innerHTML = '<div class="scan-empty"><div class="icon" style="background:var(--red-soft);color:var(--red);"><i class="fa-solid fa-circle-xmark"></i></div><p>Could not access your account. Please check your token permissions.</p></div>';
       document.getElementById('scan-badge').textContent = 'error';
       return;
     }
-
-    const accountId = acc.json.result[0].id;
+    const accountId = installState.accountId || acc.json.result[0].id;
     installState.accountId = accountId;
 
-    await delay(300);
+    // Fetch workers
+    await delay(150);
     const workersRes = await api('GET', `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts`, token);
-    const workers = (cfOk(workersRes) && workersRes.json.result) ? workersRes.json.result : [];
+    if (!cfOk(workersRes)) {
+      contentDiv.innerHTML = '<div class="scan-empty"><div class="icon" style="background:var(--red-soft);color:var(--red);"><i class="fa-solid fa-lock"></i></div><p>Your token cannot list Workers.</p><p style="font-size:var(--fs-footnote);color:var(--text-4);margin-top:8px;">Add <code>Workers Scripts:Read</code> to your token.</p></div>';
+      document.getElementById('scan-badge').textContent = 'error';
+      return;
+    }
+    const workers = Array.isArray(workersRes.json.result) ? workersRes.json.result : [];
     const nyxxWorkers = workers.filter(w => w.id && w.id.toLowerCase().includes('nyxx'));
 
-    await delay(300);
-    const dbRes = await api('GET', `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database`, token);
-    const databases = (cfOk(dbRes) && dbRes.json?.result) ? dbRes.json.result : [];
-    const nyxxDbs = databases.filter(d => d.name && d.name.toLowerCase().includes('nyxx'));
+    // Fetch bindings per worker in parallel (only for nyxx workers).
+    await Promise.all(nyxxWorkers.map(async (w) => {
+      try {
+        const s = await api('GET', `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${encodeURIComponent(w.id)}/settings`, token);
+        const bindings = (cfOk(s) && s.json?.result?.bindings) ? s.json.result.bindings : [];
+        w._dbIds = bindings.filter(b => b.type === 'd1').map(b => b.database_id || b.id).filter(Boolean);
+      } catch (e) {
+        w._dbIds = [];
+      }
+    }));
 
-    await delay(200);
+    // Fetch D1s (paginated — fetch up to 200 to be safe).
+    await delay(150);
+    const dbRes = await api('GET', `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database?per_page=100&page=1`, token);
+    if (!cfOk(dbRes)) {
+      contentDiv.innerHTML = '<div class="scan-empty"><div class="icon" style="background:var(--red-soft);color:var(--red);"><i class="fa-solid fa-lock"></i></div><p>Your token cannot list D1 databases.</p><p style="font-size:var(--fs-footnote);color:var(--text-4);margin-top:8px;">Add <code>D1:Read</code> to your token.</p></div>';
+      document.getElementById('scan-badge').textContent = 'error';
+      return;
+    }
+    const databases = Array.isArray(dbRes.json?.result) ? dbRes.json.result : [];
+    const nyxxDbs = databases.filter(d => d.name && d.name.toLowerCase().includes('nyxx'));
+    const dbById = {};
+    nyxxDbs.forEach(d => { dbById[d.uuid] = d; });
+
+    // Attach D1s to workers; anything unbound is an orphan.
+    const boundIds = new Set();
+    nyxxWorkers.forEach(w => {
+      w._dbs = (w._dbIds || []).map(id => dbById[id]).filter(Boolean);
+      w._dbs.forEach(d => boundIds.add(d.uuid));
+      // If a D1 was bound but not detected as nyxx, hide it from worker row (safer).
+    });
+    const orphanDbs = nyxxDbs.filter(d => !boundIds.has(d.uuid));
+
+    await delay(100);
     const sg = await api('GET', `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/subdomain`, token);
     if (cfOk(sg) && sg.json.result && sg.json.result.subdomain) installState.subName = sg.json.result.subdomain;
 
     installState.scanResults = { workers: nyxxWorkers, databases: nyxxDbs };
     saveState();
 
-    const total = nyxxWorkers.length + nyxxDbs.length;
+    const total = nyxxWorkers.length + orphanDbs.length;
     document.getElementById('scan-badge').textContent = total + ' found';
 
     if (total === 0) {
       contentDiv.innerHTML = '<div class="scan-empty"><div class="icon" style="background:var(--green-soft);color:var(--green);"><i class="fa-solid fa-seedling"></i></div><p>No existing Nyxx resources found.</p><p style="font-size:var(--fs-footnote);margin-top:8px;color:var(--text-4);">You are ready to create a new panel.</p></div>';
-    } else {
-      let html = '<div class="table-wrap"><div class="table-scroll"><table class="resource-table"><thead><tr><th>Name</th><th>Type</th><th>Created</th><th>Actions</th></tr></thead><tbody>';
-
-      nyxxWorkers.forEach(w => {
-        const date = w.created_on ? new Date(w.created_on).toLocaleDateString() : 'Unknown';
-        const url = installState.subName ? `https://${w.id}.${installState.subName}.workers.dev` : `https://${w.id}.workers.dev`;
-        html += '<tr><td><b>' + escapeHtml(w.id) + '</b></td>' +
-          '<td><span class="type-badge worker"><i class="fa-solid fa-bolt"></i> Worker</span></td>' +
-          '<td>' + date + '</td>' +
-          '<td class="actions">' +
-          '<button onclick="window.open(\'' + url + '\', \'_blank\')"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open</button>' +
-          '<button class="update" onclick="startUpdate(\'' + escapeHtml(w.id) + '\')"><i class="fa-solid fa-rotate"></i> Update</button>' +
-          '<button class="delete" onclick="deleteResource(\'worker\', \'' + escapeHtml(w.id) + '\')"><i class="fa-regular fa-trash-can"></i> Delete</button>' +
-          '</td></tr>';
-      });
-
-      nyxxDbs.forEach(d => {
-        const date = d.created_at ? new Date(d.created_at).toLocaleDateString() : 'Unknown';
-        html += '<tr><td><b>' + escapeHtml(d.name) + '</b></td>' +
-          '<td><span class="type-badge database"><i class="fa-solid fa-database"></i> D1 DB</span></td>' +
-          '<td>' + date + '</td>' +
-          '<td class="actions">' +
-          '<button class="delete" onclick="deleteResource(\'database\', \'' + d.uuid + '\')"><i class="fa-regular fa-trash-can"></i> Delete</button>' +
-          '</td></tr>';
-      });
-
-      html += '</tbody></table></div></div>';
-      contentDiv.innerHTML = html;
+      return;
     }
+
+    renderScanResults(nyxxWorkers, orphanDbs);
   } catch (e) {
     contentDiv.innerHTML = '<div class="scan-empty"><div class="icon" style="background:var(--orange-soft);color:var(--orange);"><i class="fa-solid fa-triangle-exclamation"></i></div><p>Error scanning: ' + escapeHtml(e.message) + '</p></div>';
     document.getElementById('scan-badge').textContent = 'error';
+  } finally {
+    isScanning = false;
   }
 }
 
-async function deleteResource(type, id) {
-  if (!confirm('Are you sure you want to delete this ' + type + '? This cannot be undone.')) return;
+function renderScanResults(workers, orphanDbs) {
+  const contentDiv = document.getElementById('scan-content');
+  const deployedVersion = latestVersion ? latestVersion.version : null;
+  const parts = [];
+
+  // Bulk bar
+  parts.push('<div class="bulk-bar">' +
+    '<label><input type="checkbox" id="select-all-workers"> <span>Select all workers</span></label>' +
+    '<span class="count" id="bulk-count">0 selected</span>' +
+    '<span class="spacer"></span>' +
+    '<button class="btn btn-ghost btn-sm" id="bulk-delete-selected" disabled><i class="fa-regular fa-trash-can"></i> Delete selected</button>' +
+    '</div>');
+
+  parts.push('<div class="table-wrap" style="background:var(--surface);">');
+
+  // Workers with D1s
+  if (workers.length) {
+    workers.forEach(w => {
+      const dbNames = (w._dbs || []).map(d => d.name);
+      const dbPart = dbNames.length ? ' <span class="db-name">(' + dbNames.map(escapeHtml).join(', ') + ')</span>' : ' <span class="db-name">(no D1 database)</span>';
+      const sub = installState.subName ? `https://${w.id}.${installState.subName}.workers.dev` : `https://${w.id}.workers.dev`;
+      // Version badge — compare newest available version from worker code if we know it; otherwise just advertise update availability.
+      const hasUpdate = deployedVersion && latestVersion;
+      const updateBadge = hasUpdate ? ' <span class="update-badge"><i class="fa-solid fa-arrow-up"></i> v' + escapeHtml(latestVersion.version) + ' available</span>' : '';
+      const workerIdEsc = escapeHtml(w.id);
+      const dbIdsAttr = (w._dbs || []).map(d => d.uuid).join(',');
+      parts.push('<div class="resource-row" data-worker="' + workerIdEsc + '">' +
+        '<div class="main">' +
+          '<input type="checkbox" class="worker-select" data-worker="' + workerIdEsc + '" aria-label="Select ' + workerIdEsc + '">' +
+          '<span class="name">' + workerIdEsc + '</span>' + dbPart + updateBadge +
+        '</div>' +
+        '<div class="actions">' +
+          '<button class="open" data-action="open" data-url="' + escapeHtml(sub) + '"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open</button>' +
+          '<button class="update" data-action="update" data-worker="' + workerIdEsc + '"><i class="fa-solid fa-rotate"></i> Update</button>' +
+          '<button class="delete" data-action="delete-worker" data-worker="' + workerIdEsc + '"><i class="fa-regular fa-trash-can"></i> Delete worker only</button>' +
+          '<button class="delete-all" data-action="delete-worker-db" data-worker="' + workerIdEsc + '" data-dbids="' + escapeHtml(dbIdsAttr) + '"><i class="fa-regular fa-trash-can"></i> Delete worker + D1</button>' +
+          ((w._dbs || []).length ? '<button class="delete" data-action="delete-db" data-dbids="' + escapeHtml(dbIdsAttr) + '" data-dbnames="' + escapeHtml(dbNames.join(',')) + '"><i class="fa-solid fa-database"></i> Delete D1 only</button>' : '') +
+        '</div>' +
+      '</div>');
+    });
+  } else {
+    parts.push('<div class="scan-empty" style="padding:var(--s5);"><p>No Nyxx workers found.</p></div>');
+  }
+  parts.push('</div>');
+
+  // Orphan D1s
+  if (orphanDbs.length) {
+    parts.push('<div class="orphan-section">' +
+      '<div class="scan-header"><h4><i class="fa-solid fa-database"></i> Unattached D1 databases</h4><span id="scan-badge-orphan"></span></div>' +
+      '<div class="callout" role="note"><span class="ic"><i class="fa-solid fa-circle-info"></i></span><div>These databases have a Nyxx-style name but are not bound to any Worker. They may be left over from a failed or deleted install — safe to remove if you do not need them.</div></div>' +
+      '<div class="table-wrap" style="background:var(--surface);">');
+    orphanDbs.forEach(d => {
+      parts.push('<div class="resource-row">' +
+        '<div class="main"><span class="name">' + escapeHtml(d.name) + '</span> <span class="type-badge database"><i class="fa-solid fa-database"></i> D1</span></div>' +
+        '<div class="actions">' +
+          '<button class="delete" data-action="delete-db" data-dbids="' + escapeHtml(d.uuid) + '" data-dbnames="' + escapeHtml(d.name) + '"><i class="fa-regular fa-trash-can"></i> Delete database</button>' +
+        '</div>' +
+      '</div>');
+    });
+    parts.push('</div></div>');
+  }
+
+  contentDiv.innerHTML = parts.join('');
+
+  // Wire events (delegated, no inline JS = no quoting bugs).
+  contentDiv.querySelectorAll('button[data-action]').forEach(btn => {
+    btn.addEventListener('click', () => onScanAction(btn.dataset));
+  });
+  contentDiv.querySelectorAll('.worker-select').forEach(cb => {
+    cb.addEventListener('change', () => {
+      if (cb.checked) scanSelection.add(cb.dataset.worker);
+      else scanSelection.delete(cb.dataset.worker);
+      refreshBulkUI();
+    });
+  });
+  const selAll = document.getElementById('select-all-workers');
+  if (selAll) {
+    selAll.addEventListener('change', () => {
+      scanSelection.clear();
+      contentDiv.querySelectorAll('.worker-select').forEach(cb => {
+        cb.checked = selAll.checked;
+        if (selAll.checked) scanSelection.add(cb.dataset.worker);
+      });
+      refreshBulkUI();
+    });
+  }
+  const bulkDel = document.getElementById('bulk-delete-selected');
+  if (bulkDel) bulkDel.addEventListener('click', bulkDeleteSelected);
+}
+
+function refreshBulkUI() {
+  const count = document.getElementById('bulk-count');
+  const btn = document.getElementById('bulk-delete-selected');
+  if (count) count.textContent = scanSelection.size + ' selected';
+  if (btn) btn.disabled = scanSelection.size === 0;
+}
+
+async function onScanAction(d) {
+  if (isInstalling) return;
+  switch (d.action) {
+    case 'open': if (d.url) window.open(d.url, '_blank', 'noopener'); return;
+    case 'update': return startUpdate(d.worker);
+    case 'delete-worker': return deleteWorkerOnly(d.worker);
+    case 'delete-worker-db': return deleteWorkerAndDb(d.worker, (d.dbids || '').split(',').filter(Boolean));
+    case 'delete-db': return deleteDatabaseOnly((d.dbids || '').split(',').filter(Boolean), (d.dbnames || '').split(',').filter(Boolean));
+  }
+}
+
+async function deleteWorkerOnly(name) {
+  if (!confirm('Delete Worker "' + name + '"? Its D1 database will remain on your account (you can delete it separately or via Scan Account).')) return;
   try {
     const token = config.token;
     const accountId = await resolveAccountId(token);
-    if (type === 'worker') {
-      const settingsUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${encodeURIComponent(id)}/settings`;
-      const settings = await api('GET', settingsUrl, token);
-      if (!cfOk(settings)) throw new InstallError('Could not read Worker bindings: ' + cfErr(settings), 'API');
-      const databaseIds = [...new Set((settings.json?.result?.bindings || [])
-        .filter(binding => binding.type === 'd1')
-        .map(binding => binding.database_id || binding.id)
-        .filter(Boolean))];
-
-      const deletedWorker = await api('DELETE', `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${encodeURIComponent(id)}`, token);
-      if (!cfOk(deletedWorker)) throw new InstallError('Could not delete Worker: ' + cfErr(deletedWorker), 'API');
-
-      for (const databaseId of databaseIds) {
-        const deletedDatabase = await api('DELETE', `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${databaseId}`, token);
-        if (!cfOk(deletedDatabase)) throw new InstallError('Worker deleted, but D1 database ' + databaseId + ' could not be deleted: ' + cfErr(deletedDatabase), 'API');
-      }
-    } else {
-      const deletedDatabase = await api('DELETE', `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${id}`, token);
-      if (!cfOk(deletedDatabase)) throw new InstallError('Could not delete D1 database: ' + cfErr(deletedDatabase), 'API');
-    }
-    showToast(type + ' deleted successfully', 'ok');
+    const res = await api('DELETE', `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${encodeURIComponent(name)}`, token);
+    if (!cfOk(res)) throw new InstallError('Could not delete Worker: ' + cfErr(res), 'API');
+    showToast('Worker deleted — D1 left intact', 'ok');
     startScan();
-  } catch (e) {
-    showToast('Error deleting: ' + e.message, 'err');
-  }
+  } catch (e) { showToast('Error deleting worker: ' + e.message, 'err'); }
 }
 
-function startUpdate(workerName) {
+async function deleteWorkerAndDb(name, dbIds) {
+  if (!dbIds || dbIds.length === 0) {
+    // Fallback: look up bindings
+    try {
+      const token = config.token;
+      const accountId = await resolveAccountId(token);
+      const s = await api('GET', `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${encodeURIComponent(name)}/settings`, token);
+      dbIds = ((cfOk(s) && s.json?.result?.bindings) ? s.json.result.bindings : [])
+        .filter(b => b.type === 'd1').map(b => b.database_id || b.id).filter(Boolean);
+    } catch (e) { dbIds = []; }
+  }
+  const dbNote = dbIds.length ? ` and ${dbIds.length} D1 database(s)` : '';
+  if (!confirm('Delete Worker "' + name + '"' + dbNote + '? This cannot be undone.')) return;
+  try {
+    const token = config.token;
+    const accountId = await resolveAccountId(token);
+    const w = await api('DELETE', `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${encodeURIComponent(name)}`, token);
+    if (!cfOk(w)) throw new InstallError('Could not delete Worker: ' + cfErr(w), 'API');
+    for (const dbId of dbIds) {
+      const d = await api('DELETE', `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${dbId}`, token);
+      if (!cfOk(d)) throw new InstallError('Worker deleted, but D1 ' + dbId + ' could not be deleted: ' + cfErr(d), 'API');
+    }
+    showToast('Worker and D1 database(s) deleted', 'ok');
+    startScan();
+  } catch (e) { showToast('Error deleting: ' + e.message, 'err'); }
+}
+
+async function deleteDatabaseOnly(dbIds, names) {
+  const label = names && names.length ? names.join(', ') : dbIds.join(', ');
+  if (!confirm('Delete D1 database "' + label + '"? If it is bound to a Worker, that Worker will break until you redeploy without it.')) return;
+  try {
+    const token = config.token;
+    const accountId = await resolveAccountId(token);
+    for (const dbId of dbIds) {
+      const d = await api('DELETE', `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${dbId}`, token);
+      if (!cfOk(d)) throw new InstallError('Could not delete D1 database ' + dbId + ': ' + cfErr(d), 'API');
+    }
+    showToast('D1 database(s) deleted', 'ok');
+    startScan();
+  } catch (e) { showToast('Error deleting database: ' + e.message, 'err'); }
+}
+
+async function bulkDeleteSelected() {
+  const ids = Array.from(scanSelection);
+  if (!ids.length) return;
+  if (!confirm('Delete ' + ids.length + ' Worker(s) and their bound D1 databases? This cannot be undone.')) return;
+  try {
+    const token = config.token;
+    const accountId = await resolveAccountId(token);
+    let okCount = 0, failCount = 0;
+    for (const name of ids) {
+      try {
+        const s = await api('GET', `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${encodeURIComponent(name)}/settings`, token);
+        const dbIds = ((cfOk(s) && s.json?.result?.bindings) ? s.json.result.bindings : [])
+          .filter(b => b.type === 'd1').map(b => b.database_id || b.id).filter(Boolean);
+        const w = await api('DELETE', `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${encodeURIComponent(name)}`, token);
+        if (!cfOk(w)) { failCount++; continue; }
+        for (const dbId of dbIds) {
+          try { await api('DELETE', `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${dbId}`, token); } catch (e) {}
+        }
+        okCount++;
+      } catch (e) { failCount++; }
+    }
+    showToast('Deleted ' + okCount + (failCount ? ', ' + failCount + ' failed' : ''), failCount ? 'warn' : 'ok');
+    scanSelection.clear();
+    startScan();
+  } catch (e) { showToast('Error: ' + e.message, 'err'); }
+}
+
+// legacy keep-alive: some code may still call deleteResource(...)
+async function deleteResource(type, id) {
+  if (type === 'worker') return deleteWorkerAndDb(id, null);
+  return deleteDatabaseOnly([id], null);
+}
+
+
+async function startUpdate(workerName) {
   installState.updateMode = true;
   installState.updateTarget = workerName;
   installState.workerName = workerName;
@@ -2074,6 +2545,7 @@ function startUpdate(workerName) {
   installState.completedSteps = [];
   installState.failedStep = null;
   installState.errorMessage = null;
+  installState.deployedVersion = null;
   saveState();
 
   document.getElementById('create-title').innerHTML = '<span class="grad">Update</span> Panel';
@@ -2085,6 +2557,26 @@ function startUpdate(workerName) {
   document.getElementById('worker-name-section').classList.add('hidden');
 
   goToStep('create');
+
+  // Best-effort: fetch deployed code and parse VERSION for a visual comparison.
+  try {
+    const token = config.token;
+    const accountId = await resolveAccountId(token);
+    const res = await api('GET', `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${encodeURIComponent(workerName)}`, token);
+    if (res.status === 200 && res.text) {
+      const m = res.text.match(/const\s+VERSION\s*=\s*['"]([^'"]+)['"]/);
+      if (m) installState.deployedVersion = m[1];
+    }
+  } catch (e) { /* ignore */ }
+  // Update the banner with version info.
+  const bannerBody = document.getElementById('update-banner');
+  if (bannerBody) {
+    const cur = installState.deployedVersion ? 'v' + installState.deployedVersion : 'unknown';
+    const target = latestVersion ? 'v' + latestVersion.version : 'latest';
+    const note = bannerBody.querySelector('p');
+    if (note) note.innerHTML = 'This will replace the worker code for <b id="update-target-name">' + escapeHtml(workerName) + '</b> while keeping the database intact.<br><span style="color:var(--text-3);font-size:var(--fs-caption);">Current: ' + escapeHtml(cur) + ' → Target: ' + escapeHtml(target) + '</span>';
+  }
+  saveState();
 }
 
 function goToCreate() {
@@ -2139,8 +2631,11 @@ async function resolveUpdateDatabase(token) {
 // ============================
 async function install() {
   if (isInstalling) return;
+  isInstalling = true;
+  goBtn.disabled = true;
   const token = config.token;
   if (!config.tokenVerified || !token) {
+    isInstalling = false; goBtn.disabled = false;
     showToast('Please verify your token first.', 'warn');
     return;
   }
@@ -2153,11 +2648,13 @@ async function install() {
     if (rawName && rawName.trim()) {
       const check = validateWorkerName(rawName);
       if (!check.valid) {
+        isInstalling = false; goBtn.disabled = false;
         showToast('Worker name is invalid: lowercase letters, numbers and hyphens only (max 40 chars).', 'warn');
         return;
       }
       const taken = await workerNameTaken(check.name, token);
       if (taken) {
+        isInstalling = false; goBtn.disabled = false;
         showToast('That worker name is already taken. Pick another or tap the dice button.', 'warn');
         return;
       }
@@ -2166,8 +2663,6 @@ async function install() {
       installState.workerName = 'nyxx-' + rname();
     }
   }
-
-  isInstalling = true;
 
   if (!isUpdate) {
     installState.completedSteps = [];
@@ -2195,8 +2690,8 @@ async function install() {
       await runStep('account', async () => {
         await delay(200);
         const acc = await api('GET', 'https://api.cloudflare.com/client/v4/accounts', token);
-        if (!cfOk(acc) || !acc.json.result.length) throw new InstallError('Could not find your account: ' + cfErr(acc), 'AUTH');
-        installState.accountId = acc.json.result[0].id;
+        if (!cfOk(acc) || !acc.json.result.length) throw new InstallError('Could not find your account: ' + cfErr(acc), cfErrCategory(acc));
+        installState.accountId = installState.accountId || acc.json.result[0].id;
         saveState();
         return true;
       });
@@ -2216,7 +2711,7 @@ async function install() {
             attempts++;
             await delay(300);
           }
-          if (!subName) subName = 'nyxx-' + randomHex(6);
+          if (!subName) throw new InstallError('Could not create a workers.dev subdomain. Open the Cloudflare dashboard once to initialize your workers.dev subdomain, then retry.', 'API');
           installState.subName = subName;
         }
         saveState();
@@ -2229,7 +2724,7 @@ async function install() {
         const dbName = 'nyxx-' + randomHex(8) + '-db';
         const dbRes = await api('POST', `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database`, token, JSON.stringify({ name: dbName }), 'application/json');
         const dbId = dbRes.json?.result?.uuid;
-        if (!dbId) throw new InstallError('D1 creation failed: ' + cfErr(dbRes), 'API');
+        if (!dbId) throw new InstallError('D1 creation failed: ' + cfErr(dbRes), cfErrCategory(dbRes));
         installState.dbId = dbId;
         installState.dbName = dbName;
         saveState();
@@ -2251,10 +2746,6 @@ async function install() {
     await runStep('fetch', async () => {
       const isRetry = installState.failedStep === 'fetch';
       const workerCode = await fetchWorkerCode(isRetry);
-      if (WORKER_JS_SHA256) {
-        const hash = await sha256(workerCode);
-        if (hash !== WORKER_JS_SHA256) throw new InstallError('worker.js integrity check failed', 'SECURITY');
-      }
       installState.workerCode = workerCode;
       const versionMatch = workerCode.match(/const\s+VERSION\s*=\s*['"]([^'"]+)['"]/);
       installState.workerVersion = versionMatch ? versionMatch[1] : null;
@@ -2303,7 +2794,7 @@ async function install() {
         'multipart/form-data; boundary=' + boundary
       );
 
-      if (!cfOk(dep)) throw new InstallError('Upload failed: ' + cfErr(dep), 'API');
+      if (!cfOk(dep)) throw new InstallError('Upload failed: ' + cfErr(dep), cfErrCategory(dep));
       saveState();
       return true;
     });
@@ -2330,14 +2821,14 @@ async function install() {
 
         const stepEl = document.getElementById('p-online');
         if (stepEl) {
-          const label = stepEl.querySelector('span:last-child');
+          const label = stepEl.querySelector('.prow-label');
           if (label) {
             let txt = STEP_LABELS.online;
             if (i > 12 && !propagationNotice) {
               txt += ' — propagating globally...';
               propagationNotice = true;
             }
-            label.textContent = txt;
+            label.firstChild.nodeValue = txt + ' ';
           }
         }
 
@@ -2500,9 +2991,19 @@ async function continueFromStep(startStep) {
           installState.panelUrl = panelUrl; saveState();
           await runStep('online', async () => {
             let online = false;
+            let propagationNotice = false;
             for (let i = 0; i < 40; i++) {
               online = await probePanelUrl(panelUrl);
               if (online) break;
+              const stepEl = document.getElementById('p-online');
+              if (stepEl) {
+                const label = stepEl.querySelector('.prow-label');
+                if (label) {
+                  let txt = STEP_LABELS.online;
+                  if (i > 12 && !propagationNotice) { txt += ' — propagating globally...'; propagationNotice = true; }
+                  label.firstChild.nodeValue = txt + ' ';
+                }
+              }
               await delay(5000);
             }
             return true;
@@ -2534,7 +3035,7 @@ function renderProgress() {
     const d = document.createElement('div');
     d.className = 'prow';
     d.id = 'p-' + s;
-    d.innerHTML = '<span class="dot"></span><span>' + (STEP_LABELS[s] || s) + '<span class="step-num">(' + (idx + 1) + '/' + STEPS.length + ')</span></span>';
+    d.innerHTML = '<span class="dot"></span><span class="prow-label">' + (STEP_LABELS[s] || s) + ' <span class="step-num">(' + (idx + 1) + '/' + STEPS.length + ')</span></span>';
     el.appendChild(d);
   });
   updateProgressBar(0);
@@ -2591,12 +3092,30 @@ function showResult(panelUrl, isUpdate) {
   const notice = document.getElementById('propagation-notice');
   if (notice) notice.style.display = 'flex';
 
+  renderQR(panelUrl);
+
   const database = document.getElementById('result-database');
   const versionLine = installState.workerVersion ? 'Nyxx v' + installState.workerVersion : '';
   database.textContent = [installState.dbName ? 'Database: ' + installState.dbName : '', versionLine].filter(Boolean).join(' · ');
 
+  installState.currentStep = 'result';
+  saveState();
+
   announce('Installation complete! Your panel is ready at ' + panelUrl);
   showToast(isUpdate ? 'Panel updated successfully!' : 'Panel deployed successfully!', 'ok');
+}
+
+function renderQR(url) {
+  const el = document.getElementById('qr-container');
+  if (!el) return;
+  el.innerHTML = '';
+  if (typeof window.qrcode !== 'function') return; // library not ready
+  try {
+    const qr = window.qrcode(0, 'M');
+    qr.addData(url);
+    qr.make();
+    el.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 4 });
+  } catch (e) { el.innerHTML = ''; }
 }
 
 function copyUrl() {
@@ -2613,6 +3132,8 @@ function copyUrl() {
 // ============================
 function resetInstallation() {
   hideErr();
+  isInstalling = false;
+  goBtn.disabled = false;
   document.getElementById('progress-card').classList.add('hidden');
   STEPS.forEach(s => setStep(s, ''));
   installState.completedSteps = [];
@@ -2695,8 +3216,23 @@ class InstallError extends Error {
   constructor(message, category) { super(message); this.category = category || 'UNKNOWN'; this.name = 'InstallError'; }
 }
 function formatError(msg, category) {
-  const prefixes = { AUTH: '🔐 ', NETWORK: '🌐 ', API: '⚙️ ', VALIDATION: '✅ ', SECURITY: '🔒 ', UNKNOWN: '❌ ' };
+  const prefixes = { AUTH: '🔐 ', NETWORK: '🌐 ', API: '⚙️ ', VALIDATION: '✅ ', SECURITY: '🔒 ', RATE: '⏱️ ', PERM: '🚫 ', NOTFOUND: '❓ ', UNKNOWN: '❌ ' };
   return (prefixes[category] || '❌ ') + msg;
+}
+function classifyHttpError(status, json, fallbackMsg) {
+  const cfMsg = (json && json.errors && json.errors[0] && json.errors[0].message) || fallbackMsg;
+  const cfCode = (json && json.errors && json.errors[0] && json.errors[0].code) || null;
+  if (status === 401) return { msg: 'Cloudflare rejected the token (' + (cfCode || 401) + '). It may be invalid or expired — re-verify it on the Account step.', category: 'AUTH' };
+  if (status === 403) return { msg: 'Permission denied (' + (cfCode || 403) + '). ' + cfMsg + ' — add the missing permission to your token.', category: 'PERM' };
+  if (status === 404) return { msg: 'Resource not found (' + (cfCode || 404) + '): ' + cfMsg, category: 'NOTFOUND' };
+  if (status === 429) {
+    const retry = (json && json.errors && json.errors[0] && json.errors[0].retry_after) || 60;
+    return { msg: 'Rate limited by Cloudflare. Wait ~' + retry + 's and retry.', category: 'RATE' };
+  }
+  if (status === 415) return { msg: 'Unsupported content type (415) — try again or switch the proxy.', category: 'API' };
+  if (status === 400) return { msg: 'Bad request (' + (cfCode || 400) + '): ' + cfMsg, category: 'API' };
+  if (status >= 500) return { msg: 'Cloudflare server error (' + status + '). Retry in a moment.', category: 'API' };
+  return { msg: cfMsg, category: 'API' };
 }
 function rname() {
   const a = ["sunny","swift","atlas","orbit","pixel","falcon","crystal","mango","coral","luna","pearl","turbo","river","comet"];
@@ -2722,8 +3258,8 @@ async function probePanelUrl(url) {
   try {
     const proxy = config.proxyUrl || DEFAULT_PROXY;
     const probeUrl = proxy + (proxy.endsWith('/') ? '' : '/') + '?url=' + encodeURIComponent(url);
-    const response = await fetch(probeUrl, { cache: 'no-store', method: 'HEAD' });
-    return [200, 204, 301, 302, 303, 307, 308, 401, 403].includes(response.status);
+    const response = await fetchWithTimeout(probeUrl, { cache: 'no-store', method: 'GET' }, 12000);
+    return [200, 204, 301, 302, 303, 307, 308, 401, 403, 405].includes(response.status);
   } catch (e) {
     return false;
   }
