@@ -13,7 +13,7 @@
 <img src="https://img.shields.io/badge/Telegram-Bot_API-26A5E4?logo=telegram&logoColor=white">
 <img src="https://img.shields.io/badge/MCP-Model_Context_Protocol-black">
 <img src="https://img.shields.io/badge/License-MIT-green">
-<a href="https://deepwiki.com/mahan07dev/Nyxx"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
+<a href="https://deepwiki.com/mahan07dev/Nyxx"><img src="https://img.shields.io/badge/Ask-DeepWiki-blue?logo=readthedocs" alt="Ask DeepWiki"></a>
 
 </div>
 
