@@ -1125,7 +1125,7 @@ body { overflow-x: hidden; }
 .media-upload-opts { margin-top: 12px; border: 1px solid var(--hairline); border-radius: var(--r-md); background: var(--surface-2); overflow: hidden; }
 .media-upload-opts > summary { cursor: pointer; padding: 10px 14px; font-size: 13px; font-weight: 600; color: var(--text-2); list-style: none; display: flex; align-items: center; gap: 8px; user-select: none; }
 .media-upload-opts > summary::-webkit-details-marker { display: none; }
-.media-upload-opts > summary::after { content: '\f078'; font-family: 'Font Awesome 6 Free'; font-weight: 900; margin-left: auto; font-size: 11px; transition: transform 0.2s; }
+.media-upload-opts > summary::after { content: '\\f078'; font-family: 'Font Awesome 6 Free'; font-weight: 900; margin-left: auto; font-size: 11px; transition: transform 0.2s; }
 .media-upload-opts[open] > summary::after { transform: rotate(180deg); }
 .media-upload-opts-body { padding: 0 14px 14px; }
 .sheet-body .switch-row { background: var(--surface-2); }
