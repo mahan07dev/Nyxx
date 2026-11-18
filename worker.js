@@ -1209,6 +1209,35 @@ body { overflow-x: hidden; }
 .nav-preset-preview { height: 28px; border-radius: 6px; background: var(--surface); border: 1px solid var(--hairline); display: flex; align-items: center; padding: 4px 6px; gap: 4px; }
 .nav-preset-preview span { height: 8px; border-radius: 4px; background: var(--fill-2); }
 .nav-preset-preview span.act { background: var(--accent); }
+
+/* ===== Searchable Command Combobox ===== */
+.cmd-ac-wrap { position: relative; display: flex; align-items: stretch; flex: 1 1 150px; min-width: 130px; }
+.cmd-ac-wrap .input { width: 100%; padding-right: 32px; }
+.cmd-ac-wrap.ac-plain .input { padding-right: 12px; }
+.cmd-ac-btn {
+    position: absolute; right: 3px; top: 50%; transform: translateY(-50%);
+    width: 28px; height: 28px; border: none; background: transparent;
+    color: var(--text-3); cursor: pointer; border-radius: 6px;
+    display: inline-flex; align-items: center; justify-content: center; font-size: 11px;
+}
+.cmd-ac-btn:hover { background: var(--fill-1); color: var(--text); }
+.cmd-ac-wrap.ac-plain .cmd-ac-btn { display: none; }
+.cmd-ac-menu {
+    position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 320;
+    background: var(--bg-elev); border: 1px solid var(--hairline);
+    border-radius: var(--r-sm); box-shadow: var(--shadow-md);
+    max-height: 220px; overflow-y: auto; padding: 4px;
+}
+.cmd-ac-item {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    width: 100%; padding: 7px 10px; border: none; background: none;
+    color: var(--text); font-size: 13px; text-align: left;
+    border-radius: 6px; cursor: pointer; font-family: inherit;
+}
+.cmd-ac-item:hover, .cmd-ac-item.active { background: var(--accent-soft); color: var(--accent); }
+.cmd-ac-item .ac-cmd { font-family: var(--mono); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cmd-ac-item .ac-meta { font-size: 11px; color: var(--text-4); flex-shrink: 0; }
+.cmd-ac-note { padding: 6px 10px; font-size: 11px; color: var(--text-4); border-top: 1px solid var(--hairline); }
 </style>
 </head>
 <body>
@@ -1960,8 +1989,10 @@ body { overflow-x: hidden; }
                             <select class="input" id="kbCh-inline-style" style="width:auto;">
                                 <option value="">Default</option><option value="primary">Blue</option><option value="success">Green</option><option value="danger">Red</option>
                             </select>
-                            <select class="input hidden" id="kbCh-inline-cmd" style="flex:1 1 120px;"><option value="">Select…</option></select>
-                            <input class="input" id="kbCh-inline-value" placeholder="https://…" style="flex:1 1 120px;min-width:110px;">
+                            <div class="cmd-ac-wrap ac-plain" id="kbCh-inline-wrap">
+                                <input class="input" id="kbCh-inline-value" data-cmd-ac="command" data-ac-enabled="0" placeholder="https://…" autocomplete="off">
+                                <button type="button" class="cmd-ac-btn" tabindex="-1" aria-label="Browse commands"><i class="fa-solid fa-chevron-down"></i></button>
+                            </div>
                             <select class="input" id="kbCh-inline-row" style="width:auto;"><option value="auto">Auto row</option><option value="new">+ New row</option></select>
                             <button type="button" class="btn btn-primary btn-sm" id="kbCh-inline-add-btn" onclick="kbCh.inlineAdd()"><i class="fa-solid fa-plus"></i></button>
                             <button type="button" class="btn btn-gray btn-sm" onclick="kbCh.addRow('inline')"><i class="fa-solid fa-grip-lines"></i> + Row</button>
@@ -3382,7 +3413,14 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
         </div>
         <div class="sheet-body">
             <div class="field"><label class="field-label">Command</label><input class="input" id="cmd-name" placeholder="/start or /help 123" style="font-family:var(--mono);"><span class="field-hint">Include the leading slash. Supports exact argument variants too, e.g. <code>/help 123</code> or <code>/start vip</code> (for <code>t.me/bot?start=vip</code>).</span></div>
-            <div class="field"><label class="field-label">Parent folder</label><select class="input" id="cmd-parent"><option value="">None (root)</option></select><span class="field-hint">Group related commands under a folder.</span></div>
+            <div class="field">
+                <label class="field-label">Parent folder</label>
+                <div class="cmd-ac-wrap">
+                    <input class="input mono" id="cmd-parent" data-cmd-ac="parent" placeholder="None (root) — type to search or enter /folder" autocomplete="off">
+                    <button type="button" class="cmd-ac-btn" tabindex="-1" aria-label="Browse folders"><i class="fa-solid fa-chevron-down"></i></button>
+                </div>
+                <span class="field-hint">Leave blank for root, pick an existing command, or type a folder name manually.</span>
+            </div>
             <div class="field"><label class="field-label">Reply type</label>
                 <select class="input" id="cmd-type" onchange="toggleMedia()">
                     <option value="text">Text</option>
@@ -3448,8 +3486,10 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                     <select class="input" id="kbCmd-inline-style" style="width:auto;" title="Button color">
                         <option value="">Default</option><option value="primary">Blue</option><option value="success">Green</option><option value="danger">Red</option>
                     </select>
-                    <select class="input" id="kbCmd-inline-cmd" style="flex:1 1 120px;min-width:110px;"><option value="">Select…</option></select>
-                    <input class="input hidden" id="kbCmd-inline-value" placeholder="Value / URL" style="flex:1 1 120px;min-width:110px;">
+                    <div class="cmd-ac-wrap" id="kbCmd-inline-wrap">
+                        <input class="input" id="kbCmd-inline-value" data-cmd-ac="command" placeholder="/command (search or type custom)" autocomplete="off">
+                        <button type="button" class="cmd-ac-btn" tabindex="-1" aria-label="Browse commands"><i class="fa-solid fa-chevron-down"></i></button>
+                    </div>
                     <select class="input" id="kbCmd-inline-row" style="width:auto;" title="Target row"><option value="auto">Auto row</option><option value="new">+ New row</option></select>
                     <button type="button" class="btn btn-primary btn-sm" id="kbCmd-inline-add-btn" onclick="kbCmd.inlineAdd()" title="Add / Save button"><i class="fa-solid fa-plus"></i></button>
                     <button type="button" class="btn btn-gray btn-sm" onclick="kbCmd.addRow('inline')" title="Add an empty row"><i class="fa-solid fa-grip-lines"></i> + Row</button>
@@ -3460,8 +3500,10 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
             <div id="cmd-reply-section" class="hidden" style="margin-bottom:16px;">
                 <div class="row" style="margin-bottom:8px;gap:6px;flex-wrap:wrap;">
                     <input class="input" id="kbCmd-reply-label" placeholder="Button text" style="flex:1.2 1 130px;min-width:110px;">
-                    <select class="input" id="kbCmd-reply-cmd" style="flex:1 1 120px;min-width:110px;"><option value="">Run command…</option></select>
-                    <input class="input" id="kbCmd-reply-value" placeholder="Or /custom" style="flex:1 1 110px;min-width:100px;">
+                    <div class="cmd-ac-wrap">
+                        <input class="input" id="kbCmd-reply-value" data-cmd-ac="command" placeholder="Run /command (search or type custom)" autocomplete="off">
+                        <button type="button" class="cmd-ac-btn" tabindex="-1" aria-label="Browse commands"><i class="fa-solid fa-chevron-down"></i></button>
+                    </div>
                     <select class="input" id="kbCmd-reply-style" style="width:auto;" title="Button color">
                         <option value="">Default</option><option value="primary">Blue</option><option value="success">Green</option><option value="danger">Red</option>
                     </select>
@@ -3580,8 +3622,10 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                         <select class="input" id="kbMe-inline-style" style="width:auto;" title="Button color">
                             <option value="">Default</option><option value="primary">Blue</option><option value="success">Green</option><option value="danger">Red</option>
                         </select>
-                        <select class="input" id="kbMe-inline-cmd" style="flex:1 1 120px;min-width:110px;"><option value="">Select…</option></select>
-                        <input class="input hidden" id="kbMe-inline-value" placeholder="Value / URL" style="flex:1 1 120px;min-width:110px;">
+                        <div class="cmd-ac-wrap" id="kbMe-inline-wrap">
+                            <input class="input" id="kbMe-inline-value" data-cmd-ac="command" placeholder="/command (search or type custom)" autocomplete="off">
+                            <button type="button" class="cmd-ac-btn" tabindex="-1" aria-label="Browse commands"><i class="fa-solid fa-chevron-down"></i></button>
+                        </div>
                         <select class="input" id="kbMe-inline-row" style="width:auto;" title="Target row"><option value="auto">Auto row</option><option value="new">+ New row</option></select>
                         <button type="button" class="btn btn-primary btn-sm" id="kbMe-inline-add-btn" onclick="kbMe.inlineAdd()" title="Add / Save button"><i class="fa-solid fa-plus"></i></button>
                         <button type="button" class="btn btn-gray btn-sm" onclick="kbMe.addRow('inline')" title="Add an empty row"><i class="fa-solid fa-grip-lines"></i> + Row</button>
@@ -3592,8 +3636,10 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                 <div id="msg-reply-section" class="hidden">
                     <div class="row" style="margin-bottom:8px;gap:6px;flex-wrap:wrap;">
                         <input class="input" id="kbMe-reply-label" placeholder="Button text" style="flex:1.2 1 130px;min-width:110px;">
-                        <select class="input" id="kbMe-reply-cmd" style="flex:1 1 120px;min-width:110px;"><option value="">Run command…</option></select>
-                        <input class="input" id="kbMe-reply-value" placeholder="Or /custom" style="flex:1 1 110px;min-width:100px;">
+                        <div class="cmd-ac-wrap">
+                            <input class="input" id="kbMe-reply-value" data-cmd-ac="command" placeholder="Run /command (search or type custom)" autocomplete="off">
+                            <button type="button" class="cmd-ac-btn" tabindex="-1" aria-label="Browse commands"><i class="fa-solid fa-chevron-down"></i></button>
+                        </div>
                         <select class="input" id="kbMe-reply-style" style="width:auto;" title="Button color">
                             <option value="">Default</option><option value="primary">Blue</option><option value="success">Green</option><option value="danger">Red</option>
                         </select>
@@ -3971,6 +4017,34 @@ function dismissToast(t) {
         setTimeout(function () { try { t.remove(); } catch (e) {} }, 300);
     }
 }
+(function watchErrorBoxes() {
+    if (typeof MutationObserver === 'undefined') return;
+    var pending = new Set();
+    var scheduled = false;
+    function flush() {
+        scheduled = false;
+        pending.forEach(function (el) {
+            if (el.classList.contains('show')) {
+                var msg = (el.textContent || '').trim();
+                if (msg) toast(msg, 'error');
+            }
+        });
+        pending.clear();
+    }
+    var obs = new MutationObserver(function (mutations) {
+        for (var i = 0; i < mutations.length; i++) {
+            var m = mutations[i];
+            var target = m.target && m.target.nodeType === 1 ? m.target : (m.target && m.target.parentElement);
+            var box = target && target.closest ? target.closest('.err-box') : null;
+            if (!box || !box.classList.contains('show')) continue;
+            pending.add(box);
+            if (!scheduled) { scheduled = true; Promise.resolve().then(flush); }
+        }
+    });
+    document.querySelectorAll('.err-box').forEach(function (el) {
+        obs.observe(el, { attributes: true, attributeFilter: ['class'], childList: true, characterData: true, subtree: true });
+    });
+})();
 
 var PUBLIC_ENDPOINTS = ['/api/status', '/api/setup', '/api/login', '/api/check_session', '/api/version'];
 function isPublicEndpoint(path) {
@@ -5096,11 +5170,13 @@ async function openCommandModal(cmd, parent, cloneMode) {
     editingCmd = (!cloneMode && cmd) ? cmd : null;
     var srcCmd = cmd || null;
     var parentSel = $('cmd-parent');
-    parentSel.innerHTML = '<option value="">None (root)</option>';
-    commands.forEach(function (c) {
-        if (editingCmd && (c.command === editingCmd.command)) return;
-        var o = document.createElement('option'); o.value = c.command; o.textContent = c.command; parentSel.appendChild(o);
-    });
+    if (parentSel && parentSel.tagName === 'SELECT') {
+        parentSel.innerHTML = '<option value="">None (root)</option>';
+        commands.forEach(function (c) {
+            if (editingCmd && (c.command === editingCmd.command)) return;
+            var o = document.createElement('option'); o.value = c.command; o.textContent = c.command; parentSel.appendChild(o);
+        });
+    }
     $('cmd-error').classList.remove('show');
     kbCmd.reset();
     cmdAttachments = [];
@@ -5211,7 +5287,7 @@ async function saveCommand() {
 
     var payload = {
         command: $('cmd-name').value.trim(),
-        parent: $('cmd-parent').value || null,
+        parent: ($('cmd-parent').value || '').trim() || null,
         response_type: mediaType,
         content: $('cmd-content').value.trim(),
         media_url: mediaUrl,
@@ -7946,11 +8022,12 @@ function createKeyboardBuilder(prefix, opts) {
     function inlineAdd() {
         var lbl = el('inline-label').value.trim();
         var type = el('inline-type').value;
-        var val = type === 'command' ? el('inline-cmd').value : el('inline-value').value.trim();
+        var val = el('inline-value').value.trim();
+        if (!val && type === 'command' && el('inline-cmd')) val = el('inline-cmd').value;
         var style = el('inline-style') ? el('inline-style').value : '';
         var rowTarget = el('inline-row') ? el('inline-row').value : 'auto';
         if (!lbl) { toast('Enter a label.', 'error'); return; }
-        if (!val) { toast('Choose a command or enter a value.', 'error'); return; }
+        if (!val) { toast('Enter a command or value.', 'error'); return; }
         if (type === 'command' && val.charAt(0) !== '/') val = '/' + val;
 
         var editingValid = editingInline && inline[editingInline.ri] && inline[editingInline.ri][editingInline.bi];
@@ -7963,7 +8040,8 @@ function createKeyboardBuilder(prefix, opts) {
         }
         var addBtn = el('inline-add-btn');
         if (addBtn) addBtn.innerHTML = '<i class="fa-solid fa-plus"></i>';
-        el('inline-label').value = ''; el('inline-value').value = ''; el('inline-cmd').value = '';
+        el('inline-label').value = ''; el('inline-value').value = '';
+        if (el('inline-cmd')) el('inline-cmd').value = '';
         if (el('inline-style')) el('inline-style').value = '';
         renderInline();
     }
@@ -7971,7 +8049,8 @@ function createKeyboardBuilder(prefix, opts) {
     function replyAdd() {
         var lbl = el('reply-label').value.trim();
         if (!lbl) { toast('Enter button text.', 'error'); return; }
-        var act = el('reply-cmd').value || el('reply-value').value.trim();
+        var act = el('reply-value').value.trim();
+        if (!act && el('reply-cmd')) act = el('reply-cmd').value;
         var style = el('reply-style') ? el('reply-style').value : '';
         var rowTarget = el('reply-row') ? el('reply-row').value : 'auto';
         if (act && act.charAt(0) !== '/') act = '/' + act;
@@ -7990,7 +8069,8 @@ function createKeyboardBuilder(prefix, opts) {
         }
         var addBtn = el('reply-add-btn');
         if (addBtn) addBtn.innerHTML = '<i class="fa-solid fa-plus"></i>';
-        el('reply-label').value = ''; el('reply-value').value = ''; el('reply-cmd').value = '';
+        el('reply-label').value = ''; el('reply-value').value = '';
+        if (el('reply-cmd')) el('reply-cmd').value = '';
         if (el('reply-style')) el('reply-style').value = '';
         renderReply();
     }
@@ -8071,8 +8151,8 @@ function createKeyboardBuilder(prefix, opts) {
         var b = inline[ri][bi];
         el('inline-label').value = b.text;
         el('inline-type').value = b.type;
-        if (b.type === 'command') { el('inline-cmd').value = b.value; el('inline-value').value = ''; }
-        else { el('inline-value').value = b.value; el('inline-cmd').value = ''; }
+        el('inline-value').value = b.value || '';
+        if (el('inline-cmd')) el('inline-cmd').value = b.type === 'command' ? (b.value || '') : '';
         if (el('inline-style')) el('inline-style').value = b.style || '';
         if (typeof kbInlineTypeToggle === 'function') kbInlineTypeToggle(prefix);
         editingInline = { ri: ri, bi: bi };
@@ -8261,10 +8341,106 @@ var kbCmd = createKeyboardBuilder('kbCmd');
 var kbMe = createKeyboardBuilder('kbMe');
 function kbInlineTypeToggle(prefix) {
     var type = $(prefix + '-inline-type').value;
-    show($(prefix + '-inline-cmd'), type === 'command');
-    show($(prefix + '-inline-value'), type !== 'command');
-    if (type !== 'command') $(prefix + '-inline-value').placeholder = type === 'url' ? 'https://…' : 'Callback data';
+    var valEl = $(prefix + '-inline-value');
+    var wrap = $(prefix + '-inline-wrap');
+    var isCmd = type === 'command';
+    if (valEl) {
+        valEl.dataset.acEnabled = isCmd ? '1' : '0';
+        valEl.placeholder = isCmd ? '/command (search or type custom)' : (type === 'url' ? 'https://…' : 'Callback data');
+    }
+    if (wrap) {
+        wrap.classList.toggle('ac-plain', !isCmd);
+        var menu = wrap.querySelector('.cmd-ac-menu');
+        if (!isCmd && menu) menu.classList.add('hidden');
+    }
 }
+(function initCommandAutocomplete() {
+    var MAX_RESULTS = 60;
+    function closeAllAcMenus(except) {
+        document.querySelectorAll('.cmd-ac-menu').forEach(function (m) {
+            if (m !== except) m.classList.add('hidden');
+        });
+    }
+    function renderAcMenu(input, wrap, menu) {
+        if (input.dataset.acEnabled === '0') { menu.classList.add('hidden'); return; }
+        var mode = input.dataset.cmdAc || 'command';
+        var q = (input.value || '').toLowerCase().trim();
+        var list = (commands || []).slice();
+        if (mode === 'parent' && typeof editingCmd === 'object' && editingCmd) {
+            list = list.filter(function (c) { return c.command !== editingCmd.command; });
+        }
+        if (q) {
+            list = list.filter(function (c) {
+                return String(c.command || '').toLowerCase().indexOf(q) >= 0 ||
+                    String(c.content || '').toLowerCase().indexOf(q) >= 0;
+            });
+            list.sort(function (a, b) {
+                var aStart = String(a.command || '').toLowerCase().indexOf(q) === 0 ? 0 : 1;
+                var bStart = String(b.command || '').toLowerCase().indexOf(q) === 0 ? 0 : 1;
+                return aStart - bStart;
+            });
+        }
+        var total = list.length;
+        var shown = list.slice(0, MAX_RESULTS);
+        var html = '';
+        if (mode === 'parent') {
+            html += '<button type="button" class="cmd-ac-item" data-val="">' +
+                '<span class="ac-cmd">(None — Root)</span><span class="ac-meta">top level</span></button>';
+        }
+        if (!shown.length && mode !== 'parent') {
+            html = '<div class="cmd-ac-note">No matching commands — press + to use "' + esc(input.value.trim() || '/custom') + '" manually.</div>';
+        } else {
+            html += shown.map(function (c) {
+                var meta = (c.parent ? ('in ' + c.parent + ' · ') : '') + (c.response_type || 'text');
+                return '<button type="button" class="cmd-ac-item" data-val="' + esc(c.command) + '">' +
+                    '<span class="ac-cmd">' + esc(c.command) + '</span>' +
+                    '<span class="ac-meta">' + esc(meta) + '</span></button>';
+            }).join('');
+            if (total > MAX_RESULTS) {
+                html += '<div class="cmd-ac-note">Showing ' + MAX_RESULTS + ' of ' + total + ' commands — type to narrow down.</div>';
+            }
+        }
+        menu.innerHTML = html;
+        menu.classList.remove('hidden');
+        closeAllAcMenus(menu);
+    }
+    document.querySelectorAll('input[data-cmd-ac]').forEach(function (input) {
+        var wrap = input.closest('.cmd-ac-wrap');
+        if (!wrap) return;
+        var menu = document.createElement('div');
+        menu.className = 'cmd-ac-menu hidden';
+        wrap.appendChild(menu);
+        var btn = wrap.querySelector('.cmd-ac-btn');
+
+        input.addEventListener('focus', function () {
+            if (!commands.length && typeof loadCommands === 'function') loadCommands();
+            renderAcMenu(input, wrap, menu);
+        });
+        input.addEventListener('input', function () { renderAcMenu(input, wrap, menu); });
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') { menu.classList.add('hidden'); }
+        });
+        if (btn) {
+            btn.addEventListener('mousedown', function (e) { e.preventDefault(); });
+            btn.addEventListener('click', function () {
+                if (!menu.classList.contains('hidden')) { menu.classList.add('hidden'); return; }
+                input.focus();
+                renderAcMenu(input, wrap, menu);
+            });
+        }
+        menu.addEventListener('mousedown', function (e) { e.preventDefault(); });
+        menu.addEventListener('click', function (e) {
+            var item = e.target.closest('.cmd-ac-item');
+            if (!item) return;
+            input.value = item.dataset.val || '';
+            menu.classList.add('hidden');
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+    });
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('.cmd-ac-wrap')) closeAllAcMenus(null);
+    });
+})();
 function kbSettingChanged(prefix) {
     var kb = { kbCmd: kbCmd, kbMe: kbMe }[prefix];
     if (kb) kb.syncSettings();
