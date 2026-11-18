@@ -1107,7 +1107,8 @@ body { overflow-x: hidden; }
 .media-stats-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
 .media-stat-pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: var(--r-pill); background: var(--surface); border: 1px solid var(--hairline); font-size: 12px; color: var(--text-3); }
 .media-stat-pill b { color: var(--text); }
-
+</style>
+<style id="nyxx-v496-ui">
 /* ===== Mobile & Command Row Polish ===== */
 .cmd-row { flex-wrap: wrap; row-gap: 8px; }
 .cmd-badges { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
