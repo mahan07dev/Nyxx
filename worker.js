@@ -3360,11 +3360,15 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                     <input type="password" class="input" id="up-token" placeholder="Workers Scripts:Edit" autocomplete="off">
                     <button type="button" class="pw-toggle" onclick="togglePw('up-token',this)" aria-label="Show or hide"><i class="fa-regular fa-eye"></i></button>
                 </div>
-                <button class="btn btn-gray btn-sm" onclick="openTokenGen()">
+                <button type="button" class="btn btn-primary btn-sm" id="cf-token-save-btn" onclick="saveCfApiToken()">
+                    <i class="fa-solid fa-check"></i> Save &amp; verify
+                </button>
+                <button type="button" class="btn btn-gray btn-sm" onclick="openTokenGen()">
                     <i class="fa-solid fa-key"></i> Get token
                 </button>
             </div>
-            <span class="field-hint">Needs the <b>Workers Scripts:Edit</b> permission. Only used for this update, never shared.</span>
+            <span class="field-hint">Needs <b>Workers Scripts:Edit</b> (and Account Settings:Read). Saved in D1 for future 1-click updates.</span>
+            <div id="cf-token-status" class="small" style="margin-top:8px;"></div>
         </div>
     </div>
 </div>
@@ -8626,6 +8630,7 @@ var cfOAuthStatus = null;
 
 function cfSetMethod(m) {
   cfMethod = m;
+  try { localStorage.setItem('nyxx-cf-method', m); } catch (e) {}
   document.querySelectorAll('#cf-method button').forEach(function (b) {
     b.classList.toggle('active', b.dataset.v === m);
   });
@@ -8651,7 +8656,7 @@ function renderCfOAuthStatus() {
 
   if (!s.configured) {
     if (label) label.textContent = 'Not configured';
-    if (sub) sub.innerHTML = 'OAuth is not enabled on this worker. Add a <code>CF_OAUTH.CLIENT_ID</code> in <code>worker.js</code> and redeploy.';
+    if (sub) sub.innerHTML = 'OAuth is not enabled on this worker. Set <code>RELAY_BASE</code> or use an API token.';
     if (connect) { connect.disabled = true; connect.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> <span>Connect</span>'; }
     if (disc) disc.classList.add('hidden');
     if (tile) tile.classList.remove('connected');
@@ -8664,11 +8669,18 @@ function renderCfOAuthStatus() {
     var parts = [];
     if (s.account_id)  parts.push('Account ' + String(s.account_id).slice(0, 8) + '…');
     if (s.script_name) parts.push('Script ' + s.script_name);
-    if (s.expires_in)  parts.push('Expires in ' + Math.round(s.expires_in / 60000) + ' min');
-    if (sub) sub.textContent = parts.join(' · ') || 'Connected.';
+    if (s.expires_in > 0) parts.push('Expires in ' + Math.max(1, Math.round(s.expires_in / 60000)) + 'm');
+    parts.push(s.has_refresh_token ? 'Auto-refresh ON' : 'No refresh token');
+    if (sub) sub.textContent = parts.join(' · ');
     if (connect) connect.innerHTML = '<i class="fa-solid fa-rotate"></i> <span>Reconnect</span>';
     if (disc) disc.classList.remove('hidden');
     if (tile) tile.classList.add('connected');
+  } else if (s.needs_reconnect) {
+    if (label) label.textContent = 'Session expired — reconnect required';
+    if (sub) sub.textContent = s.refresh_error || 'Access token expired (no refresh token or grant revoked). Click Reconnect.';
+    if (connect) connect.innerHTML = '<i class="fa-solid fa-rotate"></i> <span>Reconnect</span>';
+    if (disc) disc.classList.remove('hidden');
+    if (tile) tile.classList.remove('connected');
   } else {
     if (label) label.textContent = 'Not connected';
     if (sub) sub.textContent = 'Connect your Cloudflare account to update without pasting a token.';
@@ -8676,6 +8688,25 @@ function renderCfOAuthStatus() {
     if (disc) disc.classList.add('hidden');
     if (tile) tile.classList.remove('connected');
   }
+}
+
+async function saveCfApiToken() {
+  var inp = $('up-token');
+  var status = $('cf-token-status');
+  var token = inp ? inp.value.trim() : '';
+  if (!token) { toast('Paste an API token first.', 'error'); return; }
+  await withBusy($('cf-token-save-btn'), async function () {
+    if (status) status.innerHTML = '<span class="mini-spinner"></span> Verifying &amp; saving…';
+    try {
+      var d = await api('POST', '/api/update/validate', { token: token, saveToken: true });
+      if (!d.valid) throw new Error(d.error || 'Invalid token.');
+      if (inp) { inp.value = ''; inp.placeholder = 'Token saved (' + (d.scriptName || 'verified') + ') — type to replace'; }
+      if (status) status.innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Verified &amp; saved for script <code>' + esc(d.scriptName) + '</code>.</span>';
+      toast('Cloudflare API token saved.');
+    } catch (e) {
+      if (status) status.innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>';
+    }
+  });
 }
 
 async function startCfOAuth() {
@@ -8719,8 +8750,11 @@ async function loadUpdateTab() {
     await loadCfOAuthStatus();
   }
 
-  // Pick a sensible default method.
-  cfSetMethod('oauth');
+  var savedMethod = null;
+  try { savedMethod = localStorage.getItem('nyxx-cf-method'); } catch (e) {}
+  if (cfOAuthStatus && cfOAuthStatus.connected) cfSetMethod('oauth');
+  else if (savedMethod === 'token' || (cfOAuthStatus && cfOAuthStatus.cf_token_set && !cfOAuthStatus.connected)) cfSetMethod('token');
+  else cfSetMethod('oauth');
 }
 
 function updateProgress(pct, msg) {
@@ -16344,46 +16378,86 @@ async function clearCfOAuth(db) {
   const ph = keys.map(() => '?').join(', ');
   await db.prepare(`DELETE FROM settings WHERE key IN (${ph})`).bind(...keys).run();
 }
-async function refreshCfOAuthToken(db, tokens) {
+function normalizeCfExpiresAt(tokens) {
+  if (tokens && tokens.expires_in && !tokens.expires_at) {
+    return Date.now() + Number(tokens.expires_in) * 1000;
+  }
+  const n = Number(tokens && tokens.expires_at) || 0;
+  if (!n) return 0;
+  return n < 1e12 ? n * 1000 : n;
+}
+
+async function refreshCfOAuthToken(db, tokens, env) {
   const clientId = tokens.client_id || CF_OAUTH.CLIENT_ID;
-  if (!tokens.refresh_token || !clientId) return null;
+  if (!tokens.refresh_token || !clientId) {
+    return { ok: false, error: 'No refresh token stored. Click Reconnect.' };
+  }
+
+  let res = null;
+  let json = null;
+
+  // 1) Direct PKCE refresh (works immediately with proxy.js public client, 1 hop)
   try {
     const body = new URLSearchParams({
       grant_type:    'refresh_token',
       refresh_token: tokens.refresh_token,
       client_id:     clientId,
     });
-    const res = await fetch(CF_OAUTH.TOKEN_URL, {
+    res = await fetch(CF_OAUTH.TOKEN_URL, {
       method:  'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' },
       body:    body.toString(),
     });
-    const json = await res.json().catch(() => null);
-    if (!res.ok || !json || !json.access_token) {
-      // Only drop the session when Cloudflare rejects the refresh token; keep it on 5xx/outages.
-      if (res.status >= 400 && res.status < 500) await clearCfOAuth(db);
-      return null;
+    json = await res.json().catch(() => null);
+  } catch (e) { res = null; }
+
+  // 2) Fallback to relay /oauth/refresh if direct fails with invalid_client (e.g. fork uses a confidential client_secret)
+  if ((!res || !res.ok) && json && json.error === 'invalid_client' && env && relayBase(env)) {
+    try {
+      const rRes = await fetch(`${relayBase(env)}/oauth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ refresh_token: tokens.refresh_token, client_id: clientId }),
+      });
+      if (rRes.status !== 404 && rRes.status !== 405) {
+        res = rRes;
+        json = await rRes.json().catch(() => null);
+      }
+    } catch (e) {}
+  }
+
+  if (!res || !res.ok || !json || !json.access_token) {
+    const errCode = (json && (json.error_description || json.error)) || (res ? `HTTP ${res.status}` : 'Network error');
+    // Only wipe stored tokens when Cloudflare explicitly revokes the refresh token
+    if (json && json.error === 'invalid_grant') {
+      await clearCfOAuth(db);
     }
-    const next = {
-      access_token:  json.access_token,
-      refresh_token: json.refresh_token || tokens.refresh_token,
-      expires_at:    json.expires_in ? Date.now() + Number(json.expires_in) * 1000 : 0,
-      scope:         json.scope || tokens.scope,
-      account_id:    tokens.account_id,
-      script_name:   tokens.script_name,
-      client_id:     clientId,
-    };
-    await saveCfOAuth(db, next);
-    return next;
-  } catch (e) { return null; }
+    return { ok: false, error: String(errCode) };
+  }
+
+  const next = {
+    access_token:  json.access_token,
+    refresh_token: json.refresh_token || tokens.refresh_token,
+    expires_at:    normalizeCfExpiresAt(json) || (Date.now() + 3600 * 1000),
+    scope:         json.scope || tokens.scope,
+    account_id:    tokens.account_id,
+    script_name:   tokens.script_name,
+    client_id:     clientId,
+  };
+  await saveCfOAuth(db, next);
+  return { ok: true, tokens: next };
 }
-async function getValidCfOAuthToken(env) {
+
+async function getValidCfOAuthToken(env, forceRefresh) {
   if (!env.DB) return null;
   await initializeDatabase(env.DB);
   const tokens = await getStoredCfOAuth(env.DB);
   if (!tokens.access_token) return null;
-  if (tokens.expires_at && Date.now() > tokens.expires_at - 60000) {
-    return await refreshCfOAuthToken(env.DB, tokens);
+  const expired = !tokens.expires_at || Date.now() > (tokens.expires_at - 120000);
+  if (forceRefresh || expired) {
+    if (!tokens.refresh_token) return expired ? null : tokens;
+    const r = await refreshCfOAuthToken(env.DB, tokens, env);
+    return r.ok ? r.tokens : null;
   }
   return tokens;
 }
@@ -16430,7 +16504,7 @@ async function handleCfOAuthCallback(request, env) {
   await saveCfOAuth(env.DB, {
     access_token: tokens.access_token,
     refresh_token: tokens.refresh_token || '',
-    expires_at: tokens.expires_at,
+    expires_at: normalizeCfExpiresAt(tokens) || (Date.now() + 3600 * 1000),
     account_id: tokens.account_id,
     script_name: tokens.script_name,
     client_id: tokens.client_id || '',
@@ -16443,15 +16517,29 @@ async function handleCfOAuthStatus(request, env) {
   if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
   try {
     await initializeDatabase(env.DB);
-    const t = await getStoredCfOAuth(env.DB);
+    let t = await getStoredCfOAuth(env.DB);
+    let refreshError = '';
+    const isExpired = !!(t.access_token && (!t.expires_at || Date.now() > (t.expires_at - 120000)));
+    if (isExpired && t.refresh_token) {
+      const ref = await refreshCfOAuthToken(env.DB, t, env);
+      if (ref.ok) t = ref.tokens;
+      else refreshError = ref.error || 'Refresh failed';
+    }
+    const nowValid = !!(t.access_token && t.expires_at && t.expires_at > Date.now());
+    const needsReconnect = !!(t.access_token && !nowValid);
+    const cfTokenSet = !!(await getSetting(env.DB, 'cf_api_token'));
     return apiJson({
-      success:    true,
-      configured: !!relayBase(env),
-      connected:  !!t.access_token && (!t.expires_at || t.expires_at > Date.now() || !!(t.refresh_token && (t.client_id || CF_OAUTH.CLIENT_ID))),
-      account_id: t.account_id,
-      script_name:t.script_name,
-      expires_at: t.expires_at || 0,
-      expires_in: t.expires_at ? Math.max(0, t.expires_at - Date.now()) : 0,
+      success:           true,
+      configured:        !!relayBase(env),
+      connected:         nowValid,
+      needs_reconnect:   needsReconnect,
+      has_refresh_token: !!t.refresh_token,
+      refresh_error:     refreshError,
+      cf_token_set:      cfTokenSet,
+      account_id:        t.account_id,
+      script_name:       t.script_name,
+      expires_at:        t.expires_at || 0,
+      expires_in:        t.expires_at ? Math.max(0, t.expires_at - Date.now()) : 0,
     });
   } catch (err) { return internalError(err); }
 }
@@ -16498,11 +16586,20 @@ async function validateCloudflareToken(request, env) {
       return apiJson({ valid: false, error: 'No Cloudflare credentials available.' }, 400);
     }
 
-    const accountsRes  = await fetch('https://api.cloudflare.com/client/v4/accounts',
+    let accountsRes  = await fetch('https://api.cloudflare.com/client/v4/accounts',
       { headers: { 'Authorization': 'Bearer ' + token } });
+    if (accountsRes.status === 401 && usingOAuth && env.DB) {
+      const refreshed = await getValidCfOAuthToken(env, true);
+      if (refreshed && refreshed.access_token) {
+        token = refreshed.access_token;
+        accountsRes = await fetch('https://api.cloudflare.com/client/v4/accounts',
+          { headers: { 'Authorization': 'Bearer ' + token } });
+      }
+    }
     const accountsData = await accountsRes.json();
     if (!accountsData.success || !Array.isArray(accountsData.result) || !accountsData.result.length) {
-      return apiJson({ valid: false, error: 'No Cloudflare accounts are attached to this token.' }, 400);
+      const msg = (accountsData.errors && accountsData.errors[0] && accountsData.errors[0].message) || 'No Cloudflare accounts are attached to this token.';
+      return apiJson({ valid: false, error: msg }, 400);
     }
 
     let storedAcc = '', storedScript = '';
@@ -16536,6 +16633,9 @@ async function validateCloudflareToken(request, env) {
       await initializeDatabase(env.DB);
       await setSetting(env.DB, 'cf_account_id', accountId);
       if (scriptName) await setSetting(env.DB, 'cf_script_name', scriptName);
+      if (!usingOAuth && body.token && body.saveToken) {
+        await setSetting(env.DB, 'cf_api_token', String(body.token).trim());
+      }
       if (usingOAuth) {
         const t = await getStoredCfOAuth(env.DB);
         await saveCfOAuth(env.DB, { ...t, account_id: accountId, script_name: scriptName || t.script_name });

@@ -311,6 +311,7 @@ async function handleRequest(request, env) {
   if (url.pathname === '/oauth/continue') return handleRelayOAuthContinue(request, env);
   if (url.pathname === '/oauth/callback') return handleRelayOAuthCallback(request, env);
   if (url.pathname === '/oauth/exchange') return handleRelayExchange(request, env);
+  if (url.pathname === '/oauth/refresh')  return handleRelayRefresh(request, env);
 
   // ---- CORS forwarding proxy ----
   const targetParam = url.searchParams.get('url');
@@ -476,7 +477,9 @@ function relayClientId(env) {
   return (env && env.CF_OAUTH_CLIENT_ID) || RELAY_OAUTH_KEYS.CLIENT_ID_FALLBACK;
 }
 function relayWantsRefresh(env) {
-  return !!env && String(env.RELAY_REQUEST_REFRESH).toLowerCase() === 'true';
+  // Enabled by default; set RELAY_REQUEST_REFRESH="false" to opt out.
+  // If an OAuth client rejects offline_access, the callback already retries once with &norefresh=1.
+  return !(env && String(env.RELAY_REQUEST_REFRESH).toLowerCase() === 'false');
 }
 
 // Returns the normalized callback URL, or null if it is not acceptable.
@@ -769,5 +772,37 @@ async function handleRelayExchange(request, env) {
     account_id: row.account_id,
     script_name: row.script_name,
     client_id: relayClientId(env), // public; lets tenants refresh without hardcoding it
+  });
+}
+
+async function handleRelayRefresh(request, env) {
+  if (request.method !== 'POST') return relayJson({ error: 'Method not allowed.' }, 405);
+  const { refresh_token, client_id } = await request.json().catch(() => ({}));
+  if (typeof refresh_token !== 'string' || !refresh_token) {
+    return relayJson({ error: 'Missing refresh_token.' }, 400);
+  }
+  const params = {
+    grant_type: 'refresh_token',
+    refresh_token,
+    client_id: (typeof client_id === 'string' && client_id) ? client_id : relayClientId(env),
+  };
+  if (env && env.CF_OAUTH_CLIENT_SECRET) params.client_secret = env.CF_OAUTH_CLIENT_SECRET;
+  const tokenRes = await fetch(RELAY_OAUTH_KEYS.TOKEN_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' },
+    body: new URLSearchParams(params).toString(),
+  });
+  const tokenData = await tokenRes.json().catch(() => ({}));
+  if (!tokenRes.ok || !tokenData.access_token) {
+    return relayJson({
+      error: tokenData.error || 'refresh_failed',
+      error_description: tokenData.error_description || '',
+    }, tokenRes.status >= 400 ? tokenRes.status : 400);
+  }
+  return relayJson({
+    access_token: tokenData.access_token,
+    refresh_token: tokenData.refresh_token || refresh_token,
+    expires_in: tokenData.expires_in || 3600,
+    expires_at: tokenData.expires_in ? Date.now() + Number(tokenData.expires_in) * 1000 : 0,
   });
 }
