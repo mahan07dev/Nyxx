@@ -5172,8 +5172,8 @@ async function copyCommandLink(name) {
     var textToCopy = name;
     try {
         var st = await api('GET', '/api/status');
-        if (st && st.bot_username && /^\/start\s+([^\s]+)$/i.test(name)) {
-            var payload = name.replace(/^\/start\s+/i, '').trim();
+        if (st && st.bot_username && /^\\/start\\s+([^\\s]+)$/i.test(name)) {
+            var payload = name.replace(/^\\/start\\s+/i, '').trim();
             textToCopy = 'https://t.me/' + st.bot_username + '?start=' + encodeURIComponent(payload);
         }
     } catch (e) {}
