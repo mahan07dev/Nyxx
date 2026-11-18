@@ -1,8 +1,8 @@
 // ============================================================================
-// NYXX — v4.9.5
+// NYXX — v4.9.6
 // Telegram bot builder + management dashboard for Cloudflare Workers + D1.
 // ============================================================================
-const VERSION = '4.9.5';
+const VERSION = '4.9.6';
 
 const RELAY_BASE = 'https://nyxx-proxy.nova-06272b19.workers.dev';
 // Forks: set the RELAY_BASE variable (or edit the line above) to point at your own relay.
@@ -1079,6 +1079,136 @@ body { overflow-x: hidden; }
 .segmented button.loading > :not(.btn-spinner) { visibility: hidden; }
 .segmented button.loading .btn-spinner { display: flex; }
 .segmented button .btn-spinner { display: none; position: absolute; inset: 0; align-items: center; justify-content: center; }
+
+.kb-row-block { padding: 10px 0; border-bottom: 1px dashed var(--hairline); }
+.kb-row-block:last-child { border-bottom: none; }
+.kb-row-head { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+.kb-row-head .kb-rlabel { min-width: 0; margin-right: 4px; }
+.kb-row-actions { display: inline-flex; gap: 4px; margin-left: auto; }
+.kb-row-actions button { height: 24px; padding: 0 8px; font-size: 11px; border: 1px solid var(--hairline); background: var(--surface); color: var(--text-3); border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
+.kb-row-actions button:hover:not(:disabled) { background: var(--fill-1); color: var(--text); }
+.kb-row-actions button:disabled { opacity: 0.3; cursor: default; }
+.kb-row-actions button.del:hover:not(:disabled) { background: var(--red-soft); color: var(--red); border-color: var(--red); }
+.kb-preview .pvbtn.pv-primary { background: rgba(10,132,255,0.16); border-color: rgba(10,132,255,0.45); color: #0a84ff; font-weight: 600; }
+.kb-preview .pvbtn.pv-success { background: rgba(48,209,88,0.16); border-color: rgba(48,209,88,0.45); color: #30d158; font-weight: 600; }
+.kb-preview .pvbtn.pv-danger { background: rgba(255,69,58,0.16); border-color: rgba(255,69,58,0.45); color: #ff453a; font-weight: 600; }
+
+.att-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.att-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--r-sm); }
+.att-thumb { width: 40px; height: 40px; border-radius: 7px; background: var(--surface-2); border: 1px solid var(--hairline); display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
+.att-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.att-thumb i { font-size: 16px; color: var(--text-3); }
+.att-main { flex: 1; min-width: 0; }
+.att-title { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.att-sub { font-size: 11px; color: var(--text-4); margin-top: 2px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.att-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.att-actions .icon-btn { width: 28px; height: 28px; font-size: 11px; }
+
+.media-stats-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.media-stat-pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: var(--r-pill); background: var(--surface); border: 1px solid var(--hairline); font-size: 12px; color: var(--text-3); }
+.media-stat-pill b { color: var(--text); }
+</style>
+<style id="nyxx-v496-ui">
+/* ===== Mobile & Command Row Polish ===== */
+.cmd-row { flex-wrap: wrap; row-gap: 8px; }
+.cmd-badges { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
+.cmd-icon-box { width: 34px; height: 34px; border-radius: 9px; background: var(--fill-1); color: var(--text-2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 14px; }
+.cmd-icon-box.folder { background: var(--accent-soft); color: var(--accent); }
+.cmd-icon-box.media { background: var(--purple-soft); color: var(--purple); }
+@media (max-width: 640px) {
+    .cmd-row .lr-main { flex: 1 1 calc(100% - 92px); }
+    .cmd-row .cmd-badges { order: 4; width: 100%; padding-left: 46px; }
+}
+
+/* ===== Media Storage & Modal Polish ===== */
+.media-storage-summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.media-upload-opts { margin-top: 12px; border: 1px solid var(--hairline); border-radius: var(--r-md); background: var(--surface-2); overflow: hidden; }
+.media-upload-opts > summary { cursor: pointer; padding: 10px 14px; font-size: 13px; font-weight: 600; color: var(--text-2); list-style: none; display: flex; align-items: center; gap: 8px; user-select: none; }
+.media-upload-opts > summary::-webkit-details-marker { display: none; }
+.media-upload-opts > summary::after { content: '\f078'; font-family: 'Font Awesome 6 Free'; font-weight: 900; margin-left: auto; font-size: 11px; transition: transform 0.2s; }
+.media-upload-opts[open] > summary::after { transform: rotate(180deg); }
+.media-upload-opts-body { padding: 0 14px 14px; }
+.sheet-body .switch-row { background: var(--surface-2); }
+.sheet-body .field-label { color: var(--text); }
+
+/* ===== Navigation Style Presets ===== */
+.app.nav-style-pills .nav-item { border-radius: var(--r-pill); padding: 9px 14px; }
+.app.nav-style-pills .nav-item.active { background: var(--accent); color: #fff; box-shadow: 0 6px 16px -6px rgba(10,132,255,0.65); }
+.app.nav-style-pills .nav-item.active i { color: #fff; }
+.app.nav-style-pills .nav-item.active::before { display: none; }
+
+.app.nav-style-glass .sidebar { background: var(--glass); backdrop-filter: saturate(180%) blur(22px); -webkit-backdrop-filter: saturate(180%) blur(22px); }
+.app.nav-style-glass .nav-item { border-radius: var(--r-md); }
+.app.nav-style-glass .nav-item.active { background: linear-gradient(135deg, var(--accent-soft), var(--purple-soft)); border: 1px solid var(--hairline); color: var(--accent); }
+.app.nav-style-glass .nav-item.active::before { display: none; }
+
+.app.nav-style-compact .sidebar { width: 240px; padding: var(--s3) var(--s2); gap: 2px; }
+.app.nav-style-compact .nav-item { min-height: 34px; padding: 6px 10px; font-size: 13px; border-radius: 7px; }
+.app.nav-style-compact .nav-label { min-height: 28px; padding: 4px 10px; font-size: 10px; }
+.app.nav-style-compact .brand { padding: var(--s1) var(--s2) var(--s3); }
+@media (min-width: 901px) {
+    .app.nav-style-compact.sidebar-open .main { margin-left: 240px; }
+}
+
+/* ===== Navigation Structure: Flat Sidebar ===== */
+.app.nav-struct-flat .nav-label { display: none !important; }
+.app.nav-struct-flat .nav-group.collapsed .nav-items { display: flex !important; }
+.app.nav-struct-flat .nav-subgroup .nav-subgroup,
+.app.nav-struct-flat .nav-subgroup { border-left: none; margin-left: 0; margin-top: 0; margin-bottom: 0; }
+.app.nav-struct-flat .nav-subgroup .nav-item { padding-left: var(--s3); font-size: var(--fs-subhead); min-height: 42px; }
+.app.nav-struct-flat .nav-group { margin-bottom: 2px; }
+
+/* ===== Navigation Structure: Top Bar (Desktop) ===== */
+@media (min-width: 901px) {
+    .app.nav-struct-topbar { flex-direction: column; }
+    .app.nav-struct-topbar .main { margin-left: 0 !important; width: 100%; }
+    .app.nav-struct-topbar .sidebar {
+        position: sticky; top: 62px; left: auto; bottom: auto; right: auto;
+        width: 100%; height: auto; flex-direction: row; align-items: center;
+        flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden;
+        border-right: none; border-bottom: 1px solid var(--hairline);
+        padding: 8px var(--s6); gap: 6px; transform: none !important;
+        z-index: 45; scrollbar-width: none;
+    }
+    .app.nav-struct-topbar .sidebar::-webkit-scrollbar { display: none; }
+    .app.nav-struct-topbar .sidebar .brand,
+    .app.nav-struct-topbar .sidebar .nav-search,
+    .app.nav-struct-topbar .sidebar .nav-label,
+    .app.nav-struct-topbar .sidebar .nav-spacer,
+    .app.nav-struct-topbar .sidebar #nav-no-results { display: none !important; }
+    .app.nav-struct-topbar .sidebar .nav-group { flex-direction: row; align-items: center; gap: 4px; margin-bottom: 0; flex-shrink: 0; }
+    .app.nav-struct-topbar .sidebar .nav-group.collapsed .nav-items { display: flex !important; }
+    .app.nav-struct-topbar .sidebar .nav-items { flex-direction: row; align-items: center; gap: 4px; }
+    .app.nav-struct-topbar .sidebar .nav-subgroup { border-left: none; margin: 0; display: flex; flex-direction: row; gap: 4px; }
+    .app.nav-struct-topbar .sidebar .nav-item {
+        width: auto; min-height: 34px; padding: 6px 12px; white-space: nowrap;
+        font-size: 13px; gap: 7px; flex-shrink: 0;
+    }
+    .app.nav-struct-topbar .sidebar .nav-item.active::before {
+        left: 10px; right: 10px; top: auto; bottom: 0; width: auto; height: 2.5px;
+    }
+    .app.nav-struct-topbar .sidebar .nav-foot {
+        border-top: none; padding-top: 0; margin-left: auto; flex-direction: row; flex-shrink: 0; padding-left: 12px; border-left: 1px solid var(--hairline);
+    }
+    .app.nav-struct-topbar .sidebar .nav-foot .icon-btn { width: 34px; height: 34px; flex: 0 0 auto; }
+}
+
+/* ===== Nav Preset Cards in Settings ===== */
+.nav-preset-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.nav-preset-card {
+    border: 1.5px solid var(--hairline); border-radius: var(--r-md); padding: 12px;
+    background: var(--surface-2); cursor: pointer; text-align: left; font-family: inherit;
+    color: var(--text); transition: border-color 0.15s, background 0.15s, transform 0.12s;
+    display: flex; flex-direction: column; gap: 6px;
+}
+.nav-preset-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+.nav-preset-card.active { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 3px var(--accent-soft); }
+.nav-preset-card .npc-head { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13px; }
+.nav-preset-card .npc-head i { color: var(--accent); }
+.nav-preset-card .npc-desc { font-size: 11px; color: var(--text-4); line-height: 1.4; }
+.nav-preset-preview { height: 28px; border-radius: 6px; background: var(--surface); border: 1px solid var(--hairline); display: flex; align-items: center; padding: 4px 6px; gap: 4px; }
+.nav-preset-preview span { height: 8px; border-radius: 4px; background: var(--fill-2); }
+.nav-preset-preview span.act { background: var(--accent); }
 </style>
 </head>
 <body>
@@ -1122,6 +1252,7 @@ body { overflow-x: hidden; }
             <div class="nav-items">
                 <button class="nav-item" data-page="users" data-label="users people members audience" onclick="go('users')"><i class="fa-solid fa-user-group"></i><span>Users</span></button>
                 <button class="nav-item" data-page="groups" data-label="groups chats communities" onclick="go('groups')"><i class="fa-solid fa-comments"></i><span>Groups</span></button>
+                <button class="nav-item" data-page="channels" data-label="channels broadcast posts auto signature" onclick="go('channels')"><i class="fa-solid fa-tower-broadcast"></i><span>Channels</span></button>
             </div>
         </nav>
 
@@ -1318,7 +1449,7 @@ body { overflow-x: hidden; }
 
             <section class="page" id="page-commands">
                 <div class="page-head">
-                    <div class="lead"><h1>Commands</h1><p>Build nested replies, photos and keyboards.</p></div>
+                    <div class="lead"><h1>Commands</h1><p>Build nested replies, multi-file bundles, protected media and keyboards.</p></div>
                     <div class="page-actions">
                         <button class="btn btn-gray btn-sm" onclick="exportCommandPack()"><i class="fa-solid fa-file-export"></i> Export</button>
                         <button class="btn btn-gray btn-sm" onclick="document.getElementById('pack-file').click()"><i class="fa-solid fa-file-import"></i> Import</button>
@@ -1327,12 +1458,20 @@ body { overflow-x: hidden; }
                 </div>
                 <div class="hint-banner">
                     <i class="fa-solid fa-lightbulb"></i>
-                    <div><b>What is a command?</b> When a user types <code>/help</code> in Telegram, the bot looks up a command named <code>/help</code> here and sends the reply you configured. You can nest commands (folders), add photo/media replies, attach inline and reply keyboards, and even accept arguments — see the "Arguments" hint inside the editor to learn how <code>/say hello</code> can insert <code>hello</code> into the reply.</div>
+                    <div><b>Commands, bundles &amp; arguments:</b> Create exact argument commands like <code>/help 123</code> or <code>/start vip</code> (works with Telegram deep links <code>t.me/bot?start=vip</code>) alongside base commands like <code>/help</code>. You can also attach <b>multiple documents or media</b> to a single command, gate access by user ID or expiration, and enable <b>Protect content</b> to block forwarding.</div>
                 </div>
                 <input type="file" id="pack-file" accept=".json" class="hidden" onchange="importCommandPack(event)">
                 <div class="toolbar">
-                <div class="search"><i class="fa-solid fa-magnifying-glass"></i><input id="cmd-search" placeholder="Search commands by name" oninput="debouncedCommands()"></div>
+                    <div class="search"><i class="fa-solid fa-magnifying-glass"></i><input id="cmd-search" placeholder="Search all commands by name or content…" oninput="debouncedCommands()"></div>
                     <button class="btn btn-gray btn-sm" onclick="commands=[];loadCommands(true)" aria-label="Refresh commands"><i class="fa-solid fa-rotate"></i> Refresh</button>
+                </div>
+                <div class="chips" id="cmd-filters">
+                    <button class="chip active" data-cf="all" onclick="setCmdFilter('all')">All</button>
+                    <button class="chip" data-cf="enabled" onclick="setCmdFilter('enabled')">Enabled</button>
+                    <button class="chip" data-cf="disabled" onclick="setCmdFilter('disabled')">Disabled</button>
+                    <button class="chip" data-cf="media" onclick="setCmdFilter('media')">Media &amp; Bundles</button>
+                    <button class="chip" data-cf="restricted" onclick="setCmdFilter('restricted')">Restricted</button>
+                    <button class="chip" data-cf="expiring" onclick="setCmdFilter('expiring')">Expiring</button>
                 </div>
                 <div class="row" style="margin-bottom:12px;">
                     <span class="badge blue"><i class="fa-regular fa-folder-open"></i> <span id="crumb">Root</span></span>
@@ -1749,6 +1888,129 @@ body { overflow-x: hidden; }
                 </div>
             </section>
 
+            <section class="page" id="page-channels">
+                <div class="page-head">
+                    <div class="lead"><h1>Channels</h1><p>Publish posts, automate footers &amp; buttons, and auto-capture media from your Telegram channels.</p></div>
+                    <div class="page-actions"><button class="btn btn-gray btn-sm" onclick="loadChannels(true)"><i class="fa-solid fa-rotate"></i> Refresh</button></div>
+                </div>
+                <div class="card">
+                    <div class="card-head"><div class="card-title"><i class="fa-solid fa-link"></i> Connect a channel</div></div>
+                    <div class="input-with-btn">
+                        <input class="input mono" id="ch-connect-input" placeholder="@mychannel or -1001234567890">
+                        <button class="btn btn-primary btn-sm" id="ch-connect-btn" onclick="connectChannelManually()"><i class="fa-solid fa-plus"></i> Connect</button>
+                    </div>
+                    <span class="field-hint"><i class="fa-solid fa-circle-info"></i> Make your bot an administrator in the channel (with <b>Post Messages</b>, <b>Edit Messages</b>, and <b>Delete Messages</b>), then paste its <code>@username</code> or <code>-100…</code> ID above. Channels also register automatically on new posts.</span>
+                </div>
+                <div class="chips" id="channel-filters">
+                    <button class="chip active" data-chf="active" onclick="setChannelFilter('active')">Active</button>
+                    <button class="chip" data-chf="inactive" onclick="setChannelFilter('inactive')">Removed</button>
+                    <button class="chip" data-chf="all" onclick="setChannelFilter('all')">All</button>
+                </div>
+                <div id="channels-list"></div>
+            </section>
+
+            <section class="page" id="page-channel-manage">
+                <div class="page-head">
+                    <div class="lead">
+                        <button class="btn btn-gray btn-sm" onclick="go('channels')" style="margin-bottom:10px;"><i class="fa-solid fa-chevron-left"></i> Channels</button>
+                        <h1 id="chm-title">Channel</h1>
+                        <p id="chm-sub"></p>
+                    </div>
+                </div>
+                <div class="grid grid-3" id="chm-cards" style="margin-bottom:16px;"></div>
+
+                <div class="card">
+                    <div class="row" style="gap:8px;flex-wrap:wrap;">
+                        <button class="btn btn-gray btn-sm" onclick="syncChannel()"><i class="fa-solid fa-rotate"></i> Sync with Telegram</button>
+                        <button class="btn btn-gray btn-sm" id="chm-set-storage-btn" onclick="setChannelAsMediaStorage()"><i class="fa-solid fa-database"></i> Use as Media Storage</button>
+                        <div style="flex:1"></div>
+                        <span class="badge" id="chm-status-badge">—</span>
+                    </div>
+                    <div class="field-hint" id="chm-perms-hint" style="margin-top:8px;">Checks bot admin permissions and updates title and subscriber count.</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head"><div class="card-title c-purple"><i class="fa-solid fa-wand-magic-sparkles"></i> Channel automation</div></div>
+                    <div class="switch-row">
+                        <div><div class="sw-label">Auto-capture media to Media Library</div><div class="sw-sub">Any photo, document, video, or audio posted in this channel is saved to your Media Library automatically.</div></div>
+                        <button class="switch" id="chm-capture-toggle" onclick="toggleSwitch('chm-capture-toggle')"></button>
+                    </div>
+                    <div class="switch-row">
+                        <div><div class="sw-label">Auto-pin new channel posts</div><div class="sw-sub">Automatically pins every new post silently (requires Pin Messages permission).</div></div>
+                        <button class="switch" id="chm-pin-toggle" onclick="toggleSwitch('chm-pin-toggle')"></button>
+                    </div>
+                    <div class="switch-row">
+                        <div><div class="sw-label">Auto-signature / footer on posts</div><div class="sw-sub">Automatically appends your footer HTML to new channel posts (requires Edit Messages permission).</div></div>
+                        <button class="switch" id="chm-sig-toggle" onclick="toggleSwitch('chm-sig-toggle');show($('chm-sig-wrap'),sw('chm-sig-toggle'))"></button>
+                    </div>
+                    <div class="field hidden" id="chm-sig-wrap">
+                        <label class="field-label">Footer text (HTML allowed)</label>
+                        <textarea class="textarea" id="chm-sig-text" rows="2" placeholder="📢 Join @mychannel · 🌐 example.com"></textarea>
+                    </div>
+                    <div class="switch-row">
+                        <div><div class="sw-label">Auto-attach inline buttons to posts</div><div class="sw-sub">Automatically adds inline buttons below every new channel post.</div></div>
+                        <button class="switch" id="chm-btn-toggle" onclick="toggleSwitch('chm-btn-toggle');show($('chm-btn-wrap'),sw('chm-btn-toggle'));if(sw('chm-btn-toggle'))kbCh.renderInline();"></button>
+                    </div>
+                    <div id="chm-btn-wrap" class="hidden" style="margin-bottom:14px;">
+                        <div class="row" style="margin-bottom:8px;gap:6px;flex-wrap:wrap;">
+                            <input class="input" id="kbCh-inline-label" placeholder="Label" style="flex:1.2 1 130px;min-width:110px;">
+                            <select class="input" id="kbCh-inline-type" onchange="kbInlineTypeToggle('kbCh')" style="width:auto;">
+                                <option value="url">URL</option><option value="command">Command</option><option value="callback">Callback</option>
+                            </select>
+                            <select class="input" id="kbCh-inline-style" style="width:auto;">
+                                <option value="">Default</option><option value="primary">Blue</option><option value="success">Green</option><option value="danger">Red</option>
+                            </select>
+                            <select class="input hidden" id="kbCh-inline-cmd" style="flex:1 1 120px;"><option value="">Select…</option></select>
+                            <input class="input" id="kbCh-inline-value" placeholder="https://…" style="flex:1 1 120px;min-width:110px;">
+                            <select class="input" id="kbCh-inline-row" style="width:auto;"><option value="auto">Auto row</option><option value="new">+ New row</option></select>
+                            <button type="button" class="btn btn-primary btn-sm" id="kbCh-inline-add-btn" onclick="kbCh.inlineAdd()"><i class="fa-solid fa-plus"></i></button>
+                            <button type="button" class="btn btn-gray btn-sm" onclick="kbCh.addRow('inline')"><i class="fa-solid fa-grip-lines"></i> + Row</button>
+                        </div>
+                        <div id="kbCh-inline-list"></div>
+                    </div>
+                    <div class="switch-row">
+                        <div><div class="sw-label">Silent posts by default</div><div class="sw-sub">Send dashboard channel posts without notification sound by default.</div></div>
+                        <button class="switch" id="chm-silent-toggle" onclick="toggleSwitch('chm-silent-toggle')"></button>
+                    </div>
+                    <div class="switch-row" style="margin-bottom:14px;">
+                        <div><div class="sw-label">Protect content by default</div><div class="sw-sub">Prevent subscribers from forwarding or saving posts sent from the dashboard.</div></div>
+                        <button class="switch" id="chm-protect-toggle" onclick="toggleSwitch('chm-protect-toggle')"></button>
+                    </div>
+                    <div class="row">
+                        <button class="btn btn-primary btn-sm" onclick="saveChannelSettings()"><i class="fa-solid fa-check"></i> Save automation settings</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head">
+                        <div class="card-title c-green"><i class="fa-solid fa-paper-plane"></i> Publish &amp; manage posts</div>
+                        <div style="flex:1"></div>
+                        <button class="btn btn-gray btn-sm" onclick="loadChannelPosts()" aria-label="Refresh posts"><i class="fa-solid fa-rotate"></i></button>
+                    </div>
+                    <div class="chat" id="chm-posts-history" style="max-height:440px;overflow-y:auto;"></div>
+                    <div class="chat-compose" style="margin-top:12px;">
+                        <textarea class="textarea" id="chm-post-text" rows="3" placeholder="Write a channel post… (HTML supported)"></textarea>
+                        <button class="btn btn-primary btn-icon" onclick="sendChannelPost()" id="chm-post-send" aria-label="Publish post"><i class="fa-solid fa-paper-plane"></i></button>
+                    </div>
+                    <div class="row" style="margin-top:8px;flex-wrap:wrap;gap:8px;">
+                        <input class="input" id="chm-post-photo" placeholder="Photo URL (optional)" style="flex:1;min-width:180px;">
+                        <button class="btn btn-gray btn-sm" onclick="openMsgEditor('channel')"><i class="fa-solid fa-sliders"></i> Compose options</button>
+                    </div>
+                    <div class="row" style="margin-top:8px;gap:14px;font-size:13px;color:var(--text-3);">
+                        <label class="check"><input type="checkbox" id="chm-post-silent"> Silent</label>
+                        <label class="check"><input type="checkbox" id="chm-post-protect"> Protect content</label>
+                        <label class="check"><input type="checkbox" id="chm-post-pin"> Pin post</label>
+                    </div>
+                    <div id="ch-compose-status" class="compose-status"></div>
+                </div>
+
+                <div class="card">
+                    <div class="row">
+                        <button class="btn btn-danger" onclick="removeChannel()"><i class="fa-solid fa-trash-can"></i> Remove from dashboard</button>
+                    </div>
+                </div>
+            </section>
+
             <section class="page" id="page-broadcast">
                 <div class="page-head"><div class="lead"><h1>Broadcast</h1><p>Send a message to many users at once.</p></div></div>
                 <div class="hint-banner">
@@ -2067,26 +2329,30 @@ body { overflow-x: hidden; }
                 </details>
 
                 <div class="card" id="media-storage-card">
-                    <div class="card-head">
-                        <div class="card-title c-green"><i class="fa-solid fa-database"></i> Media storage destination</div>
+                    <div class="media-storage-summary">
+                        <div id="media-storage-info" class="small muted" style="flex:1;min-width:200px;">Loading storage destination…</div>
+                        <button type="button" class="btn btn-gray btn-sm" onclick="show($('media-storage-config'), $('media-storage-config').classList.contains('hidden'))">
+                            <i class="fa-solid fa-gear"></i> Configure
+                        </button>
                     </div>
-                    <div class="field">
-                        <label class="field-label">Storage chat ID or @username (DM, Channel, or Group)</label>
-                        <div class="input-with-btn">
-                            <input class="input mono" id="set-media-storage" placeholder="e.g. -1001234567890, @myarchive, or your user ID">
-                            <button class="btn btn-primary btn-sm" id="save-media-storage-btn" onclick="saveMediaStorage()"><i class="fa-solid fa-check"></i> Save</button>
+                    <div id="media-storage-config" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--hairline);">
+                        <div class="field">
+                            <label class="field-label">Storage chat ID or @username (DM, Channel, or Group)</label>
+                            <div class="input-with-btn">
+                                <input class="input mono" id="set-media-storage" placeholder="e.g. -1001234567890, @myarchive, or your user ID">
+                                <button class="btn btn-primary btn-sm" id="save-media-storage-btn" onclick="saveMediaStorage()"><i class="fa-solid fa-check"></i> Save</button>
+                            </div>
+                            <span class="field-hint"><i class="fa-solid fa-circle-info"></i> Use a private channel (<code>-100…</code>, bot must be admin), a group chat (<code>-…</code>), or your own numeric Telegram user ID (start the bot first).</span>
                         </div>
-                        <span class="field-hint"><i class="fa-solid fa-circle-info"></i> Use a private channel (<code>-100…</code>, bot must be admin), a group chat (<code>-…</code>), or your own numeric Telegram user ID (start the bot first).</span>
-                    </div>
-                    <div class="switch-row" style="margin-bottom:12px;">
-                        <div>
-                            <div class="sw-label">Delete message from storage chat right after upload</div>
-                            <div class="sw-sub"><b>Off by default (recommended):</b> keeps uploaded messages in your storage chat for infinite Telegram archive &amp; visual backup.</div>
+                        <div class="switch-row" style="margin-bottom:0;">
+                            <div>
+                                <div class="sw-label">Delete message from storage chat right after upload</div>
+                                <div class="sw-sub"><b>Off by default (recommended):</b> keeps uploaded messages in your storage chat for infinite Telegram archive &amp; visual backup.</div>
+                            </div>
+                            <button class="switch" id="media-delete-after" onclick="toggleMediaDeleteAfter()"></button>
                         </div>
-                        <button class="switch" id="media-delete-after" onclick="toggleMediaDeleteAfter()"></button>
+                        <div id="media-storage-result" class="small" style="margin-top:8px;"></div>
                     </div>
-                    <div id="media-storage-info" class="small muted">Loading…</div>
-                    <div id="media-storage-result" class="small" style="margin-top:6px;"></div>
                 </div>
 
                 <div class="card" id="media-upload-card">
@@ -2108,29 +2374,36 @@ body { overflow-x: hidden; }
                     <div class="media-dropzone" id="media-dropzone" onclick="document.getElementById('media-tab-file').click()" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="handleMediaDrop(event)">
                         <i class="fa-solid fa-file-arrow-up"></i>
                         <div style="font-weight:600;font-size:14px;">Click or drag files here to upload</div>
-                        <div class="tiny muted" style="margin-top:3px;">Up to 45 MB per file · Supports selecting multiple files · Use <b>Document</b> for lossless PDFs, ZIPs &amp; originals</div>
+                        <div class="tiny muted" style="margin-top:3px;">Up to 45 MB per file · Supports multiple files · Pick <b>Document</b> for lossless PDFs &amp; ZIPs</div>
                         <input type="file" id="media-tab-file" multiple class="hidden" onchange="handleMediaTabFiles(this.files)">
                     </div>
-                    <div class="grid grid-3" style="margin-top:12px;">
-                        <div class="field" style="margin-bottom:0;">
-                            <label class="field-label tiny">Optional label prefix</label>
-                            <input class="input" id="media-up-label" placeholder="Leave blank to use filename">
+                    <details class="media-upload-opts">
+                        <summary><i class="fa-solid fa-sliders" style="color:var(--accent)"></i> Upload options (label, access user IDs, expiration, caption)</summary>
+                        <div class="media-upload-opts-body">
+                            <div class="grid grid-3">
+                                <div class="field" style="margin-bottom:0;">
+                                    <label class="field-label tiny">Optional label prefix</label>
+                                    <input class="input" id="media-up-label" placeholder="Leave blank to use filename">
+                                </div>
+                                <div class="field" style="margin-bottom:0;">
+                                    <label class="field-label tiny">Allowed user IDs (optional)</label>
+                                    <input class="input mono" id="media-up-allowed" placeholder="e.g. 123456, 789012">
+                                </div>
+                                <div class="field" style="margin-bottom:0;">
+                                    <label class="field-label tiny">Expires at (optional)</label>
+                                    <input type="datetime-local" class="input" id="media-up-expires">
+                                </div>
+                            </div>
+                            <div class="field" style="margin-top:10px;margin-bottom:0;">
+                                <label class="field-label tiny">Default caption / notes (optional)</label>
+                                <input class="input" id="media-up-caption" placeholder="Default caption used when creating commands or describing this file">
+                            </div>
                         </div>
-                        <div class="field" style="margin-bottom:0;">
-                            <label class="field-label tiny">Allowed user IDs (optional)</label>
-                            <input class="input mono" id="media-up-allowed" placeholder="e.g. 123456, 789012">
-                        </div>
-                        <div class="field" style="margin-bottom:0;">
-                            <label class="field-label tiny">Expires at (optional)</label>
-                            <input type="datetime-local" class="input" id="media-up-expires">
-                        </div>
-                    </div>
-                    <div class="field" style="margin-top:10px;margin-bottom:0;">
-                        <label class="field-label tiny">Default caption / notes (optional)</label>
-                        <input class="input" id="media-up-caption" placeholder="Default caption used when creating commands or describing this file">
-                    </div>
+                    </details>
                     <div id="media-upload-status" class="small" style="margin-top:10px;"></div>
                 </div>
+
+                <div class="media-stats-bar" id="media-stats-bar"></div>
 
                 <div class="toolbar">
                     <div class="search"><i class="fa-solid fa-magnifying-glass"></i><input id="media-search" placeholder="Search by label, filename, caption, or user ID…" oninput="debouncedMedia()"></div>
@@ -2140,6 +2413,13 @@ body { overflow-x: hidden; }
                         <option value="expiring">Has expiration</option>
                         <option value="expired">Expired</option>
                         <option value="invalid">Invalid / failed check</option>
+                    </select>
+                    <select class="input" id="media-sort" onchange="renderMediaGrid()" style="width:auto;">
+                        <option value="newest">Newest</option>
+                        <option value="oldest">Oldest</option>
+                        <option value="largest">Largest</option>
+                        <option value="name">Name A–Z</option>
+                        <option value="expiring">Expiring soon</option>
                     </select>
                     <div class="segmented" id="media-view-seg" title="Switch view">
                         <button data-v="list" onclick="setMediaView('list')" title="Compact list"><i class="fa-solid fa-list"></i></button>
@@ -2167,6 +2447,7 @@ body { overflow-x: hidden; }
                     <button class="btn btn-gray btn-sm" onclick="selectAllVisibleMedia()">Select visible</button>
                     <button class="btn btn-gray btn-sm" onclick="clearMediaSelection()">Clear</button>
                     <div style="flex:1"></div>
+                    <button class="btn btn-primary btn-sm" onclick="bulkMediaCreateCommand()"><i class="fa-solid fa-terminal"></i> Create command</button>
                     <button class="btn btn-gray btn-sm" onclick="bulkMediaValidate()"><i class="fa-regular fa-square-check"></i> Validate</button>
                     <button class="btn btn-gray btn-sm" onclick="bulkMediaUserAccess('grant')"><i class="fa-solid fa-user-plus"></i> Grant user</button>
                     <button class="btn btn-gray btn-sm" onclick="bulkMediaUserAccess('revoke')"><i class="fa-solid fa-user-minus"></i> Revoke user</button>
@@ -2663,6 +2944,57 @@ body { overflow-x: hidden; }
                 </div>
 
                 <div class="card">
+                    <div class="card-head"><div class="card-title"><i class="fa-solid fa-table-columns"></i> Navigation style &amp; structure</div></div>
+                    <div class="hint-banner">
+                        <i class="fa-solid fa-paintbrush"></i>
+                        <div>Customize how the dashboard navigation looks and how pages are organized. Changes preview live and sync across your sessions.</div>
+                    </div>
+                    <label class="field-label">Visual style</label>
+                    <div class="nav-preset-grid" id="nav-style-presets">
+                        <button type="button" class="nav-preset-card active" data-style="classic" onclick="setNavStyle('classic')">
+                            <div class="nav-preset-preview"><span class="act" style="width:26%;"></span><span style="width:45%;"></span></div>
+                            <div class="npc-head"><i class="fa-solid fa-bars-staggered"></i> Classic</div>
+                            <div class="npc-desc">Clean sidebar with subtle left accent indicator.</div>
+                        </button>
+                        <button type="button" class="nav-preset-card" data-style="pills" onclick="setNavStyle('pills')">
+                            <div class="nav-preset-preview"><span class="act" style="width:40%;height:12px;border-radius:99px;"></span><span style="width:35%;"></span></div>
+                            <div class="npc-head"><i class="fa-solid fa-capsules"></i> Modern Pills</div>
+                            <div class="npc-desc">Bold rounded active pills with soft shadow.</div>
+                        </button>
+                        <button type="button" class="nav-preset-card" data-style="glass" onclick="setNavStyle('glass')">
+                            <div class="nav-preset-preview" style="background:linear-gradient(135deg,var(--accent-soft),var(--purple-soft));"><span class="act" style="width:36%;height:10px;"></span><span style="width:40%;"></span></div>
+                            <div class="npc-head"><i class="fa-solid fa-wand-magic-sparkles"></i> Frosted Glass</div>
+                            <div class="npc-desc">Translucent backdrop blur with gradient glow.</div>
+                        </button>
+                        <button type="button" class="nav-preset-card" data-style="compact" onclick="setNavStyle('compact')">
+                            <div class="nav-preset-preview"><span class="act" style="width:22%;height:6px;"></span><span style="width:28%;height:6px;"></span><span style="width:28%;height:6px;"></span></div>
+                            <div class="npc-head"><i class="fa-solid fa-compress"></i> Compact</div>
+                            <div class="npc-desc">Tighter spacing to fit more pages on screen.</div>
+                        </button>
+                    </div>
+
+                    <label class="field-label">Navigation structure</label>
+                    <div class="nav-preset-grid" id="nav-struct-presets" style="margin-bottom:0;">
+                        <button type="button" class="nav-preset-card active" data-struct="grouped" onclick="setNavStructure('grouped')">
+                            <div class="nav-preset-preview" style="flex-direction:column;align-items:flex-start;height:36px;justify-content:center;"><span style="width:35%;height:5px;"></span><span class="act" style="width:65%;height:6px;"></span></div>
+                            <div class="npc-head"><i class="fa-regular fa-folder-open"></i> Grouped</div>
+                            <div class="npc-desc">Collapsible categories keep the sidebar tidy.</div>
+                        </button>
+                        <button type="button" class="nav-preset-card" data-struct="flat" onclick="setNavStructure('flat')">
+                            <div class="nav-preset-preview" style="flex-direction:column;align-items:flex-start;height:36px;justify-content:center;"><span class="act" style="width:60%;height:6px;"></span><span style="width:55%;height:6px;"></span></div>
+                            <div class="npc-head"><i class="fa-solid fa-list"></i> Flat List</div>
+                            <div class="npc-desc">Every page listed directly with zero folders.</div>
+                        </button>
+                        <button type="button" class="nav-preset-card" data-struct="topbar" onclick="setNavStructure('topbar')">
+                            <div class="nav-preset-preview" style="justify-content:flex-start;"><span class="act" style="width:22%;height:8px;"></span><span style="width:22%;height:8px;"></span><span style="width:22%;height:8px;"></span></div>
+                            <div class="npc-head"><i class="fa-solid fa-window-maximize"></i> Top Bar</div>
+                            <div class="npc-desc">Horizontal navigation bar on desktop; drawer on mobile.</div>
+                        </button>
+                    </div>
+                    <div id="nav-layout-result" class="small" style="margin-top:10px;"></div>
+                </div>
+
+                <div class="card">
                     <div class="card-head"><div class="card-title c-purple"><i class="fa-solid fa-heart-pulse"></i> Schema health</div><div style="flex:1"></div>
                         <button class="btn btn-gray btn-sm" onclick="checkSchemaHealth()" aria-label="Check schema health"><i class="fa-solid fa-stethoscope"></i> Check health</button>
                     </div>
@@ -3049,7 +3381,7 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
             <button class="btn btn-plain" id="cmd-save" onclick="saveCommand()">Save</button>
         </div>
         <div class="sheet-body">
-            <div class="field"><label class="field-label">Command</label><input class="input" id="cmd-name" placeholder="/start" style="font-family:var(--mono);"><span class="field-hint">Include the leading slash. Example: <code>/help</code>.</span></div>
+            <div class="field"><label class="field-label">Command</label><input class="input" id="cmd-name" placeholder="/start or /help 123" style="font-family:var(--mono);"><span class="field-hint">Include the leading slash. Supports exact argument variants too, e.g. <code>/help 123</code> or <code>/start vip</code> (for <code>t.me/bot?start=vip</code>).</span></div>
             <div class="field"><label class="field-label">Parent folder</label><select class="input" id="cmd-parent"><option value="">None (root)</option></select><span class="field-hint">Group related commands under a folder.</span></div>
             <div class="field"><label class="field-label">Reply type</label>
                 <select class="input" id="cmd-type" onchange="toggleMedia()">
@@ -3071,11 +3403,14 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
             </div>
             <div class="hint-banner" style="margin-top:-8px;font-size:12px;">
                 <i class="fa-solid fa-keyboard"></i>
-                <div><b>Arguments — new!</b> Placeholders let the user provide the actual text: <code>{{args}}</code> inserts everything typed after the command, and <code>{{arg1}}</code>, <code>{{arg2}}</code>… insert single words. Example — command <code>/echo</code>, content <code>You said: {{args}}</code>. Typing <code>/echo hello world</code> replies <code>You said: hello world</code>. User input is automatically HTML-escaped.</div>
+                <div><b>Arguments &amp; Placeholders:</b> Create exact commands like <code>/help 123</code> for dedicated replies, OR use <code>{{args}}</code> / <code>{{arg1}}</code> inside <code>/help</code> to echo or insert trailing words (e.g. <code>/say hello</code> → <code>You said: hello</code>).</div>
+            </div>
+            <div id="cmd-text-attach-bar" style="margin-bottom:14px;">
+                <button type="button" class="btn btn-gray btn-sm" onclick="quickAttachToCmd()"><i class="fa-solid fa-paperclip"></i> Attach media / multiple files</button>
             </div>
             <div class="field hidden" id="cmd-media-wrap">
-                <label class="field-label">Media source</label>
-                <div class="row" style="margin-bottom:10px;">
+                <label class="field-label">Media attachments <span class="muted small" id="cmd-att-count-badge"></span></label>
+                <div class="row" style="margin-bottom:10px;gap:8px;flex-wrap:wrap;">
                     <div class="segmented" id="cmd-media-source">
                         <button data-v="url" type="button" onclick="setSeg('cmd-media-source','url');toggleCmdMediaSource()">URL</button>
                         <button data-v="file" type="button" onclick="setSeg('cmd-media-source','file');toggleCmdMediaSource()">Upload</button>
@@ -3083,45 +3418,56 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                     <button type="button" class="btn btn-gray btn-sm" onclick="openMediaPicker('cmd')"><i class="fa-solid fa-photo-film"></i> Pick from library</button>
                 </div>
                 <div id="cmd-media-url-panel">
-                    <input class="input" id="cmd-media" placeholder="https://…" oninput="renderMediaPreview('cmd')">
-                    <span class="field-hint" id="cmd-media-hint">Direct link to your media file.</span>
+                    <div class="input-with-btn">
+                        <input class="input" id="cmd-media" placeholder="https://…" oninput="renderMediaPreview('cmd')">
+                        <button type="button" class="btn btn-primary btn-sm" onclick="addCmdUrlAttachment()" title="Add URL to attachments"><i class="fa-solid fa-plus"></i> Add</button>
+                    </div>
+                    <span class="field-hint" id="cmd-media-hint">Paste a direct link. Click <b>+ Add</b> to attach multiple URLs to this command.</span>
                 </div>
                 <div id="cmd-media-file-panel" class="hidden">
-                    <input type="file" class="input" id="cmd-media-file" onchange="uploadCmdMedia()" style="align-content: center;">
-                    <span class="field-hint" id="cmd-media-file-hint">Upload a file — it will be stored on Telegram and referenced by file_id. Requires a media storage chat (Settings → Media storage).</span>
+                    <input type="file" class="input" id="cmd-media-file" multiple onchange="uploadCmdMedia()" style="align-content: center;">
+                    <span class="field-hint" id="cmd-media-file-hint">Select one or <b>multiple files</b> — stored on Telegram and attached to this command.</span>
                     <div id="cmd-media-file-status" class="small" style="margin-top:8px;"></div>
                 </div>
+                <div id="cmd-att-list" class="att-list"></div>
                 <div id="cmd-media-preview" class="media-preview"></div>
                 <input type="hidden" id="cmd-file-id">
                 <input type="hidden" id="cmd-media-meta">
             </div>
             <div class="switch-row"><div><div class="sw-label">Inline keyboard</div><div class="sw-sub">Buttons under the message.</div></div><button class="switch" id="cmd-inline-toggle" onclick="toggleCmdSection('inline')"></button></div>
-                <div id="cmd-inline-section" class="hidden" style="margin-bottom:16px;">
+            <div id="cmd-inline-section" class="hidden" style="margin-bottom:16px;">
                 <div class="hint-banner" style="margin-bottom:10px;font-size:12px;">
                     <i class="fa-solid fa-circle-info"></i>
-                    <div><b>How to add a button:</b> fill in the <b>Label</b> (what users see), choose a <b>Type</b> (Command = runs a slash command, URL = opens a link, Callback = sends hidden data to the bot), enter a value, then click <b>+</b>. Click any chip's label to edit it. Use the arrows to reorder. A live preview appears below.</div>
-            </div>
-                <div class="row nowrap" style="margin-bottom:8px;">
-                    <input class="input" id="kbCmd-inline-label" placeholder="Label" style="flex:1.2;">
+                    <div>Add buttons to <b>Auto</b>, <b>+ New row</b>, or any specific row. Use the <b>↑ / ↓</b> row buttons on any card to move individual buttons between rows (e.g. 2 buttons on Row 1, 1 on Row 2) and click the swatches to color buttons.</div>
+                </div>
+                <div class="row" style="margin-bottom:8px;gap:6px;flex-wrap:wrap;">
+                    <input class="input" id="kbCmd-inline-label" placeholder="Label" style="flex:1.2 1 130px;min-width:110px;">
                     <select class="input" id="kbCmd-inline-type" onchange="kbInlineTypeToggle('kbCmd')" style="width:auto;">
                         <option value="command">Command</option><option value="callback">Callback</option><option value="url">URL</option>
                     </select>
-                    <select class="input" id="kbCmd-inline-style" style="width:auto;">
+                    <select class="input" id="kbCmd-inline-style" style="width:auto;" title="Button color">
                         <option value="">Default</option><option value="primary">Blue</option><option value="success">Green</option><option value="danger">Red</option>
                     </select>
-                    <select class="input" id="kbCmd-inline-cmd" style="flex:1;"><option value="">Select…</option></select>
-                    <input class="input hidden" id="kbCmd-inline-value" placeholder="Value / URL" style="flex:1;">
-                    <button class="btn btn-primary btn-sm" id="kbCmd-inline-add-btn" onclick="kbCmd.inlineAdd()"><i class="fa-solid fa-plus"></i></button>
+                    <select class="input" id="kbCmd-inline-cmd" style="flex:1 1 120px;min-width:110px;"><option value="">Select…</option></select>
+                    <input class="input hidden" id="kbCmd-inline-value" placeholder="Value / URL" style="flex:1 1 120px;min-width:110px;">
+                    <select class="input" id="kbCmd-inline-row" style="width:auto;" title="Target row"><option value="auto">Auto row</option><option value="new">+ New row</option></select>
+                    <button type="button" class="btn btn-primary btn-sm" id="kbCmd-inline-add-btn" onclick="kbCmd.inlineAdd()" title="Add / Save button"><i class="fa-solid fa-plus"></i></button>
+                    <button type="button" class="btn btn-gray btn-sm" onclick="kbCmd.addRow('inline')" title="Add an empty row"><i class="fa-solid fa-grip-lines"></i> + Row</button>
                 </div>
                 <div id="kbCmd-inline-list"></div>
             </div>
             <div class="switch-row"><div><div class="sw-label">Reply keyboard</div><div class="sw-sub">Persistent buttons below the input box. Can be combined with an inline keyboard — Telegram will deliver the reply keyboard on a second, empty message.</div></div><button class="switch" id="cmd-reply-toggle" onclick="toggleCmdSection('reply')"></button></div>
             <div id="cmd-reply-section" class="hidden" style="margin-bottom:16px;">
-                <div class="row nowrap" style="margin-bottom:8px;">
-                    <input class="input" id="kbCmd-reply-label" placeholder="Button text" style="flex:1.2;">
-                    <select class="input" id="kbCmd-reply-cmd" style="flex:1;"><option value="">Run command…</option></select>
-                    <input class="input" id="kbCmd-reply-value" placeholder="Or /custom" style="flex:1;">
-                    <button class="btn btn-primary btn-sm" id="kbCmd-reply-add-btn" onclick="kbCmd.replyAdd()"><i class="fa-solid fa-plus"></i></button>
+                <div class="row" style="margin-bottom:8px;gap:6px;flex-wrap:wrap;">
+                    <input class="input" id="kbCmd-reply-label" placeholder="Button text" style="flex:1.2 1 130px;min-width:110px;">
+                    <select class="input" id="kbCmd-reply-cmd" style="flex:1 1 120px;min-width:110px;"><option value="">Run command…</option></select>
+                    <input class="input" id="kbCmd-reply-value" placeholder="Or /custom" style="flex:1 1 110px;min-width:100px;">
+                    <select class="input" id="kbCmd-reply-style" style="width:auto;" title="Button color">
+                        <option value="">Default</option><option value="primary">Blue</option><option value="success">Green</option><option value="danger">Red</option>
+                    </select>
+                    <select class="input" id="kbCmd-reply-row" style="width:auto;" title="Target row"><option value="auto">Auto row</option><option value="new">+ New row</option></select>
+                    <button type="button" class="btn btn-primary btn-sm" id="kbCmd-reply-add-btn" onclick="kbCmd.replyAdd()" title="Add / Save button"><i class="fa-solid fa-plus"></i></button>
+                    <button type="button" class="btn btn-gray btn-sm" onclick="kbCmd.addRow('reply')" title="Add an empty row"><i class="fa-solid fa-grip-lines"></i> + Row</button>
                 </div>
                 <div id="kbCmd-reply-list"></div>
                 <div id="kbCmd-reply-preview" class="kb-preview"></div>
@@ -3148,7 +3494,7 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
             <div class="field" id="cmd-allowed-users-wrap">
                 <label class="field-label">Allowed user IDs <span class="muted small">(optional unless Specific users)</span></label>
                 <textarea class="textarea mono" id="cmd-allowed-users" rows="2" placeholder="123456789, 987654321 (comma or newline separated)"></textarea>
-                <span class="field-hint"><i class="fa-solid fa-user-lock"></i> If filled, only these Telegram user IDs (plus admins and role-permitted users if Moderator+) can access it. Also respects any allowance/expiration set on the attached Media Library file.</span>
+                <span class="field-hint"><i class="fa-solid fa-user-lock"></i> If filled, only these Telegram user IDs (plus admins and role-permitted users if Moderator+) can access it. Also respects any allowance/expiration set on attached Media Library files.</span>
             </div>
             <div class="field">
                 <label class="field-label">Expiration <span class="muted small">(optional)</span></label>
@@ -3156,8 +3502,14 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                     <input type="datetime-local" class="input" id="cmd-expires-at">
                     <button type="button" class="btn btn-gray btn-sm" onclick="$('cmd-expires-at').value=''">Clear</button>
                 </div>
+                <div class="row" style="margin-top:6px;gap:6px;">
+                    <button type="button" class="btn btn-gray btn-sm" onclick="setCmdExpiryPreset(24)">+24h</button>
+                    <button type="button" class="btn btn-gray btn-sm" onclick="setCmdExpiryPreset(168)">+7d</button>
+                    <button type="button" class="btn btn-gray btn-sm" onclick="setCmdExpiryPreset(720)">+30d</button>
+                </div>
                 <span class="field-hint">After this date/time, non-admins can no longer run this command. Leave blank for no expiration.</span>
             </div>
+            <div class="switch-row"><div><div class="sw-label">Protect content</div><div class="sw-sub">Prevent users from forwarding or saving files/messages in Telegram.</div></div><button class="switch" id="cmd-protect" onclick="toggleSwitch('cmd-protect')"></button></div>
             <div class="switch-row" style="margin-bottom:0;"><div><div class="sw-label">Enabled</div><div class="sw-sub">Disabled commands are hidden.</div></div><button class="switch on" id="cmd-enabled" onclick="toggleSwitch('cmd-enabled')"></button></div>
             <div class="err-box" id="cmd-error"></div>
         </div>
@@ -3189,8 +3541,8 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                 <span class="field-hint" id="msg-type-hint">Editing an existing message keeps its original type. Changing type here re-sends the message.</span>
             </div>
             <div class="field hidden" id="msg-media-wrap">
-                <label class="field-label">Media source</label>
-                <div class="row" style="margin-bottom:10px;">
+                <label class="field-label">Media attachments <span class="muted small" id="msg-att-count-badge"></span></label>
+                <div class="row" style="margin-bottom:10px;gap:8px;flex-wrap:wrap;">
                     <div class="segmented" id="msg-media-source">
                         <button data-v="url" type="button" onclick="setSeg('msg-media-source','url');toggleMsgMediaSource()">URL</button>
                         <button data-v="file" type="button" onclick="setSeg('msg-media-source','file');toggleMsgMediaSource()">Upload</button>
@@ -3198,44 +3550,56 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                     <button type="button" class="btn btn-gray btn-sm" onclick="openMediaPicker('msg')"><i class="fa-solid fa-photo-film"></i> Pick from library</button>
                 </div>
                 <div id="msg-media-url-panel">
-                    <input class="input" id="msg-photo" placeholder="https://…" oninput="renderMediaPreview('msg')">
-                    <span class="field-hint">Direct media URL.</span>
+                    <div class="input-with-btn">
+                        <input class="input" id="msg-photo" placeholder="https://…" oninput="renderMediaPreview('msg')">
+                        <button type="button" class="btn btn-primary btn-sm" onclick="addMsgUrlAttachment()" title="Add URL to attachments"><i class="fa-solid fa-plus"></i> Add</button>
+                    </div>
+                    <span class="field-hint">Direct media URL. Click <b>+ Add</b> to attach multiple URLs.</span>
                 </div>
                 <div id="msg-media-file-panel" class="hidden">
-                    <input type="file" class="input" id="msg-media-file" onchange="uploadMsgMedia()" style="align-content: center;">
-                    <span class="field-hint" id="msg-media-file-hint">Upload a file — stored on Telegram and referenced by file_id. Requires a media storage chat (Settings → Media storage).</span>
+                    <input type="file" class="input" id="msg-media-file" multiple onchange="uploadMsgMedia()" style="align-content: center;">
+                    <span class="field-hint" id="msg-media-file-hint">Select one or <b>multiple files</b> — stored on Telegram and attached to this message.</span>
                     <div id="msg-media-file-status" class="small" style="margin-top:8px;"></div>
                 </div>
+                <div id="msg-att-list" class="att-list"></div>
                 <div id="msg-media-preview" class="media-preview"></div>
                 <input type="hidden" id="msg-file-id">
                 <input type="hidden" id="msg-media-meta">
             </div>
             <div class="field"><label class="field-label" id="msg-text-label">Text</label><textarea class="textarea" id="msg-text" rows="4" placeholder="Write the message…"></textarea></div>
+            <div class="switch-row" id="msg-protect-row"><div><div class="sw-label">Protect content</div><div class="sw-sub">Prevent recipients from forwarding or saving this message/media.</div></div><button class="switch" id="msg-protect" onclick="toggleSwitch('msg-protect')"></button></div>
             <div class="switch-row"><div><div class="sw-label">Attach buttons</div><div class="sw-sub">Inline and/or reply keyboard.</div></div><button class="switch" id="msg-kb-toggle" onclick="toggleMsgSection('kb')"></button></div>
             <div id="msg-kb-section" class="hidden">
                 <div class="switch-row"><div><div class="sw-label">Inline keyboard</div><div class="sw-sub">Buttons under the message.</div></div><button class="switch" id="msg-inline-toggle" onclick="toggleMsgSection('inline')"></button></div>
                 <div id="msg-inline-section" class="hidden" style="margin-bottom:16px;">
-                    <div class="row nowrap" style="margin-bottom:8px;">
-                        <input class="input" id="kbMe-inline-label" placeholder="Label" style="flex:1.2;">
+                    <div class="row" style="margin-bottom:8px;gap:6px;flex-wrap:wrap;">
+                        <input class="input" id="kbMe-inline-label" placeholder="Label" style="flex:1.2 1 130px;min-width:110px;">
                         <select class="input" id="kbMe-inline-type" onchange="kbInlineTypeToggle('kbMe')" style="width:auto;">
                             <option value="command">Command</option><option value="callback">Callback</option><option value="url">URL</option>
                         </select>
-                        <select class="input" id="kbMe-inline-style" style="width:auto;">
+                        <select class="input" id="kbMe-inline-style" style="width:auto;" title="Button color">
                             <option value="">Default</option><option value="primary">Blue</option><option value="success">Green</option><option value="danger">Red</option>
                         </select>
-                        <select class="input" id="kbMe-inline-cmd" style="flex:1;"><option value="">Select…</option></select>
-                        <input class="input hidden" id="kbMe-inline-value" placeholder="Value / URL" style="flex:1;">
-                    <button class="btn btn-primary btn-sm" id="kbMe-inline-add-btn" onclick="kbMe.inlineAdd()"><i class="fa-solid fa-plus"></i></button>
+                        <select class="input" id="kbMe-inline-cmd" style="flex:1 1 120px;min-width:110px;"><option value="">Select…</option></select>
+                        <input class="input hidden" id="kbMe-inline-value" placeholder="Value / URL" style="flex:1 1 120px;min-width:110px;">
+                        <select class="input" id="kbMe-inline-row" style="width:auto;" title="Target row"><option value="auto">Auto row</option><option value="new">+ New row</option></select>
+                        <button type="button" class="btn btn-primary btn-sm" id="kbMe-inline-add-btn" onclick="kbMe.inlineAdd()" title="Add / Save button"><i class="fa-solid fa-plus"></i></button>
+                        <button type="button" class="btn btn-gray btn-sm" onclick="kbMe.addRow('inline')" title="Add an empty row"><i class="fa-solid fa-grip-lines"></i> + Row</button>
                     </div>
                     <div id="kbMe-inline-list"></div>
                 </div>
                 <div class="switch-row"><div><div class="sw-label">Reply keyboard</div><div class="sw-sub">Persistent buttons below the input box.</div></div><button class="switch" id="msg-reply-toggle" onclick="toggleMsgSection('reply')"></button></div>
                 <div id="msg-reply-section" class="hidden">
-                    <div class="row nowrap" style="margin-bottom:8px;">
-                        <input class="input" id="kbMe-reply-label" placeholder="Button text" style="flex:1.2;">
-                        <select class="input" id="kbMe-reply-cmd" style="flex:1;"><option value="">Run command…</option></select>
-                        <input class="input" id="kbMe-reply-value" placeholder="Or /custom" style="flex:1;">
-                        <button class="btn btn-primary btn-sm" id="kbMe-reply-add-btn" onclick="kbMe.replyAdd()"><i class="fa-solid fa-plus"></i></button>
+                    <div class="row" style="margin-bottom:8px;gap:6px;flex-wrap:wrap;">
+                        <input class="input" id="kbMe-reply-label" placeholder="Button text" style="flex:1.2 1 130px;min-width:110px;">
+                        <select class="input" id="kbMe-reply-cmd" style="flex:1 1 120px;min-width:110px;"><option value="">Run command…</option></select>
+                        <input class="input" id="kbMe-reply-value" placeholder="Or /custom" style="flex:1 1 110px;min-width:100px;">
+                        <select class="input" id="kbMe-reply-style" style="width:auto;" title="Button color">
+                            <option value="">Default</option><option value="primary">Blue</option><option value="success">Green</option><option value="danger">Red</option>
+                        </select>
+                        <select class="input" id="kbMe-reply-row" style="width:auto;" title="Target row"><option value="auto">Auto row</option><option value="new">+ New row</option></select>
+                        <button type="button" class="btn btn-primary btn-sm" id="kbMe-reply-add-btn" onclick="kbMe.replyAdd()" title="Add / Save button"><i class="fa-solid fa-plus"></i></button>
+                        <button type="button" class="btn btn-gray btn-sm" onclick="kbMe.addRow('reply')" title="Add an empty row"><i class="fa-solid fa-grip-lines"></i> + Row</button>
                     </div>
                     <div id="kbMe-reply-list"></div>
                     <div id="kbMe-reply-preview" class="kb-preview"></div>
@@ -3349,9 +3713,15 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
         <div class="sheet-head">
             <button class="btn btn-plain" onclick="closeMediaPicker()">Cancel</button>
             <div class="sheet-title" id="media-picker-title">Pick media</div>
-            <button class="btn btn-plain" onclick="closeMediaPicker();go('media');">Library</button>
+            <button class="btn btn-plain" id="media-picker-done-btn" onclick="attachSelectedMediaFromPicker()">Library</button>
         </div>
         <div class="sheet-body">
+            <div class="media-bulk-bar" id="media-picker-bulk-bar">
+                <span class="badge blue" id="media-picker-bulk-count">0 selected</span>
+                <button type="button" class="btn btn-gray btn-sm" onclick="clearMediaPickerSelection()">Clear</button>
+                <div style="flex:1"></div>
+                <button type="button" class="btn btn-primary btn-sm" onclick="attachSelectedMediaFromPicker()"><i class="fa-solid fa-paperclip"></i> Attach selected</button>
+            </div>
             <div class="toolbar">
                 <div class="search"><i class="fa-solid fa-magnifying-glass"></i><input id="media-picker-search" placeholder="Search by label, filename, or caption…" oninput="renderMediaPicker()"></div>
                 <div class="segmented" id="media-picker-view-seg">
@@ -3801,6 +4171,7 @@ function cycleTheme() {
 var PAGE_TITLES = {
     overview: 'Overview', commands: 'Commands', menu: 'Menu & Featured', users: 'Users',
     'user-manage': 'User', groups: 'Groups', 'group-manage': 'Group',
+    channels: 'Channels', 'channel-manage': 'Channel',
     broadcast: 'Broadcast', contact: 'Contact', inbox: 'Inbox', memory: 'Memory', media: 'Media Library', ai: 'AI', settings: 'Settings', botinfo: 'Bot Info',
     cron: 'Retention', backup: 'Backup', logs: 'Activity Log', update: 'Update', mcp: 'MCP',
     permissions: 'Admin & Permissions'
@@ -3822,6 +4193,7 @@ function go(page) {
     if (page === 'menu') { loadMenu(); loadFeatured(); }
     if (page === 'users') loadUsers();
     if (page === 'groups') loadGroups();
+    if (page === 'channels') loadChannels();
     if (page === 'broadcast') loadBroadcast();
     if (page === 'contact') loadContact();
     if (page === 'inbox') loadInbox();
@@ -3877,7 +4249,11 @@ function filterNav(q) {
         if (match) anyVisible = true;
     });
     document.querySelectorAll('.nav-group[data-group]').forEach(function (g) {
-        if (!q) { g.classList.remove('collapsed'); return; }
+        if (!q) {
+            var hasActive = !!g.querySelector('.nav-item.active');
+            g.classList.toggle('collapsed', !hasActive);
+            return;
+        }
         var hasVisible = Array.from(g.querySelectorAll('.nav-item[data-label]')).some(function (i) { return i.style.display !== 'none'; });
         g.classList.toggle('collapsed', !hasVisible);
     });
@@ -4290,6 +4666,21 @@ async function loadCommands(force) {
         buildTree(); renderCommands(); kbCmd.populateCommands();
     } finally { _commandsLoading = false; }
 }
+var cmdFilter = 'all';
+function setCmdFilter(f) {
+    cmdFilter = f;
+    document.querySelectorAll('#cmd-filters .chip').forEach(function (c) { c.classList.toggle('active', c.dataset.cf === f); });
+    renderCommands();
+}
+function getCommandMediaCount(c) {
+    if (c.media_items_json) {
+        try {
+            var arr = JSON.parse(c.media_items_json);
+            if (Array.isArray(arr) && arr.length) return arr.length;
+        } catch (e) {}
+    }
+    return (c.response_type && c.response_type !== 'text') ? 1 : 0;
+}
 function buildTree() {
     children = {};
     commands.forEach(function (c) {
@@ -4302,31 +4693,52 @@ function buildTree() {
 }
 function renderCommands() {
     var box = $('cmd-list');
-    var q = ($('cmd-search').value || '').toLowerCase();
-    var list = (children[currentParent || ''] || []).slice();
-    if (q) list = list.filter(function (c) { return c.command.toLowerCase().indexOf(q) >= 0; });
-    $('crumb').textContent = crumbPath.length ? crumbPath.join(' / ') : 'Root';
-    $('btn-up').disabled = !currentParent;
-    if (!list.length) { box.innerHTML = emptyState('fa-regular fa-folder-open', 'Nothing here yet.', 'Create your first command with the button above.'); return; }
+    var q = ($('cmd-search').value || '').toLowerCase().trim();
+    var searchingAll = !!q || cmdFilter !== 'all';
+    var list = searchingAll ? commands.slice() : (children[currentParent || ''] || []).slice();
+    if (q) {
+        list = list.filter(function (c) {
+            return String(c.command || '').toLowerCase().indexOf(q) >= 0 ||
+                String(c.content || '').toLowerCase().indexOf(q) >= 0;
+        });
+    }
+    if (cmdFilter === 'enabled') list = list.filter(function (c) { return c.enabled == 1; });
+    else if (cmdFilter === 'disabled') list = list.filter(function (c) { return c.enabled != 1; });
+    else if (cmdFilter === 'media') list = list.filter(function (c) { return getCommandMediaCount(c) > 0; });
+    else if (cmdFilter === 'restricted') list = list.filter(function (c) { return commandAccessLevel(c) !== 'everyone' || !!(c.allowed_users && String(c.allowed_users).trim()); });
+    else if (cmdFilter === 'expiring') list = list.filter(function (c) { return !!c.expires_at; });
+
+    $('crumb').textContent = searchingAll
+        ? ('All commands (' + list.length + ')')
+        : (crumbPath.length ? crumbPath.map(function (c) { return c.replace(/^\/+/, ''); }).join(' / ') : 'Root');
+    $('btn-up').disabled = !currentParent || searchingAll;
+    if (!list.length) { box.innerHTML = emptyState('fa-regular fa-folder-open', 'Nothing matches.', searchingAll ? 'Try clearing the search or filter.' : 'Create your first command with the button above.'); return; }
     var html = '<div class="list">';
     list.forEach(function (c, i) {
         var kids = (children[c.command] || []).length;
         var cmdEsc = esc(c.command).replace(/&#39;/g, "\\'");
+        var mediaCnt = getCommandMediaCount(c);
+        var typeLbl = (function(){ var t = c.response_type || 'text'; return t.charAt(0).toUpperCase() + t.slice(1).replace('_',' '); })();
+        var subParts = [mediaCnt > 1 ? (mediaCnt + ' attachments') : typeLbl];
+        if (searchingAll && c.parent) subParts.push('in ' + c.parent);
+        if (kids) subParts.push(kids + ' sub-command' + (kids > 1 ? 's' : ''));
         html += '<div class="list-row">' +
-            '<i class="fa-regular ' + (kids ? 'fa-folder tag-folder' : 'fa-file') + '"></i>' +
+            '<i class="fa-regular ' + (kids ? 'fa-folder tag-folder' : (mediaCnt > 0 ? 'fa-file-zipper' : 'fa-file')) + '"></i>' +
             '<div class="lr-main" onclick="' + (kids ? 'enterFolder(\\'' + cmdEsc + '\\')' : 'editCommand(\\'' + cmdEsc + '\\')') + '" style="cursor:pointer;">' +
                 '<div class="lr-title mono">' + esc(c.command) + '</div>' +
-                '<div class="lr-sub">' + (function(){ var t = c.response_type || 'text'; return t.charAt(0).toUpperCase() + t.slice(1).replace('_',' '); })() + (kids ? ' · ' + kids + ' sub-command' + (kids > 1 ? 's' : '') : '') + '</div>' +
+                '<div class="lr-sub">' + esc(subParts.join(' · ')) + '</div>' +
             '</div>' +
-            '<span class="badge ' + (c.enabled == 1 ? 'green' : 'red') + '">' + (c.enabled == 1 ? 'On' : 'Off') + '</span>' +
+            '<button class="badge ' + (c.enabled == 1 ? 'green' : 'red') + '" style="border:none;cursor:pointer;" onclick="toggleCmdEnabled(\\'' + cmdEsc + '\\')" title="Click to toggle">' + (c.enabled == 1 ? 'On' : 'Off') + '</button>' +
             (function () {
                 var lvl = commandAccessLevel(c);
                 var b = '';
+                if (c.protect_content) b += '<span class="badge orange" title="Forwarding/saving disabled"><i class="fa-solid fa-shield-halved"></i> <span class="hide-mobile">Protected</span></span>';
+                if (mediaCnt > 1) b += '<span class="badge blue"><i class="fa-solid fa-layer-group"></i> ' + mediaCnt + '</span>';
                 if (lvl === 'admin') b += '<span class="badge purple">Admin</span>';
                 else if (lvl === 'moderator') b += '<span class="badge purple">Mod+</span>';
                 else if (lvl === 'specific') b += '<span class="badge blue"><i class="fa-solid fa-user-lock"></i> Specific</span>';
                 if (c.allowed_users && String(c.allowed_users).trim()) {
-                    var cnt = String(c.allowed_users).trim().split(/[\s,;]+/).filter(Boolean).length;
+                    var cnt = String(c.allowed_users).trim().split(/[\\s,;]+/).filter(Boolean).length;
                     if (cnt) b += '<span class="badge blue">' + cnt + ' user' + (cnt > 1 ? 's' : '') + '</span>';
                 }
                 if (c.expires_at) {
@@ -4338,17 +4750,21 @@ function renderCommands() {
             })() +
             '<div class="lr-actions">' +
                 '<div class="lr-actions-desktop" style="display:flex;gap:4px;">' +
-                    '<button class="icon-btn" onclick="moveCmd(' + i + ',-1)" ' + (i === 0 ? 'disabled' : '') + ' aria-label="Move up"><i class="fa-solid fa-arrow-up"></i></button>' +
-                    '<button class="icon-btn" onclick="moveCmd(' + i + ',1)" ' + (i === list.length - 1 ? 'disabled' : '') + ' aria-label="Move down"><i class="fa-solid fa-arrow-down"></i></button>' +
-                    '<button class="icon-btn" onclick="openCommandModal(null, \\'' + cmdEsc + '\\')" aria-label="Add sub-command"><i class="fa-solid fa-plus"></i></button>' +
-                    '<button class="icon-btn" onclick="editCommand(\\'' + cmdEsc + '\\')" aria-label="Edit"><i class="fa-regular fa-pen-to-square"></i></button>' +
-                    '<button class="icon-btn danger" onclick="deleteCommand(\\'' + cmdEsc + '\\')" aria-label="Delete"><i class="fa-regular fa-trash-can"></i></button>' +
+                    (!searchingAll ? '<button class="icon-btn" onclick="moveCmd(' + i + ',-1)" ' + (i === 0 ? 'disabled' : '') + ' aria-label="Move up" title="Move up"><i class="fa-solid fa-arrow-up"></i></button>' : '') +
+                    (!searchingAll ? '<button class="icon-btn" onclick="moveCmd(' + i + ',1)" ' + (i === list.length - 1 ? 'disabled' : '') + ' aria-label="Move down" title="Move down"><i class="fa-solid fa-arrow-down"></i></button>' : '') +
+                    '<button class="icon-btn" onclick="copyCommandLink(\\'' + cmdEsc + '\\')" aria-label="Copy link or command" title="Copy command / deep link"><i class="fa-regular fa-copy"></i></button>' +
+                    '<button class="icon-btn" onclick="duplicateCommand(\\'' + cmdEsc + '\\')" aria-label="Duplicate" title="Clone command"><i class="fa-regular fa-clone"></i></button>' +
+                    '<button class="icon-btn" onclick="openCommandModal(null, \\'' + cmdEsc + '\\')" aria-label="Add sub-command" title="Add sub-command"><i class="fa-solid fa-plus"></i></button>' +
+                    '<button class="icon-btn" onclick="editCommand(\\'' + cmdEsc + '\\')" aria-label="Edit" title="Edit"><i class="fa-regular fa-pen-to-square"></i></button>' +
+                    '<button class="icon-btn danger" onclick="deleteCommand(\\'' + cmdEsc + '\\')" aria-label="Delete" title="Delete"><i class="fa-regular fa-trash-can"></i></button>' +
                 '</div>' +
                 '<div class="lr-actions-mobile dropdown">' +
                     '<button class="icon-btn" onclick="toggleDropdown(this)" aria-label="More actions"><i class="fa-solid fa-ellipsis-vertical"></i></button>' +
                     '<div class="dropdown-menu hidden">' +
-                        '<button onclick="moveCmd(' + i + ',-1)" ' + (i === 0 ? 'disabled' : '') + '><i class="fa-solid fa-arrow-up"></i> Move up</button>' +
-                        '<button onclick="moveCmd(' + i + ',1)" ' + (i === list.length - 1 ? 'disabled' : '') + '><i class="fa-solid fa-arrow-down"></i> Move down</button>' +
+                        (!searchingAll ? '<button onclick="moveCmd(' + i + ',-1)" ' + (i === 0 ? 'disabled' : '') + '><i class="fa-solid fa-arrow-up"></i> Move up</button>' : '') +
+                        (!searchingAll ? '<button onclick="moveCmd(' + i + ',1)" ' + (i === list.length - 1 ? 'disabled' : '') + '><i class="fa-solid fa-arrow-down"></i> Move down</button>' : '') +
+                        '<button onclick="copyCommandLink(\\'' + cmdEsc + '\\')"><i class="fa-regular fa-copy"></i> Copy link / command</button>' +
+                        '<button onclick="duplicateCommand(\\'' + cmdEsc + '\\')"><i class="fa-regular fa-clone"></i> Clone command</button>' +
                         '<button onclick="openCommandModal(null, \\'' + cmdEsc + '\\')"><i class="fa-solid fa-plus"></i> Add sub-command</button>' +
                         '<button onclick="editCommand(\\'' + cmdEsc + '\\')"><i class="fa-regular fa-pen-to-square"></i> Edit</button>' +
                         '<button class="danger" onclick="deleteCommand(\\'' + cmdEsc + '\\')"><i class="fa-regular fa-trash-can"></i> Delete</button>' +
@@ -4374,18 +4790,111 @@ async function moveCmd(index, dir) {
     try { await api('POST', '/api/commands/reorder', { order: order }); loadCommands(true); }
     catch (e) { toast(e.message, 'error'); }
 }
+var cmdAttachments = [];
+function quickAttachToCmd() {
+    if ($('cmd-type').value === 'text') $('cmd-type').value = 'document';
+    toggleMedia();
+    setSeg('cmd-media-source', 'file');
+    toggleCmdMediaSource();
+}
+function setCmdExpiryPreset(hours) {
+    var d = new Date(Date.now() + hours * 3600 * 1000);
+    if ($('cmd-expires-at')) $('cmd-expires-at').value = toLocalInputFromIso(d.toISOString());
+}
+function syncCmdPrimaryFromAttachments() {
+    if (cmdAttachments.length) {
+        var first = cmdAttachments[0];
+        if ($('cmd-file-id')) $('cmd-file-id').value = first.file_id || '';
+        if ($('cmd-media')) $('cmd-media').value = cmdAttachments.length === 1 ? (first.media_url || '') : '';
+        if ($('cmd-media-meta')) $('cmd-media-meta').value = first.media_meta ? (typeof first.media_meta === 'string' ? first.media_meta : JSON.stringify(first.media_meta)) : '';
+    } else {
+        if ($('cmd-file-id')) $('cmd-file-id').value = '';
+        if ($('cmd-media-meta')) $('cmd-media-meta').value = '';
+    }
+    var badge = $('cmd-att-count-badge');
+    if (badge) badge.textContent = cmdAttachments.length ? ('(' + cmdAttachments.length + ' attached)') : '';
+}
+function renderAttachmentList(boxId, arr, prefix) {
+    var box = $(boxId);
+    if (!box) return;
+    if (!arr.length) { box.innerHTML = ''; return; }
+    var html = arr.map(function (a, i) {
+        var isFile = !!a.file_id;
+        var src = isFile ? ('/api/file/' + encodeURIComponent(a.file_id)) : (a.media_url || '');
+        var kind = a.media_type || 'document';
+        var thumb = (kind === 'photo' || kind === 'sticker') && src
+            ? '<img src="' + esc(src) + '" alt="" loading="lazy">'
+            : '<i class="' + mediaTypeIcon(kind) + '"></i>';
+        var metaObj = {};
+        try { metaObj = a.media_meta ? (typeof a.media_meta === 'string' ? JSON.parse(a.media_meta) : a.media_meta) : {}; } catch (e) {}
+        var title = a.label || metaObj.file_name || (isFile ? (kind + ' #' + (i + 1)) : (a.media_url || kind));
+        var sz = metaObj.file_size ? (metaObj.file_size >= 1048576 ? (metaObj.file_size / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(metaObj.file_size / 1024)) + ' KB') : '';
+        return '<div class="att-item">' +
+            '<div class="att-thumb">' + thumb + '</div>' +
+            '<div class="att-main">' +
+                '<div class="att-title">' + esc(title) + '</div>' +
+                '<div class="att-sub"><span class="badge">' + esc(kind) + '</span>' + (sz ? '<span>' + esc(sz) + '</span>' : '') + '<span>' + (isFile ? 'Telegram file' : 'URL') + '</span></div>' +
+            '</div>' +
+            '<div class="att-actions">' +
+                '<button type="button" class="icon-btn" onclick="moveAttachmentItem(\\'' + prefix + '\\',' + i + ',-1)" ' + (i === 0 ? 'disabled' : '') + ' title="Move up"><i class="fa-solid fa-arrow-up"></i></button>' +
+                '<button type="button" class="icon-btn" onclick="moveAttachmentItem(\\'' + prefix + '\\',' + i + ',1)" ' + (i === arr.length - 1 ? 'disabled' : '') + ' title="Move down"><i class="fa-solid fa-arrow-down"></i></button>' +
+                '<button type="button" class="icon-btn danger" onclick="removeAttachmentItem(\\'' + prefix + '\\',' + i + ')" title="Remove"><i class="fa-solid fa-xmark"></i></button>' +
+            '</div>' +
+        '</div>';
+    }).join('');
+    if (arr.length > 1) {
+        html += '<div class="tiny muted" style="padding:4px 2px;"><i class="fa-solid fa-circle-info" style="color:var(--accent)"></i> Multiple items of the same group (photos/videos, documents, or audio) are delivered as a Telegram album (up to 10 per group). Mixed types are sent cleanly in order.</div>';
+    }
+    box.innerHTML = html;
+}
+function moveAttachmentItem(prefix, idx, dir) {
+    var arr = prefix === 'cmd' ? cmdAttachments : msgAttachments;
+    var j = idx + dir;
+    if (j < 0 || j >= arr.length) return;
+    var t = arr[idx]; arr[idx] = arr[j]; arr[j] = t;
+    if (prefix === 'cmd') { syncCmdPrimaryFromAttachments(); renderAttachmentList('cmd-att-list', cmdAttachments, 'cmd'); renderMediaPreview('cmd'); }
+    else { syncMsgPrimaryFromAttachments(); renderAttachmentList('msg-att-list', msgAttachments, 'msg'); renderMediaPreview('msg'); }
+}
+function removeAttachmentItem(prefix, idx) {
+    var arr = prefix === 'cmd' ? cmdAttachments : msgAttachments;
+    arr.splice(idx, 1);
+    if (prefix === 'cmd') {
+        if (!arr.length && $('cmd-media')) $('cmd-media').value = '';
+        syncCmdPrimaryFromAttachments();
+        renderAttachmentList('cmd-att-list', cmdAttachments, 'cmd');
+        renderMediaPreview('cmd');
+    } else {
+        if (!arr.length && $('msg-photo')) $('msg-photo').value = '';
+        syncMsgPrimaryFromAttachments();
+        renderAttachmentList('msg-att-list', msgAttachments, 'msg');
+        renderMediaPreview('msg');
+    }
+}
+function addCmdUrlAttachment() {
+    var url = $('cmd-media').value.trim();
+    if (!url) { toast('Paste a media URL first.', 'error'); return; }
+    var t = $('cmd-type').value || 'document';
+    if (t === 'text') { t = 'document'; $('cmd-type').value = 'document'; }
+    cmdAttachments.push({ media_type: t, media_url: url, file_id: '', media_meta: {}, label: url });
+    $('cmd-media').value = '';
+    syncCmdPrimaryFromAttachments();
+    renderAttachmentList('cmd-att-list', cmdAttachments, 'cmd');
+    renderMediaPreview('cmd');
+    toast('URL added to attachments.');
+}
 function toggleMedia() {
     var t = $('cmd-type').value || 'text';
-    var isMedia = t !== 'text';
+    var isMedia = t !== 'text' || cmdAttachments.length > 0;
     show($('cmd-media-wrap'), isMedia);
-    if (!isMedia) return;
+    show($('cmd-text-attach-bar'), !isMedia);
     var label = $('cmd-content-label');
-    if (label) label.textContent = 'Caption';
+    if (label) label.textContent = isMedia ? 'Caption' : 'Content';
     var hint = $('cmd-content-hint');
-    if (hint) hint.innerHTML = 'Caption shown under the media. HTML tags are allowed.';
+    if (hint) hint.innerHTML = isMedia ? 'Caption shown under the media. HTML tags are allowed.' : 'HTML tags are allowed: <code>&lt;b&gt;</code> <code>&lt;i&gt;</code> <code>&lt;code&gt;</code> <code>&lt;a href="…"&gt;</code>';
+    if (!isMedia) return;
     var urlHint = $('cmd-media-hint');
     var hints = {
-        photo: 'Direct image URL (or use Upload below).',
+        photo: 'Direct image URL (or Upload / Pick from library).',
         video: 'Direct video URL (or upload). MP4 recommended.',
         animation: 'Direct GIF/MP4 URL (or upload). Telegram will loop it.',
         voice: 'Direct OGG/OPUS URL. Use Upload for best results.',
@@ -4394,7 +4903,7 @@ function toggleMedia() {
         video_note: 'Direct MP4 URL — must be square and ≤1 minute (or upload).',
         sticker: 'Stickers must be uploaded — Telegram does not fetch sticker URLs. Use Upload.'
     };
-    if (urlHint) urlHint.textContent = hints[t] || 'Direct media URL.';
+    if (urlHint) urlHint.textContent = hints[t] || 'Paste a direct link. Click + Add to attach multiple URLs.';
     if (t === 'sticker') setSeg('cmd-media-source', 'file');
     toggleCmdMediaSource();
 }
@@ -4402,6 +4911,7 @@ function toggleCmdMediaSource() {
     var src = getSeg('cmd-media-source') || 'url';
     show($('cmd-media-url-panel'), src === 'url');
     show($('cmd-media-file-panel'), src === 'file');
+    renderAttachmentList('cmd-att-list', cmdAttachments, 'cmd');
     renderMediaPreview('cmd');
 }
 
@@ -4512,24 +5022,42 @@ function removeMedia(prefix) {
 async function uploadCmdMedia() {
     var input = $('cmd-media-file');
     var status = $('cmd-media-file-status');
-    if (!input || !input.files || !input.files[0]) return;
-    var file = input.files[0];
-    if (file.size > 45 * 1024 * 1024) { status.innerHTML = '<span style="color:var(--red)">File is larger than 45MB.</span>'; return; }
-    status.innerHTML = '<span class="mini-spinner"></span> Uploading…';
-    try {
-        var fd = new FormData();
-        fd.append('file', file);
-        fd.append('media_type', $('cmd-type').value);
-        var res = await fetch('/api/upload_media', { method: 'POST', body: fd, credentials: 'same-origin', headers: __csrf ? { 'X-Nyxx-CSRF': __csrf } : {} });
-        var data = await res.json().catch(() => ({}));
-        if (!res.ok || !data.success) throw new Error(data.error || 'Upload failed.');
-        $('cmd-file-id').value = data.file_id || '';
-        $('cmd-media-meta').value = JSON.stringify(data.media_meta || {});
-        $('cmd-media').value = '';
-        status.innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Uploaded. file_id stored.</span>';
-        renderMediaPreview('cmd'); 
-    } catch (e) {
-        status.innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>';
+    if (!input || !input.files || !input.files.length) return;
+    var files = Array.from(input.files);
+    var okCount = 0;
+    for (var i = 0; i < files.length; i++) {
+        var file = files[i];
+        if (file.size > 45 * 1024 * 1024) { toast(file.name + ' is larger than 45MB.', 'error'); continue; }
+        status.innerHTML = '<span class="mini-spinner"></span> Uploading ' + (i + 1) + '/' + files.length + ': ' + esc(file.name) + '…';
+        try {
+            var fd = new FormData();
+            fd.append('file', file);
+            var chosen = $('cmd-type').value;
+            fd.append('media_type', chosen === 'text' ? 'auto' : chosen);
+            var res = await fetch('/api/upload_media', { method: 'POST', body: fd, credentials: 'same-origin', headers: __csrf ? { 'X-Nyxx-CSRF': __csrf } : {} });
+            var data = await res.json().catch(function () { return {}; });
+            if (!res.ok || !data.success) throw new Error(data.error || 'Upload failed.');
+            cmdAttachments.push({
+                media_type: data.media_type || chosen || 'document',
+                file_id: data.file_id || '',
+                media_url: '',
+                media_meta: data.media_meta || {},
+                label: file.name || data.media_type
+            });
+            okCount++;
+        } catch (e) {
+            toast(file.name + ': ' + e.message, 'error');
+        }
+    }
+    input.value = '';
+    if (okCount) {
+        if ($('cmd-type').value === 'text' && cmdAttachments.length) $('cmd-type').value = cmdAttachments[0].media_type || 'document';
+        syncCmdPrimaryFromAttachments();
+        renderAttachmentList('cmd-att-list', cmdAttachments, 'cmd');
+        renderMediaPreview('cmd');
+        status.innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Uploaded ' + okCount + ' file(s).</span>';
+    } else {
+        status.innerHTML = '<span style="color:var(--red)">Upload failed.</span>';
     }
 }
 function toggleCmdSection(which) {
@@ -4537,11 +5065,36 @@ function toggleCmdSection(which) {
     var sec = which === 'inline' ? 'cmd-inline-section' : 'cmd-reply-section';
     var on = toggleSwitch(id);
     show($(sec), on);
+    if (on && which === 'inline') kbCmd.renderInline();
     if (on && which === 'reply') kbCmd.render();
 }
-async function openCommandModal(cmd, parent) {
+function parseStoredMediaItems(obj) {
+    var items = [];
+    if (obj && obj.media_items_json) {
+        try {
+            var parsed = typeof obj.media_items_json === 'string' ? JSON.parse(obj.media_items_json) : obj.media_items_json;
+            if (Array.isArray(parsed)) items = parsed.filter(function (x) { return x && (x.file_id || x.media_url); });
+        } catch (e) {}
+    }
+    if (!items.length && obj && (obj.file_id || obj.media_url || obj.photo_url)) {
+        var mt = obj.response_type || obj.kind || obj.media_type || 'photo';
+        if (mt === 'text') mt = 'photo';
+        var mmeta = {};
+        try { mmeta = obj.media_meta ? (typeof obj.media_meta === 'string' ? JSON.parse(obj.media_meta) : obj.media_meta) : {}; } catch (e) {}
+        items.push({
+            media_type: mt,
+            file_id: obj.file_id || '',
+            media_url: obj.media_url || obj.photo_url || '',
+            media_meta: mmeta,
+            label: mmeta.file_name || ''
+        });
+    }
+    return items;
+}
+async function openCommandModal(cmd, parent, cloneMode) {
     await loadCommands();
-    editingCmd = cmd || null;
+    editingCmd = (!cloneMode && cmd) ? cmd : null;
+    var srcCmd = cmd || null;
     var parentSel = $('cmd-parent');
     parentSel.innerHTML = '<option value="">None (root)</option>';
     commands.forEach(function (c) {
@@ -4550,42 +5103,44 @@ async function openCommandModal(cmd, parent) {
     });
     $('cmd-error').classList.remove('show');
     kbCmd.reset();
+    cmdAttachments = [];
     toggleSwitch('cmd-inline-toggle', false);
     toggleSwitch('cmd-reply-toggle', false);
     show($('cmd-inline-section'), false); show($('cmd-reply-section'), false);
     $('cmd-file-id').value = ''; $('cmd-media-meta').value = '';
     $('cmd-media-file').value = '';
     $('cmd-media-file-status').innerHTML = '';
-    if (editingCmd) {
-        $('cmd-modal-title').textContent = 'Edit command';
-        $('cmd-name').value = editingCmd.command;
-        $('cmd-type').value = editingCmd.response_type || 'text';
-        $('cmd-content').value = editingCmd.content || '';
-        $('cmd-media').value = editingCmd.media_url || '';
-        $('cmd-file-id').value = editingCmd.file_id || '';
-        $('cmd-media-meta').value = editingCmd.media_meta || '';
-        setSeg('cmd-media-source', editingCmd.file_id ? 'file' : 'url');
-        parentSel.value = editingCmd.parent || '';
-        setSeg('cmd-access', commandAccessLevel(editingCmd));
-        if ($('cmd-allowed-users')) $('cmd-allowed-users').value = editingCmd.allowed_users || '';
-        if ($('cmd-expires-at')) $('cmd-expires-at').value = toLocalInputFromIso(editingCmd.expires_at || '');
-        toggleSwitch('cmd-enabled', editingCmd.enabled != 0);
-        if (editingCmd.buttons_json) { kbCmd.loadInline(editingCmd.buttons_json); toggleSwitch('cmd-inline-toggle', true); show($('cmd-inline-section'), true); }
-        if (editingCmd.show_reply_keyboard) { kbCmd.loadReply(editingCmd.reply_keyboard_json); toggleSwitch('cmd-reply-toggle', true); show($('cmd-reply-section'), true); }
+    if (srcCmd) {
+        $('cmd-modal-title').textContent = cloneMode ? 'Clone command' : 'Edit command';
+        $('cmd-name').value = cloneMode ? (srcCmd.command + '_copy') : srcCmd.command;
+        $('cmd-type').value = srcCmd.response_type || 'text';
+        $('cmd-content').value = srcCmd.content || '';
+        cmdAttachments = parseStoredMediaItems(srcCmd);
+        $('cmd-media').value = (cmdAttachments.length === 1 && !cmdAttachments[0].file_id) ? (cmdAttachments[0].media_url || '') : (srcCmd.media_url || '');
+        syncCmdPrimaryFromAttachments();
+        setSeg('cmd-media-source', (cmdAttachments.some(function (a) { return !!a.file_id; }) || srcCmd.file_id) ? 'file' : 'url');
+        parentSel.value = srcCmd.parent || '';
+        setSeg('cmd-access', commandAccessLevel(srcCmd));
+        if ($('cmd-allowed-users')) $('cmd-allowed-users').value = srcCmd.allowed_users || '';
+        if ($('cmd-expires-at')) $('cmd-expires-at').value = toLocalInputFromIso(srcCmd.expires_at || '');
+        toggleSwitch('cmd-protect', !!srcCmd.protect_content);
+        toggleSwitch('cmd-enabled', srcCmd.enabled != 0);
+        if (srcCmd.buttons_json) { kbCmd.loadInline(srcCmd.buttons_json); toggleSwitch('cmd-inline-toggle', true); show($('cmd-inline-section'), true); }
+        if (srcCmd.show_reply_keyboard) { kbCmd.loadReply(srcCmd.reply_keyboard_json); toggleSwitch('cmd-reply-toggle', true); show($('cmd-reply-section'), true); }
     } else {
         $('cmd-modal-title').textContent = 'New command';
         $('cmd-name').value = ''; $('cmd-type').value = 'text';
         $('cmd-content').value = ''; $('cmd-media').value = '';
         if ($('cmd-allowed-users')) $('cmd-allowed-users').value = '';
         if ($('cmd-expires-at')) $('cmd-expires-at').value = '';
+        toggleSwitch('cmd-protect', false);
         setSeg('cmd-media-source', 'url');
         parentSel.value = parent || currentParent || '';
         setSeg('cmd-access', 'everyone'); toggleSwitch('cmd-enabled', true);
     }
     onCmdAccessChange();
-    var label = $('cmd-content-label');
-    if (label) label.textContent = $('cmd-type').value === 'text' ? 'Content' : 'Caption';
     toggleMedia();
+    renderAttachmentList('cmd-att-list', cmdAttachments, 'cmd');
     $('cmd-modal').classList.remove('hidden');
     trackModal('cmd-modal');
 }
@@ -4593,24 +5148,67 @@ function closeCommandModal() { $('cmd-modal').classList.add('hidden'); untrackMo
 async function editCommand(name) {
     try {
         var d = await api('GET', '/api/commands/' + encodeURIComponent(name));
-        if (d && d.command) openCommandModal(d.command, null);
+        if (d && d.command) openCommandModal(d.command, null, false);
     } catch (e) { toast(e.message, 'error'); }
+}
+async function duplicateCommand(name) {
+    try {
+        var d = await api('GET', '/api/commands/' + encodeURIComponent(name));
+        if (d && d.command) openCommandModal(d.command, null, true);
+    } catch (e) { toast(e.message, 'error'); }
+}
+async function toggleCmdEnabled(name) {
+    try {
+        var d = await api('GET', '/api/commands/' + encodeURIComponent(name));
+        if (!d || !d.command) return;
+        var c = Object.assign({}, d.command);
+        c.enabled = c.enabled == 1 ? 0 : 1;
+        await api('PUT', '/api/commands/' + encodeURIComponent(name), c);
+        toast(c.enabled ? (name + ' enabled.') : (name + ' disabled.'));
+        commands = []; loadCommands(true);
+    } catch (e) { toast(e.message, 'error'); }
+}
+async function copyCommandLink(name) {
+    var textToCopy = name;
+    try {
+        var st = await api('GET', '/api/status');
+        if (st && st.bot_username && /^\/start\s+([^\s]+)$/i.test(name)) {
+            var payload = name.replace(/^\/start\s+/i, '').trim();
+            textToCopy = 'https://t.me/' + st.bot_username + '?start=' + encodeURIComponent(payload);
+        }
+    } catch (e) {}
+    navigator.clipboard.writeText(textToCopy).then(function () {
+        toast('Copied: ' + textToCopy);
+    }).catch(function () { toast(textToCopy, 'info'); });
 }
 async function saveCommand() {
     var err = $('cmd-error'); err.classList.remove('show');
     var accessLevel = getSeg('cmd-access') || 'everyone';
     var mediaType = $('cmd-type').value || 'text';
     var mediaSource = getSeg('cmd-media-source') || 'url';
-    var mediaUrl = $('cmd-media').value.trim();
-    var fileId = $('cmd-file-id').value.trim();
-    if (mediaType !== 'text') {
-        if (mediaSource === 'url' && !mediaUrl) { err.textContent = 'Enter a media URL or switch to Upload.'; err.classList.add('show'); return; }
-        if (mediaSource === 'file' && !fileId) { err.textContent = 'Upload a file first, or switch to URL.'; err.classList.add('show'); return; }
-        if (mediaSource === 'url') fileId = '';
-        if (mediaSource === 'file') mediaUrl = '';
-    } else {
-        mediaUrl = ''; fileId = '';
+    var typedUrl = $('cmd-media').value.trim();
+
+    // Build unified attachments array from cmdAttachments + any typed URL in #cmd-media
+    var finalItems = cmdAttachments.slice();
+    if (mediaType !== 'text' && mediaSource === 'url' && typedUrl) {
+        var alreadyHas = finalItems.some(function (a) { return a.media_url === typedUrl; });
+        if (!alreadyHas) finalItems.unshift({ media_type: mediaType, media_url: typedUrl, file_id: '', media_meta: {}, label: typedUrl });
     }
+    if (mediaType === 'text' && finalItems.length) {
+        mediaType = finalItems[0].media_type || 'document';
+    }
+
+    var primary = finalItems[0] || null;
+    var mediaUrl = primary ? (primary.media_url || '') : '';
+    var fileId = primary ? (primary.file_id || '') : '';
+    var mediaMeta = primary && primary.media_meta ? (typeof primary.media_meta === 'string' ? primary.media_meta : JSON.stringify(primary.media_meta)) : '';
+
+    if (mediaType !== 'text' && !finalItems.length) {
+        err.textContent = 'Attach at least one file or URL, or switch Reply type to Text.';
+        err.classList.add('show');
+        return;
+    }
+
     var payload = {
         command: $('cmd-name').value.trim(),
         parent: $('cmd-parent').value || null,
@@ -4618,7 +5216,9 @@ async function saveCommand() {
         content: $('cmd-content').value.trim(),
         media_url: mediaUrl,
         file_id: fileId,
-        media_meta: mediaType !== 'text' ? ($('cmd-media-meta').value || '') : '',
+        media_meta: mediaMeta,
+        media_items_json: finalItems.length ? JSON.stringify(finalItems) : '',
+        protect_content: sw('cmd-protect') ? 1 : 0,
         access_level: accessLevel,
         allowed_users: $('cmd-allowed-users') ? $('cmd-allowed-users').value.trim() : '',
         expires_at: $('cmd-expires-at') ? toIsoFromLocalInput($('cmd-expires-at').value) : '',
@@ -4630,7 +5230,7 @@ async function saveCommand() {
     };
     if (!payload.command) { err.textContent = 'Command is required.'; err.classList.add('show'); return; }
     if (mediaType === 'text' && !payload.content) { err.textContent = 'Content is required for text responses.'; err.classList.add('show'); return; }
-    if (mediaType !== 'text' && !payload.content && !payload.media_url && !payload.file_id) { err.textContent = 'Provide a caption, a media URL, or upload a file.'; err.classList.add('show'); return; }
+    if (mediaType !== 'text' && !payload.content && !finalItems.length) { err.textContent = 'Provide a caption or attach media.'; err.classList.add('show'); return; }
     var btn = $('cmd-save');
     await withBusy(btn, async function () {
         try {
@@ -5417,7 +6017,8 @@ async function sendUserMessage() {
     if (!manageUser) return;
     var text = $('um-input').value.trim();
     var photo = $('um-photo').value.trim();
-    var hasDraftMedia = draftMedia && draftMedia.media_type && draftMedia.media_type !== 'text' && (draftMedia.file_id || draftMedia.photo_url);
+    var hasDraftItems = draftMedia && Array.isArray(draftMedia.media_items) && draftMedia.media_items.length > 0;
+    var hasDraftMedia = hasDraftItems || (draftMedia && draftMedia.media_type && draftMedia.media_type !== 'text' && (draftMedia.file_id || draftMedia.photo_url));
     if (!text && !photo && !hasDraftMedia) { toast('Type a message first.', 'error'); return; }
     var body = { userId: manageUser.id, message: text };
     if (photo) body.photo_url = photo;
@@ -5426,7 +6027,9 @@ async function sendUserMessage() {
         body.media_type = draftMedia.media_type;
         body.file_id = draftMedia.file_id;
         body.media_meta = draftMedia.media_meta;
-        if (draftMedia.media_type === 'text') { body.photo_url = ''; body.file_id = ''; body.media_meta = ''; }
+        if (hasDraftItems) body.media_items_json = JSON.stringify(draftMedia.media_items);
+        if (draftMedia.protect_content) body.protect_content = 1;
+        if (draftMedia.media_type === 'text' && !hasDraftItems) { body.photo_url = ''; body.file_id = ''; body.media_meta = ''; }
         else if (draftMedia.file_id) body.photo_url = '';
     }
     try {
@@ -5814,7 +6417,8 @@ async function sendGroupAnnouncement() {
     await withBusy(btn, async function () {
         var text = $('gm-announce').value.trim();
         var photo = $('gm-announce-photo').value.trim();
-        var hasDraftMedia = draftMedia && draftMedia.media_type && draftMedia.media_type !== 'text' && (draftMedia.file_id || draftMedia.photo_url);
+        var hasDraftItems = draftMedia && Array.isArray(draftMedia.media_items) && draftMedia.media_items.length > 0;
+        var hasDraftMedia = hasDraftItems || (draftMedia && draftMedia.media_type && draftMedia.media_type !== 'text' && (draftMedia.file_id || draftMedia.photo_url));
         if (!text && !photo && !hasDraftMedia) { toast('Write a message first.', 'error'); return; }
         var body = { message: text };
         if (photo) body.photo_url = photo;
@@ -5823,7 +6427,9 @@ async function sendGroupAnnouncement() {
             body.media_type = draftMedia.media_type;
             body.file_id = draftMedia.file_id;
             body.media_meta = draftMedia.media_meta;
-            if (draftMedia.media_type === 'text') { body.photo_url = ''; body.file_id = ''; body.media_meta = ''; }
+            if (hasDraftItems) body.media_items_json = JSON.stringify(draftMedia.media_items);
+            if (draftMedia.protect_content) body.protect_content = 1;
+            if (draftMedia.media_type === 'text' && !hasDraftItems) { body.photo_url = ''; body.file_id = ''; body.media_meta = ''; }
             else if (draftMedia.file_id) body.photo_url = '';
         }
         try {
@@ -6043,10 +6649,37 @@ function mediaStatusBadges(m) {
     }
     return b;
 }
+function renderMediaStats() {
+    var bar = $('media-stats-bar');
+    if (!bar) return;
+    if (!mediaLibrary.length) { bar.innerHTML = ''; return; }
+    var totalBytes = 0, restricted = 0, expired = 0, invalid = 0;
+    mediaLibrary.forEach(function (m) {
+        totalBytes += (m.file_size || 0);
+        if (mediaAllowedList(m).length) restricted++;
+        if (m.expires_at) {
+            var ms = parseIsoMs(m.expires_at);
+            if (ms && Date.now() > ms) expired++;
+        }
+        if (m.is_valid === 0) invalid++;
+    });
+    var sizeStr = totalBytes >= 1073741824
+        ? (totalBytes / 1073741824).toFixed(2) + ' GB'
+        : totalBytes >= 1048576
+        ? (totalBytes / 1048576).toFixed(1) + ' MB'
+        : Math.max(1, Math.round(totalBytes / 1024)) + ' KB';
+    bar.innerHTML =
+        '<span class="media-stat-pill"><i class="fa-solid fa-layer-group" style="color:var(--accent)"></i> <b>' + mediaLibrary.length + '</b> files</span>' +
+        '<span class="media-stat-pill"><i class="fa-solid fa-hard-drive" style="color:var(--green)"></i> <b>' + sizeStr + '</b> indexed</span>' +
+        (restricted ? '<span class="media-stat-pill"><i class="fa-solid fa-user-lock" style="color:var(--accent)"></i> <b>' + restricted + '</b> restricted</span>' : '') +
+        (expired ? '<span class="media-stat-pill"><i class="fa-regular fa-clock" style="color:var(--orange)"></i> <b>' + expired + '</b> expired</span>' : '') +
+        (invalid ? '<span class="media-stat-pill"><i class="fa-solid fa-circle-xmark" style="color:var(--red)"></i> <b>' + invalid + '</b> invalid</span>' : '');
+}
 function getFilteredMediaList() {
     var q = ($('media-search') && $('media-search').value || '').toLowerCase().trim();
     var af = ($('media-access-filter') && $('media-access-filter').value) || 'all';
-    return mediaLibrary.filter(function (m) {
+    var sort = ($('media-sort') && $('media-sort').value) || 'newest';
+    var filtered = mediaLibrary.filter(function (m) {
         if (mediaFilter !== 'all' && m.media_type !== mediaFilter) return false;
         var allowed = mediaAllowedList(m);
         var expMs = m.expires_at ? parseIsoMs(m.expires_at) : 0;
@@ -6061,6 +6694,16 @@ function getFilteredMediaList() {
         }
         return true;
     });
+    if (sort === 'oldest') filtered.sort(function (a, b) { return a.id - b.id; });
+    else if (sort === 'largest') filtered.sort(function (a, b) { return (b.file_size || 0) - (a.file_size || 0); });
+    else if (sort === 'name') filtered.sort(function (a, b) { return String(a.label || a.file_name || '').localeCompare(String(b.label || b.file_name || '')); });
+    else if (sort === 'expiring') filtered.sort(function (a, b) {
+        var am = a.expires_at ? parseIsoMs(a.expires_at) : Number.MAX_SAFE_INTEGER;
+        var bm = b.expires_at ? parseIsoMs(b.expires_at) : Number.MAX_SAFE_INTEGER;
+        return am - bm;
+    });
+    else filtered.sort(function (a, b) { return b.id - a.id; });
+    return filtered;
 }
 async function loadMediaLibrary(force) {
     setSeg('media-view-seg', mediaView);
@@ -6072,6 +6715,7 @@ async function loadMediaLibrary(force) {
         mediaLibrary = (d && d.items) || [];
         var validIds = new Set(mediaLibrary.map(function (m) { return m.id; }));
         Array.from(mediaSelected).forEach(function (id) { if (!validIds.has(id)) mediaSelected.delete(id); });
+        renderMediaStats();
         renderMediaGrid();
         loadMediaStorageInfo();
     } catch (e) {
@@ -6376,17 +7020,63 @@ async function createCommandFromMedia(id) {
     var m = mediaLibrary.find(function (x) { return x.id === id; });
     if (!m) return;
     await openCommandModal(null, null);
+    var mmeta = {};
+    try { mmeta = typeof m.media_meta === 'string' ? JSON.parse(m.media_meta || '{}') : (m.media_meta || {}); } catch (e) {}
+    cmdAttachments = [{
+        media_type: m.media_type || 'document',
+        file_id: m.file_id || '',
+        media_url: '',
+        media_meta: mmeta,
+        label: m.label || m.file_name || m.media_type
+    }];
     $('cmd-type').value = m.media_type || 'document';
-    $('cmd-file-id').value = m.file_id || '';
-    $('cmd-media-meta').value = typeof m.media_meta === 'string' ? m.media_meta : JSON.stringify(m.media_meta || {});
     $('cmd-content').value = m.caption || '';
     if ($('cmd-allowed-users')) $('cmd-allowed-users').value = m.allowed_users || '';
     if ($('cmd-expires-at')) $('cmd-expires-at').value = toLocalInputFromIso(m.expires_at || '');
     if (m.allowed_users && String(m.allowed_users).trim()) setSeg('cmd-access', 'specific');
+    syncCmdPrimaryFromAttachments();
     onCmdAccessChange();
     setSeg('cmd-media-source', 'file');
     toggleMedia();
+    renderAttachmentList('cmd-att-list', cmdAttachments, 'cmd');
     renderMediaPreview('cmd');
+}
+async function bulkMediaCreateCommand() {
+    var ids = Array.from(mediaSelected);
+    if (!ids.length) return;
+    var items = ids.map(function (id) { return mediaLibrary.find(function (m) { return m.id === id; }); }).filter(Boolean);
+    if (!items.length) return;
+    await openCommandModal(null, null);
+    cmdAttachments = items.map(function (m) {
+        var mmeta = {};
+        try { mmeta = typeof m.media_meta === 'string' ? JSON.parse(m.media_meta || '{}') : (m.media_meta || {}); } catch (e) {}
+        return {
+            media_type: m.media_type || 'document',
+            file_id: m.file_id || '',
+            media_url: '',
+            media_meta: mmeta,
+            label: m.label || m.file_name || m.media_type
+        };
+    });
+    var userSet = new Set();
+    var firstCaption = '', earliestExp = '';
+    items.forEach(function (m) {
+        if (!firstCaption && m.caption) firstCaption = m.caption;
+        if (m.expires_at && (!earliestExp || parseIsoMs(m.expires_at) < parseIsoMs(earliestExp))) earliestExp = m.expires_at;
+        mediaAllowedList(m).forEach(function (u) { userSet.add(u); });
+    });
+    $('cmd-type').value = items[0].media_type || 'document';
+    $('cmd-content').value = firstCaption;
+    if ($('cmd-allowed-users')) $('cmd-allowed-users').value = Array.from(userSet).join(', ');
+    if ($('cmd-expires-at')) $('cmd-expires-at').value = toLocalInputFromIso(earliestExp);
+    if (userSet.size) setSeg('cmd-access', 'specific');
+    syncCmdPrimaryFromAttachments();
+    onCmdAccessChange();
+    setSeg('cmd-media-source', 'file');
+    toggleMedia();
+    renderAttachmentList('cmd-att-list', cmdAttachments, 'cmd');
+    renderMediaPreview('cmd');
+    toast('Attached ' + items.length + ' item(s) to new command.');
 }
 function createCommandFromEditingMedia() {
     if (!editingMediaItem) return;
@@ -6503,8 +7193,10 @@ function reuseMedia(id) {
 }
 var mediaPickerTarget = null;
 var mediaPickerFilter = 'all';
+var mediaPickerSelected = new Set();
 async function openMediaPicker(targetPrefix) {
     mediaPickerTarget = targetPrefix;
+    mediaPickerSelected.clear();
     setSeg('media-picker-view-seg', mediaPickerView);
     updatePreviewToggleButtons();
     if (!mediaLibrary.length) await loadMediaLibrary();
@@ -6516,15 +7208,44 @@ function closeMediaPicker() {
     $('media-picker-modal').classList.add('hidden');
     untrackModal('media-picker-modal');
     mediaPickerTarget = null;
+    mediaPickerSelected.clear();
 }
 function setMediaPickerFilter(t) {
     mediaPickerFilter = t;
     document.querySelectorAll('#media-picker-filters .chip').forEach(function (c) { c.classList.toggle('active', c.dataset.mt === t); });
     renderMediaPicker();
 }
+function updateMediaPickerBar() {
+    var bar = $('media-picker-bulk-bar');
+    var cnt = $('media-picker-bulk-count');
+    var done = $('media-picker-done-btn');
+    if (bar) bar.classList.toggle('show', mediaPickerSelected.size > 0);
+    if (cnt) cnt.textContent = mediaPickerSelected.size + ' selected';
+    if (done) {
+        if (mediaPickerSelected.size > 0) {
+            done.textContent = 'Attach (' + mediaPickerSelected.size + ')';
+            done.onclick = function () { attachSelectedMediaFromPicker(); };
+        } else {
+            done.textContent = 'Library';
+            done.onclick = function () { closeMediaPicker(); go('media'); };
+        }
+    }
+}
+function toggleMediaPickerSelect(id, ev) {
+    if (ev) ev.stopPropagation();
+    if (mediaPickerSelected.has(id)) mediaPickerSelected.delete(id); else mediaPickerSelected.add(id);
+    updateMediaPickerBar();
+    renderMediaPicker();
+}
+function clearMediaPickerSelection() {
+    mediaPickerSelected.clear();
+    updateMediaPickerBar();
+    renderMediaPicker();
+}
 function renderMediaPicker() {
     var box = $('media-picker-grid');
     if (!box) return;
+    updateMediaPickerBar();
     var q = ($('media-picker-search') && $('media-picker-search').value || '').toLowerCase();
     var list = mediaLibrary.filter(function (m) {
         if (mediaPickerFilter !== 'all' && m.media_type !== mediaPickerFilter) return false;
@@ -6536,7 +7257,9 @@ function renderMediaPicker() {
         box.className = 'media-list';
         box.innerHTML = list.map(function (m) {
             var sizeStr = mediaSizeLabel(m);
-            return '<div class="media-list-row" style="cursor:pointer;" onclick="pickMedia(' + m.id + ')">' +
+            var sel = mediaPickerSelected.has(m.id);
+            return '<div class="media-list-row' + (sel ? ' selected' : '') + '" style="cursor:pointer;" onclick="pickMedia(' + m.id + ')">' +
+                '<input type="checkbox" class="media-cb" ' + (sel ? 'checked' : '') + ' onclick="toggleMediaPickerSelect(' + m.id + ',event)" aria-label="Select multiple">' +
                 '<div class="media-list-thumb">' + mediaThumbHtml(m, 'list') + '</div>' +
                 '<div class="media-list-main">' +
                     '<div class="media-list-title">' + esc(m.label || m.file_name || 'Untitled') + '</div>' +
@@ -6550,37 +7273,62 @@ function renderMediaPicker() {
     box.className = 'media-grid';
     box.innerHTML = list.map(function (m) {
         var kind = m.media_type || 'photo';
-        return '<div class="media-card" style="cursor:pointer;" onclick="pickMedia(' + m.id + ')">' +
+        var sel = mediaPickerSelected.has(m.id);
+        return '<div class="media-card' + (sel ? ' selected' : '') + '" style="cursor:pointer;" onclick="pickMedia(' + m.id + ')">' +
+            '<div class="media-cb-wrap"><input type="checkbox" class="media-cb" ' + (sel ? 'checked' : '') + ' onclick="toggleMediaPickerSelect(' + m.id + ',event)" aria-label="Select multiple"></div>' +
             '<span class="media-type-tag">' + esc(kind) + '</span>' +
             '<div class="media-thumb' + (mediaPreviews ? '' : ' no-preview') + '">' + mediaThumbHtml(m, 'grid') + '</div>' +
             '<div class="media-info"><div class="media-title">' + esc(m.label || m.file_name || 'Untitled') + '</div><div class="media-badges">' + mediaStatusBadges(m) + '</div></div>' +
         '</div>';
     }).join('');
 }
-function pickMedia(id) {
-    var item = mediaLibrary.find(function (m) { return m.id === id; });
-    if (!item || !mediaPickerTarget) return;
+function attachItemsToTarget(items) {
+    if (!items.length || !mediaPickerTarget) return;
     var prefix = mediaPickerTarget;
-    var fileIdEl = $(prefix + '-file-id');
-    var metaEl = $(prefix + '-media-meta');
-    var typeEl = $(prefix + '-type');
-    if (fileIdEl) fileIdEl.value = item.file_id;
-    if (metaEl) metaEl.value = typeof item.media_meta === 'string' ? item.media_meta : JSON.stringify(item.media_meta || {});
-    if (typeEl) typeEl.value = item.media_type || 'photo';
-    setSeg(prefix + '-media-source', 'file');
+    var mapped = items.map(function (item) {
+        var mmeta = {};
+        try { mmeta = typeof item.media_meta === 'string' ? JSON.parse(item.media_meta || '{}') : (item.media_meta || {}); } catch (e) {}
+        return {
+            media_type: item.media_type || 'document',
+            file_id: item.file_id || '',
+            media_url: '',
+            media_meta: mmeta,
+            label: item.label || item.file_name || item.media_type
+        };
+    });
     if (prefix === 'cmd') {
-        if (item.caption && !$('cmd-content').value.trim()) $('cmd-content').value = item.caption;
-        if (item.allowed_users && $('cmd-allowed-users') && !$('cmd-allowed-users').value.trim()) $('cmd-allowed-users').value = item.allowed_users;
-        if (item.expires_at && $('cmd-expires-at') && !$('cmd-expires-at').value) $('cmd-expires-at').value = toLocalInputFromIso(item.expires_at);
+        cmdAttachments = cmdAttachments.concat(mapped);
+        if ($('cmd-type').value === 'text' && cmdAttachments.length) $('cmd-type').value = cmdAttachments[0].media_type || 'document';
+        var first = items[0];
+        if (first.caption && !$('cmd-content').value.trim()) $('cmd-content').value = first.caption;
+        if (first.allowed_users && $('cmd-allowed-users') && !$('cmd-allowed-users').value.trim()) $('cmd-allowed-users').value = first.allowed_users;
+        if (first.expires_at && $('cmd-expires-at') && !$('cmd-expires-at').value) $('cmd-expires-at').value = toLocalInputFromIso(first.expires_at);
+        syncCmdPrimaryFromAttachments();
+        setSeg('cmd-media-source', 'file');
         toggleMedia();
         toggleCmdMediaSource();
     } else {
+        msgAttachments = msgAttachments.concat(mapped);
+        if ($('msg-type').value === 'text' && msgAttachments.length) $('msg-type').value = msgAttachments[0].media_type || 'document';
+        syncMsgPrimaryFromAttachments();
+        setSeg('msg-media-source', 'file');
         toggleMsgMedia();
         toggleMsgMediaSource();
     }
     renderMediaPreview(prefix);
     closeMediaPicker();
-    toast('Media attached.');
+    toast('Attached ' + items.length + ' item(s).');
+}
+function attachSelectedMediaFromPicker() {
+    var ids = Array.from(mediaPickerSelected);
+    var items = ids.map(function (id) { return mediaLibrary.find(function (m) { return m.id === id; }); }).filter(Boolean);
+    attachItemsToTarget(items);
+}
+function pickMedia(id) {
+    if (mediaPickerSelected.size > 0) { toggleMediaPickerSelect(id); return; }
+    var item = mediaLibrary.find(function (m) { return m.id === id; });
+    if (!item || !mediaPickerTarget) return;
+    attachItemsToTarget([item]);
 }
 
 /* ============================================================
@@ -6649,7 +7397,8 @@ function updateBcCount() {
 async function sendBroadcast() {
     var text = $('bc-text').value.trim();
     var photo = $('bc-photo').value.trim();
-    var hasDraftMedia = draftMedia && draftMedia.media_type && draftMedia.media_type !== 'text' && (draftMedia.file_id || draftMedia.photo_url);
+    var hasDraftItems = draftMedia && Array.isArray(draftMedia.media_items) && draftMedia.media_items.length > 0;
+    var hasDraftMedia = hasDraftItems || (draftMedia && draftMedia.media_type && draftMedia.media_type !== 'text' && (draftMedia.file_id || draftMedia.photo_url));
     var ids = getBroadcastIds();
     if (!ids.length) { toast('No recipients selected.', 'error'); return; }
     if (!text && !photo && !hasDraftMedia) { toast('Write a message first.', 'error'); return; }
@@ -6660,7 +7409,9 @@ async function sendBroadcast() {
         body.media_type = draftMedia.media_type;
         body.file_id = draftMedia.file_id;
         body.media_meta = draftMedia.media_meta;
-        if (draftMedia.media_type === 'text') { body.photo_url = ''; body.file_id = ''; body.media_meta = ''; }
+        if (hasDraftItems) body.media_items_json = JSON.stringify(draftMedia.media_items);
+        if (draftMedia.protect_content) body.protect_content = 1;
+        if (draftMedia.media_type === 'text' && !hasDraftItems) { body.photo_url = ''; body.file_id = ''; body.media_meta = ''; }
         else if (draftMedia.file_id) body.photo_url = '';
     }
     try {
@@ -6710,14 +7461,20 @@ async function deleteBroadcast(id) {
    ============================================================ */
 var msgContext = null;
 var draftButtonsJson = null;
+var msgAttachments = [];
 function renderComposeStatus(prefix, info) {
     var el = $(prefix + '-compose-status');
     if (!el) return;
     if (!info) { el.classList.remove('show'); el.innerHTML = ''; return; }
     var badges = [];
-    if (info.mediaType && info.mediaType !== 'text') {
+    if (info.itemCount > 1) {
+        badges.push('<span class="cs-badge"><i class="fa-solid fa-layer-group"></i>' + info.itemCount + ' attachments</span>');
+    } else if (info.mediaType && info.mediaType !== 'text') {
         var iconMap = { photo: 'fa-image', video: 'fa-video', animation: 'fa-film', voice: 'fa-microphone', audio: 'fa-music', document: 'fa-file', video_note: 'fa-circle', sticker: 'fa-sticky-note' };
         badges.push('<span class="cs-badge"><i class="fa-solid ' + (iconMap[info.mediaType] || 'fa-file') + '"></i>' + esc(info.mediaType.replace('_', ' ')) + '</span>');
+    }
+    if (info.protectContent) {
+        badges.push('<span class="cs-badge"><i class="fa-solid fa-shield-halved"></i>Protected</span>');
     }
     if (info.hasButtons) {
         badges.push('<span class="cs-badge"><i class="fa-solid fa-keyboard"></i>Buttons attached</span>');
@@ -6733,20 +7490,47 @@ function clearComposeStatus(prefix) {
     draftButtonsJson = null;
     draftMedia = null;
 }
+function syncMsgPrimaryFromAttachments() {
+    if (msgAttachments.length) {
+        var first = msgAttachments[0];
+        if ($('msg-file-id')) $('msg-file-id').value = first.file_id || '';
+        if ($('msg-photo')) $('msg-photo').value = msgAttachments.length === 1 ? (first.media_url || '') : '';
+        if ($('msg-media-meta')) $('msg-media-meta').value = first.media_meta ? (typeof first.media_meta === 'string' ? first.media_meta : JSON.stringify(first.media_meta)) : '';
+    } else {
+        if ($('msg-file-id')) $('msg-file-id').value = '';
+        if ($('msg-media-meta')) $('msg-media-meta').value = '';
+    }
+    var badge = $('msg-att-count-badge');
+    if (badge) badge.textContent = msgAttachments.length ? ('(' + msgAttachments.length + ' attached)') : '';
+}
+function addMsgUrlAttachment() {
+    var url = $('msg-photo').value.trim();
+    if (!url) { toast('Paste a media URL first.', 'error'); return; }
+    var t = $('msg-type').value || 'document';
+    if (t === 'text') { t = 'document'; $('msg-type').value = 'document'; }
+    msgAttachments.push({ media_type: t, media_url: url, file_id: '', media_meta: {}, label: url });
+    $('msg-photo').value = '';
+    syncMsgPrimaryFromAttachments();
+    renderAttachmentList('msg-att-list', msgAttachments, 'msg');
+    renderMediaPreview('msg');
+    toast('URL added to attachments.');
+}
 function toggleMsgSection(which) {
     var map = { kb: ['msg-kb-toggle', 'msg-kb-section'], inline: ['msg-inline-toggle', 'msg-inline-section'], reply: ['msg-reply-toggle', 'msg-reply-section'] };
     var m = map[which];
     var on = toggleSwitch(m[0]);
     show($(m[1]), on);
+    if (on && which === 'inline') kbMe.renderInline();
     if (on && which === 'reply') kbMe.render();
 }
 function toggleMsgMedia() {
     var typeEl = $('msg-type');
     if (!typeEl) { show($('msg-media-wrap'), false); return; }
     var t = typeEl.value || 'text';
-    show($('msg-media-wrap'), t !== 'text');
+    var isMedia = t !== 'text' || msgAttachments.length > 0;
+    show($('msg-media-wrap'), isMedia);
     var label = $('msg-text-label');
-    if (label) label.textContent = t === 'text' ? 'Text' : 'Caption';
+    if (label) label.textContent = isMedia ? 'Caption' : 'Text';
     if (t === 'sticker') setSeg('msg-media-source', 'file');
     toggleMsgMediaSource();
 }
@@ -6754,34 +7538,53 @@ function toggleMsgMediaSource() {
     var src = getSeg('msg-media-source') || 'url';
     show($('msg-media-url-panel'), src === 'url');
     show($('msg-media-file-panel'), src === 'file');
+    renderAttachmentList('msg-att-list', msgAttachments, 'msg');
     renderMediaPreview('msg');
 }
 async function uploadMsgMedia() {
     var input = $('msg-media-file');
     var status = $('msg-media-file-status');
-    if (!input || !input.files || !input.files[0]) return;
-    var file = input.files[0];
-    if (file.size > 45 * 1024 * 1024) { status.innerHTML = '<span style="color:var(--red)">File is larger than 45MB.</span>'; return; }
-    status.innerHTML = '<span class="mini-spinner"></span> Uploading…';
-    try {
-        var fd = new FormData();
-        fd.append('file', file);
-        fd.append('media_type', $('msg-type').value);
-        var res = await fetch('/api/upload_media', { method: 'POST', body: fd, credentials: 'same-origin', headers: __csrf ? { 'X-Nyxx-CSRF': __csrf } : {} });
-        var data = await res.json().catch(() => ({}));
-        if (!res.ok || !data.success) throw new Error(data.error || 'Upload failed.');
-        $('msg-file-id').value = data.file_id || '';
-        $('msg-media-meta').value = JSON.stringify(data.media_meta || {});
-        status.innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Uploaded.</span>';
+    if (!input || !input.files || !input.files.length) return;
+    var files = Array.from(input.files);
+    var okCount = 0;
+    for (var i = 0; i < files.length; i++) {
+        var file = files[i];
+        if (file.size > 45 * 1024 * 1024) { toast(file.name + ' is larger than 45MB.', 'error'); continue; }
+        status.innerHTML = '<span class="mini-spinner"></span> Uploading ' + (i + 1) + '/' + files.length + ': ' + esc(file.name) + '…';
+        try {
+            var fd = new FormData();
+            fd.append('file', file);
+            var chosen = $('msg-type').value;
+            fd.append('media_type', chosen === 'text' ? 'auto' : chosen);
+            var res = await fetch('/api/upload_media', { method: 'POST', body: fd, credentials: 'same-origin', headers: __csrf ? { 'X-Nyxx-CSRF': __csrf } : {} });
+            var data = await res.json().catch(function () { return {}; });
+            if (!res.ok || !data.success) throw new Error(data.error || 'Upload failed.');
+            msgAttachments.push({
+                media_type: data.media_type || chosen || 'document',
+                file_id: data.file_id || '',
+                media_url: '',
+                media_meta: data.media_meta || {},
+                label: file.name || data.media_type
+            });
+            okCount++;
+        } catch (e) { toast(file.name + ': ' + e.message, 'error'); }
+    }
+    input.value = '';
+    if (okCount) {
+        if ($('msg-type').value === 'text' && msgAttachments.length) $('msg-type').value = msgAttachments[0].media_type || 'document';
+        syncMsgPrimaryFromAttachments();
+        renderAttachmentList('msg-att-list', msgAttachments, 'msg');
         renderMediaPreview('msg');
-    } catch (e) { status.innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
+        status.innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Uploaded ' + okCount + ' file(s).</span>';
+    } else {
+        status.innerHTML = '<span style="color:var(--red)">Upload failed.</span>';
+    }
 }
 function openMsgEditor(mode, id) {
     msgContext = { mode: mode, id: id };
     draftMedia = null;
+    msgAttachments = [];
 
-    // Defensive helpers — if the served HTML is missing an element we
-    // log a warning instead of crashing the whole editor.
     var _g  = function (elId) { return document.getElementById(elId); };
     var _sv = function (elId, val) { var el = _g(elId); if (el) el.value = val; else console.warn('[msg-editor] missing #' + elId); };
     var _sh = function (elId, val) { var el = _g(elId); if (el) el.innerHTML = val; else console.warn('[msg-editor] missing #' + elId); };
@@ -6791,6 +7594,7 @@ function openMsgEditor(mode, id) {
     toggleSwitch('msg-kb-toggle', false);     show(_g('msg-kb-section'), false);
     toggleSwitch('msg-inline-toggle', false); show(_g('msg-inline-section'), false);
     toggleSwitch('msg-reply-toggle', false);  show(_g('msg-reply-section'), false);
+    toggleSwitch('msg-protect', false);
     _sv('msg-photo', '');
     _sv('msg-text', '');
     _sv('msg-file-id', '');
@@ -6800,7 +7604,10 @@ function openMsgEditor(mode, id) {
     var _typeEl = _g('msg-type'); if (_typeEl) _typeEl.disabled = false;
     setSeg('msg-media-source', 'url');
 
-    if (mode === 'dm' || mode === 'broadcast' || mode === 'group-edit') {
+    var isEditMode = (mode === 'dm' || mode === 'broadcast' || mode === 'group-edit');
+    show(_g('msg-protect-row'), !isEditMode);
+
+    if (isEditMode) {
         var rec = mode === 'dm'
             ? (window.__dmCache || []).find(function (m) { return m.id === id; })
             : mode === 'broadcast'
@@ -6812,10 +7619,10 @@ function openMsgEditor(mode, id) {
             var curType = normalizeClientMediaType(rec.kind || rec.media_type || (rec.photo_url ? 'photo' : 'text'));
             if (_typeEl) { _typeEl.value = curType; _typeEl.disabled = false; }
             _sv('msg-text', rec.text || rec.message || '');
-            _sv('msg-photo', rec.photo_url || '');
-            _sv('msg-file-id', rec.file_id || '');
-            _sv('msg-media-meta', rec.media_meta || '');
-            setSeg('msg-media-source', rec.file_id ? 'file' : 'url');
+            msgAttachments = parseStoredMediaItems(rec);
+            _sv('msg-photo', (msgAttachments.length === 1 && !msgAttachments[0].file_id) ? (msgAttachments[0].media_url || '') : (rec.photo_url || ''));
+            syncMsgPrimaryFromAttachments();
+            setSeg('msg-media-source', (msgAttachments.some(function (a) { return !!a.file_id; }) || rec.file_id) ? 'file' : 'url');
             var tHint = _g('msg-type-hint');
             if (tHint) tHint.innerHTML = 'Original type: <b>' + esc(curType) + '</b>. Changing the type re-sends this message as a new one.';
             if (rec.buttons_json) {
@@ -6848,6 +7655,7 @@ function openMsgEditor(mode, id) {
 
     kbMe.populateCommands();
     toggleMsgMedia();
+    renderAttachmentList('msg-att-list', msgAttachments, 'msg');
     var _modal = _g('msg-modal'); if (_modal) _modal.classList.remove('hidden');
     trackModal('msg-modal');
 }
@@ -6869,22 +7677,32 @@ async function saveMsgEditor() {
     var text = $('msg-text').value.trim();
     var mediaType = $('msg-type').value || 'text';
     var mediaSource = getSeg('msg-media-source') || 'url';
-    var photo = $('msg-photo').value.trim();
-    var fileId = $('msg-file-id').value.trim();
-    var mediaMeta = $('msg-media-meta').value || '';
-    var buttons = collectButtons();
-    if (mediaType === 'text') {
-        photo = ''; fileId = ''; mediaMeta = '';
-    } else if (mediaSource === 'url') {
-        fileId = '';
-    } else if (mediaSource === 'file') {
-        photo = '';
+    var typedUrl = $('msg-photo').value.trim();
+
+    var finalItems = msgAttachments.slice();
+    if (mediaType !== 'text' && mediaSource === 'url' && typedUrl) {
+        var alreadyHas = finalItems.some(function (a) { return a.media_url === typedUrl; });
+        if (!alreadyHas) finalItems.unshift({ media_type: mediaType, media_url: typedUrl, file_id: '', media_meta: {}, label: typedUrl });
     }
-    if (mediaType === 'text' && !text) { err.textContent = 'A message text is required.'; err.classList.add('show'); return; }
-    if (mediaType !== 'text' && !photo && !fileId) { err.textContent = 'Attach media (URL or upload).'; err.classList.add('show'); return; }
+    if (mediaType === 'text' && finalItems.length) mediaType = finalItems[0].media_type || 'document';
+
+    var primary = finalItems[0] || null;
+    var photo = primary ? (primary.media_url || '') : '';
+    var fileId = primary ? (primary.file_id || '') : '';
+    var mediaMeta = primary && primary.media_meta ? (typeof primary.media_meta === 'string' ? primary.media_meta : JSON.stringify(primary.media_meta)) : '';
+    var buttons = collectButtons();
+    var protectContent = sw('msg-protect') ? 1 : 0;
+
+    if (mediaType === 'text' && !text && !finalItems.length) { err.textContent = 'A message text is required.'; err.classList.add('show'); return; }
+    if (mediaType !== 'text' && !finalItems.length) { err.textContent = 'Attach media (URL or upload).'; err.classList.add('show'); return; }
     try {
         await withBusy($('msg-save'), async function () {
-            var payload = { text: text, buttons_json: buttons, media_type: mediaType, file_id: fileId, photo_url: photo, media_meta: mediaMeta };
+            var payload = {
+                text: text, buttons_json: buttons, media_type: mediaType,
+                file_id: fileId, photo_url: photo, media_meta: mediaMeta,
+                media_items_json: finalItems.length ? JSON.stringify(finalItems) : '',
+                protect_content: protectContent
+            };
             if (msgContext.mode === 'dm') {
                 var rec = (window.__dmCache || []).find(function (m) { return m.id === msgContext.id; });
                 var resp = await api('POST', '/api/users/message/edit', { chatId: rec.chat_id, messageId: rec.message_id, ...payload });
@@ -6905,25 +7723,28 @@ async function saveMsgEditor() {
                     file_id: fileId,
                     photo_url: photo,
                     media_meta: mediaMeta,
+                    media_items_json: finalItems.length ? JSON.stringify(finalItems) : '',
                     buttons_json: buttons
                 });
                 toast(gresp && gresp.converted ? 'Group message re-sent (media type changed).' : 'Group message updated.');
                 loadGroupChatMessages();
             } else {
-                // Stash on the input fields so sendUserMessage / sendGroupAnnouncement / sendBroadcast pick them up.
                 draftButtonsJson = buttons;
-                draftMedia = { media_type: mediaType, file_id: fileId, photo_url: photo, media_meta: mediaMeta };
+                draftMedia = {
+                    media_type: mediaType, file_id: fileId, photo_url: photo, media_meta: mediaMeta,
+                    media_items: finalItems, protect_content: protectContent
+                };
                 if (msgContext.mode === 'dm-new') {
-                    $('um-input').value = text; $('um-photo').value = photo;
-                    renderComposeStatus('um', { mediaType: mediaType, hasButtons: !!buttons });
+                    $('um-input').value = text; $('um-photo').value = finalItems.length === 1 ? photo : '';
+                    renderComposeStatus('um', { mediaType: mediaType, itemCount: finalItems.length, protectContent: !!protectContent, hasButtons: !!buttons });
                 }
                 if (msgContext.mode === 'group') {
-                    $('gm-announce').value = text; $('gm-announce-photo').value = photo;
-                    renderComposeStatus('gm', { mediaType: mediaType, hasButtons: !!buttons });
+                    $('gm-announce').value = text; $('gm-announce-photo').value = finalItems.length === 1 ? photo : '';
+                    renderComposeStatus('gm', { mediaType: mediaType, itemCount: finalItems.length, protectContent: !!protectContent, hasButtons: !!buttons });
                 }
                 if (msgContext.mode === 'broadcast-new') {
-                    $('bc-text').value = text; $('bc-photo').value = photo;
-                    renderComposeStatus('bc', { mediaType: mediaType, hasButtons: !!buttons });
+                    $('bc-text').value = text; $('bc-photo').value = finalItems.length === 1 ? photo : '';
+                    renderComposeStatus('bc', { mediaType: mediaType, itemCount: finalItems.length, protectContent: !!protectContent, hasButtons: !!buttons });
                 }
                 toast('Attachments ready. Send when you are set.', 'success');
             }
@@ -6945,41 +7766,92 @@ function createKeyboardBuilder(prefix, opts) {
 
     function el(id) { return $(prefix + '-' + id); }
 
+    function syncRowSelect(which) {
+        var sel = el(which + '-row');
+        if (!sel) return;
+        var prev = sel.value || 'auto';
+        var rows = which === 'inline' ? inline : reply.rows;
+        var html = '<option value="auto">Auto row</option><option value="new">+ New row</option>';
+        for (var i = 0; i < rows.length; i++) {
+            html += '<option value="' + i + '">Row ' + (i + 1) + ' (' + rows[i].length + ')</option>';
+        }
+        sel.innerHTML = html;
+        if (prev === 'auto' || prev === 'new' || (parseInt(prev, 10) >= 0 && parseInt(prev, 10) < rows.length)) {
+            sel.value = prev;
+        } else {
+            sel.value = 'auto';
+        }
+    }
+
+    function swatchHtml(which, ri, bi, activeStyle) {
+        var cur = activeStyle || '';
+        var colors = [
+            ['', 'sw-default', 'Default color'],
+            ['primary', 'sw-primary', 'Blue'],
+            ['success', 'sw-success', 'Green'],
+            ['danger', 'sw-danger', 'Red']
+        ];
+        return '<div class="kb-color-row"><span class="kb-color-label">Color</span>' + colors.map(function (c) {
+            return '<button type="button" class="kb-color-swatch ' + c[1] + (cur === c[0] ? ' active' : '') + '" title="' + c[2] + '" onclick="' + prefix + 'Color(\\'' + which + '\\',' + ri + ',' + bi + ',\\'' + c[0] + '\\')"></button>';
+        }).join('') + '</div>';
+    }
+
     function renderInline() {
+        syncRowSelect('inline');
         var box = el('inline-list'); if (!box) return;
-        if (!inline.length) { box.innerHTML = '<div class="empty" style="padding:14px;"><i class="fa-regular fa-keyboard"></i>No inline buttons yet.<div class="empty-hint">Add one above using the label + type + value fields.</div></div>'; return; }
+        if (!inline.length) {
+            box.innerHTML = '<div class="empty" style="padding:14px;"><i class="fa-regular fa-keyboard"></i>No inline buttons yet.<div class="empty-hint">Add buttons above using Auto, + New row, or pick any Row.</div></div>';
+            return;
+        }
         var html = '<div class="kb-wrap">';
         inline.forEach(function (row, ri) {
-            html += '<div class="kb-rowchips"><span class="kb-rlabel">Row ' + (ri + 1) + '</span>';
+            html += '<div class="kb-row-block">' +
+                '<div class="kb-row-head">' +
+                    '<span class="kb-rlabel">Row ' + (ri + 1) + ' <span class="muted">(' + row.length + ')</span></span>' +
+                    '<div class="kb-row-actions">' +
+                        '<button type="button" onclick="' + prefix + 'FocusRow(\\'inline\\',' + ri + ')" title="Target this row when adding"><i class="fa-solid fa-plus"></i> Add here</button>' +
+                        '<button type="button" onclick="' + prefix + 'MoveIR(' + ri + ',-1)" ' + (ri === 0 ? 'disabled' : '') + ' title="Move entire row up"><i class="fa-solid fa-arrow-up"></i></button>' +
+                        '<button type="button" onclick="' + prefix + 'MoveIR(' + ri + ',1)" ' + (ri === inline.length - 1 ? 'disabled' : '') + ' title="Move entire row down"><i class="fa-solid fa-arrow-down"></i></button>' +
+                        '<button type="button" class="del" onclick="' + prefix + 'DelRow(\\'inline\\',' + ri + ')" title="Delete entire row"><i class="fa-regular fa-trash-can"></i></button>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="kb-rowchips" style="border:none;padding:0;">';
+            if (!row.length) {
+                html += '<span class="tiny muted" style="padding:6px 4px;font-style:italic;">Empty row — add a button with Target row = Row ' + (ri + 1) + ', or move a button here.</span>';
+            }
             row.forEach(function (b, bi) {
                 var editing = editingInline && editingInline.ri === ri && editingInline.bi === bi;
                 var typeClass = b.type === 'url' ? 'type-url' : (b.type === 'command' ? 'type-command' : 'type-callback');
+                var canMoveUp = ri > 0 || row.length > 1;
+                var canMoveDown = ri < inline.length - 1 || row.length > 1;
                 html += '<div class="kb-btn-card' + (editing ? ' editing' : '') + '">' +
                     '<div class="kb-card-head">' +
                         '<span class="lbl" onclick="' + prefix + 'EditI(' + ri + ',' + bi + ')" title="Click to edit this button">' + esc(b.text) + '</span>' +
                         '<span class="typ ' + typeClass + '">' + esc(b.type) + '</span>' +
                     '</div>' +
                     (b.value ? '<div class="val" title="' + esc(b.value) + '">' + esc(b.value) + '</div>' : '') +
+                    swatchHtml('inline', ri, bi, b.style) +
                     '<div class="kb-card-actions">' +
                         '<button type="button" class="arw" onclick="' + prefix + 'MoveI(' + ri + ',' + bi + ',-1)" ' + (bi === 0 ? 'disabled' : '') + ' title="Move left" aria-label="Move left"><i class="fa-solid fa-arrow-left"></i></button>' +
                         '<button type="button" class="arw" onclick="' + prefix + 'MoveI(' + ri + ',' + bi + ',1)" ' + (bi === row.length - 1 ? 'disabled' : '') + ' title="Move right" aria-label="Move right"><i class="fa-solid fa-arrow-right"></i></button>' +
-                        '<button type="button" class="arw" onclick="' + prefix + 'MoveIR(' + ri + ',-1)" ' + (ri === 0 ? 'disabled' : '') + ' title="Move up a row" aria-label="Move up a row"><i class="fa-solid fa-arrow-up"></i></button>' +
-                        '<button type="button" class="arw" onclick="' + prefix + 'MoveIR(' + ri + ',1)" ' + (ri === inline.length - 1 ? 'disabled' : '') + ' title="Move down a row" aria-label="Move down a row"><i class="fa-solid fa-arrow-down"></i></button>' +
+                        '<button type="button" class="arw" onclick="' + prefix + 'MoveBtnRow(\\'inline\\',' + ri + ',' + bi + ',-1)" ' + (!canMoveUp ? 'disabled' : '') + ' title="Move this button to previous / new row above" aria-label="Move button up a row"><i class="fa-solid fa-arrow-up"></i></button>' +
+                        '<button type="button" class="arw" onclick="' + prefix + 'MoveBtnRow(\\'inline\\',' + ri + ',' + bi + ',1)" ' + (!canMoveDown ? 'disabled' : '') + ' title="Move this button to next / new row below" aria-label="Move button down a row"><i class="fa-solid fa-arrow-down"></i></button>' +
                         '<div class="arw-spacer"></div>' +
+                        '<button type="button" class="arw" onclick="' + prefix + 'Dup(\\'inline\\',' + ri + ',' + bi + ')" title="Duplicate" aria-label="Duplicate"><i class="fa-regular fa-clone"></i></button>' +
                         '<button type="button" class="arw edit" onclick="' + prefix + 'EditI(' + ri + ',' + bi + ')" title="Edit" aria-label="Edit"><i class="fa-regular fa-pen-to-square"></i></button>' +
                         '<button type="button" class="arw del" onclick="' + prefix + 'DelI(' + ri + ',' + bi + ')" title="Remove" aria-label="Remove"><i class="fa-regular fa-trash-can"></i></button>' +
                     '</div>' +
                 '</div>';
             });
-            html += '</div>';
+            html += '</div></div>';
         });
         html += '</div>';
-        // Live Telegram-style preview
         var preview = '<div class="kb-preview" style="margin-top:12px;"><div class="pv-label"><i class="fa-brands fa-telegram"></i> Live Telegram preview</div>';
         inline.forEach(function (row) {
+            if (!row.length) return;
             preview += '<div class="pvrow">';
             row.forEach(function (b) {
-                var cls = b.type === 'url' ? 'pv-url' : (b.type === 'command' ? 'pv-cmd' : 'pv-cb');
+                var cls = b.style ? ('pv-' + b.style) : (b.type === 'url' ? 'pv-url' : (b.type === 'command' ? 'pv-cmd' : 'pv-cb'));
                 preview += '<span class="pvbtn ' + cls + '">' + esc(b.text) + '</span>';
             });
             preview += '</div>';
@@ -6989,15 +7861,32 @@ function createKeyboardBuilder(prefix, opts) {
     }
 
     function renderReply() {
+        syncRowSelect('reply');
         var box = el('reply-list'); if (!box) return;
-        if (!reply.rows.length) { box.innerHTML = '<div class="empty" style="padding:14px;"><i class="fa-regular fa-keyboard"></i>No reply buttons yet.<div class="empty-hint">Add one above using the button text + action fields.</div></div>'; }
-        else {
+        if (!reply.rows.length) {
+            box.innerHTML = '<div class="empty" style="padding:14px;"><i class="fa-regular fa-keyboard"></i>No reply buttons yet.<div class="empty-hint">Add buttons above using Auto, + New row, or pick any Row.</div></div>';
+        } else {
             var html = '<div class="kb-wrap">';
             reply.rows.forEach(function (row, ri) {
-                html += '<div class="kb-rowchips"><span class="kb-rlabel">Row ' + (ri + 1) + '</span>';
+                html += '<div class="kb-row-block">' +
+                    '<div class="kb-row-head">' +
+                        '<span class="kb-rlabel">Row ' + (ri + 1) + ' <span class="muted">(' + row.length + ')</span></span>' +
+                        '<div class="kb-row-actions">' +
+                            '<button type="button" onclick="' + prefix + 'FocusRow(\\'reply\\',' + ri + ')" title="Target this row when adding"><i class="fa-solid fa-plus"></i> Add here</button>' +
+                            '<button type="button" onclick="' + prefix + 'MoveRR(' + ri + ',-1)" ' + (ri === 0 ? 'disabled' : '') + ' title="Move entire row up"><i class="fa-solid fa-arrow-up"></i></button>' +
+                            '<button type="button" onclick="' + prefix + 'MoveRR(' + ri + ',1)" ' + (ri === reply.rows.length - 1 ? 'disabled' : '') + ' title="Move entire row down"><i class="fa-solid fa-arrow-down"></i></button>' +
+                            '<button type="button" class="del" onclick="' + prefix + 'DelRow(\\'reply\\',' + ri + ')" title="Delete entire row"><i class="fa-regular fa-trash-can"></i></button>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="kb-rowchips" style="border:none;padding:0;">';
+                if (!row.length) {
+                    html += '<span class="tiny muted" style="padding:6px 4px;font-style:italic;">Empty row — add a button with Target row = Row ' + (ri + 1) + ', or move a button here.</span>';
+                }
                 row.forEach(function (b, bi) {
                     var act = reply.actions[b.text] || '';
                     var editing = editingReply && editingReply.ri === ri && editingReply.bi === bi;
+                    var canMoveUp = ri > 0 || row.length > 1;
+                    var canMoveDown = ri < reply.rows.length - 1 || row.length > 1;
                     html += '<div class="kb-btn-card' + (editing ? ' editing' : '') + '">' +
                         '<div class="kb-card-head">' +
                             '<span class="lbl" onclick="' + prefix + 'EditR(' + ri + ',' + bi + ')" title="Click to edit this button">' + esc(b.text) + '</span>' +
@@ -7006,18 +7895,20 @@ function createKeyboardBuilder(prefix, opts) {
                         (act
                             ? '<div class="val" title="' + esc(act) + '" style="cursor:pointer;" onclick="' + prefix + 'SetAct(' + ri + ',' + bi + ')">' + esc(act) + '</div>'
                             : '<div class="val" style="cursor:pointer;color:var(--text-4);font-style:italic;" onclick="' + prefix + 'SetAct(' + ri + ',' + bi + ')">Click to set action…</div>') +
+                        swatchHtml('reply', ri, bi, b.style) +
                         '<div class="kb-card-actions">' +
                             '<button type="button" class="arw" onclick="' + prefix + 'MoveR(' + ri + ',' + bi + ',-1)" ' + (bi === 0 ? 'disabled' : '') + ' title="Move left" aria-label="Move left"><i class="fa-solid fa-arrow-left"></i></button>' +
                             '<button type="button" class="arw" onclick="' + prefix + 'MoveR(' + ri + ',' + bi + ',1)" ' + (bi === row.length - 1 ? 'disabled' : '') + ' title="Move right" aria-label="Move right"><i class="fa-solid fa-arrow-right"></i></button>' +
-                            '<button type="button" class="arw" onclick="' + prefix + 'MoveRR(' + ri + ',-1)" ' + (ri === 0 ? 'disabled' : '') + ' title="Move up a row" aria-label="Move up a row"><i class="fa-solid fa-arrow-up"></i></button>' +
-                            '<button type="button" class="arw" onclick="' + prefix + 'MoveRR(' + ri + ',1)" ' + (ri === reply.rows.length - 1 ? 'disabled' : '') + ' title="Move down a row" aria-label="Move down a row"><i class="fa-solid fa-arrow-down"></i></button>' +
+                            '<button type="button" class="arw" onclick="' + prefix + 'MoveBtnRow(\\'reply\\',' + ri + ',' + bi + ',-1)" ' + (!canMoveUp ? 'disabled' : '') + ' title="Move this button to previous / new row above" aria-label="Move button up a row"><i class="fa-solid fa-arrow-up"></i></button>' +
+                            '<button type="button" class="arw" onclick="' + prefix + 'MoveBtnRow(\\'reply\\',' + ri + ',' + bi + ',1)" ' + (!canMoveDown ? 'disabled' : '') + ' title="Move this button to next / new row below" aria-label="Move button down a row"><i class="fa-solid fa-arrow-down"></i></button>' +
                             '<div class="arw-spacer"></div>' +
+                            '<button type="button" class="arw" onclick="' + prefix + 'Dup(\\'reply\\',' + ri + ',' + bi + ')" title="Duplicate" aria-label="Duplicate"><i class="fa-regular fa-clone"></i></button>' +
                             '<button type="button" class="arw edit" onclick="' + prefix + 'EditR(' + ri + ',' + bi + ')" title="Edit" aria-label="Edit"><i class="fa-regular fa-pen-to-square"></i></button>' +
                             '<button type="button" class="arw del" onclick="' + prefix + 'DelR(' + ri + ',' + bi + ')" title="Remove" aria-label="Remove"><i class="fa-regular fa-trash-can"></i></button>' +
                         '</div>' +
                     '</div>';
                 });
-                html += '</div>';
+                html += '</div></div>';
             });
             box.innerHTML = html + '</div>';
         }
@@ -7026,10 +7917,30 @@ function createKeyboardBuilder(prefix, opts) {
 
     function renderPreview() {
         var pv = el('reply-preview'); if (!pv) return;
-        if (!reply.rows.length) { pv.innerHTML = ''; return; }
-        pv.innerHTML = reply.rows.map(function (row) {
-            return '<div class="pvrow">' + row.map(function (b) { return '<span class="pvbtn">' + esc(b.text) + '</span>'; }).join('') + '</div>';
+        var nonEmpty = reply.rows.filter(function (r) { return r.length > 0; });
+        if (!nonEmpty.length) { pv.innerHTML = ''; return; }
+        pv.innerHTML = '<div class="pv-label"><i class="fa-regular fa-keyboard"></i> Live Reply Keyboard preview</div>' + nonEmpty.map(function (row) {
+            return '<div class="pvrow">' + row.map(function (b) {
+                var cls = b.style ? (' pv-' + b.style) : '';
+                return '<span class="pvbtn' + cls + '">' + esc(b.text) + '</span>';
+            }).join('') + '</div>';
         }).join('');
+    }
+
+    function pushToTargetRow(rows, targetVal, item, maxPerAutoRow, hardMax) {
+        if (targetVal === 'new') {
+            rows.push([item]);
+            return;
+        }
+        var idx = parseInt(targetVal, 10);
+        if (!isNaN(idx) && rows[idx]) {
+            if (rows[idx].length >= hardMax) { toast('Max ' + hardMax + ' buttons per row in Telegram.', 'error'); rows.push([item]); }
+            else rows[idx].push(item);
+            return;
+        }
+        var last = rows.length ? rows[rows.length - 1] : null;
+        if (!last || last.length >= maxPerAutoRow) { last = []; rows.push(last); }
+        last.push(item);
     }
 
     function inlineAdd() {
@@ -7037,25 +7948,18 @@ function createKeyboardBuilder(prefix, opts) {
         var type = el('inline-type').value;
         var val = type === 'command' ? el('inline-cmd').value : el('inline-value').value.trim();
         var style = el('inline-style') ? el('inline-style').value : '';
+        var rowTarget = el('inline-row') ? el('inline-row').value : 'auto';
         if (!lbl) { toast('Enter a label.', 'error'); return; }
         if (!val) { toast('Choose a command or enter a value.', 'error'); return; }
         if (type === 'command' && val.charAt(0) !== '/') val = '/' + val;
 
-        // Guard: only treat as an edit if the target button still exists.
-        // If the user deleted the button they were editing (or its row got
-        // removed), fall back to adding a new one instead of crashing.
-        var editingValid = editingInline
-            && inline[editingInline.ri]
-            && inline[editingInline.ri][editingInline.bi];
-
+        var editingValid = editingInline && inline[editingInline.ri] && inline[editingInline.ri][editingInline.bi];
         if (editingValid) {
             inline[editingInline.ri][editingInline.bi] = { text: lbl, type: type, value: val, style: style || '' };
             editingInline = null;
         } else {
             editingInline = null;
-            var last = inline.length ? inline[inline.length - 1] : null;
-            if (!last || last.length >= 3) { last = []; inline.push(last); }
-            last.push({ text: lbl, type: type, value: val, style: style || '' });
+            pushToTargetRow(inline, rowTarget, { text: lbl, type: type, value: val, style: style || '' }, 3, 8);
         }
         var addBtn = el('inline-add-btn');
         if (addBtn) addBtn.innerHTML = '<i class="fa-solid fa-plus"></i>';
@@ -7069,15 +7973,10 @@ function createKeyboardBuilder(prefix, opts) {
         if (!lbl) { toast('Enter button text.', 'error'); return; }
         var act = el('reply-cmd').value || el('reply-value').value.trim();
         var style = el('reply-style') ? el('reply-style').value : '';
+        var rowTarget = el('reply-row') ? el('reply-row').value : 'auto';
         if (act && act.charAt(0) !== '/') act = '/' + act;
 
-        // Guard: only treat as an edit if the target button still exists.
-        // If the user deleted the button they were editing, fall back to
-        // adding a new one instead of crashing.
-        var editingValid = editingReply
-            && reply.rows[editingReply.ri]
-            && reply.rows[editingReply.ri][editingReply.bi];
-
+        var editingValid = editingReply && reply.rows[editingReply.ri] && reply.rows[editingReply.ri][editingReply.bi];
         if (editingValid) {
             var oldText = reply.rows[editingReply.ri][editingReply.bi].text;
             reply.rows[editingReply.ri][editingReply.bi] = { text: lbl, command: '', style: style || '' };
@@ -7086,9 +7985,7 @@ function createKeyboardBuilder(prefix, opts) {
             editingReply = null;
         } else {
             editingReply = null;
-            var last = reply.rows.length ? reply.rows[reply.rows.length - 1] : null;
-            if (!last || last.length >= 3) { last = []; reply.rows.push(last); }
-            last.push({ text: lbl, command: '', style: style || '' });
+            pushToTargetRow(reply.rows, rowTarget, { text: lbl, command: '', style: style || '' }, 3, 12);
             if (act) reply.actions[lbl] = act;
         }
         var addBtn = el('reply-add-btn');
@@ -7096,6 +7993,78 @@ function createKeyboardBuilder(prefix, opts) {
         el('reply-label').value = ''; el('reply-value').value = ''; el('reply-cmd').value = '';
         if (el('reply-style')) el('reply-style').value = '';
         renderReply();
+    }
+
+    function addRow(which) {
+        var rows = which === 'inline' ? inline : reply.rows;
+        rows.push([]);
+        if (which === 'inline') renderInline(); else renderReply();
+        var sel = el(which + '-row');
+        if (sel) sel.value = String(rows.length - 1);
+        var inp = el(which + '-label');
+        if (inp) try { inp.focus(); } catch (e) {}
+    }
+
+    function focusRow(which, ri) {
+        var sel = el(which + '-row');
+        if (sel) sel.value = String(ri);
+        var inp = el(which + '-label');
+        if (inp) try { inp.focus(); } catch (e) {}
+    }
+
+    function delRow(which, ri) {
+        var rows = which === 'inline' ? inline : reply.rows;
+        if (ri < 0 || ri >= rows.length) return;
+        if (which === 'reply') {
+            rows[ri].forEach(function (b) { delete reply.actions[b.text]; });
+            editingReply = null;
+        } else {
+            editingInline = null;
+        }
+        rows.splice(ri, 1);
+        if (which === 'inline') renderInline(); else renderReply();
+    }
+
+    function moveBtnRow(which, ri, bi, dir) {
+        var rows = which === 'inline' ? inline : reply.rows;
+        var row = rows[ri];
+        if (!row || !row[bi]) return;
+        var item = row.splice(bi, 1)[0];
+        var targetRi = ri + dir;
+        if (dir < 0) {
+            if (targetRi < 0) {
+                rows.unshift([item]);
+            } else {
+                rows[targetRi].push(item);
+            }
+        } else {
+            if (targetRi >= rows.length) {
+                rows.push([item]);
+            } else {
+                rows[targetRi].push(item);
+            }
+        }
+        for (var k = rows.length - 1; k >= 0; k--) {
+            if (!rows[k].length) rows.splice(k, 1);
+        }
+        if (which === 'inline') { editingInline = null; renderInline(); }
+        else { editingReply = null; renderReply(); }
+    }
+
+    function dupBtn(which, ri, bi) {
+        var rows = which === 'inline' ? inline : reply.rows;
+        if (!rows[ri] || !rows[ri][bi]) return;
+        var copy = Object.assign({}, rows[ri][bi]);
+        if (rows[ri].length < 8) rows[ri].splice(bi + 1, 0, copy);
+        else rows.splice(ri + 1, 0, [copy]);
+        if (which === 'inline') renderInline(); else renderReply();
+    }
+
+    function setBtnColor(which, ri, bi, style) {
+        var rows = which === 'inline' ? inline : reply.rows;
+        if (!rows[ri] || !rows[ri][bi]) return;
+        rows[ri][bi].style = style || '';
+        if (which === 'inline') renderInline(); else renderReply();
     }
 
     function editInline(ri, bi) {
@@ -7128,7 +8097,7 @@ function createKeyboardBuilder(prefix, opts) {
     function setAct(ri, bi) {
         var b = reply.rows[ri][bi];
         var cur = reply.actions[b.text] || '';
-        var v = prompt('Command for "' + b.text + '" (e.g. /menu):', cur);
+        var v = prompt('Command for "' + b.text + '" (e.g. /menu or /help 123):', cur);
         if (v === null) return;
         v = v.trim();
         if (v) reply.actions[b.text] = v.charAt(0) === '/' ? v : '/' + v;
@@ -7217,7 +8186,7 @@ function createKeyboardBuilder(prefix, opts) {
                     rep = o;
                 }
                 if (rep && rep.rows) {
-                reply.rows = rep.rows.map(function (r) { return (Array.isArray(r) ? r : [r]).map(function (b) { return { text: typeof b === 'string' ? b : b.text, command: typeof b === 'object' ? (b.command || '') : '', style: typeof b === 'object' ? (b.style || '') : '' }; }); });
+                    reply.rows = rep.rows.map(function (r) { return (Array.isArray(r) ? r : [r]).map(function (b) { return { text: typeof b === 'string' ? b : b.text, command: typeof b === 'object' ? (b.command || '') : '', style: typeof b === 'object' ? (b.style || '') : '' }; }); });
                     reply.actions = rep.actions || {};
                     if (typeof rep.resize === 'boolean') reply.resize = rep.resize;
                     if (typeof rep.one_time === 'boolean') reply.one_time = rep.one_time;
@@ -7230,10 +8199,15 @@ function createKeyboardBuilder(prefix, opts) {
         renderReply();
     }
 
-    function inlineJSON() { return inline.length ? { v: 2, inline: inline } : null; }
+    function cleanEmptyRows(rows) { return rows.filter(function (r) { return r.length > 0; }); }
+    function inlineJSON() {
+        var rows = cleanEmptyRows(inline);
+        return rows.length ? { v: 2, inline: rows } : null;
+    }
     function replyJSON() {
-        if (!reply.rows.length) return null;
-        return { v: 2, reply: { rows: reply.rows, actions: reply.actions, resize: reply.resize, one_time: reply.one_time, persistent: reply.persistent, placeholder: reply.placeholder } };
+        var rows = cleanEmptyRows(reply.rows);
+        if (!rows.length) return null;
+        return { v: 2, reply: { rows: rows, actions: reply.actions, resize: reply.resize, one_time: reply.one_time, persistent: reply.persistent, placeholder: reply.placeholder } };
     }
     function reset() {
         inline = [];
@@ -7264,12 +8238,23 @@ function createKeyboardBuilder(prefix, opts) {
         if (el('reply-placeholder')) reply.placeholder = el('reply-placeholder').value;
     }
 
-    var api = { inlineAdd: inlineAdd, replyAdd: replyAdd, loadInline: loadInline, loadReply: loadReply, inlineJSON: inlineJSON, replyJSON: replyJSON, reset: reset, render: renderReply, populateCommands: populateCommands, syncSettings: syncSettings };
+    var api = {
+        inlineAdd: inlineAdd, replyAdd: replyAdd, addRow: addRow,
+        loadInline: loadInline, loadReply: loadReply,
+        inlineJSON: inlineJSON, replyJSON: replyJSON,
+        reset: reset, render: renderReply, renderInline: renderInline,
+        populateCommands: populateCommands, syncSettings: syncSettings
+    };
     window[prefix + 'MoveI'] = moveI; window[prefix + 'MoveIR'] = moveIR; window[prefix + 'DelI'] = delI;
     window[prefix + 'MoveR'] = moveR; window[prefix + 'MoveRR'] = moveRR; window[prefix + 'DelR'] = delR;
     window[prefix + 'SetAct'] = setAct;
     window[prefix + 'EditI'] = editInline;
     window[prefix + 'EditR'] = editReply;
+    window[prefix + 'MoveBtnRow'] = moveBtnRow;
+    window[prefix + 'DelRow'] = delRow;
+    window[prefix + 'FocusRow'] = focusRow;
+    window[prefix + 'Dup'] = dupBtn;
+    window[prefix + 'Color'] = setBtnColor;
     return api;
 }
 var kbCmd = createKeyboardBuilder('kbCmd');
@@ -7670,11 +8655,17 @@ async function performUpdate(force) {
         item.addEventListener('mouseleave', function () { clearTimeout(timer); });
     });
 })();
+var __lastWinWidth = window.innerWidth;
 window.addEventListener('resize', function () {
+    var w = window.innerWidth;
+    if (w === __lastWinWidth) return; // Ignore height-only resizes (e.g. mobile keyboard opening for nav-search-input)
+    __lastWinWidth = w;
     var app = document.querySelector('.app');
     if (!app) return;
-    if (window.innerWidth > 900) app.classList.add('sidebar-open');
+    if (w > 900) app.classList.add('sidebar-open');
     else {
+        var active = document.activeElement;
+        if (active && active.closest && active.closest('#sidebar')) return;
         app.classList.remove('sidebar-open');
         var ov = document.getElementById('sidebar-overlay');
         if (ov) ov.classList.remove('show');
@@ -7702,6 +8693,369 @@ document.addEventListener('keydown', function (e) {
         }
     }
 });
+
+/* ============================================================
+   NAVIGATION STYLE & STRUCTURE PRESETS
+   ============================================================ */
+var currentNavStyle = 'classic';
+var currentNavStructure = 'grouped';
+function applyNavLayout(style, structure) {
+    var app = document.querySelector('.app');
+    if (!app) return;
+    style = ['classic', 'pills', 'glass', 'compact'].indexOf(style) >= 0 ? style : 'classic';
+    structure = ['grouped', 'flat', 'topbar'].indexOf(structure) >= 0 ? structure : 'grouped';
+    currentNavStyle = style;
+    currentNavStructure = structure;
+    ['classic', 'pills', 'glass', 'compact'].forEach(function (s) { app.classList.toggle('nav-style-' + s, s === style); });
+    ['grouped', 'flat', 'topbar'].forEach(function (st) { app.classList.toggle('nav-struct-' + st, st === structure); });
+    document.querySelectorAll('#nav-style-presets .nav-preset-card').forEach(function (b) { b.classList.toggle('active', b.dataset.style === style); });
+    document.querySelectorAll('#nav-struct-presets .nav-preset-card').forEach(function (b) { b.classList.toggle('active', b.dataset.struct === structure); });
+    try {
+        localStorage.setItem('nyxx-nav-style', style);
+        localStorage.setItem('nyxx-nav-structure', structure);
+    } catch (e) {}
+}
+(function initNavLayout() {
+    var s = 'classic', st = 'grouped';
+    try {
+        s = localStorage.getItem('nyxx-nav-style') || 'classic';
+        st = localStorage.getItem('nyxx-nav-structure') || 'grouped';
+    } catch (e) {}
+    applyNavLayout(s, st);
+})();
+async function saveNavLayout(style, structure) {
+    applyNavLayout(style, structure);
+    var out = $('nav-layout-result');
+    try {
+        await api('POST', '/api/settings/nav_layout', { nav_style: style, nav_structure: structure });
+        if (out) out.innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Saved (' + esc(style) + ' · ' + esc(structure) + ').</span>';
+        toast('Navigation updated.');
+    } catch (e) {
+        if (out) out.innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>';
+    }
+}
+function setNavStyle(style) { saveNavLayout(style, currentNavStructure); }
+function setNavStructure(structure) { saveNavLayout(currentNavStyle, structure); }
+
+/* ============================================================
+   CHANNELS TAB
+   ============================================================ */
+var channels = [];
+var channelFilter = 'active';
+var manageChannel = null;
+var channelSettings = {};
+var kbCh = createKeyboardBuilder('kbCh');
+
+function setChannelFilter(f) {
+    channelFilter = f;
+    document.querySelectorAll('#channel-filters .chip').forEach(function (c) { c.classList.toggle('active', c.dataset.chf === f); });
+    renderChannels();
+}
+var _channelsLoading = false;
+async function loadChannels(force) {
+    if (_channelsLoading) return;
+    _channelsLoading = true;
+    try {
+        var box = $('channels-list');
+        if (!box) return;
+        box.innerHTML = skeletonRows(3);
+        try { var d = await api('GET', '/api/channels'); channels = d.channels || []; renderChannels(); }
+        catch (e) { box.innerHTML = errorState(e.message, 'loadChannels(true)'); }
+    } finally { _channelsLoading = false; }
+}
+function renderChannels() {
+    var box = $('channels-list');
+    if (!box) return;
+    var list = channels.filter(function (c) {
+        if (channelFilter === 'active') return c.is_active == 1;
+        if (channelFilter === 'inactive') return c.is_active != 1;
+        return true;
+    });
+    if (!list.length) { box.innerHTML = emptyState('fa-solid fa-tower-broadcast', 'No channels yet.', 'Add the bot as admin in a channel and connect it above.'); return; }
+    box.innerHTML = '<div class="list">' + list.map(function (c) {
+        var s = {};
+        try { s = JSON.parse(c.settings_json || '{}'); } catch (e) {}
+        var badges = '';
+        if (s.auto_signature_enabled) badges += '<span class="badge blue">Auto-sign</span>';
+        if (s.auto_buttons_enabled) badges += '<span class="badge purple">Auto-buttons</span>';
+        if (s.auto_capture_media) badges += '<span class="badge green">Auto-capture</span>';
+        if (c.is_active != 1) badges += '<span class="badge red">Removed</span>';
+        return '<div class="list-row">' +
+            '<div class="cmd-icon-box"><i class="fa-solid fa-tower-broadcast" style="color:var(--accent);"></i></div>' +
+            '<div class="lr-main" onclick="openChannel(' + c.id + ')" style="cursor:pointer;">' +
+                '<div class="lr-title">' + esc(c.title || ('Channel ' + c.id)) + '</div>' +
+                '<div class="lr-sub">' + (c.username ? '@' + esc(c.username) + ' · ' : '') + 'ID ' + esc(c.id) + (c.member_count ? ' · ' + c.member_count + ' subscribers' : '') + '</div>' +
+            '</div>' +
+            badges +
+            '<div class="lr-actions"><button class="icon-btn" onclick="openChannel(' + c.id + ')" aria-label="Open channel"><i class="fa-solid fa-chevron-right"></i></button></div>' +
+        '</div>';
+    }).join('') + '</div>';
+}
+async function connectChannelManually() {
+    var inp = $('ch-connect-input');
+    var chatId = inp ? inp.value.trim() : '';
+    if (!chatId) { toast('Enter a @channelusername or -100… ID.', 'error'); return; }
+    await withBusy($('ch-connect-btn'), async function () {
+        try {
+            var d = await api('POST', '/api/channels/add', { chatId: chatId });
+            if (inp) inp.value = '';
+            toast(d.warning ? d.warning : 'Channel connected!', d.warning ? 'info' : 'success');
+            loadChannels(true);
+        } catch (e) { toast(e.message, 'error'); }
+    });
+}
+async function openChannel(id) {
+    go('channel-manage');
+    var box = $('chm-cards');
+    if (box) box.innerHTML = '<div class="skl skl-card"></div><div class="skl skl-card"></div><div class="skl skl-card"></div>';
+    try {
+        var d = await api('GET', '/api/channels/' + id);
+        manageChannel = d.channel; channelSettings = d.settings || {};
+        $('chm-title').textContent = manageChannel.title || ('Channel ' + id);
+        $('chm-sub').textContent = 'Channel · ID ' + id + (manageChannel.username ? ' · @' + manageChannel.username : '');
+        box.innerHTML = kvCard('Subscribers', manageChannel.member_count || 0) + kvCard('Added', fmtTime(manageChannel.added_at)) + kvCard('Last active', fmtTime(manageChannel.last_active));
+        applyChannelSettings(channelSettings);
+        var badge = $('chm-status-badge');
+        if (badge) {
+            badge.className = 'badge ' + (manageChannel.is_active == 1 ? 'green' : 'red');
+            badge.innerHTML = '<i class="fa-solid fa-circle" style="font-size:8px;"></i> ' + (manageChannel.is_active == 1 ? 'Active' : 'Removed');
+        }
+        var sbBtn = $('chm-set-storage-btn');
+        if (sbBtn) sbBtn.innerHTML = d.is_media_storage
+            ? '<i class="fa-solid fa-circle-check" style="color:var(--green)"></i> Media Storage Channel'
+            : '<i class="fa-solid fa-database"></i> Use as Media Storage';
+        loadChannelPosts();
+    } catch (e) { toast(e.message, 'error'); }
+}
+function applyChannelSettings(s) {
+    toggleSwitch('chm-capture-toggle', !!s.auto_capture_media);
+    toggleSwitch('chm-pin-toggle', !!s.auto_pin_posts);
+    toggleSwitch('chm-sig-toggle', !!s.auto_signature_enabled);
+    $('chm-sig-text').value = s.auto_signature_text || '';
+    show($('chm-sig-wrap'), !!s.auto_signature_enabled);
+    toggleSwitch('chm-btn-toggle', !!s.auto_buttons_enabled);
+    show($('chm-btn-wrap'), !!s.auto_buttons_enabled);
+    kbCh.reset();
+    if (s.auto_buttons_json) kbCh.loadInline(s.auto_buttons_json);
+    kbCh.populateCommands();
+    toggleSwitch('chm-silent-toggle', !!s.silent_by_default);
+    toggleSwitch('chm-protect-toggle', !!s.protect_by_default);
+    if ($('chm-post-silent')) $('chm-post-silent').checked = !!s.silent_by_default;
+    if ($('chm-post-protect')) $('chm-post-protect').checked = !!s.protect_by_default;
+}
+async function saveChannelSettings() {
+    if (!manageChannel) return;
+    await withSelfBusy(async function () {
+        var inlineObj = kbCh.inlineJSON();
+        var body = {
+            auto_capture_media: sw('chm-capture-toggle'),
+            auto_pin_posts: sw('chm-pin-toggle'),
+            auto_signature_enabled: sw('chm-sig-toggle'),
+            auto_signature_text: $('chm-sig-text').value,
+            auto_buttons_enabled: sw('chm-btn-toggle'),
+            auto_buttons_json: inlineObj ? JSON.stringify(inlineObj) : '',
+            silent_by_default: sw('chm-silent-toggle'),
+            protect_by_default: sw('chm-protect-toggle'),
+        };
+        try {
+            await api('POST', '/api/channels/' + manageChannel.id + '/settings', body);
+            toast('Channel automation saved.');
+        } catch (e) { toast(e.message, 'error'); }
+    });
+}
+async function syncChannel() {
+    if (!manageChannel) return;
+    await withSelfBusy(async function () {
+        try {
+            var d = await api('POST', '/api/channels/' + manageChannel.id + '/sync', {});
+            var badge = $('chm-status-badge');
+            if (badge) {
+                badge.className = 'badge ' + (d.is_active ? 'green' : 'red');
+                badge.innerHTML = '<i class="fa-solid fa-circle" style="font-size:8px;"></i> ' + (d.is_active ? 'Active' : 'Removed');
+            }
+            if (d.title) { manageChannel.title = d.title; $('chm-title').textContent = d.title; }
+            if (d.member_count !== undefined) manageChannel.member_count = d.member_count;
+            $('chm-cards').innerHTML = kvCard('Subscribers', manageChannel.member_count || 0) + kvCard('Added', fmtTime(manageChannel.added_at)) + kvCard('Last active', fmtTime(manageChannel.last_active));
+            if ($('chm-perms-hint') && d.permissions_summary) $('chm-perms-hint').textContent = d.permissions_summary;
+            toast(d.is_active ? 'Channel synced!' : 'Bot is not an admin in this channel.', d.is_active ? 'success' : 'error');
+        } catch (e) { toast(e.message, 'error'); }
+    });
+}
+async function setChannelAsMediaStorage() {
+    if (!manageChannel) return;
+    try {
+        await api('POST', '/api/settings/media_storage', { chatId: String(manageChannel.id) });
+        toast('Set "' + (manageChannel.title || manageChannel.id) + '" as your Media Storage channel.');
+        if ($('chm-set-storage-btn')) $('chm-set-storage-btn').innerHTML = '<i class="fa-solid fa-circle-check" style="color:var(--green)"></i> Media Storage Channel';
+    } catch (e) { toast(e.message, 'error'); }
+}
+async function removeChannel() {
+    if (!manageChannel) return;
+    if (!await confirmDialog('Remove this channel from the dashboard? The bot stays in the channel.', 'Remove channel')) return;
+    try {
+        await api('DELETE', '/api/channels/' + manageChannel.id);
+        toast('Channel removed.');
+        channels = [];
+        go('channels');
+    } catch (e) { toast(e.message, 'error'); }
+}
+async function loadChannelPosts() {
+    var box = $('chm-posts-history');
+    if (!box || !manageChannel) return;
+    box.innerHTML = '<div class="spinner-page"><span class="mini-spinner"></span></div>';
+    try {
+        var d = await api('GET', '/api/channels/' + manageChannel.id + '/posts');
+        var posts = d.posts || [];
+        window.__chPostsCache = posts;
+        if (!posts.length) { box.innerHTML = emptyState('fa-solid fa-tower-broadcast', 'No posts published from the dashboard yet.', 'Compose a post below.'); return; }
+        box.innerHTML = posts.map(function (m, i) {
+            return '<div class="bubble out" style="max-width:90%;" dir="auto">' +
+                renderMediaAttachment(m) +
+                (m.text ? '<div>' + esc(m.text) + '</div>' : '') +
+                '<div class="b-meta">' + fmtTime(m.created_at) + (m.edited_at ? ' · edited' : '') + '</div>' +
+                '<div class="b-actions">' +
+                    '<button onclick="openMsgEditor(\\'channel-edit\\',' + m.id + ')"><i class="fa-regular fa-pen-to-square"></i> Edit</button>' +
+                    '<button onclick="pinChannelPost(' + i + ')"><i class="fa-solid fa-thumbtack"></i> Pin</button>' +
+                    '<button onclick="deleteChannelPost(' + i + ')"><i class="fa-regular fa-trash-can"></i> Delete</button>' +
+                '</div></div>';
+        }).join('');
+        scrollBottom(box);
+    } catch (e) { box.innerHTML = errorState(e.message, 'loadChannelPosts()'); }
+}
+async function sendChannelPost() {
+    if (!manageChannel) return;
+    var btn = $('chm-post-send');
+    await withBusy(btn, async function () {
+        var text = $('chm-post-text').value.trim();
+        var photo = $('chm-post-photo').value.trim();
+        var hasDraftItems = draftMedia && Array.isArray(draftMedia.media_items) && draftMedia.media_items.length > 0;
+        var hasDraftMedia = hasDraftItems || (draftMedia && draftMedia.media_type && draftMedia.media_type !== 'text' && (draftMedia.file_id || draftMedia.photo_url));
+        if (!text && !photo && !hasDraftMedia) { toast('Write a post or attach media first.', 'error'); return; }
+        var body = {
+            message: text,
+            disable_notification: !!($('chm-post-silent') && $('chm-post-silent').checked),
+            protect_content: !!($('chm-post-protect') && $('chm-post-protect').checked) || !!(draftMedia && draftMedia.protect_content),
+            pin_post: !!($('chm-post-pin') && $('chm-post-pin').checked),
+        };
+        if (photo) body.photo_url = photo;
+        if (draftButtonsJson) body.buttons_json = draftButtonsJson;
+        if (draftMedia) {
+            body.media_type = draftMedia.media_type;
+            body.file_id = draftMedia.file_id;
+            body.media_meta = draftMedia.media_meta;
+            if (hasDraftItems) body.media_items_json = JSON.stringify(draftMedia.media_items);
+            if (draftMedia.media_type === 'text' && !hasDraftItems) { body.photo_url = ''; body.file_id = ''; body.media_meta = ''; }
+            else if (draftMedia.file_id) body.photo_url = '';
+        }
+        try {
+            await api('POST', '/api/channels/' + manageChannel.id + '/send', body);
+            toast('Published to channel!');
+            $('chm-post-text').value = ''; $('chm-post-photo').value = '';
+            clearComposeStatus('ch');
+            loadChannelPosts();
+        } catch (e) { toast(e.message, 'error'); }
+    });
+}
+async function pinChannelPost(idx) {
+    var m = window.__chPostsCache && window.__chPostsCache[idx];
+    if (!m || !manageChannel) return;
+    try { await api('POST', '/api/channels/' + manageChannel.id + '/posts/pin', { messageId: m.message_id }); toast('Pinned!'); }
+    catch (e) { toast(e.message, 'error'); }
+}
+async function deleteChannelPost(idx) {
+    var m = window.__chPostsCache && window.__chPostsCache[idx];
+    if (!m || !manageChannel) return;
+    if (!await confirmDialog('Delete this post from the channel?', 'Delete channel post')) return;
+    try { await api('POST', '/api/channels/' + manageChannel.id + '/posts/delete', { id: m.id, messageId: m.message_id }); toast('Deleted.'); loadChannelPosts(); }
+    catch (e) { toast(e.message, 'error'); }
+}
+
+// Channel hooks on msg-modal + Media Storage compact auto-collapse
+(function installChannelAndUiHooks() {
+    var origOpenMsg = openMsgEditor;
+    openMsgEditor = function (mode, id) {
+        if (mode === 'channel-edit') {
+            var rec = (window.__chPostsCache || []).find(function (m) { return m.id === id; });
+            origOpenMsg('dm', -1);
+            msgContext = { mode: 'channel-edit', id: id };
+            $('msg-title').textContent = 'Edit channel post';
+            if (rec) {
+                $('msg-type').value = normalizeClientMediaType(rec.kind || rec.media_type || (rec.photo_url ? 'photo' : 'text'));
+                $('msg-text').value = rec.text || '';
+                $('msg-photo').value = rec.photo_url || '';
+                $('msg-file-id').value = rec.file_id || '';
+                $('msg-media-meta').value = rec.media_meta || '';
+                if (typeof parseStoredMediaItems === 'function') {
+                    msgAttachments = parseStoredMediaItems(rec);
+                    renderAttachmentList('msg-att-list', msgAttachments, 'msg');
+                }
+                setSeg('msg-media-source', rec.file_id ? 'file' : 'url');
+                if (rec.buttons_json) {
+                    try {
+                        var b = typeof rec.buttons_json === 'string' ? JSON.parse(rec.buttons_json) : rec.buttons_json;
+                        if (b.inline) { kbMe.loadInline(b); toggleSwitch('msg-inline-toggle', true); show($('msg-inline-section'), true); toggleSwitch('msg-kb-toggle', true); show($('msg-kb-section'), true); }
+                    } catch (e) {}
+                }
+                toggleMsgMedia();
+            }
+            return;
+        }
+        origOpenMsg(mode, id);
+        if (mode === 'channel') {
+            $('msg-title').textContent = 'Compose channel post';
+            $('msg-text').value = ($('chm-post-text') && $('chm-post-text').value) || '';
+            $('msg-photo').value = ($('chm-post-photo') && $('chm-post-photo').value) || '';
+        }
+    };
+    var origSaveMsg = saveMsgEditor;
+    saveMsgEditor = async function () {
+        if (msgContext && msgContext.mode === 'channel-edit') {
+            var rec = (window.__chPostsCache || []).find(function (m) { return m.id === msgContext.id; });
+            if (!rec || !manageChannel) return;
+            var err = $('msg-error'); err.classList.remove('show');
+            await withBusy($('msg-save'), async function () {
+                try {
+                    await api('POST', '/api/channels/' + manageChannel.id + '/posts/edit', {
+                        id: rec.id,
+                        messageId: rec.message_id,
+                        text: $('msg-text').value.trim(),
+                        media_type: $('msg-type').value || 'text',
+                        file_id: $('msg-file-id').value.trim(),
+                        photo_url: $('msg-photo').value.trim(),
+                        media_meta: $('msg-media-meta').value || '',
+                        buttons_json: collectButtons()
+                    });
+                    toast('Channel post updated.');
+                    closeMsgEditor();
+                    loadChannelPosts();
+                } catch (e) { err.textContent = e.message; err.classList.add('show'); }
+            });
+            return;
+        }
+        var wasChannel = msgContext && msgContext.mode === 'channel';
+        await origSaveMsg();
+        if (wasChannel && draftMedia) {
+            if ($('chm-post-text')) $('chm-post-text').value = $('msg-text').value.trim();
+            if ($('chm-post-photo')) $('chm-post-photo').value = draftMedia.photo_url || '';
+            var cnt = Array.isArray(draftMedia.media_items) ? draftMedia.media_items.length : (draftMedia.media_type !== 'text' ? 1 : 0);
+            renderComposeStatus('ch', {
+                mediaType: draftMedia.media_type,
+                itemCount: cnt,
+                protectContent: !!draftMedia.protect_content,
+                hasButtons: !!draftButtonsJson
+            });
+        }
+    };
+
+    // Collapse Media Storage configuration card automatically when a storage chat is already configured
+    var origLoadStorageInfo = loadMediaStorageInfo;
+    loadMediaStorageInfo = async function () {
+        await origLoadStorageInfo();
+        var cfgBox = $('media-storage-config');
+        var val = $('set-media-storage') && $('set-media-storage').value.trim();
+        if (cfgBox) show(cfgBox, !val);
+    };
+})();
 
 // Service Worker registration. Safe to call on every load — the browser
 // only installs a new SW when /sw.js content changes (which happens
@@ -7765,6 +9119,9 @@ async function loadSettings(force) {
         window.__botTokenSet = d.bot_token_set;
         if (d.cf_token_set) $('up-token').placeholder = 'Token already stored — click Generate to replace';
         setSeg('sys-lang', d.system_language || 'en');
+        if (typeof window.applyNavLayout === 'function' && (d.nav_style || d.nav_structure)) {
+            window.applyNavLayout(d.nav_style || 'classic', d.nav_structure || 'grouped');
+        }
     } catch (e) { /* silent */ }
 }
 
@@ -9123,6 +10480,18 @@ export default {
             if (request.method === 'POST' && url.pathname.endsWith('/send') && url.pathname.startsWith('/api/groups/')) return await sendGroupMessage(request, env, url);
             if (request.method === 'DELETE' && /^\/api\/groups\/-?[0-9]+$/.test(url.pathname)) return await deleteGroup(env, url);
 
+            if (request.method === 'GET' && url.pathname === '/api/channels') return await getChannels(env);
+            if (request.method === 'POST' && url.pathname === '/api/channels/add') return await addChannelManually(request, env);
+            if (request.method === 'GET' && /^\/api\/channels\/-?[0-9]+$/.test(url.pathname)) return await getChannelDetail(env, url);
+            if (request.method === 'POST' && /^\/api\/channels\/-?[0-9]+\/sync$/.test(url.pathname)) return await syncChannelStatus(env, url);
+            if (request.method === 'POST' && /^\/api\/channels\/-?[0-9]+\/settings$/.test(url.pathname)) return await saveChannelSettings(request, env, url);
+            if (request.method === 'POST' && /^\/api\/channels\/-?[0-9]+\/send$/.test(url.pathname)) return await sendChannelPost(request, env, url);
+            if (request.method === 'GET' && /^\/api\/channels\/-?[0-9]+\/posts$/.test(url.pathname)) return await getChannelPosts(env, url);
+            if (request.method === 'POST' && /^\/api\/channels\/-?[0-9]+\/posts\/edit$/.test(url.pathname)) return await editChannelPost(request, env, url);
+            if (request.method === 'POST' && /^\/api\/channels\/-?[0-9]+\/posts\/delete$/.test(url.pathname)) return await deleteChannelPost(request, env, url);
+            if (request.method === 'POST' && /^\/api\/channels\/-?[0-9]+\/posts\/pin$/.test(url.pathname)) return await pinChannelPost(request, env, url);
+            if (request.method === 'DELETE' && /^\/api\/channels\/-?[0-9]+$/.test(url.pathname)) return await deleteChannel(env, url);
+
             if (request.method === 'POST' && url.pathname === '/api/broadcast') return await handleBroadcast(request, env);
             if (url.pathname === '/api/broadcast/settings') {
                 if (request.method === 'GET') return await handleBroadcastSettings(request, env);
@@ -9150,6 +10519,7 @@ export default {
             if (request.method === 'POST' && url.pathname === '/api/settings/webhook-test') return await handleWebhookTest(env);
             if (request.method === 'POST' && url.pathname === '/api/settings/media_storage') return await saveMediaStorageChat(request, env);
             if (request.method === 'POST' && url.pathname === '/api/settings/system_language') return await saveSystemLanguage(request, env);
+            if (request.method === 'POST' && url.pathname === '/api/settings/nav_layout') return await saveNavLayoutSetting(request, env);
             if (request.method === 'POST' && url.pathname === '/api/settings/webhook-fix') return await handleWebhookFix(env, url.origin);
             if (request.method === 'POST' && url.pathname === '/api/settings/webhook-diagnostics') return await handleWebhookDiagnostics(env);
             if (request.method === 'GET'  && url.pathname === '/api/schema/health') return await handleSchemaHealth(env);
@@ -9545,7 +10915,7 @@ async function demoteAdminHandler(request, env) {
 // DATABASE
 // ============================================================================
 const dbInitCache = new WeakMap();
-const SCHEMA_VERSION = 19;
+const SCHEMA_VERSION = 21;
 
 const MIGRATIONS = {
     2: [
@@ -9708,6 +11078,12 @@ const MIGRATIONS = {
         `INSERT INTO settings (key, value) VALUES ('media_storage_delete_after_upload', '0') ON CONFLICT(key) DO NOTHING`,
         `CREATE INDEX IF NOT EXISTS idx_media_library_file_id ON media_library(file_id)`,
     ],
+    20: [
+        `ALTER TABLE commands ADD COLUMN media_items_json TEXT DEFAULT ''`,
+        `ALTER TABLE commands ADD COLUMN protect_content INTEGER DEFAULT 0`,
+        `ALTER TABLE dm_messages ADD COLUMN media_items_json TEXT DEFAULT ''`,
+        `ALTER TABLE broadcast_history ADD COLUMN media_items_json TEXT DEFAULT ''`,
+    ],
 };
 
 // ============================================================================
@@ -9755,6 +11131,8 @@ const DESIRED_SCHEMA = {
         order_idx: { type: 'INTEGER', default: '0' },
         file_id: { type: 'TEXT', default: "''" },
         media_meta: { type: 'TEXT', default: "''" },
+        media_items_json: { type: 'TEXT', default: "''" },
+        protect_content: { type: 'INTEGER', default: '0' },
         read_at: { type: 'DATETIME' }
     }},
     sessions: { columns: {
@@ -9793,6 +11171,7 @@ const DESIRED_SCHEMA = {
         edited_at: { type: 'DATETIME' },
         file_id: { type: 'TEXT', default: "''" },
         media_meta: { type: 'TEXT', default: "''" },
+        media_items_json: { type: 'TEXT', default: "''" },
         read_at: { type: 'DATETIME' }
     }},
     ai_rate_limits: { columns: {
@@ -9819,7 +11198,8 @@ const DESIRED_SCHEMA = {
         sent_count: { type: 'INTEGER' },
         sent_at: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' },
         file_id: { type: 'TEXT', default: "''" },
-        media_meta: { type: 'TEXT', default: "''" }
+        media_meta: { type: 'TEXT', default: "''" },
+        media_items_json: { type: 'TEXT', default: "''" }
     }},
     broadcast_recipients: { columns: {
         broadcast_id: { type: 'INTEGER', primary: true },
@@ -9909,6 +11289,16 @@ const DESIRED_SCHEMA = {
         is_valid: { type: 'INTEGER', default: '1' },
         last_validated_at: { type: 'DATETIME' },
         uploaded_at: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' }
+    }},
+    channels: { columns: {
+        id: { type: 'INTEGER', primary: true },
+        title: { type: 'TEXT' },
+        username: { type: 'TEXT' },
+        added_at: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' },
+        last_active: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' },
+        is_active: { type: 'BOOLEAN', default: '1' },
+        settings_json: { type: 'TEXT' },
+        member_count: { type: 'INTEGER', default: '0' }
     }}
 };
 
@@ -9936,6 +11326,7 @@ const SCHEMA_INDEXES = [
     'CREATE INDEX IF NOT EXISTS idx_mcp_updated ON mcp_sessions(updated_at DESC)',
     'CREATE INDEX IF NOT EXISTS idx_blocked_type ON blocked_users(block_type)',
     'CREATE INDEX IF NOT EXISTS idx_media_library_file_id ON media_library(file_id)',
+    'CREATE INDEX IF NOT EXISTS idx_channels_active ON channels(is_active)',
 ];
 
 // Safe, idempotent cleanups that remove expired and orphaned rows.
@@ -10264,9 +11655,24 @@ async function initializeDatabase(db) {
             )`).run();
             await db.prepare('CREATE INDEX IF NOT EXISTS idx_media_library_uploaded ON media_library(uploaded_at)').run();
             await db.prepare('CREATE INDEX IF NOT EXISTS idx_media_library_file_id ON media_library(file_id)').run();
+            await db.prepare(`CREATE TABLE IF NOT EXISTS channels (
+                id INTEGER PRIMARY KEY,
+                title TEXT,
+                username TEXT,
+                added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                last_active DATETIME DEFAULT CURRENT_TIMESTAMP,
+                is_active BOOLEAN DEFAULT 1,
+                settings_json TEXT,
+                member_count INTEGER DEFAULT 0
+            )`).run();
+            await db.prepare('CREATE INDEX IF NOT EXISTS idx_channels_active ON channels(is_active)').run();
         } catch (e) { /* ignore */ }
 
         const SCHEMA_HEALS = [
+            `ALTER TABLE commands ADD COLUMN media_items_json TEXT DEFAULT ''`,
+            `ALTER TABLE commands ADD COLUMN protect_content INTEGER DEFAULT 0`,
+            `ALTER TABLE dm_messages ADD COLUMN media_items_json TEXT DEFAULT ''`,
+            `ALTER TABLE broadcast_history ADD COLUMN media_items_json TEXT DEFAULT ''`,
             `ALTER TABLE commands ADD COLUMN access_level TEXT DEFAULT 'everyone'`,
             `ALTER TABLE commands ADD COLUMN allowed_users TEXT DEFAULT ''`,
             `ALTER TABLE commands ADD COLUMN expires_at DATETIME`,
@@ -11522,7 +12928,7 @@ async function getCommands(env, url) {
         await initializeDatabase(env.DB);
         const summary = url && url.searchParams.get('summary') === '1';
         const cols = summary
-            ? "command, parent, response_type, enabled, access_level, allowed_users, expires_at, is_admin_only, order_idx, CASE WHEN buttons_json != '' THEN 1 ELSE 0 END AS has_buttons, show_reply_keyboard"
+            ? "command, parent, response_type, enabled, access_level, allowed_users, expires_at, is_admin_only, protect_content, media_items_json, order_idx, CASE WHEN buttons_json != '' THEN 1 ELSE 0 END AS has_buttons, show_reply_keyboard"
             : '*';
         const result = await env.DB.prepare(`SELECT ${cols} FROM commands ORDER BY order_idx, command`).all();
         return apiJson({ commands: result.results || [] });
@@ -11548,15 +12954,62 @@ async function commandIsDescendant(db, ancestor, candidate) {
     }
     return false;
 }
+function normalizeMediaItems(rawItems, fallback) {
+    let items = [];
+    if (rawItems) {
+        try {
+            const parsed = typeof rawItems === 'string' ? JSON.parse(rawItems) : rawItems;
+            if (Array.isArray(parsed)) items = parsed;
+        } catch (e) {}
+    }
+    const clean = [];
+    for (const it of items) {
+        if (!it || typeof it !== 'object') continue;
+        const mt = normalizeMediaType(it.media_type || it.type || 'document');
+        const fid = it.file_id ? String(it.file_id).trim() : '';
+        const url = it.media_url ? String(it.media_url).trim() : (it.photo_url ? String(it.photo_url).trim() : '');
+        if (mt === 'text' || (!fid && !url)) continue;
+        clean.push({
+            media_type: mt,
+            file_id: fid,
+            media_url: fid ? '' : url,
+            media_meta: parseMediaMeta(it.media_meta),
+            label: it.label ? String(it.label).slice(0, 160) : '',
+        });
+    }
+    if (!clean.length && fallback) {
+        const fbType = normalizeMediaType(fallback.media_type || 'text');
+        const fbFid = fallback.file_id ? String(fallback.file_id).trim() : '';
+        const fbUrl = fallback.media_url ? String(fallback.media_url).trim() : '';
+        if (fbType !== 'text' && (fbFid || fbUrl)) {
+            clean.push({
+                media_type: fbType,
+                file_id: fbFid,
+                media_url: fbFid ? '' : fbUrl,
+                media_meta: parseMediaMeta(fallback.media_meta),
+                label: '',
+            });
+        }
+    }
+    return clean;
+}
 async function createCommand(request, env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         const body = await request.json();
-        const { command, parent, response_type, content, media_url, is_admin_only, enabled, buttons_json, show_reply_keyboard, reply_keyboard_json, file_id, media_meta } = body;
+        const command = String(body.command || '').replace(/\s+/g, ' ').trim();
+        const { parent, response_type, content, media_url, is_admin_only, enabled, buttons_json, show_reply_keyboard, reply_keyboard_json, file_id, media_meta, media_items_json, protect_content } = body;
         if (!command) return apiJson({ error: 'Command is required.' }, 400);
-        const rtype = normalizeMediaType(response_type);
+        const items = normalizeMediaItems(media_items_json, { media_type: response_type, file_id, media_url, media_meta });
+        let rtype = normalizeMediaType(response_type);
+        if (rtype === 'text' && items.length) rtype = items[0].media_type;
+        const primary = items[0] || null;
+        const finalMediaUrl = primary ? primary.media_url : (media_url || '');
+        const finalFileId = primary ? primary.file_id : (file_id || '');
+        const finalMediaMeta = primary ? JSON.stringify(primary.media_meta || {}) : (media_meta || '');
+        const finalItemsJson = items.length ? JSON.stringify(items) : '';
         if (rtype === 'text' && !content) return apiJson({ error: 'Content is required for text responses.' }, 400);
-        if (rtype !== 'text' && !content && !media_url && !file_id) return apiJson({ error: 'Provide a caption, media URL, or uploaded file.' }, 400);
+        if (rtype !== 'text' && !content && !finalMediaUrl && !finalFileId && !items.length) return apiJson({ error: 'Provide a caption, media URL, or uploaded file.' }, 400);
         if (parent && parent === command) return apiJson({ error: 'A command cannot be its own parent.' }, 400);
         await initializeDatabase(env.DB);
         if (parent && await commandIsDescendant(env.DB, command, parent)) return apiJson({ error: 'You cannot nest a command inside its own child.' }, 400);
@@ -11566,12 +13019,11 @@ async function createCommand(request, env) {
         const maxOrder = await env.DB.prepare('SELECT MAX(order_idx) as max FROM commands').first();
         const orderIdx = (maxOrder && maxOrder.max !== null) ? maxOrder.max + 1 : 0;
         try {
-            await env.DB.prepare(`INSERT INTO commands (command, parent, response_type, content, media_url, file_id, media_meta, buttons_json, is_admin_only, access_level, allowed_users, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, order_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-                .bind(command, parent || null, rtype, content || '', media_url || '', file_id || '', media_meta || '', buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', orderIdx).run();
+            await env.DB.prepare(`INSERT INTO commands (command, parent, response_type, content, media_url, file_id, media_meta, media_items_json, protect_content, buttons_json, is_admin_only, access_level, allowed_users, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, order_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+                .bind(command, parent || null, rtype, content || '', finalMediaUrl, finalFileId, finalMediaMeta, finalItemsJson, protect_content ? 1 : 0, buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', orderIdx).run();
         } catch (e) {
             const m = String(e.message || '');
             console.error('createCommand INSERT failed:', m);
-            console.error('createCommand payload:', { command, parent, rtype, content, media_url, file_id, media_meta, buttons_json, accessLevel, enabled, show_reply_keyboard, reply_keyboard_json, orderIdx });
             if (m.includes('UNIQUE')) return apiJson({ error: `A command named "${command}" already exists.` }, 400);
             if (m.includes('no such column') || m.includes('has no column named')) {
                 return apiJson({ error: 'Database schema is out of date. Open Settings → Schema health → Run auto-heal, then try again.' }, 500);
@@ -11604,23 +13056,34 @@ async function updateCommand(request, env) {
         const url = new URL(request.url);
         const oldCommand = decodeURIComponent(url.pathname.split('/').pop());
         const body = await request.json();
-        const { command, parent, response_type, content, media_url, is_admin_only, enabled, buttons_json, show_reply_keyboard, reply_keyboard_json, file_id, media_meta } = body;
+        const command = String(body.command || '').replace(/\s+/g, ' ').trim();
+        const { parent, response_type, content, media_url, is_admin_only, enabled, buttons_json, show_reply_keyboard, reply_keyboard_json, file_id, media_meta, media_items_json, protect_content } = body;
         if (!command) return apiJson({ error: 'Command is required.' }, 400);
-        const rtype = normalizeMediaType(response_type);
-        if (rtype === 'text' && !content) return apiJson({ error: 'Content is required for text responses.' }, 400);
-        if (rtype !== 'text' && !content && !media_url && !file_id) return apiJson({ error: 'Provide a caption, media URL, or uploaded file.' }, 400);
-        if (parent && parent === command) return apiJson({ error: 'A command cannot be its own parent.' }, 400);
         await initializeDatabase(env.DB);
-        const existing = await env.DB.prepare('SELECT access_level, allowed_users, expires_at, is_admin_only FROM commands WHERE command = ?').bind(oldCommand).first();
+        const existing = await env.DB.prepare('SELECT * FROM commands WHERE command = ?').bind(oldCommand).first();
+        const items = media_items_json !== undefined
+            ? normalizeMediaItems(media_items_json, { media_type: response_type, file_id, media_url, media_meta })
+            : normalizeMediaItems(existing ? existing.media_items_json : '', { media_type: response_type, file_id, media_url, media_meta });
+        let rtype = normalizeMediaType(response_type);
+        if (rtype === 'text' && items.length && media_items_json !== undefined) rtype = items[0].media_type;
+        const primary = items[0] || null;
+        const finalMediaUrl = primary ? primary.media_url : (media_url || '');
+        const finalFileId = primary ? primary.file_id : (file_id || '');
+        const finalMediaMeta = primary ? JSON.stringify(primary.media_meta || {}) : (media_meta || '');
+        const finalItemsJson = rtype === 'text' && !items.length ? '' : (items.length ? JSON.stringify(items) : '');
+        if (rtype === 'text' && !content) return apiJson({ error: 'Content is required for text responses.' }, 400);
+        if (rtype !== 'text' && !content && !finalMediaUrl && !finalFileId && !items.length) return apiJson({ error: 'Provide a caption, media URL, or uploaded file.' }, 400);
+        if (parent && parent === command) return apiJson({ error: 'A command cannot be its own parent.' }, 400);
         const accessLevel = resolveCommandAccessInput(body.access_level, is_admin_only, existing);
         const allowedUsers = body.allowed_users !== undefined ? normalizeAllowedUsersStr(body.allowed_users) : ((existing && existing.allowed_users) || '');
         const expiresAt = body.expires_at !== undefined ? (body.expires_at ? String(body.expires_at).trim() : null) : (existing ? existing.expires_at : null);
+        const finalProtect = protect_content !== undefined ? (protect_content ? 1 : 0) : ((existing && existing.protect_content) ? 1 : 0);
         if (command !== oldCommand) {
             const clash = await env.DB.prepare('SELECT command FROM commands WHERE command = ?').bind(command).first();
             if (clash) return apiJson({ error: `A command named "${command}" already exists.` }, 400);
             if (parent && await commandIsDescendant(env.DB, command, parent)) return apiJson({ error: 'You cannot nest a command inside its own child.' }, 400);
-            await env.DB.prepare(`UPDATE commands SET command = ?, parent = ?, response_type = ?, content = ?, media_url = ?, file_id = ?, media_meta = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, allowed_users = ?, expires_at = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ? WHERE command = ?`)
-                .bind(command, parent || null, rtype, content || '', media_url || '', file_id || '', media_meta || '', buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', oldCommand).run();
+            await env.DB.prepare(`UPDATE commands SET command = ?, parent = ?, response_type = ?, content = ?, media_url = ?, file_id = ?, media_meta = ?, media_items_json = ?, protect_content = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, allowed_users = ?, expires_at = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ? WHERE command = ?`)
+                .bind(command, parent || null, rtype, content || '', finalMediaUrl, finalFileId, finalMediaMeta, finalItemsJson, finalProtect, buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', oldCommand).run();
             await env.DB.prepare('UPDATE commands SET parent = ? WHERE parent = ?').bind(command, oldCommand).run();
             const refRows = await env.DB.prepare('SELECT command, buttons_json, reply_keyboard_json FROM commands WHERE buttons_json LIKE ? OR reply_keyboard_json LIKE ?').bind(`%${oldCommand}%`, `%${oldCommand}%`).all();
             for (const row of refRows.results) {
@@ -11632,8 +13095,8 @@ async function updateCommand(request, env) {
             }
         } else {
             if (parent && await commandIsDescendant(env.DB, command, parent)) return apiJson({ error: 'You cannot nest a command inside its own child.' }, 400);
-            await env.DB.prepare(`UPDATE commands SET parent = ?, response_type = ?, content = ?, media_url = ?, file_id = ?, media_meta = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, allowed_users = ?, expires_at = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ? WHERE command = ?`)
-            .bind(parent || null, rtype, content || '', media_url || '', file_id || '', media_meta || '', buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', command).run();
+            await env.DB.prepare(`UPDATE commands SET parent = ?, response_type = ?, content = ?, media_url = ?, file_id = ?, media_meta = ?, media_items_json = ?, protect_content = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, allowed_users = ?, expires_at = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ? WHERE command = ?`)
+                .bind(parent || null, rtype, content || '', finalMediaUrl, finalFileId, finalMediaMeta, finalItemsJson, finalProtect, buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', command).run();
         }
         await bumpDomainEpoch(env.DB, 'reply_buttons');
         return apiJson({ success: true });
@@ -11679,7 +13142,7 @@ async function exportCommandPack(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
-        const commands = await env.DB.prepare('SELECT command, parent, response_type, content, media_url, file_id, media_meta, buttons_json, is_admin_only, access_level, allowed_users, expires_at, enabled, show_reply_keyboard, reply_keyboard_json FROM commands ORDER BY order_idx, command').all();
+        const commands = await env.DB.prepare('SELECT command, parent, response_type, content, media_url, file_id, media_meta, media_items_json, protect_content, buttons_json, is_admin_only, access_level, allowed_users, expires_at, enabled, show_reply_keyboard, reply_keyboard_json FROM commands ORDER BY order_idx, command').all();
         let menu = [];
         const raw = await getSetting(env.DB, 'menu_commands');
         if (raw) { try { menu = JSON.parse(raw); } catch (e) {} }
@@ -11701,17 +13164,18 @@ async function importCommandPack(request, env) {
         const stmts = valid.map((c, i) => {
             const access = effectiveCommandAccess(c);
             return env.DB.prepare(`
-            INSERT INTO commands (command, parent, response_type, content, media_url, file_id, media_meta, buttons_json, is_admin_only, access_level, allowed_users, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, order_idx)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO commands (command, parent, response_type, content, media_url, file_id, media_meta, media_items_json, protect_content, buttons_json, is_admin_only, access_level, allowed_users, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, order_idx)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(command) DO UPDATE SET
                 parent = excluded.parent, response_type = excluded.response_type, content = excluded.content,
                 media_url = excluded.media_url, file_id = excluded.file_id, media_meta = excluded.media_meta,
+                media_items_json = excluded.media_items_json, protect_content = excluded.protect_content,
                 buttons_json = excluded.buttons_json,
                 is_admin_only = excluded.is_admin_only, access_level = excluded.access_level,
                 allowed_users = excluded.allowed_users, expires_at = excluded.expires_at,
                 enabled = excluded.enabled,
                 show_reply_keyboard = excluded.show_reply_keyboard, reply_keyboard_json = excluded.reply_keyboard_json
-        `).bind(c.command, c.parent || null, c.response_type || 'text', c.content || '', c.media_url || '', c.file_id || '', c.media_meta || '', c.buttons_json || '', access === 'admin' ? 1 : 0, access, normalizeAllowedUsersStr(c.allowed_users), c.expires_at || null, c.enabled != 0 ? 1 : 0, c.show_reply_keyboard ? 1 : 0, c.reply_keyboard_json || '', i);
+        `).bind(c.command, c.parent || null, c.response_type || 'text', c.content || '', c.media_url || '', c.file_id || '', c.media_meta || '', c.media_items_json || '', c.protect_content ? 1 : 0, c.buttons_json || '', access === 'admin' ? 1 : 0, access, normalizeAllowedUsersStr(c.allowed_users), c.expires_at || null, c.enabled != 0 ? 1 : 0, c.show_reply_keyboard ? 1 : 0, c.reply_keyboard_json || '', i);
         });
         await runBatchChunks(env.DB, stmts);
         if (Array.isArray(data.menu) && data.menu.length) {
@@ -12164,11 +13628,12 @@ async function isUserBlocked(env, userId) {
 // ============================================================================
 // DM MESSAGES
 // ============================================================================
-async function logDm(db, chatId, direction, source, kind, text, mediaUrl, messageId, buttonsJson, fileId, mediaMeta) {
+async function logDm(db, chatId, direction, source, kind, text, mediaUrl, messageId, buttonsJson, fileId, mediaMeta, mediaItemsJson) {
     try {
         const metaStr = mediaMeta ? (typeof mediaMeta === 'string' ? mediaMeta : JSON.stringify(mediaMeta)) : null;
-        await db.prepare('INSERT INTO dm_messages (chat_id, message_id, direction, source, kind, text, photo_url, buttons_json, file_id, media_meta) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-            .bind(chatId, messageId || null, direction, source || null, kind || 'text', text || '', mediaUrl || null, buttonsJson || null, fileId || null, metaStr).run();
+        const itemsStr = mediaItemsJson ? (typeof mediaItemsJson === 'string' ? mediaItemsJson : JSON.stringify(mediaItemsJson)) : '';
+        await db.prepare('INSERT INTO dm_messages (chat_id, message_id, direction, source, kind, text, photo_url, buttons_json, file_id, media_meta, media_items_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+            .bind(chatId, messageId || null, direction, source || null, kind || 'text', text || '', mediaUrl || null, buttonsJson || null, fileId || null, metaStr, itemsStr).run();
     } catch (e) {}
 }
 async function getUserDmMessages(env, url) {
@@ -12231,43 +13696,38 @@ async function sendUserPrivateMessage(request, env) {
     try {
         const body = await request.json();
         const { userId, message, photo_url: photoUrl, buttons_json: buttonsJson,
-                media_type: mediaTypeRaw, file_id: fileIdRaw, media_meta: mediaMetaRaw } = body;
-        const mediaType = normalizeMediaType(mediaTypeRaw || (photoUrl ? 'photo' : 'text'));
-        const fileId = fileIdRaw ? String(fileIdRaw).trim() : '';
-        const mediaMeta = parseMediaMeta(mediaMetaRaw);
+                media_type: mediaTypeRaw, file_id: fileIdRaw, media_meta: mediaMetaRaw,
+                media_items_json: mediaItemsRaw, protect_content: protectContent } = body;
+        const items = normalizeMediaItems(mediaItemsRaw, { media_type: mediaTypeRaw || (photoUrl ? 'photo' : 'text'), file_id: fileIdRaw, media_url: photoUrl, media_meta: mediaMetaRaw });
+        const mediaType = items.length ? items[0].media_type : normalizeMediaType(mediaTypeRaw || (photoUrl ? 'photo' : 'text'));
+        const fileId = items.length ? items[0].file_id : (fileIdRaw ? String(fileIdRaw).trim() : '');
+        const mediaMeta = items.length ? items[0].media_meta : parseMediaMeta(mediaMetaRaw);
+        const mediaItemsStr = items.length ? JSON.stringify(items) : '';
         if (!userId) return apiJson({ error: 'Missing userId.' }, 400);
-        if (!message && !photoUrl && !fileId) return apiJson({ error: 'Please provide a message, media URL, or uploaded file.' }, 400);
+        if (!message && !photoUrl && !fileId && !items.length) return apiJson({ error: 'Please provide a message, media URL, or uploaded file.' }, 400);
         await initializeDatabase(env.DB);
         const token = await getSetting(env.DB, 'bot_token');
         if (!token) return apiJson({ error: 'Bot token is not set. Please add it in Settings.' }, 400);
         const built = buttonsJson ? buildReplyMarkup(buttonsJson) : null;
         const markup = built && built.markup ? built.markup : null;
-        const mediaPayload = fileId || photoUrl || '';
-        let resp;
-        if (mediaType === 'text') {
-            resp = await sendRichText(token, userId, message || '', markup ? { reply_markup: markup } : {});
-        } else {
-            resp = await sendMediaMessage(token, userId, mediaType, mediaPayload, message || '', markup, mediaMeta);
-        }
+        const sendOpts = { protect_content: !!protectContent };
+        const resp = await sendMultiMediaMessage(token, userId, items, message || '', markup, sendOpts);
         if (!resp || !resp.ok) {
             const desc = (resp && resp.description) || 'Telegram error';
             const isUnreachable = /blocked|not started|chat not found|user not found|bot can't initiate|deactivated|kicked/i.test(desc);
             if (isUnreachable) {
-                // Telegram told us the user is gone — reflect that in D1 so the
-                // Reachability / Unreachable filters stay accurate without a
-                // manual "Check reachable" pass.
                 try { await env.DB.prepare('UPDATE users SET private_started = 0 WHERE id = ?').bind(userId).run(); } catch (e) {}
             }
             const friendly = isUnreachable ?
                 'This user has not started the bot or has blocked it, so we can\'t send them a message.' : desc;
             return apiJson({ error: friendly }, 500);
         }
-        const messageId = resp.result && resp.result.message_id;
+        const messageId = resp.result && (Array.isArray(resp.result) ? (resp.result[0] && resp.result[0].message_id) : resp.result.message_id);
         if (built && built.both && built.replyMarkup) {
-            await tgCall(token, 'sendMessage', { chat_id: userId, text: ' ', reply_markup: built.replyMarkup });
+            await tgCall(token, 'sendMessage', Object.assign({ chat_id: userId, text: ' ', reply_markup: built.replyMarkup }, protectContent ? { protect_content: true } : {}));
         }
         if (built && built.replySpec && built.replySpec.actions) await mergeReplyActions(env.DB, built.replySpec.actions);
-        await logDm(env.DB, userId, 'out', 'admin', mediaType, message || '', photoUrl || null, messageId, buttonsJson || null, fileId || null, mediaMeta);
+        await logDm(env.DB, userId, 'out', 'admin', mediaType, message || '', (items[0] && items[0].media_url) || photoUrl || null, messageId, buttonsJson || null, fileId || null, mediaMeta, mediaItemsStr);
         await logAction(env.DB, userId, 'Direct message sent');
         return apiJson({ success: true, message_id: messageId, media_type: mediaType });
     } catch (err) { return internalError(err); }
@@ -12498,7 +13958,7 @@ async function getGroupChatMessages(env, url) {
         const id = parseInt(url.pathname.split('/')[3]);
         await initializeDatabase(env.DB);
         const rows = await env.DB.prepare(
-            "SELECT id, message_id, kind, text, photo_url, file_id, media_meta, buttons_json, created_at, edited_at FROM dm_messages WHERE chat_id = ? AND source = 'group_announce' ORDER BY id ASC LIMIT 300"
+            "SELECT id, message_id, kind, text, photo_url, file_id, media_meta, media_items_json, buttons_json, created_at, edited_at FROM dm_messages WHERE chat_id = ? AND source = 'group_announce' ORDER BY id ASC LIMIT 300"
         ).bind(id).all();
         return apiJson({ messages: rows.results || [] });
     } catch (err) { return internalError(err); }
@@ -12618,27 +14078,25 @@ async function sendGroupMessage(request, env, url) {
         const id = parseInt(url.pathname.split('/')[3]);
         const body = await request.json();
         const { message, photo_url: photoUrl, buttons_json: buttonsJson,
-                media_type: mediaTypeRaw, file_id: fileIdRaw, media_meta: mediaMetaRaw } = body;
-        const mediaType = normalizeMediaType(mediaTypeRaw || (photoUrl ? 'photo' : 'text'));
-        const fileId = fileIdRaw ? String(fileIdRaw).trim() : '';
-        const mediaMeta = parseMediaMeta(mediaMetaRaw);
-        if (!message && !photoUrl && !fileId) return apiJson({ error: 'Please write a message or attach media.' }, 400);
+                media_type: mediaTypeRaw, file_id: fileIdRaw, media_meta: mediaMetaRaw,
+                media_items_json: mediaItemsRaw, protect_content: protectContent } = body;
+        const items = normalizeMediaItems(mediaItemsRaw, { media_type: mediaTypeRaw || (photoUrl ? 'photo' : 'text'), file_id: fileIdRaw, media_url: photoUrl, media_meta: mediaMetaRaw });
+        const mediaType = items.length ? items[0].media_type : normalizeMediaType(mediaTypeRaw || (photoUrl ? 'photo' : 'text'));
+        const fileId = items.length ? items[0].file_id : (fileIdRaw ? String(fileIdRaw).trim() : '');
+        const mediaMeta = items.length ? items[0].media_meta : parseMediaMeta(mediaMetaRaw);
+        const mediaItemsStr = items.length ? JSON.stringify(items) : '';
+        if (!message && !photoUrl && !fileId && !items.length) return apiJson({ error: 'Please write a message or attach media.' }, 400);
         await initializeDatabase(env.DB);
         const token = await getSetting(env.DB, 'bot_token');
         if (!token) return apiJson({ error: 'Bot token is not set.' }, 400);
         const built = buttonsJson ? buildReplyMarkup(buttonsJson) : null;
         const markup = built && built.markup ? built.markup : null;
-        const mediaPayload = fileId || photoUrl || '';
-        let resp;
-        if (mediaType === 'text') {
-            resp = await sendRichText(token, id, message || '', markup ? { reply_markup: markup } : {});
-        } else {
-            resp = await sendMediaMessage(token, id, mediaType, mediaPayload, message || '', markup, mediaMeta);
-        }
+        const resp = await sendMultiMediaMessage(token, id, items, message || '', markup, { protect_content: !!protectContent });
         if (!resp || !resp.ok) return apiJson({ error: (resp && resp.description) || 'Telegram error' }, 500);
-        if (built && built.both && built.replyMarkup) await tgCall(token, 'sendMessage', { chat_id: id, text: ' ', reply_markup: built.replyMarkup });
+        const msgId = resp.result && (Array.isArray(resp.result) ? (resp.result[0] && resp.result[0].message_id) : resp.result.message_id);
+        if (built && built.both && built.replyMarkup) await tgCall(token, 'sendMessage', Object.assign({ chat_id: id, text: ' ', reply_markup: built.replyMarkup }, protectContent ? { protect_content: true } : {}));
         if (built && built.replySpec && built.replySpec.actions) await mergeReplyActions(env.DB, built.replySpec.actions);
-        await logDm(env.DB, id, 'out', 'group_announce', mediaType, message || '', photoUrl || null, resp.result && resp.result.message_id, buttonsJson || null, fileId || null, mediaMeta);
+        await logDm(env.DB, id, 'out', 'group_announce', mediaType, message || '', (items[0] && items[0].media_url) || photoUrl || null, msgId, buttonsJson || null, fileId || null, mediaMeta, mediaItemsStr);
         await logAction(env.DB, null, `Announcement sent to group ${id}`);
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
@@ -12661,6 +14119,283 @@ async function getGroupSettings(db, chatId) {
         return Object.assign({}, normalized);
     } catch (e) { return normalizeGroupSettings({}); }
 }
+const CHANNEL_DEFAULT_SETTINGS = {
+    auto_capture_media: false,
+    auto_pin_posts: false,
+    auto_signature_enabled: false,
+    auto_signature_text: '',
+    auto_buttons_enabled: false,
+    auto_buttons_json: '',
+    silent_by_default: false,
+    protect_by_default: false,
+};
+function normalizeChannelSettings(raw) {
+    const src = raw && typeof raw === 'object' ? raw : {};
+    return {
+        auto_capture_media: !!src.auto_capture_media,
+        auto_pin_posts: !!src.auto_pin_posts,
+        auto_signature_enabled: !!src.auto_signature_enabled,
+        auto_signature_text: String(src.auto_signature_text || '').slice(0, 1000),
+        auto_buttons_enabled: !!src.auto_buttons_enabled,
+        auto_buttons_json: String(src.auto_buttons_json || ''),
+        silent_by_default: !!src.silent_by_default,
+        protect_by_default: !!src.protect_by_default,
+    };
+}
+async function upsertChannel(db, chat, isActive, memberCount) {
+    try {
+        await db.prepare(`
+            INSERT INTO channels (id, title, username, is_active, last_active, member_count)
+            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                title = excluded.title,
+                username = excluded.username,
+                is_active = excluded.is_active,
+                member_count = CASE WHEN excluded.member_count > 0 THEN excluded.member_count ELSE channels.member_count END,
+                last_active = CURRENT_TIMESTAMP
+        `).bind(chat.id, chat.title || '', chat.username || '', isActive ? 1 : 0, memberCount || 0).run();
+    } catch (e) {}
+}
+async function getChannelSettings(db, chatId) {
+    try {
+        const row = await db.prepare('SELECT settings_json FROM channels WHERE id = ?').bind(chatId).first();
+        if (row && row.settings_json) return normalizeChannelSettings(JSON.parse(row.settings_json));
+    } catch (e) {}
+    return Object.assign({}, CHANNEL_DEFAULT_SETTINGS);
+}
+async function getChannels(env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        const rows = await env.DB.prepare('SELECT id, title, username, added_at, last_active, is_active, settings_json, member_count FROM channels ORDER BY last_active DESC LIMIT 300').all();
+        return apiJson({ channels: rows.results || [] });
+    } catch (err) { return internalError(err); }
+}
+async function addChannelManually(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const body = await request.json();
+        const chatId = String(body.chatId || '').trim();
+        if (!chatId) return apiJson({ error: 'Enter a @username or -100… channel ID.' }, 400);
+        await initializeDatabase(env.DB);
+        const token = await getSetting(env.DB, 'bot_token');
+        if (!token) return apiJson({ error: 'Bot token is not set.' }, 400);
+        const info = await tgCall(token, 'getChat', { chat_id: chatId });
+        if (!info || !info.ok || !info.result) return apiJson({ error: (info && info.description) || 'Channel not found or bot is not added.' }, 400);
+        const chat = info.result;
+        if (chat.type !== 'channel') return apiJson({ error: `That chat is a "${chat.type}", not a channel.` }, 400);
+        let memberCount = 0;
+        try { const c = await tgCall(token, 'getChatMemberCount', { chat_id: chat.id }); if (c && c.ok) memberCount = c.result || 0; } catch (e) {}
+        let warning = '';
+        let isActive = true;
+        try {
+            const me = await tgFetchJson(`https://api.telegram.org/bot${token}/getMe`);
+            if (me && me.ok && me.result && me.result.id) {
+                const m = await tgCall(token, 'getChatMember', { chat_id: chat.id, user_id: me.result.id });
+                if (!m || !m.ok || (m.result.status !== 'administrator' && m.result.status !== 'creator')) {
+                    warning = 'Channel added, but the bot is not an administrator yet. Promote it to admin so posting and automation work.';
+                    isActive = false;
+                }
+            }
+        } catch (e) {}
+        await upsertChannel(env.DB, chat, isActive, memberCount);
+        await logAction(env.DB, null, `Channel ${chat.id} connected`);
+        return apiJson({ success: true, channel: chat, warning });
+    } catch (err) { return internalError(err); }
+}
+async function getChannelDetail(env, url) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const id = parseInt(url.pathname.split('/').pop());
+        await initializeDatabase(env.DB);
+        const row = await env.DB.prepare('SELECT * FROM channels WHERE id = ?').bind(id).first();
+        if (!row) return apiJson({ error: 'Channel not found.' }, 404);
+        let settings = {};
+        try { settings = JSON.parse(row.settings_json || '{}'); } catch (e) {}
+        const storageChat = String((await getSetting(env.DB, 'media_storage_chat_id')) || '').trim();
+        const isMediaStorage = storageChat === String(id) || (row.username && storageChat.toLowerCase() === ('@' + row.username.toLowerCase()));
+        return apiJson({ channel: row, settings: normalizeChannelSettings(settings), is_media_storage: isMediaStorage });
+    } catch (err) { return internalError(err); }
+}
+async function syncChannelStatus(env, url) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const id = parseInt(url.pathname.split('/')[3]);
+        await initializeDatabase(env.DB);
+        const token = await getSetting(env.DB, 'bot_token');
+        if (!token) return apiJson({ error: 'Bot token is not set.' }, 400);
+        const info = await tgCall(token, 'getChat', { chat_id: id });
+        if (!info || !info.ok) {
+            await env.DB.prepare('UPDATE channels SET is_active = 0 WHERE id = ?').bind(id).run();
+            return apiJson({ success: true, is_active: 0, member_count: 0, permissions_summary: 'Bot cannot access this channel.' });
+        }
+        const chat = info.result || {};
+        let memberCount = 0;
+        try { const c = await tgCall(token, 'getChatMemberCount', { chat_id: id }); if (c && c.ok) memberCount = c.result || 0; } catch (e) {}
+        let isActive = true;
+        let permsSummary = 'Bot is active.';
+        try {
+            const me = await tgFetchJson(`https://api.telegram.org/bot${token}/getMe`);
+            if (me && me.ok && me.result && me.result.id) {
+                const m = await tgCall(token, 'getChatMember', { chat_id: id, user_id: me.result.id });
+                if (m && m.ok && m.result) {
+                    const r = m.result;
+                    if (r.status !== 'administrator' && r.status !== 'creator') {
+                        isActive = false;
+                        permsSummary = 'Bot is not an administrator.';
+                    } else {
+                        const perms = [];
+                        if (r.can_post_messages !== false) perms.push('Post');
+                        if (r.can_edit_messages) perms.push('Edit');
+                        if (r.can_delete_messages) perms.push('Delete');
+                        permsSummary = 'Admin permissions: ' + (perms.length ? perms.join(', ') : 'Basic');
+                    }
+                }
+            }
+        } catch (e) {}
+        await upsertChannel(env.DB, chat, isActive, memberCount);
+        return apiJson({ success: true, is_active: isActive ? 1 : 0, title: chat.title || '', member_count: memberCount, permissions_summary: permsSummary });
+    } catch (err) { return internalError(err); }
+}
+async function saveChannelSettings(request, env, url) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const id = parseInt(url.pathname.split('/')[3]);
+        const body = await request.json();
+        await initializeDatabase(env.DB);
+        const clean = normalizeChannelSettings(body);
+        await env.DB.prepare('UPDATE channels SET settings_json = ? WHERE id = ?').bind(JSON.stringify(clean), id).run();
+        await logAction(env.DB, null, `Channel ${id} automation updated`);
+        return apiJson({ success: true });
+    } catch (err) { return internalError(err); }
+}
+async function deleteChannel(env, url) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const id = parseInt(url.pathname.split('/').pop());
+        await initializeDatabase(env.DB);
+        await env.DB.prepare('DELETE FROM channels WHERE id = ?').bind(id).run();
+        await logAction(env.DB, null, `Channel ${id} removed from dashboard`);
+        return apiJson({ success: true });
+    } catch (err) { return internalError(err); }
+}
+async function getChannelPosts(env, url) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const id = parseInt(url.pathname.split('/')[3]);
+        await initializeDatabase(env.DB);
+        const rows = await env.DB.prepare(
+            "SELECT id, message_id, kind, text, photo_url, file_id, media_meta, media_items_json, buttons_json, created_at, edited_at FROM dm_messages WHERE chat_id = ? AND source = 'channel_post' ORDER BY id ASC LIMIT 300"
+        ).bind(id).all();
+        return apiJson({ posts: rows.results || [] });
+    } catch (err) { return internalError(err); }
+}
+async function sendChannelPost(request, env, url) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const id = parseInt(url.pathname.split('/')[3]);
+        const body = await request.json();
+        const { message, photo_url: photoUrl, buttons_json: buttonsJson,
+                media_type: mediaTypeRaw, file_id: fileIdRaw, media_meta: mediaMetaRaw,
+                media_items_json: mediaItemsRaw, protect_content: protectContent,
+                disable_notification: disableNotification, pin_post: pinPost } = body;
+        const items = normalizeMediaItems(mediaItemsRaw, { media_type: mediaTypeRaw || (photoUrl ? 'photo' : 'text'), file_id: fileIdRaw, media_url: photoUrl, media_meta: mediaMetaRaw });
+        const mediaType = items.length ? items[0].media_type : normalizeMediaType(mediaTypeRaw || (photoUrl ? 'photo' : 'text'));
+        const fileId = items.length ? items[0].file_id : (fileIdRaw ? String(fileIdRaw).trim() : '');
+        const mediaMeta = items.length ? items[0].media_meta : parseMediaMeta(mediaMetaRaw);
+        const mediaItemsStr = items.length ? JSON.stringify(items) : '';
+        if (!message && !photoUrl && !fileId && !items.length) return apiJson({ error: 'Write a post or attach media.' }, 400);
+        await initializeDatabase(env.DB);
+        const token = await getSetting(env.DB, 'bot_token');
+        if (!token) return apiJson({ error: 'Bot token is not set.' }, 400);
+        const chSettings = await getChannelSettings(env.DB, id);
+
+        let finalMsg = message || '';
+        if (chSettings.auto_signature_enabled && chSettings.auto_signature_text) {
+            finalMsg = finalMsg ? (finalMsg + '\n\n' + chSettings.auto_signature_text) : chSettings.auto_signature_text;
+        }
+        const effectiveButtons = buttonsJson || (chSettings.auto_buttons_enabled ? chSettings.auto_buttons_json : '');
+        const built = effectiveButtons ? buildReplyMarkup(effectiveButtons) : null;
+        const markup = built && built.inlineMarkup ? built.inlineMarkup : null;
+
+        let resp;
+        if (!items.length) {
+            const extra = Object.assign({}, markup ? { reply_markup: markup } : {}, protectContent ? { protect_content: true } : {}, disableNotification ? { disable_notification: true } : {});
+            resp = await sendRichText(token, id, finalMsg, extra);
+        } else {
+            resp = await sendMultiMediaMessage(token, id, items, finalMsg, markup, { protect_content: !!protectContent });
+        }
+        if (!resp || !resp.ok) return apiJson({ error: (resp && resp.description) || 'Telegram rejected the post. Make sure the bot has Post Messages permission.' }, 500);
+        const msgId = resp.result ? (Array.isArray(resp.result) ? (resp.result[0] && resp.result[0].message_id) : resp.result.message_id) : null;
+        if (pinPost && msgId) {
+            try { await tgCall(token, 'pinChatMessage', { chat_id: id, message_id: msgId, disable_notification: !!disableNotification }); } catch (e) {}
+        }
+        await logDm(env.DB, id, 'out', 'channel_post', mediaType, finalMsg, (items[0] && items[0].media_url) || photoUrl || null, msgId, effectiveButtons || null, fileId || null, mediaMeta, mediaItemsStr);
+        await logAction(env.DB, null, `Published post to channel ${id}`);
+        return apiJson({ success: true, message_id: msgId });
+    } catch (err) { return internalError(err); }
+}
+async function editChannelPost(request, env, url) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const id = parseInt(url.pathname.split('/')[3]);
+        const body = await request.json();
+        const dbId = parseInt(body.id);
+        const messageId = parseInt(body.messageId);
+        const text = String(body.text || '');
+        const buttonsJson = body.buttons_json || '';
+        await initializeDatabase(env.DB);
+        const token = await getSetting(env.DB, 'bot_token');
+        if (!token) return apiJson({ error: 'Bot token not set.' }, 400);
+        const row = await env.DB.prepare('SELECT kind FROM dm_messages WHERE id = ? AND chat_id = ?').bind(dbId, id).first();
+        if (!row) return apiJson({ error: 'Post not found.' }, 404);
+        const built = buttonsJson ? buildReplyMarkup(buttonsJson) : null;
+        const inlineMarkup = built && built.inlineMarkup ? built.inlineMarkup : null;
+        const isMedia = (row.kind || 'text') !== 'text';
+        const method = isMedia ? 'editMessageCaption' : 'editMessageText';
+        const payload = { chat_id: id, message_id: messageId, parse_mode: 'HTML', reply_markup: inlineMarkup || { inline_keyboard: [] } };
+        if (isMedia) payload.caption = text || ' '; else payload.text = text || ' ';
+        let res = await tgCall(token, method, payload);
+        if (res && !res.ok && isHtmlParseError(res)) {
+            const plain = Object.assign({}, payload); delete plain.parse_mode;
+            if (isMedia) plain.caption = htmlToPlain(text || ' '); else plain.text = htmlToPlain(text || ' ');
+            res = await tgCall(token, method, plain);
+        }
+        if (!res || !res.ok) return apiJson({ error: (res && res.description) || 'Telegram error' }, 500);
+        await env.DB.prepare('UPDATE dm_messages SET text = ?, buttons_json = ?, edited_at = CURRENT_TIMESTAMP WHERE id = ? AND chat_id = ?').bind(text, buttonsJson || null, dbId, id).run();
+        return apiJson({ success: true });
+    } catch (err) { return internalError(err); }
+}
+async function deleteChannelPost(request, env, url) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const id = parseInt(url.pathname.split('/')[3]);
+        const body = await request.json();
+        const dbId = parseInt(body.id);
+        const messageId = parseInt(body.messageId);
+        await initializeDatabase(env.DB);
+        const token = await getSetting(env.DB, 'bot_token');
+        if (token && messageId) {
+            try { await tgCall(token, 'deleteMessage', { chat_id: id, message_id: messageId }, { retry: false }); } catch (e) {}
+        }
+        await env.DB.prepare('DELETE FROM dm_messages WHERE id = ? AND chat_id = ?').bind(dbId, id).run();
+        return apiJson({ success: true });
+    } catch (err) { return internalError(err); }
+}
+async function pinChannelPost(request, env, url) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const id = parseInt(url.pathname.split('/')[3]);
+        const body = await request.json();
+        const messageId = parseInt(body.messageId);
+        const token = await getSetting(env.DB, 'bot_token');
+        if (!token || !messageId) return apiJson({ error: 'Missing token or messageId.' }, 400);
+        const res = await tgCall(token, 'pinChatMessage', { chat_id: id, message_id: messageId, disable_notification: true });
+        if (!res || !res.ok) return apiJson({ error: (res && res.description) || 'Failed to pin post.' }, 400);
+        return apiJson({ success: true });
+    } catch (err) { return internalError(err); }
+}
+
 async function upsertGroup(db, chat, isActive) {
     try {
         await db.prepare(`
@@ -12765,22 +14500,25 @@ async function handleBroadcastSettings(request, env) {
 }
 function sleepMs(ms) { return new Promise(r => setTimeout(r, ms)); }
 async function broadcastToUser(token, uid, built, markup, content, timeoutMs) {
+    const items = Array.isArray(content.items) ? content.items : [];
+    const sendOpts = { protect_content: !!content.protect_content };
     let res;
-    if (content.mediaType === 'text' || !content.mediaType) {
-        const extra = markup ? { reply_markup: markup } : {};
+    if (items.length) {
+        res = await sendMultiMediaMessage(token, uid, items, content.text || '', markup, sendOpts);
+    } else if (content.mediaType === 'text' || !content.mediaType) {
+        const extra = Object.assign({}, markup ? { reply_markup: markup } : {}, content.protect_content ? { protect_content: true } : {});
         res = await sendRichText(token, uid, content.text, extra);
     } else {
-        res = await sendMediaMessage(token, uid, content.mediaType, content.mediaUrl, content.text || '', markup, content.mediaMeta);
+        res = await sendMediaMessage(token, uid, content.mediaType, content.mediaUrl, content.text || '', markup, content.mediaMeta, sendOpts);
     }
     if (!res || !res.ok) {
         const desc = String((res && res.description) || '');
         const blocked = /blocked|deactivated|not started|chat not found|user not found|bot can't initiate|kicked/i.test(desc);
-        // Always return the same four keys so TypeScript (and any JS consumers)
-        // can narrow safely without union-property errors.
         return { ok: false, blocked: !!blocked, skipped: false, messageId: null };
     }
-    if (built && built.both && built.replyMarkup) await tgCall(token, 'sendMessage', { chat_id: uid, text: ' ', reply_markup: built.replyMarkup }, { timeoutMs });
-    return { ok: true, blocked: false, skipped: false, messageId: res.result ? res.result.message_id : null };
+    if (built && built.both && built.replyMarkup) await tgCall(token, 'sendMessage', Object.assign({ chat_id: uid, text: ' ', reply_markup: built.replyMarkup }, content.protect_content ? { protect_content: true } : {}), { timeoutMs });
+    const msgId = res.result ? (Array.isArray(res.result) ? (res.result[0] && res.result[0].message_id) : res.result.message_id) : null;
+    return { ok: true, blocked: false, skipped: false, messageId: msgId };
 }
 async function handleBroadcast(request, env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
@@ -12790,21 +14528,20 @@ async function handleBroadcast(request, env) {
         if (!token) return apiJson({ error: 'Bot token is not configured. Please add it in Settings.' }, 400);
         const bcBody = await request.json();
         const { userIds, message, photo_url: photoUrl, buttons_json: buttonsJson,
-                media_type: mediaTypeRaw, file_id: fileIdRaw, media_meta: mediaMetaRaw } = bcBody;
-        const mediaType = normalizeMediaType(mediaTypeRaw || (photoUrl ? 'photo' : 'text'));
-        const fileId = fileIdRaw ? String(fileIdRaw).trim() : '';
-        const mediaMeta = parseMediaMeta(mediaMetaRaw);
-        if ((!message || !String(message).trim()) && !photoUrl && !fileId) return apiJson({ error: 'Please write a message or attach media.' }, 400);
+                media_type: mediaTypeRaw, file_id: fileIdRaw, media_meta: mediaMetaRaw,
+                media_items_json: mediaItemsRaw, protect_content: protectContent } = bcBody;
+        const items = normalizeMediaItems(mediaItemsRaw, { media_type: mediaTypeRaw || (photoUrl ? 'photo' : 'text'), file_id: fileIdRaw, media_url: photoUrl, media_meta: mediaMetaRaw });
+        const mediaType = items.length ? items[0].media_type : normalizeMediaType(mediaTypeRaw || (photoUrl ? 'photo' : 'text'));
+        const fileId = items.length ? items[0].file_id : (fileIdRaw ? String(fileIdRaw).trim() : '');
+        const mediaMeta = items.length ? items[0].media_meta : parseMediaMeta(mediaMetaRaw);
+        const mediaItemsStr = items.length ? JSON.stringify(items) : '';
+        if ((!message || !String(message).trim()) && !photoUrl && !fileId && !items.length) return apiJson({ error: 'Please write a message or attach media.' }, 400);
         if (!userIds || !userIds.length) return apiJson({ error: 'No recipients selected.' }, 400);
         const built = buttonsJson ? buildReplyMarkup(buttonsJson) : null;
         const markup = built && built.markup ? built.markup : null;
         const uniqueIds = [...new Set(userIds)];
-        // Cloudflare Workers caps subrequests per invocation (50 free / 1000 paid).
-        // Every recipient uses at least one subrequest, so a large broadcast can
-        // silently truncate partway. Warn now, keep the operation best-effort.
         const SUBREQUEST_SAFE_LIMIT = 40;
         if (uniqueIds.length > SUBREQUEST_SAFE_LIMIT) {
-            // Log it so the admin can see the warning later in Activity Log.
             try { await logAction(env.DB, null, `Broadcast warning: ${uniqueIds.length} recipients exceeds safe subrequest limit (${SUBREQUEST_SAFE_LIMIT})`); } catch (e) {}
         }
         const settings = await getBroadcastSettings(env);
@@ -12815,10 +14552,10 @@ async function handleBroadcast(request, env) {
             const rows = await env.DB.prepare(`SELECT user_id FROM blocked_users WHERE block_type = 'full' AND user_id IN (${ph})`).bind(...slice).all();
             for (const r of (rows.results || [])) blockedSet.add(r.user_id);
         }
-        const content = { mediaType, text: message || '', mediaUrl: fileId || photoUrl || '', mediaMeta };
+        const content = { mediaType, text: message || '', mediaUrl: fileId || (items[0] && items[0].media_url) || photoUrl || '', mediaMeta, items, protect_content: !!protectContent };
         let broadcastId = null;
         try {
-            const histRes = await env.DB.prepare('INSERT INTO broadcast_history (message, photo_url, kind, buttons_json, file_id, media_meta, recipient_count, sent_count, sent_at) VALUES (?, ?, ?, ?, ?, ?, ?, 0, datetime("now"))').bind(message || '', photoUrl || null, mediaType, buttonsJson || null, fileId || null, JSON.stringify(mediaMeta || {}), uniqueIds.length).run();
+            const histRes = await env.DB.prepare('INSERT INTO broadcast_history (message, photo_url, kind, buttons_json, file_id, media_meta, media_items_json, recipient_count, sent_count, sent_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, datetime("now"))').bind(message || '', (items[0] && items[0].media_url) || photoUrl || null, mediaType, buttonsJson || null, fileId || null, JSON.stringify(mediaMeta || {}), mediaItemsStr, uniqueIds.length).run();
             broadcastId = histRes && histRes.meta ? histRes.meta.last_row_id : null;
         } catch (e) {}
         let sent = 0, failed = 0, skipped = 0;
@@ -13453,8 +15190,8 @@ async function getSettings(env, originUrl) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
-        const [token, webhook, cfToken, language, mediaStorage, mediaDeleteAfter] = await Promise.all([
-            getSetting(env.DB, 'bot_token'), getSetting(env.DB, 'webhook_url'), getSetting(env.DB, 'cf_api_token'), getSetting(env.DB, 'system_language'), getSetting(env.DB, 'media_storage_chat_id'), getSetting(env.DB, 'media_storage_delete_after_upload'),
+        const [token, webhook, cfToken, language, mediaStorage, mediaDeleteAfter, navStyle, navStructure] = await Promise.all([
+            getSetting(env.DB, 'bot_token'), getSetting(env.DB, 'webhook_url'), getSetting(env.DB, 'cf_api_token'), getSetting(env.DB, 'system_language'), getSetting(env.DB, 'media_storage_chat_id'), getSetting(env.DB, 'media_storage_delete_after_upload'), getSetting(env.DB, 'nav_style'), getSetting(env.DB, 'nav_structure'),
         ]);
         const systemLanguage = language || 'en';
         return apiJson({
@@ -13466,7 +15203,20 @@ async function getSettings(env, originUrl) {
             media_storage_chat_id: mediaStorage || '',
             media_storage_delete_after_upload: mediaDeleteAfter === '1' ? '1' : '0',
             system_language: systemLanguage === 'fa' ? 'fa' : 'en',
+            nav_style: ['classic', 'pills', 'glass', 'compact'].includes(navStyle) ? navStyle : 'classic',
+            nav_structure: ['grouped', 'flat', 'topbar'].includes(navStructure) ? navStructure : 'grouped',
         });
+    } catch (err) { return internalError(err); }
+}
+async function saveNavLayoutSetting(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const body = await request.json();
+        const style = ['classic', 'pills', 'glass', 'compact'].includes(body.nav_style) ? body.nav_style : 'classic';
+        const structure = ['grouped', 'flat', 'topbar'].includes(body.nav_structure) ? body.nav_structure : 'grouped';
+        await initializeDatabase(env.DB);
+        await setSettingsBatch(env.DB, [['nav_style', style], ['nav_structure', structure]]);
+        return apiJson({ success: true, nav_style: style, nav_structure: structure });
     } catch (err) { return internalError(err); }
 }
 async function revealBotToken(env) {
@@ -13776,9 +15526,9 @@ async function exportBackup(env) {
             env.DB.prepare('SELECT * FROM users').all(),
             env.DB.prepare('SELECT chat_id, role, content, timestamp FROM ai_messages ORDER BY id').all(),
             env.DB.prepare('SELECT key, value FROM settings').all(),
-            env.DB.prepare('SELECT message, photo_url, kind, buttons_json, file_id, media_meta, recipient_count, sent_count, sent_at FROM broadcast_history ORDER BY id').all(),
+            env.DB.prepare('SELECT message, photo_url, kind, buttons_json, file_id, media_meta, media_items_json, recipient_count, sent_count, sent_at FROM broadcast_history ORDER BY id').all(),
             env.DB.prepare('SELECT * FROM groups').all(),
-            env.DB.prepare('SELECT chat_id, message_id, direction, source, kind, text, photo_url, file_id, media_meta, buttons_json, created_at, edited_at FROM dm_messages ORDER BY id').all(),
+            env.DB.prepare('SELECT chat_id, message_id, direction, source, kind, text, photo_url, file_id, media_meta, media_items_json, buttons_json, created_at, edited_at FROM dm_messages ORDER BY id').all(),
         ]);
         const settings = {};
         for (const row of settingsRows.results) settings[row.key] = row.value;
@@ -13820,8 +15570,8 @@ async function restoreBackup(request, env) {
         if (wants('commands') && Array.isArray(data.commands)) {
             await runBatchChunks(env.DB, data.commands.filter(c => c && c.command).map(c => {
                 const access = effectiveCommandAccess(c);
-                return env.DB.prepare(`INSERT INTO commands (command, parent, response_type, content, media_url, file_id, media_meta, buttons_json, is_admin_only, access_level, allowed_users, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, order_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-                    .bind(c.command, c.parent || null, c.response_type || 'text', c.content || '', c.media_url || '', c.file_id || '', c.media_meta || '', c.buttons_json || '', access === 'admin' ? 1 : 0, access, normalizeAllowedUsersStr(c.allowed_users), c.expires_at || null, c.enabled !== undefined ? c.enabled : 1, c.show_reply_keyboard ? 1 : 0, c.reply_keyboard_json || '', c.order_idx || 0);
+                return env.DB.prepare(`INSERT INTO commands (command, parent, response_type, content, media_url, file_id, media_meta, media_items_json, protect_content, buttons_json, is_admin_only, access_level, allowed_users, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, order_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+                    .bind(c.command, c.parent || null, c.response_type || 'text', c.content || '', c.media_url || '', c.file_id || '', c.media_meta || '', c.media_items_json || '', c.protect_content ? 1 : 0, c.buttons_json || '', access === 'admin' ? 1 : 0, access, normalizeAllowedUsersStr(c.allowed_users), c.expires_at || null, c.enabled !== undefined ? c.enabled : 1, c.show_reply_keyboard ? 1 : 0, c.reply_keyboard_json || '', c.order_idx || 0);
             }));
         }
         if (wants('media_library') && Array.isArray(data.media_library)) {
@@ -13860,8 +15610,8 @@ async function restoreBackup(request, env) {
                 .bind(m.chat_id, m.role || 'user', m.content, m.timestamp || new Date().toISOString())));
         }
         if (wants('dm_messages') && Array.isArray(data.dm_messages)) {
-            await runBatchChunks(env.DB, data.dm_messages.filter(m => m && m.chat_id).map(m => env.DB.prepare('INSERT INTO dm_messages (chat_id, direction, source, kind, text, photo_url, file_id, media_meta, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
-                .bind(m.chat_id, m.direction || 'in', m.source || null, m.kind || 'text', m.text || '', m.photo_url || null, m.file_id || null, m.media_meta || null, m.created_at || new Date().toISOString())));
+            await runBatchChunks(env.DB, data.dm_messages.filter(m => m && m.chat_id).map(m => env.DB.prepare('INSERT INTO dm_messages (chat_id, direction, source, kind, text, photo_url, file_id, media_meta, media_items_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+                .bind(m.chat_id, m.direction || 'in', m.source || null, m.kind || 'text', m.text || '', m.photo_url || null, m.file_id || null, m.media_meta || null, m.media_items_json || '', m.created_at || new Date().toISOString())));
         }
         if (wants('groups') && Array.isArray(data.groups)) {
             for (const g of data.groups) {
@@ -13871,8 +15621,8 @@ async function restoreBackup(request, env) {
             }
         }
         if (wants('broadcast_history') && Array.isArray(data.broadcast_history)) {
-            await runBatchChunks(env.DB, data.broadcast_history.filter(h => h && h.message).map(h => env.DB.prepare('INSERT INTO broadcast_history (message, photo_url, kind, buttons_json, file_id, media_meta, recipient_count, sent_count, sent_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
-                .bind(h.message, h.photo_url || null, h.kind || 'text', h.buttons_json || null, h.file_id || null, h.media_meta || null, h.recipient_count || 0, h.sent_count || 0, h.sent_at || new Date().toISOString())));
+            await runBatchChunks(env.DB, data.broadcast_history.filter(h => h && (h.message || h.file_id || h.photo_url || h.media_items_json)).map(h => env.DB.prepare('INSERT INTO broadcast_history (message, photo_url, kind, buttons_json, file_id, media_meta, media_items_json, recipient_count, sent_count, sent_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+                .bind(h.message || '', h.photo_url || null, h.kind || 'text', h.buttons_json || null, h.file_id || null, h.media_meta || null, h.media_items_json || '', h.recipient_count || 0, h.sent_count || 0, h.sent_at || new Date().toISOString())));
         }
         const settings = data.settings || {};
         const setStmts = [];
@@ -15405,14 +17155,17 @@ async function executeMcpTool(name, args, env, categories) {
             if (!cmdName) throw new Error('command is required.');
             const row = await env.DB.prepare('SELECT * FROM commands WHERE command = ?').bind(cmdName).first();
             if (!row) throw new Error(`Command "${cmdName}" not found.`);
-            let buttons = null, replyKb = null;
+            let buttons = null, replyKb = null, mediaItems = [];
             if (row.buttons_json) { try { buttons = JSON.parse(row.buttons_json); } catch (e) { buttons = row.buttons_json; } }
             if (row.reply_keyboard_json) { try { replyKb = JSON.parse(row.reply_keyboard_json); } catch (e) { replyKb = row.reply_keyboard_json; } }
+            if (row.media_items_json) { try { mediaItems = JSON.parse(row.media_items_json); } catch (e) {} }
             return {
                 command: row.command, parent: row.parent || null,
                 response_type: row.response_type || 'text',
                 content: row.content || '', media_url: row.media_url || '',
                 file_id: row.file_id || '', media_meta: row.media_meta || '',
+                media_items: mediaItems, protect_content: !!row.protect_content,
+                allowed_users: row.allowed_users || '', expires_at: row.expires_at || null,
                 is_admin_only: !!row.is_admin_only, access_level: effectiveCommandAccess(row), enabled: row.enabled !== 0,
                 show_reply_keyboard: !!row.show_reply_keyboard,
                 buttons, reply_keyboard: replyKb,
@@ -15475,7 +17228,7 @@ async function executeMcpTool(name, args, env, categories) {
             const cmdName = String(args.command || '').trim();
             if (!cmdName) throw new Error('command is required.');
             const content = String(args.content || '');
-            if (!content) throw new Error('content is required.');
+            if (!content && !args.media_url && !args.file_id && !args.media_items) throw new Error('content or media is required.');
             const existing = await env.DB.prepare('SELECT command FROM commands WHERE command = ?').bind(cmdName).first();
             if (existing) throw new Error(`Command "${cmdName}" already exists. Use update_command to modify it.`);
             const payload = {
@@ -15484,6 +17237,11 @@ async function executeMcpTool(name, args, env, categories) {
                 response_type: args.response_type || 'text',
                 content,
                 media_url: args.media_url || '',
+                file_id: args.file_id || '',
+                media_items_json: args.media_items ? JSON.stringify(args.media_items) : '',
+                protect_content: args.protect_content ? 1 : 0,
+                allowed_users: args.allowed_users || '',
+                expires_at: args.expires_at || '',
                 is_admin_only: args.is_admin_only ? 1 : 0,
                 access_level: args.access_level || (args.is_admin_only ? 'admin' : 'everyone'),
                 enabled: args.enabled !== undefined ? (args.enabled ? 1 : 0) : 1,
@@ -15508,8 +17266,12 @@ async function executeMcpTool(name, args, env, categories) {
                 response_type: args.response_type !== undefined ? args.response_type : (existing.response_type || 'text'),
                 content: args.content !== undefined ? String(args.content) : (existing.content || ''),
                 media_url: args.media_url !== undefined ? String(args.media_url) : (existing.media_url || ''),
-                file_id: existing.file_id || '',
+                file_id: args.file_id !== undefined ? String(args.file_id) : (existing.file_id || ''),
                 media_meta: existing.media_meta || '',
+                media_items_json: args.media_items !== undefined ? JSON.stringify(args.media_items) : (existing.media_items_json || ''),
+                protect_content: args.protect_content !== undefined ? (args.protect_content ? 1 : 0) : (existing.protect_content ? 1 : 0),
+                allowed_users: args.allowed_users !== undefined ? String(args.allowed_users) : (existing.allowed_users || ''),
+                expires_at: args.expires_at !== undefined ? String(args.expires_at) : (existing.expires_at || ''),
                 is_admin_only: args.is_admin_only !== undefined ? (args.is_admin_only ? 1 : 0) : (existing.is_admin_only ? 1 : 0),
                 access_level: args.access_level || effectiveCommandAccess(existing),
                 enabled: args.enabled !== undefined ? (args.enabled ? 1 : 0) : (existing.enabled !== 0 ? 1 : 0),
@@ -16978,9 +18740,10 @@ async function sendRichText(token, chatId, text, extra = {}) {
     if (!text) return null;
     const chunks = text.length > 4000 ? splitEscapedHtml(text, 4000) : [text];
     let last = null;
+    const baseExtra = extra && extra.protect_content ? { protect_content: true } : {};
     for (let i = 0; i < chunks.length; i++) {
         const chunk = chunks[i];
-        const chunkExtra = (i === chunks.length - 1) ? extra : {};
+        const chunkExtra = (i === chunks.length - 1) ? extra : baseExtra;
         const payload = Object.assign({ chat_id: chatId, text: chunk, parse_mode: 'HTML' }, chunkExtra);
         const data = await tgCall(token, 'sendMessage', payload);
         if (data && data.ok) { last = data; continue; }
@@ -17014,18 +18777,21 @@ function parseMediaMeta(raw) {
     if (typeof raw === 'object') return raw;
     try { return JSON.parse(raw) || {}; } catch (e) { return {}; }
 }
-async function sendMediaMessage(token, chatId, mediaType, fileIdOrUrl, caption, replyMarkup, extra) {
+async function sendMediaMessage(token, chatId, mediaType, fileIdOrUrl, caption, replyMarkup, extra, opts = {}) {
     mediaType = normalizeMediaType(mediaType);
+    const protect = !!(opts && opts.protect_content);
     if (mediaType === 'text' || !mediaType) {
-        return await sendRichText(token, chatId, caption || '', replyMarkup ? { reply_markup: replyMarkup } : {});
+        const textExtra = Object.assign({}, replyMarkup ? { reply_markup: replyMarkup } : {}, protect ? { protect_content: true } : {});
+        return await sendRichText(token, chatId, caption || '', textExtra);
     }
     const def = MEDIA_TYPE_METHODS[mediaType];
-    if (!def) return await sendRichText(token, chatId, caption || '', replyMarkup ? { reply_markup: replyMarkup } : {});
+    if (!def) {
+        const textExtra = Object.assign({}, replyMarkup ? { reply_markup: replyMarkup } : {}, protect ? { protect_content: true } : {});
+        return await sendRichText(token, chatId, caption || '', textExtra);
+    }
     const media = fileIdOrUrl ? String(fileIdOrUrl).trim() : '';
     if (!media) return null;
 
-    // Telegram caps captions at 1024 chars; anything past that gets dropped.
-    // Split off the overflow, send it as a follow-up text message.
     const TG_CAPTION_LIMIT = 1024;
     let firstCaption = caption || '';
     let overflow = '';
@@ -17038,8 +18804,12 @@ async function sendMediaMessage(token, chatId, mediaType, fileIdOrUrl, caption, 
 
     const payload = { chat_id: chatId };
     payload[def.field] = media;
-    if (firstCaption) { payload.caption = firstCaption; payload.parse_mode = 'HTML'; }
+    if (firstCaption && mediaType !== 'video_note' && mediaType !== 'sticker') {
+        payload.caption = firstCaption;
+        payload.parse_mode = 'HTML';
+    }
     if (replyMarkup) payload.reply_markup = replyMarkup;
+    if (protect) payload.protect_content = true;
     const meta = extra || {};
     if (meta.duration) payload.duration = meta.duration;
     if (meta.title) payload.title = meta.title;
@@ -17056,8 +18826,129 @@ async function sendMediaMessage(token, chatId, mediaType, fileIdOrUrl, caption, 
         delete plain.parse_mode;
         res = await tgCall(token, def.method, plain);
     }
-    if (overflow) await sendRichText(token, chatId, overflow);
+    if (firstCaption && (mediaType === 'video_note' || mediaType === 'sticker')) {
+        await sendRichText(token, chatId, firstCaption, protect ? { protect_content: true } : {});
+    }
+    if (overflow) await sendRichText(token, chatId, overflow, protect ? { protect_content: true } : {});
     return res;
+}
+
+function mediaGroupBucket(mediaType) {
+    if (mediaType === 'photo' || mediaType === 'video') return 'visual';
+    if (mediaType === 'document') return 'document';
+    if (mediaType === 'audio') return 'audio';
+    return null;
+}
+
+function buildTelegramMediaBatches(items) {
+    const batches = [];
+    let i = 0;
+    while (i < items.length) {
+        const bucket = mediaGroupBucket(items[i].media_type);
+        if (!bucket) {
+            batches.push({ kind: 'single', item: items[i] });
+            i++;
+            continue;
+        }
+        const run = [];
+        while (i < items.length && mediaGroupBucket(items[i].media_type) === bucket && run.length < 10) {
+            run.push(items[i]);
+            i++;
+        }
+        if (run.length >= 2) batches.push({ kind: 'group', bucket, items: run });
+        else batches.push({ kind: 'single', item: run[0] });
+    }
+    return batches;
+}
+
+async function sendMultiMediaMessage(token, chatId, items, caption, replyMarkup, opts = {}) {
+    const list = (Array.isArray(items) ? items : []).filter(it => it && it.media_type !== 'text' && (it.file_id || it.media_url));
+    const protect = !!(opts && opts.protect_content);
+    if (!list.length) {
+        const extra = Object.assign({}, replyMarkup ? { reply_markup: replyMarkup } : {}, protect ? { protect_content: true } : {});
+        if (caption) return await sendRichText(token, chatId, caption, extra);
+        if (replyMarkup) return await tgCall(token, 'sendMessage', Object.assign({ chat_id: chatId, text: ' ', reply_markup: replyMarkup }, protect ? { protect_content: true } : {}));
+        return null;
+    }
+    if (list.length === 1) {
+        const one = list[0];
+        return await sendMediaMessage(token, chatId, one.media_type, one.file_id || one.media_url, caption || '', replyMarkup, one.media_meta, opts);
+    }
+
+    const batches = buildTelegramMediaBatches(list);
+    const lastBatch = batches[batches.length - 1];
+    // sendMediaGroup doesn't accept reply_markup, so if the final batch is a
+    // media group and we have buttons, attach caption + buttons to a follow-up
+    // message right below the album.
+    const deferCaptionToMarkupMsg = !!(replyMarkup && lastBatch.kind === 'group');
+    let captionLeft = caption || '';
+    let lastResp = null;
+
+    for (let bi = 0; bi < batches.length; bi++) {
+        const b = batches[bi];
+        const isLast = (bi === batches.length - 1);
+        if (b.kind === 'single') {
+            const cap = (!deferCaptionToMarkupMsg && captionLeft) ? captionLeft : '';
+            if (cap) captionLeft = '';
+            const markup = isLast ? replyMarkup : null;
+            lastResp = await sendMediaMessage(token, chatId, b.item.media_type, b.item.file_id || b.item.media_url, cap, markup, b.item.media_meta, opts);
+            continue;
+        }
+
+        // Media group (2..10 items)
+        let groupCap = '';
+        let overflowCap = '';
+        if (!deferCaptionToMarkupMsg && captionLeft) {
+            if (captionLeft.length > 1024) {
+                overflowCap = captionLeft;
+            } else {
+                groupCap = captionLeft;
+            }
+            captionLeft = '';
+        }
+        const capIdx = b.bucket === 'visual' ? 0 : (b.items.length - 1);
+        const mediaArr = b.items.map((it, idx) => {
+            const entry = {
+                type: it.media_type,
+                media: it.file_id || it.media_url,
+            };
+            if (groupCap && idx === capIdx) {
+                entry.caption = groupCap;
+                entry.parse_mode = 'HTML';
+            }
+            return entry;
+        });
+        const payload = { chat_id: chatId, media: mediaArr };
+        if (protect) payload.protect_content = true;
+        let gRes = await tgCall(token, 'sendMediaGroup', payload);
+        if ((!gRes || !gRes.ok) && groupCap && isHtmlParseError(gRes)) {
+            mediaArr[capIdx].caption = htmlToPlain(groupCap);
+            delete mediaArr[capIdx].parse_mode;
+            gRes = await tgCall(token, 'sendMediaGroup', payload);
+        }
+        if (gRes && gRes.ok) {
+            lastResp = gRes;
+            if (overflowCap) await sendRichText(token, chatId, overflowCap, protect ? { protect_content: true } : {});
+        } else {
+            // Fallback: send items individually so nothing is dropped
+            for (let si = 0; si < b.items.length; si++) {
+                const it = b.items[si];
+                const sc = (si === 0 && (groupCap || overflowCap)) ? (groupCap || overflowCap) : '';
+                lastResp = await sendMediaMessage(token, chatId, it.media_type, it.file_id || it.media_url, sc, null, it.media_meta, opts);
+            }
+        }
+    }
+
+    if (deferCaptionToMarkupMsg) {
+        const followText = captionLeft || '⬇️';
+        const extra = Object.assign({ reply_markup: replyMarkup }, protect ? { protect_content: true } : {});
+        const followRes = await sendRichText(token, chatId, followText, extra);
+        if (followRes && followRes.ok && !lastResp) lastResp = followRes;
+    } else if (captionLeft) {
+        await sendRichText(token, chatId, captionLeft, protect ? { protect_content: true } : {});
+    }
+
+    return lastResp;
 }
 async function resolveFileDownloadUrl(token, fileId) {
     if (!fileId) return '';
@@ -17447,13 +19338,42 @@ async function processTelegramUpdate(update, env, ctx) {
     try {
         if (update.channel_post && update.channel_post.chat) {
             const cp = update.channel_post;
+            await upsertChannel(env.DB, cp.chat, true, 0);
+            const chSettings = await getChannelSettings(env.DB, cp.chat.id);
             const storageChat = String((await getSetting(env.DB, 'media_storage_chat_id')) || '').trim();
-            if (storageChat) {
-                const matchesId = String(cp.chat.id) === storageChat;
-                const matchesUser = cp.chat.username && ('@' + cp.chat.username.toLowerCase()) === storageChat.toLowerCase();
-                if (matchesId || matchesUser) {
-                    const extracted = extractMediaFromTgMsg(cp);
-                    if (extracted) await saveCapturedMedia(cp, extracted);
+            const matchesId = storageChat && String(cp.chat.id) === storageChat;
+            const matchesUser = storageChat && cp.chat.username && ('@' + cp.chat.username.toLowerCase()) === storageChat.toLowerCase();
+            if (chSettings.auto_capture_media || matchesId || matchesUser) {
+                const extracted = extractMediaFromTgMsg(cp);
+                if (extracted) await saveCapturedMedia(cp, extracted);
+            }
+            if (chSettings.auto_pin_posts) {
+                try { await tgCall(BOT_TOKEN, 'pinChatMessage', { chat_id: cp.chat.id, message_id: cp.message_id, disable_notification: true }); } catch (e) {}
+            }
+            const wantSig = !!(chSettings.auto_signature_enabled && chSettings.auto_signature_text);
+            const wantBtns = !!(chSettings.auto_buttons_enabled && chSettings.auto_buttons_json);
+            if (wantSig || wantBtns) {
+                const built = wantBtns ? buildReplyMarkup(chSettings.auto_buttons_json) : null;
+                const markup = built && built.inlineMarkup ? built.inlineMarkup : undefined;
+                if (wantSig && cp.text) {
+                    const sig = chSettings.auto_signature_text;
+                    if (!cp.text.includes(stripTagsForPreview(sig))) {
+                        const newText = escapeTelegramHTML(cp.text) + '\n\n' + sig;
+                        await tgCall(BOT_TOKEN, 'editMessageText', Object.assign({ chat_id: cp.chat.id, message_id: cp.message_id, text: newText, parse_mode: 'HTML' }, markup ? { reply_markup: markup } : {}));
+                    } else if (markup) {
+                        await tgCall(BOT_TOKEN, 'editMessageReplyMarkup', { chat_id: cp.chat.id, message_id: cp.message_id, reply_markup: markup });
+                    }
+                } else if (wantSig && (cp.photo || cp.video || cp.document || cp.audio || cp.animation || cp.voice)) {
+                    const sig = chSettings.auto_signature_text;
+                    const baseCap = cp.caption ? escapeTelegramHTML(cp.caption) : '';
+                    if (!baseCap.includes(stripTagsForPreview(sig))) {
+                        const newCap = baseCap ? (baseCap + '\n\n' + sig) : sig;
+                        await tgCall(BOT_TOKEN, 'editMessageCaption', Object.assign({ chat_id: cp.chat.id, message_id: cp.message_id, caption: newCap.slice(0, 1024), parse_mode: 'HTML' }, markup ? { reply_markup: markup } : {}));
+                    } else if (markup) {
+                        await tgCall(BOT_TOKEN, 'editMessageReplyMarkup', { chat_id: cp.chat.id, message_id: cp.message_id, reply_markup: markup });
+                    }
+                } else if (markup) {
+                    await tgCall(BOT_TOKEN, 'editMessageReplyMarkup', { chat_id: cp.chat.id, message_id: cp.message_id, reply_markup: markup });
                 }
             }
             return;
@@ -17466,6 +19386,11 @@ async function processTelegramUpdate(update, env, ctx) {
                 const active = status === 'member' || status === 'administrator';
                 await initializeDatabase(env.DB);
                 await upsertGroup(env.DB, chat, active);
+            } else if (chat && chat.type === 'channel') {
+                const status = m.new_chat_member && m.new_chat_member.status;
+                const active = status === 'administrator' || status === 'creator' || status === 'member';
+                await initializeDatabase(env.DB);
+                await upsertChannel(env.DB, chat, active, 0);
             }
             return;
         }
@@ -17737,29 +19662,27 @@ async function processTelegramUpdate(update, env, ctx) {
                 }
 
                 // Resolve the command that this message will run (regular
-                // command, reply-keyboard shortcut, or "back") BEFORE the AI
-                // decision, so the `no_command` AI trigger can defer to it.
-                let targetCommand = null;
-                let targetCommandArgs = '';
+                // command including `/cmd args`, reply-keyboard shortcut, or "back")
+                // BEFORE the AI decision, so `no_command` AI trigger defers to it.
+                let resolvedCommand = null;
+                let bareSlashCmd = '';
                 if (text.startsWith('/')) {
                     const wsIdx = text.search(/\s/);
-                    const cmdRaw = wsIdx >= 0 ? text.slice(0, wsIdx) : text;
-                    targetCommandArgs = wsIdx >= 0 ? text.slice(wsIdx + 1) : '';
-                    const bare = cmdRaw.split('@')[0].trim();
-                    const cmdRecord = await env.DB.prepare('SELECT command FROM commands WHERE command = ? AND enabled = 1').bind(bare).first();
-                    if (cmdRecord) targetCommand = cmdRecord.command;
+                    bareSlashCmd = (wsIdx >= 0 ? text.slice(0, wsIdx) : text).split('@')[0].trim();
+                    resolvedCommand = await resolveCommandMatch(env.DB, text);
                 }
-                if (!targetCommand && isBackWord(text)) {
+                if (!resolvedCommand && isBackWord(text)) {
                     const session = await env.DB.prepare("SELECT command FROM sessions WHERE user_id = ? AND token LIKE 'bot-%'").bind(userId).first();
                     if (session && session.command) {
                         const parentCmd = await env.DB.prepare('SELECT parent FROM commands WHERE command = ?').bind(session.command).first();
-                        if (parentCmd && parentCmd.parent) targetCommand = parentCmd.parent;
+                        if (parentCmd && parentCmd.parent) resolvedCommand = await resolveCommandMatch(env.DB, parentCmd.parent);
                     }
                 }
-                if (!targetCommand && !text.startsWith('/')) {
+                if (!resolvedCommand && !text.startsWith('/')) {
                     const map = await getReplyButtonMap(env.DB);
-                    if (map[text]) targetCommand = map[text];
-                    else { const globalActions = await getReplyActions(env.DB); if (globalActions[text]) targetCommand = globalActions[text]; }
+                    let actionCmd = map[text] || '';
+                    if (!actionCmd) { const globalActions = await getReplyActions(env.DB); actionCmd = globalActions[text] || ''; }
+                    if (actionCmd) resolvedCommand = await resolveCommandMatch(env.DB, actionCmd);
                 }
 
                 // AI decision.
@@ -17773,7 +19696,7 @@ async function processTelegramUpdate(update, env, ctx) {
                         if (t && text.toLowerCase().indexOf(t.toLowerCase()) < 0) shouldReply = false;
                     } else if (trigger === 'no_command') {
                         // "Only when no command matches" — a resolved command wins.
-                        if (targetCommand) shouldReply = false;
+                        if (resolvedCommand) shouldReply = false;
                     } else if (trigger !== 'all_messages') {
                         shouldReply = false;
                     }
@@ -17823,14 +19746,11 @@ async function processTelegramUpdate(update, env, ctx) {
                 }
 
                 // Execute the resolved command (regular command, reply-keyboard shortcut, or "back").
-                if (targetCommand) {
-                    const cmdRecord = await env.DB.prepare('SELECT * FROM commands WHERE command = ? AND enabled = 1').bind(targetCommand).first();
-                    if (cmdRecord) {
-                        await executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, msg.chat.type, targetCommandArgs);
-                        return;
-                    }
+                if (resolvedCommand && resolvedCommand.record) {
+                    await executeCommand(chatId, userId, resolvedCommand.record, BOT_TOKEN, env, msg.chat.type, resolvedCommand.args);
+                    return;
                 }
-                if (text === '/start') {
+                if (bareSlashCmd === '/start') {
                     if (!await checkPermission(env, userId, 'start_command')) {
                         await sendMessage(chatId, botStrings().unauthorized, BOT_TOKEN, 'HTML');
                         return;
@@ -17916,7 +19836,15 @@ async function processTelegramUpdate(update, env, ctx) {
                 return;
             }
             if (data && data.startsWith('/')) {
-                if (data === '/start') {
+                const cbMatch = await resolveCommandMatch(env.DB, data);
+                if (cbMatch && cbMatch.record) {
+                    const answer = tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
+                    await executeCommand(chatId, cb.from.id, cbMatch.record, BOT_TOKEN, env, cb.message.chat.type, cbMatch.args);
+                    await answer;
+                    return;
+                }
+                const cbBare = data.split(/\s/)[0].split('@')[0].trim();
+                if (cbBare === '/start') {
                     const answer = tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
                     if (!await checkPermission(env, cb.from.id, 'start_command')) {
                         await sendMessage(chatId, botStrings().unauthorized, BOT_TOKEN, 'HTML');
@@ -17927,10 +19855,7 @@ async function processTelegramUpdate(update, env, ctx) {
                     await answer;
                     return;
                 }
-                const cmdRecord = await env.DB.prepare('SELECT * FROM commands WHERE command = ? AND enabled = 1').bind(data).first();
-                const answer = tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
-                if (cmdRecord) await executeCommand(chatId, cb.from.id, cmdRecord, BOT_TOKEN, env, cb.message.chat.type, '');
-                await answer;
+                await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
                 return;
             } else if (data && data.startsWith('T:') && cbBlockType !== 'ai_only') {
                 const textToSend = await decodeTextCallback(env.DB, data);
@@ -17983,6 +19908,37 @@ async function sendDefaultStart(chatId, env, BOT_TOKEN) {
 function escapeArgsForHtml(str) {
     return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
+function escapeSqlLike(str) {
+    return String(str || '').replace(/[\\%_]/g, '\\$&');
+}
+async function resolveCommandMatch(db, rawInput) {
+    const raw = String(rawInput || '').trim();
+    if (!raw || !raw.startsWith('/')) return null;
+    const wsIdx = raw.search(/\s/);
+    const firstTok = wsIdx >= 0 ? raw.slice(0, wsIdx) : raw;
+    const rest = wsIdx >= 0 ? raw.slice(wsIdx + 1) : '';
+    const bare = firstTok.split('@')[0].trim();
+    if (!bare) return null;
+    const restNorm = rest.replace(/\s+/g, ' ').trim();
+    const normalized = restNorm ? (bare + ' ' + restNorm) : bare;
+
+    const rows = await db.prepare(
+        "SELECT * FROM commands WHERE enabled = 1 AND (command = ? OR command LIKE ? ESCAPE '\\') ORDER BY LENGTH(command) DESC"
+    ).bind(bare, escapeSqlLike(bare) + ' %').all();
+    const list = rows.results || [];
+    for (const row of list) {
+        const cmdNorm = String(row.command || '').replace(/\s+/g, ' ').trim();
+        if (!cmdNorm) continue;
+        if (normalized === cmdNorm) {
+            return { record: row, args: '' };
+        }
+        if (normalized.startsWith(cmdNorm + ' ')) {
+            if (cmdNorm === bare) return { record: row, args: rest };
+            return { record: row, args: normalized.slice(cmdNorm.length + 1) };
+        }
+    }
+    return null;
+}
 async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatType, args) {
     const strings = botStrings();
     if (!await checkPermissionForChat(env, userId, 'commands', chatId, chatType)) {
@@ -18018,13 +19974,26 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatTyp
         }
     }
 
-    // Enforce linked Media Library item allowance, expiration, and validity.
-    if (cmdRecord.file_id && String(cmdRecord.file_id).trim() && !isAdmin) {
+    const mediaItems = normalizeMediaItems(cmdRecord.media_items_json, {
+        media_type: cmdRecord.response_type,
+        file_id: cmdRecord.file_id,
+        media_url: cmdRecord.media_url,
+        media_meta: cmdRecord.media_meta
+    });
+
+    // Enforce linked Media Library item allowance, expiration, and validity for ALL attached file_ids.
+    const fileIdsToCheck = Array.from(new Set(
+        [cmdRecord.file_id].concat(mediaItems.map(i => i.file_id))
+            .map(f => String(f || '').trim())
+            .filter(Boolean)
+    ));
+    if (fileIdsToCheck.length && !isAdmin) {
         try {
-            const mediaRow = await env.DB.prepare(
-                'SELECT is_valid, allowed_users, expires_at FROM media_library WHERE file_id = ? LIMIT 1'
-            ).bind(String(cmdRecord.file_id).trim()).first();
-            if (mediaRow) {
+            const ph = fileIdsToCheck.map(() => '?').join(', ');
+            const mediaRows = await env.DB.prepare(
+                `SELECT is_valid, allowed_users, expires_at FROM media_library WHERE file_id IN (${ph})`
+            ).bind(...fileIdsToCheck).all();
+            for (const mediaRow of (mediaRows.results || [])) {
                 if (mediaRow.is_valid === 0) {
                     await sendMessage(chatId, strings.media_unavailable, BOT_TOKEN, 'HTML');
                     return;
@@ -18044,13 +20013,12 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatTyp
             }
         } catch (e) {}
     }
+
     await env.DB.prepare(`
         INSERT INTO sessions (token, user_id, command, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)
         ON CONFLICT(user_id) DO UPDATE SET token = excluded.token, command = excluded.command, updated_at = CURRENT_TIMESTAMP
     `).bind('bot-' + userId, userId, cmdRecord.command).run();
-    // Resolve {{args}} (full trailing text) and {{arg1}}..{{argN}} (individual
-    // whitespace-separated tokens) from the text after the command. Each
-    // substitution is HTML-escaped so user input can never smuggle in tags.
+
     const argsRaw = String(args || '');
     const argsTokens = argsRaw.split(/\s+/).filter(Boolean).map(escapeArgsForHtml);
     const finalContent = cmdRecord.content ? String(cmdRecord.content)
@@ -18066,25 +20034,30 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatTyp
     const replyKeyboardMarkup = replySpec ? kbReplyMarkup(replySpec) : null;
     if (replySpec && replySpec.actions && Object.keys(replySpec.actions).length) await mergeReplyActions(env.DB, replySpec.actions);
     const markup = inlineMarkup || replyKeyboardMarkup || undefined;
-    const mediaType = normalizeMediaType(cmdRecord.response_type);
-    if (mediaType !== 'text') {
-        const fileIdOrUrl = (cmdRecord.file_id && String(cmdRecord.file_id).trim()) || (cmdRecord.media_url && String(cmdRecord.media_url).trim()) || '';
-        const mediaMeta = parseMediaMeta(cmdRecord.media_meta);
-        let res = null;
-        if (fileIdOrUrl) res = await sendMediaMessage(BOT_TOKEN, chatId, mediaType, fileIdOrUrl, finalContent, markup, mediaMeta);
+    const protect = !!cmdRecord.protect_content;
+
+    if (mediaItems.length > 0) {
+        const res = await sendMultiMediaMessage(BOT_TOKEN, chatId, mediaItems, finalContent, markup, { protect_content: protect });
         if ((!res || !res.ok) && finalContent) {
-            await sendRichText(BOT_TOKEN, chatId, finalContent, markup ? { reply_markup: markup } : {});
+            const extra = Object.assign({}, markup ? { reply_markup: markup } : {}, protect ? { protect_content: true } : {});
+            await sendRichText(BOT_TOKEN, chatId, finalContent, extra);
         } else if (!res && !finalContent && markup) {
-            await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: ' ', reply_markup: markup });
+            await tgCall(BOT_TOKEN, 'sendMessage', Object.assign({ chat_id: chatId, text: ' ', reply_markup: markup }, protect ? { protect_content: true } : {}));
         }
-        if (inlineMarkup && replyKeyboardMarkup) await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: ' ', reply_markup: replyKeyboardMarkup });
+        if (inlineMarkup && replyKeyboardMarkup) {
+            await tgCall(BOT_TOKEN, 'sendMessage', Object.assign({ chat_id: chatId, text: ' ', reply_markup: replyKeyboardMarkup }, protect ? { protect_content: true } : {}));
+        }
         return;
     }
+
     const extra = {};
     if (markup) extra.reply_markup = markup;
+    if (protect) extra.protect_content = true;
     if (finalContent) await sendRichText(BOT_TOKEN, chatId, finalContent, extra);
-    else if (extra.reply_markup) await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: ' ', reply_markup: extra.reply_markup });
-    if (inlineMarkup && replyKeyboardMarkup) await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: ' ', reply_markup: replyKeyboardMarkup });
+    else if (extra.reply_markup) await tgCall(BOT_TOKEN, 'sendMessage', Object.assign({ chat_id: chatId, text: ' ', reply_markup: extra.reply_markup }, protect ? { protect_content: true } : {}));
+    if (inlineMarkup && replyKeyboardMarkup) {
+        await tgCall(BOT_TOKEN, 'sendMessage', Object.assign({ chat_id: chatId, text: ' ', reply_markup: replyKeyboardMarkup }, protect ? { protect_content: true } : {}));
+    }
 }
 async function getAiHistory(db, chatId, limit) {
     if (!limit || limit <= 0) return [];
