@@ -4710,9 +4710,7 @@ function renderCommands() {
 
     $('crumb').textContent = searchingAll
         ? ('All commands (' + list.length + ')')
-        : (crumbPath.length ? crumbPath.map(function (c) {
-            return c.replace(/^\\/+/, '');
-        }).join(' / ') : 'Root');
+        : (crumbPath.length ? crumbPath.map(function (c) { return c.replace(/^\\/+/, ''); }).join(' / ') : 'Root');
     $('btn-up').disabled = !currentParent || searchingAll;
     if (!list.length) { box.innerHTML = emptyState('fa-regular fa-folder-open', 'Nothing matches.', searchingAll ? 'Try clearing the search or filter.' : 'Create your first command with the button above.'); return; }
     var html = '<div class="list">';
