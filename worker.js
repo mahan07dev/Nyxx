@@ -3526,6 +3526,17 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                 <div class="field-hint" style="margin-top:6px;">
                     <b>Resize</b> fits the keyboard to the button labels. <b>One-time</b> hides the keyboard after the user taps a button — you must resend it next time. <b>Persistent</b> keeps the keyboard visible when the user taps the Back button.
                 </div>
+                <div class="switch-row" style="margin-top:10px;">
+                    <div>
+                        <div class="sw-label">Auto-back button</div>
+                        <div class="sw-sub">When this command has a parent folder, automatically add a Back button row to this reply keyboard.</div>
+                    </div>
+                    <button type="button" class="switch on" id="cmd-auto-back" onclick="toggleSwitch('cmd-auto-back');show($('cmd-back-label-wrap'),sw('cmd-auto-back'))"></button>
+                </div>
+                <div class="field" id="cmd-back-label-wrap" style="margin-bottom:0;">
+                    <label class="field-label">Custom back button label <span class="muted small">(optional)</span></label>
+                    <input class="input" id="cmd-back-label" placeholder='Leave blank for default ("Back" / "بازگشت")'>
+                </div>
             </div>
             <div class="field">
                 <label class="field-label">Who can run it?</label>
@@ -5205,6 +5216,10 @@ async function openCommandModal(cmd, parent, cloneMode) {
         if ($('cmd-expires-at')) $('cmd-expires-at').value = toLocalInputFromIso(srcCmd.expires_at || '');
         toggleSwitch('cmd-protect', !!srcCmd.protect_content);
         toggleSwitch('cmd-enabled', srcCmd.enabled != 0);
+        var abOn = srcCmd.auto_back === undefined || srcCmd.auto_back === null ? true : (srcCmd.auto_back != 0);
+        toggleSwitch('cmd-auto-back', abOn);
+        if ($('cmd-back-label')) $('cmd-back-label').value = srcCmd.back_label || '';
+        show($('cmd-back-label-wrap'), abOn);
         if (srcCmd.buttons_json) { kbCmd.loadInline(srcCmd.buttons_json); toggleSwitch('cmd-inline-toggle', true); show($('cmd-inline-section'), true); }
         if (srcCmd.show_reply_keyboard) { kbCmd.loadReply(srcCmd.reply_keyboard_json); toggleSwitch('cmd-reply-toggle', true); show($('cmd-reply-section'), true); }
     } else {
@@ -5214,6 +5229,9 @@ async function openCommandModal(cmd, parent, cloneMode) {
         if ($('cmd-allowed-users')) $('cmd-allowed-users').value = '';
         if ($('cmd-expires-at')) $('cmd-expires-at').value = '';
         toggleSwitch('cmd-protect', false);
+        toggleSwitch('cmd-auto-back', true);
+        if ($('cmd-back-label')) $('cmd-back-label').value = '';
+        show($('cmd-back-label-wrap'), true);
         setSeg('cmd-media-source', 'url');
         parentSel.value = parent || currentParent || '';
         setSeg('cmd-access', 'everyone'); toggleSwitch('cmd-enabled', true);
@@ -5306,7 +5324,9 @@ async function saveCommand() {
         enabled: sw('cmd-enabled') ? 1 : 0,
         buttons_json: kbCmd.inlineJSON() ? JSON.stringify(kbCmd.inlineJSON()) : '',
         show_reply_keyboard: sw('cmd-reply-toggle') ? 1 : 0,
-        reply_keyboard_json: kbCmd.replyJSON() ? JSON.stringify(kbCmd.replyJSON()) : ''
+        reply_keyboard_json: kbCmd.replyJSON() ? JSON.stringify(kbCmd.replyJSON()) : '',
+        auto_back: sw('cmd-auto-back') ? 1 : 0,
+        back_label: $('cmd-back-label') ? $('cmd-back-label').value.trim() : ''
     };
     if (!payload.command) { err.textContent = 'Command is required.'; err.classList.add('show'); return; }
     if (mediaType === 'text' && !payload.content) { err.textContent = 'Content is required for text responses.'; err.classList.add('show'); return; }
@@ -11125,7 +11145,7 @@ async function demoteAdminHandler(request, env) {
 // DATABASE
 // ============================================================================
 const dbInitCache = new WeakMap();
-const SCHEMA_VERSION = 21;
+const SCHEMA_VERSION = 22;
 
 const MIGRATIONS = {
     2: [
@@ -11343,6 +11363,8 @@ const DESIRED_SCHEMA = {
         media_meta: { type: 'TEXT', default: "''" },
         media_items_json: { type: 'TEXT', default: "''" },
         protect_content: { type: 'INTEGER', default: '0' },
+        auto_back: { type: 'INTEGER', default: '1' },
+        back_label: { type: 'TEXT', default: "''" },
         read_at: { type: 'DATETIME' }
     }},
     sessions: { columns: {
@@ -11885,6 +11907,8 @@ async function initializeDatabase(db) {
         } catch (e) { /* ignore */ }
 
         const SCHEMA_HEALS = [
+            `ALTER TABLE commands ADD COLUMN auto_back INTEGER DEFAULT 1`,
+            `ALTER TABLE commands ADD COLUMN back_label TEXT DEFAULT ''`,
             `ALTER TABLE commands ADD COLUMN media_items_json TEXT DEFAULT ''`,
             `ALTER TABLE commands ADD COLUMN protect_content INTEGER DEFAULT 0`,
             `ALTER TABLE dm_messages ADD COLUMN media_items_json TEXT DEFAULT ''`,
@@ -13024,6 +13048,21 @@ function kbNormalizeReply(raw) {
     for (const row of spec.rows) for (const b of row) if (b.command) spec.actions[b.text] = b.command;
     return spec;
 }
+function utf8ByteLen(s) { return new TextEncoder().encode(String(s || '')).length; }
+async function encodeCallbackValue(db, val) {
+    const s = String(val || '');
+    if (utf8ByteLen(s) <= 64) return s;
+    const hash = simpleHashStr(s);
+    if (db) { try { await setSetting(db, 'cbcmd_' + hash, s); } catch (e) {} }
+    return 'CMD:H:' + hash;
+}
+async function decodeCallbackValue(db, data) {
+    if (!data || typeof data !== 'string') return data;
+    if (data.startsWith('CMD:H:') && db) {
+        try { return (await getSetting(db, 'cbcmd_' + data.slice(6))) || ''; } catch (e) { return ''; }
+    }
+    return data;
+}
 function kbInlineMarkup(rows) {
     if (!rows || !rows.length) return null;
     return { inline_keyboard: rows.map(row => row.map(b => {
@@ -13031,6 +13070,22 @@ function kbInlineMarkup(rows) {
         if (b.style) btn.style = b.style;
         return btn;
     })) };
+}
+async function kbInlineMarkupSafe(db, rows) {
+    if (!rows || !rows.length) return null;
+    const out = [];
+    for (const row of rows) {
+        const outRow = [];
+        for (const b of row) {
+            const btn = b.type === 'url'
+                ? { text: b.text, url: b.value }
+                : { text: b.text, callback_data: await encodeCallbackValue(db, b.value) };
+            if (b.style) btn.style = b.style;
+            outRow.push(btn);
+        }
+        out.push(outRow);
+    }
+    return { inline_keyboard: out };
 }
 function kbReplyMarkup(spec) {
     if (!spec || !spec.rows || !spec.rows.length) return null;
@@ -13243,8 +13298,10 @@ async function createCommand(request, env) {
         const maxOrder = await env.DB.prepare('SELECT MAX(order_idx) as max FROM commands').first();
         const orderIdx = (maxOrder && maxOrder.max !== null) ? maxOrder.max + 1 : 0;
         try {
-            await env.DB.prepare(`INSERT INTO commands (command, parent, response_type, content, media_url, file_id, media_meta, media_items_json, protect_content, buttons_json, is_admin_only, access_level, allowed_users, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, order_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-                .bind(command, parent || null, rtype, content || '', finalMediaUrl, finalFileId, finalMediaMeta, finalItemsJson, protect_content ? 1 : 0, buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', orderIdx).run();
+            const autoBack = body.auto_back !== undefined ? (body.auto_back ? 1 : 0) : 1;
+            const backLabel = body.back_label ? String(body.back_label).trim().slice(0, 64) : '';
+            await env.DB.prepare(`INSERT INTO commands (command, parent, response_type, content, media_url, file_id, media_meta, media_items_json, protect_content, buttons_json, is_admin_only, access_level, allowed_users, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, auto_back, back_label, order_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+            .bind(command, parent || null, rtype, content || '', finalMediaUrl, finalFileId, finalMediaMeta, finalItemsJson, protect_content ? 1 : 0, buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', autoBack, backLabel, orderIdx).run();
         } catch (e) {
             const m = String(e.message || '');
             console.error('createCommand INSERT failed:', m);
@@ -13302,12 +13359,14 @@ async function updateCommand(request, env) {
         const allowedUsers = body.allowed_users !== undefined ? normalizeAllowedUsersStr(body.allowed_users) : ((existing && existing.allowed_users) || '');
         const expiresAt = body.expires_at !== undefined ? (body.expires_at ? String(body.expires_at).trim() : null) : (existing ? existing.expires_at : null);
         const finalProtect = protect_content !== undefined ? (protect_content ? 1 : 0) : ((existing && existing.protect_content) ? 1 : 0);
+        const finalAutoBack = body.auto_back !== undefined ? (body.auto_back ? 1 : 0) : ((existing && existing.auto_back !== undefined && existing.auto_back !== null) ? (existing.auto_back ? 1 : 0) : 1);
+        const finalBackLabel = body.back_label !== undefined ? String(body.back_label).trim().slice(0, 64) : ((existing && existing.back_label) || '');
         if (command !== oldCommand) {
             const clash = await env.DB.prepare('SELECT command FROM commands WHERE command = ?').bind(command).first();
             if (clash) return apiJson({ error: `A command named "${command}" already exists.` }, 400);
             if (parent && await commandIsDescendant(env.DB, command, parent)) return apiJson({ error: 'You cannot nest a command inside its own child.' }, 400);
-            await env.DB.prepare(`UPDATE commands SET command = ?, parent = ?, response_type = ?, content = ?, media_url = ?, file_id = ?, media_meta = ?, media_items_json = ?, protect_content = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, allowed_users = ?, expires_at = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ? WHERE command = ?`)
-                .bind(command, parent || null, rtype, content || '', finalMediaUrl, finalFileId, finalMediaMeta, finalItemsJson, finalProtect, buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', oldCommand).run();
+            await env.DB.prepare(`UPDATE commands SET command = ?, parent = ?, response_type = ?, content = ?, media_url = ?, file_id = ?, media_meta = ?, media_items_json = ?, protect_content = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, allowed_users = ?, expires_at = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ?, auto_back = ?, back_label = ? WHERE command = ?`)
+                .bind(command, parent || null, rtype, content || '', finalMediaUrl, finalFileId, finalMediaMeta, finalItemsJson, finalProtect, buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', finalAutoBack, finalBackLabel, oldCommand).run();
             await env.DB.prepare('UPDATE commands SET parent = ? WHERE parent = ?').bind(command, oldCommand).run();
             const refRows = await env.DB.prepare('SELECT command, buttons_json, reply_keyboard_json FROM commands WHERE buttons_json LIKE ? OR reply_keyboard_json LIKE ?').bind(`%${oldCommand}%`, `%${oldCommand}%`).all();
             for (const row of refRows.results) {
@@ -13319,8 +13378,8 @@ async function updateCommand(request, env) {
             }
         } else {
             if (parent && await commandIsDescendant(env.DB, command, parent)) return apiJson({ error: 'You cannot nest a command inside its own child.' }, 400);
-            await env.DB.prepare(`UPDATE commands SET parent = ?, response_type = ?, content = ?, media_url = ?, file_id = ?, media_meta = ?, media_items_json = ?, protect_content = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, allowed_users = ?, expires_at = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ? WHERE command = ?`)
-                .bind(parent || null, rtype, content || '', finalMediaUrl, finalFileId, finalMediaMeta, finalItemsJson, finalProtect, buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', command).run();
+            await env.DB.prepare(`UPDATE commands SET parent = ?, response_type = ?, content = ?, media_url = ?, file_id = ?, media_meta = ?, media_items_json = ?, protect_content = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, allowed_users = ?, expires_at = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ?, auto_back = ?, back_label = ? WHERE command = ?`)
+                .bind(parent || null, rtype, content || '', finalMediaUrl, finalFileId, finalMediaMeta, finalItemsJson, finalProtect, buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', finalAutoBack, finalBackLabel, command).run();
         }
         await bumpDomainEpoch(env.DB, 'reply_buttons');
         return apiJson({ success: true });
@@ -19466,7 +19525,45 @@ async function getSystemLanguageFromDb(env) {
 function currentSystemLang() { return cachedSystemLang.lang || 'en'; }
 function sysStr() { return SYSTEM_STRINGS[currentSystemLang()] || SYSTEM_STRINGS.en; }
 function botStrings() { return sysStr(); }
-function isBackWord(text) { return (text || '').trim().toLowerCase() === 'back'; }
+function isBackWord(text) {
+    const t = (text || '').trim().toLowerCase();
+    return t === 'back' || t === 'بازگشت';
+}
+async function resolveSessionReplyOrBack(db, userId, text) {
+    if (!userId || !text) return null;
+    try {
+        const session = await db.prepare("SELECT command FROM sessions WHERE user_id = ? AND token LIKE 'bot-%'").bind(userId).first();
+        if (!session || !session.command) return null;
+
+        let curName = session.command;
+        const visited = new Set();
+        for (let depth = 0; depth < 12 && curName && !visited.has(curName); depth++) {
+            visited.add(curName);
+            const cmdRow = await db.prepare('SELECT * FROM commands WHERE command = ?').bind(curName).first();
+            if (!cmdRow) break;
+
+            // 1) Check Back button on the current active session command first
+            if (depth === 0 && cmdRow.parent) {
+                const customBack = (cmdRow.back_label || '').trim();
+                const autoBackOn = cmdRow.auto_back === undefined || cmdRow.auto_back === null ? true : (cmdRow.auto_back != 0);
+                if ((customBack && text === customBack) || (autoBackOn && (isBackWord(text) || text === botStrings().back))) {
+                    return await resolveCommandMatch(db, cmdRow.parent);
+                }
+            }
+
+            // 2) Check this command's own reply keyboard actions BEFORE checking other commands globally
+            if (cmdRow.enabled == 1 && cmdRow.show_reply_keyboard && cmdRow.reply_keyboard_json) {
+                const spec = kbNormalizeReply(cmdRow.reply_keyboard_json);
+                if (spec && spec.actions && spec.actions[text]) {
+                    return await resolveCommandMatch(db, spec.actions[text]);
+                }
+            }
+
+            curName = cmdRow.parent || null;
+        }
+    } catch (e) {}
+    return null;
+}
 function aiEnabledFor(chatType) { return chatType === 'private' || chatType === 'group' || chatType === 'supergroup'; }
 // A group's own trigger wins over the global default. "inherit" falls through
 // to the AI tab's group trigger, then to the legacy mention flag.
@@ -19961,6 +20058,9 @@ async function processTelegramUpdate(update, env, ctx) {
                     bareSlashCmd = (wsIdx >= 0 ? text.slice(0, wsIdx) : text).split('@')[0].trim();
                     resolvedCommand = await resolveCommandMatch(env.DB, text);
                 }
+                if (!resolvedCommand && !text.startsWith('/')) {
+                    resolvedCommand = await resolveSessionReplyOrBack(env.DB, userId, text);
+                }
                 if (!resolvedCommand && isBackWord(text)) {
                     const session = await env.DB.prepare("SELECT command FROM sessions WHERE user_id = ? AND token LIKE 'bot-%'").bind(userId).first();
                     if (session && session.command) {
@@ -20085,7 +20185,8 @@ async function processTelegramUpdate(update, env, ctx) {
         }
         if (update.callback_query && update.callback_query.message && update.callback_query.message.chat) {
             const cb = update.callback_query;
-            const data = typeof cb.data === 'string' ? cb.data.trim() : '';
+            const rawData = typeof cb.data === 'string' ? cb.data.trim() : '';
+            const data = await decodeCallbackValue(env.DB, rawData);
             const chatId = cb.message.chat.id;
             if (cb.from) await upsertUser(cb.from, { privateStarted: cb.message.chat.type === 'private' });
             const cbBlockType = cb.from ? await isUserBlocked(env, cb.from.id) : null;
@@ -20316,14 +20417,20 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatTyp
         .split('{{args}}').join(escapeArgsForHtml(argsRaw))
         .replace(/\{\{arg(\d+)\}\}/g, (m, n) => argsTokens[parseInt(n, 10) - 1] || '') : '';
     const built = cmdRecord.buttons_json ? buildReplyMarkup(cmdRecord.buttons_json) : null;
-    const inlineMarkup = built && built.inlineMarkup ? built.inlineMarkup : null;
+    let inlineMarkup = null;
+    if (built && built.inlineMarkup) {
+        const inlineRows = kbNormalizeInline(cmdRecord.buttons_json);
+        inlineMarkup = inlineRows ? await kbInlineMarkupSafe(env.DB, inlineRows) : built.inlineMarkup;
+    }
     let replySpec = (cmdRecord.show_reply_keyboard && cmdRecord.reply_keyboard_json) ? kbNormalizeReply(cmdRecord.reply_keyboard_json) : null;
-    if (replySpec && cmdRecord.parent) {
-        const hasBack = replySpec.rows.some(row => row.some(b => b.text === strings.back));
-        if (!hasBack) replySpec.rows.push([{ text: strings.back, command: '' }]);
+    const autoBackOn = cmdRecord.auto_back === undefined || cmdRecord.auto_back === null ? true : (cmdRecord.auto_back != 0);
+    const backLabel = (cmdRecord.back_label && String(cmdRecord.back_label).trim()) || strings.back;
+    if (autoBackOn && cmdRecord.parent && cmdRecord.show_reply_keyboard) {
+        if (!replySpec) replySpec = { rows: [], actions: {}, resize: true, one_time: false, persistent: true, placeholder: '' };
+        const hasBack = replySpec.rows.some(row => row.some(b => b.text === backLabel));
+        if (!hasBack) replySpec.rows.push([{ text: backLabel, command: '' }]);
     }
     const replyKeyboardMarkup = replySpec ? kbReplyMarkup(replySpec) : null;
-    if (replySpec && replySpec.actions && Object.keys(replySpec.actions).length) await mergeReplyActions(env.DB, replySpec.actions);
     const markup = inlineMarkup || replyKeyboardMarkup || undefined;
     const protect = !!cmdRecord.protect_content;
 
