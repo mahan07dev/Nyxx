@@ -1163,7 +1163,7 @@ body { overflow-x: hidden; }
     .app.nav-struct-topbar { flex-direction: column; }
     .app.nav-struct-topbar .main { margin-left: 0 !important; width: 100%; }
     .app.nav-struct-topbar .sidebar {
-        position: sticky; top: 62px; left: auto; bottom: auto; right: auto;
+        position: sticky; top: 0; left: auto; bottom: auto; right: auto;
         width: 100%; height: auto; flex-direction: row; align-items: center;
         flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden;
         border-right: none; border-bottom: 1px solid var(--hairline);
