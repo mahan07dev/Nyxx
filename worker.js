@@ -13425,7 +13425,7 @@ async function exportCommandPack(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
-        const commands = await env.DB.prepare('SELECT command, parent, response_type, content, media_url, file_id, media_meta, media_items_json, protect_content, buttons_json, is_admin_only, access_level, allowed_users, expires_at, enabled, show_reply_keyboard, reply_keyboard_json FROM commands ORDER BY order_idx, command').all();
+        const commands = await env.DB.prepare('SELECT command, parent, response_type, content, media_url, file_id, media_meta, media_items_json, protect_content, buttons_json, is_admin_only, access_level, allowed_users, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, auto_back, back_label FROM commands ORDER BY order_idx, command').all();
         let menu = [];
         const raw = await getSetting(env.DB, 'menu_commands');
         if (raw) { try { menu = JSON.parse(raw); } catch (e) {} }
@@ -13447,8 +13447,8 @@ async function importCommandPack(request, env) {
         const stmts = valid.map((c, i) => {
             const access = effectiveCommandAccess(c);
             return env.DB.prepare(`
-            INSERT INTO commands (command, parent, response_type, content, media_url, file_id, media_meta, media_items_json, protect_content, buttons_json, is_admin_only, access_level, allowed_users, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, order_idx)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO commands (command, parent, response_type, content, media_url, file_id, media_meta, media_items_json, protect_content, buttons_json, is_admin_only, access_level, allowed_users, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, auto_back, back_label, order_idx)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(command) DO UPDATE SET
                 parent = excluded.parent, response_type = excluded.response_type, content = excluded.content,
                 media_url = excluded.media_url, file_id = excluded.file_id, media_meta = excluded.media_meta,
@@ -13457,8 +13457,9 @@ async function importCommandPack(request, env) {
                 is_admin_only = excluded.is_admin_only, access_level = excluded.access_level,
                 allowed_users = excluded.allowed_users, expires_at = excluded.expires_at,
                 enabled = excluded.enabled,
-                show_reply_keyboard = excluded.show_reply_keyboard, reply_keyboard_json = excluded.reply_keyboard_json
-        `).bind(c.command, c.parent || null, c.response_type || 'text', c.content || '', c.media_url || '', c.file_id || '', c.media_meta || '', c.media_items_json || '', c.protect_content ? 1 : 0, c.buttons_json || '', access === 'admin' ? 1 : 0, access, normalizeAllowedUsersStr(c.allowed_users), c.expires_at || null, c.enabled != 0 ? 1 : 0, c.show_reply_keyboard ? 1 : 0, c.reply_keyboard_json || '', i);
+                show_reply_keyboard = excluded.show_reply_keyboard, reply_keyboard_json = excluded.reply_keyboard_json,
+                auto_back = excluded.auto_back, back_label = excluded.back_label
+        `).bind(c.command, c.parent || null, c.response_type || 'text', c.content || '', c.media_url || '', c.file_id || '', c.media_meta || '', c.media_items_json || '', c.protect_content ? 1 : 0, c.buttons_json || '', access === 'admin' ? 1 : 0, access, normalizeAllowedUsersStr(c.allowed_users), c.expires_at || null, c.enabled != 0 ? 1 : 0, c.show_reply_keyboard ? 1 : 0, c.reply_keyboard_json || '', c.auto_back !== undefined && c.auto_back !== null ? (c.auto_back ? 1 : 0) : 1, c.back_label || '', i);
         });
         await runBatchChunks(env.DB, stmts);
         if (Array.isArray(data.menu) && data.menu.length) {
