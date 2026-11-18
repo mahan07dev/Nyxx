@@ -1,7 +1,3 @@
-<div align="center">
-
-<img src="https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/logo.webp" width="120" alt="Nyxx Logo">
-
 # Nyxx
 
 **A self-hosted Telegram bot builder for Cloudflare Workers — dashboard, AI assistant, and MCP server included.**
@@ -14,8 +10,6 @@
 <img src="https://img.shields.io/badge/MCP-Model_Context_Protocol-black">
 <img src="https://img.shields.io/badge/License-MIT-green">
 <a href="https://deepwiki.com/mahan07dev/Nyxx"><img src="https://img.shields.io/badge/Ask-DeepWiki-blue?logo=readthedocs" alt="Ask DeepWiki"></a>
-
-</div>
 
 ---
 
@@ -33,13 +27,30 @@ The wizard creates the Worker, creates and binds the D1 database, uploads the la
 
 **Bot engine**
 - Nested commands with folders and breadcrumbs
+- **Multi-argument commands** — create `/start`, `/start fa`, and `/start fa game` side by side; Nyxx resolves the longest match and passes trailing text into `{{args}}` / `{{arg1}}`
+- **Session-scoped nested navigation** — reply keyboard buttons and Back actions resolve against the user's active command chain, preventing cross-talk between multilingual folders
 - Nine reply types: text, photo, video, animation, voice, audio, document, round video, sticker
+- **Multi-media attachments** — attach up to 10 compatible documents, photos, videos, or audio files per message using smart `sendMediaGroup` batching
 - **Media upload** through the dashboard (stored on Telegram via `file_id`) or direct URLs
 - **Command arguments** — `{{args}}`, `{{arg1}}`, `{{arg2}}`, … insert the user's input into replies (HTML-escaped)
-- Inline and reply keyboards built visually (no JSON), with **per-button colors** (blue / green / red)
+- Inline and reply keyboards built visually with **full row & layout control** — add buttons to specific rows, move buttons left/right or up/down, and apply **per-button colors** (Default, Blue, Green, Red) with live previews
 - Telegram menu commands and custom featured commands (DM / Buttons / MCP)
 - Featured Buttons commands support `[blue]` / `[green]` / `[red]` label prefixes and a default button color
-- Per-command access levels: everyone, moderator+, or admin only
+- Per-command access levels: everyone, moderator+, admin only, or **specific users** with expiration dates
+
+**Channels & Creator Studio** (new in v4.9.6)
+- **Channels Tab** — auto-discovers channels when the bot is promoted or receives posts; manual connect via `@username` or `-100…` ID
+- **Channel Post Composer & History** — publish rich HTML posts, multi-media albums, inline buttons, silent posts, and `protect_content` posts directly from the dashboard, with Edit, Pin, and Delete controls
+- **Channel Automation Rules** — auto-signature/footer on new posts, auto-attach inline buttons, auto-capture media into your Media Library, auto-pin new posts, and one-click use as Media Storage Channel
+- **Protect Content** (`protect_content`) — prevent forwarding and saving on commands, DMs, channel posts, group announcements, and broadcasts
+
+**Media Library & access control** (overhauled in v4.9.5)
+- **Infinite Telegram archiving** — use a Channel, Group, or your own DM as storage; uploaded files stay archived indefinitely (the "delete after upload" switch now defaults to OFF)
+- **2 GB auto-capture** — post media (up to 2 GB) into your storage channel or send it to the bot as an admin, and Nyxx automatically saves the `file_id`, filename, size, and caption to the library, bypassing the standard 45 MB Bot API upload limit
+- **Direct multi-file upload** — drag-and-drop or select multiple files at once from the Media tab (up to 45 MB via web upload)
+- **User-based access control & expirations** — restrict commands and linked media to specific users or set expiration dates (`expires_at`); admins always retain access
+- **Modern library UI** — List, Grid, and Detailed views; lazy loading and preview toggles; built-in seller & storage guide
+- **Bulk actions** — validate, grant/revoke user access, set/clear expiration, and bulk delete (with optional deletion from the Telegram storage chat)
 
 **Users & groups**
 - User management with roles (user / moderator / admin)
@@ -74,8 +85,12 @@ The wizard creates the Worker, creates and binds the D1 database, uploads the la
 
 **Dashboard**
 - Responsive UI, light & dark themes, mobile friendly
+- **Navigation style presets** — switch live between 4 visual styles (Classic, Modern Pills, Frosted Glass, Compact) and 3 structures (Grouped, Flat List, Top Bar horizontal desktop nav)
+- **Privacy-first memory defaults** — on fresh D1 setups, memory and DM-saving options (`ai_memory`, `ai_group_memory`, `mcp_memory_limit`, `auto_remove_enabled`, `dm_save_private`, `dm_save_featured`) now default to **OFF**
+- **Automatic error toasts** — validation/API errors pop up as toast notifications above modals instead of inline error boxes
+- **Searchable command combobox** — parent-folder and button-command pickers now filter 1,000+ commands live and let you type custom commands or argument variants manually
 - Live status indicators and toast notifications
-- Backup & restore (full or selective), now including media fields and contact settings
+- Backup & restore (full or selective), now including media library tables, `allowed_users`, and `expires_at`
 - Scheduled cleanup via Cloudflare Cron
 - Activity log with auto-delete and search
 - **Schema health** — dry-run drift report and one-click auto-heal (tables, columns, indexes, settings, backfills, and safe cleanup of expired / orphaned rows)
@@ -83,6 +98,9 @@ The wizard creates the Worker, creates and binds the D1 database, uploads the la
 - **Media storage** setting for upload hosting
 - In-dashboard updates with automatic webhook secret rotation
 - Factory reset
+
+**Performance** (v4.9.3)
+- Client-side module splitting for lazy-loaded dashboard JS, API request coalescing, and stale-while-revalidate service worker caching for instant repeat visits
 
 ---
 
@@ -133,19 +151,23 @@ Your bot token, D1 data, and configuration stay intact. You can also force-redep
 
 > **Upgrading from a version before 4.9.4?** The **Connect Cloudflare** button in the dashboard stops working until the worker is updated, because the OAuth relay no longer uses a shared secret. Update once through the installer (OAuth or API token); everything else keeps working in the meantime.
 
+> **Upgrading to v4.9.6?** The schema is bumped to version **22** (adds the `channels` table plus `media_items_json`, `protect_content`, `auto_back`, and `back_label` columns via automatic non-destructive migrations). If you self-host `proxy.js`, **redeploy it** and ensure your Cloudflare OAuth client has the **Refresh Token grant** enabled so automatic token refresh works.
+
 If the dashboard ever shows **"Database schema is out of date"** after an update, open **Settings → Schema health → Run auto-heal** — it fixes missing tables, columns, indexes and settings without touching live data.
 
 ---
 
-## Media storage
+## Media storage & Creator Studio
 
-Media uploaded through the dashboard is stored on Telegram and referenced by `file_id`. To enable uploads:
+Media uploaded through the dashboard is stored on Telegram and referenced by `file_id`. With the v4.9.5 overhaul, storage settings now live directly inside the **Media Library** tab:
 
 1. Start a chat with your bot (or use any group the bot is in)
-2. Open **Settings → Media storage** and paste the chat ID (your own Telegram user ID is the simplest choice)
-3. The bot will post files to that chat temporarily, copy the `file_id`, and delete the message immediately
+2. Open **Media Library** and configure a **Channel**, **Group**, or your own **Private DM** as the storage chat
+3. Nyxx verifies bot permissions and either uploads directly (up to 45 MB via web) or indexes media posted to the storage chat (up to **2 GB**)
 
-Direct URLs still work everywhere — the upload option is only for files that don't already have a stable public URL.
+Uploaded files are **kept by default** (the "delete after upload" switch now defaults to OFF), so your Telegram chat becomes an infinite, lossless archive. You can attach multiple files to commands, DMs, broadcasts, and channel posts, and restrict access to specific users or set expiration dates per command and per media item.
+
+Direct URLs still work everywhere — the storage option is only for files that don't already have a stable public URL.
 
 ---
 
@@ -153,6 +175,7 @@ Direct URLs still work everywhere — the upload option is only for files that d
 
 - API tokens stay in your browser during install and are forwarded to Cloudflare's API through the CORS proxy (hosted default or your own). The proxy never stores them
 - **In-dashboard updater** stores the Cloudflare token / OAuth session in your own D1 database, never on a third-party server
+- **OAuth refresh tokens** — `proxy.js` now requests `offline_access` by default (with automatic fallback) and includes a `POST /oauth/refresh` endpoint; expired tokens auto-refresh in `/api/oauth/status`, and the UI shows the real connection state (Auto-refresh ON / No refresh token / Session expired)
 - PBKDF2 password hashing (SHA-256, 100k iterations)
 - Webhook secret tokens, rotated automatically on updates
 - **CSRF protection** — every mutating API request requires a session-bound token (`X-Nyxx-CSRF`)
@@ -164,6 +187,7 @@ Direct URLs still work everywhere — the upload option is only for files that d
 - The hosted proxy/relay is operated by the maintainer; if you would rather not trust it, [self-host it](SECURITY.md) or use the API token method
 - Standard security headers on all responses (CSP, HSTS, X-Frame-Options, etc.)
 - Destructive MCP tools require explicit `confirm: true` and are off by default
+- **`ADMIN_PASS` environment variable** — can be used as a master override or recovery option for the D1 admin password; hints are shown in Initial Setup, Sign In, and Settings
 
 ---
 
@@ -186,7 +210,7 @@ Yes, and it's designed to run on Cloudflare's free tier.
 No. Everything runs on Cloudflare Workers.
 
 **Is my Cloudflare token stored?**
-Not by the installer. When you use the in-dashboard updater, the token (or OAuth session) is stored in your own D1 database. With **Connect Cloudflare**, the hosted relay holds the access token for up to 5 minutes until your worker collects it (single use), then deletes it. See [SECURITY.md](SECURITY.md) for the trust model and how to self-host the relay.
+Not by the installer. When you use the in-dashboard updater, the token (or OAuth session) is stored in your own D1 database. With **Connect Cloudflare**, the hosted relay holds the access token for up to 5 minutes until your worker collects it (single use), then deletes it. The v4.9.6 release adds refresh-token support so your connection persists. See [SECURITY.md](SECURITY.md) for the trust model and how to self-host the relay.
 
 **Which AI providers are supported?**
 OpenAI, Gemini, DeepSeek, Groq, OpenRouter, Ollama (local), and any OpenAI-compatible API — with up to 5 fallbacks.
@@ -195,16 +219,16 @@ OpenAI, Gemini, DeepSeek, Groq, OpenRouter, Ollama (local), and any OpenAI-compa
 Model Context Protocol — an open standard from Anthropic that lets AI agents call tools exposed by a server. Nyxx ships a full MCP server so Claude Desktop, Cursor, and Cline can manage your bot in natural language.
 
 **How do I send videos, voice notes, or documents?**
-Commands, direct messages, group announcements and broadcasts all support nine reply types. Use a direct URL, or upload the file through the dashboard — it will be hosted on Telegram via `file_id` so it never expires.
+Commands, direct messages, group announcements, channel posts, and broadcasts all support nine reply types plus **multi-media albums** (up to 10 compatible items). Use a direct URL, upload files through the Media Library, or post them to your Telegram storage chat (up to 2 GB) for automatic capture.
 
 **How do command arguments work?**
-Add `{{args}}` (everything after the command) or `{{arg1}}`, `{{arg2}}`, … (individual tokens) to a command's content. Example: a command `/echo` with content `You said: {{args}}` replies `You said: hello world` when the user types `/echo hello world`. Input is HTML-escaped so it can never inject tags.
+Add `{{args}}` (everything after the command) or `{{arg1}}`, `{{arg2}}`, … to a command's content. Example: `/echo` with content `You said: {{args}}` replies `You said: hello world` for `/echo hello world`. You can also create argument-specific commands (`/start fa`) that resolve to the longest match. Input is HTML-escaped so it can never inject tags.
 
 **Can I color the buttons?**
-Yes. In the keyboard builder, pick a color per button (Default, Blue, Green, Red). In Buttons featured commands, prefix any label with `[blue]`, `[green]` or `[red]`, or set a default color in the command editor.
+Yes. The keyboard builders now support **full row/layout control** and per-button colors (Default, Blue, Green, Red) with live previews. In Buttons featured commands, prefix any label with `[blue]`, `[green]` or `[red]`, or set a default color.
 
 **What happens if a migration fails?**
-The schema is normally kept up-to-date automatically. If a migration ever fails silently, use **Settings → Schema health → Run auto-heal** — it inspects the actual database and creates any missing tables, columns, indexes or settings, and cleans up expired / orphaned rows. Safe to run multiple times.
+The schema is normally kept up-to-date automatically (now at version 22). If a migration ever fails silently, use **Settings → Schema health → Run auto-heal** — it inspects the actual database and creates any missing tables, columns, indexes or settings, and cleans up expired / orphaned rows. Safe to run multiple times.
 
 **Can I customize the worker?**
 Yes. `worker.js` is fully open source and meant to be modified.

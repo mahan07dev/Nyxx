@@ -84,6 +84,17 @@ Manual testing is the current standard. When testing your changes, verify:
 - Broadcast and DM sending work with a bot connected
 - MCP endpoint responds to `initialize`, `tools/list`, and `tools/call`
 - Installer can still create and update workers
+- **Channels Tab** — auto-discovery works when the bot is promoted, and manual connect accepts `@username` and `-100…` IDs
+- **Channel Post Composer** — publishing rich HTML, albums, inline buttons, and `protect_content` posts succeeds; Edit, Pin, and Delete controls work
+- **Channel Automation** — auto-signature, auto-attach buttons, auto-capture, and auto-pin rules fire correctly
+- **Media Library** — uploads (direct and 2 GB auto-capture) index correctly; List, Grid, and Detailed views render; bulk actions (validate, grant/revoke access, set expiration, delete) complete without errors
+- **Multi-media attachments** — commands and broadcasts send albums of up to 10 compatible items, falling back gracefully when incompatible
+- **Multi-argument commands** — `/cmd arg1 arg2` resolves to the longest matching command and injects `{{args}}` / `{{argN}}` correctly in private chats, groups, deep links, and inline callbacks
+- **Session-scoped navigation** — reply keyboard buttons and Back actions respect the active command chain in multilingual folders
+- **Keyboard builders** — row/layout controls (Add row, move left/right/up/down) and per-button colours persist and render in both themes
+- **Searchable command combobox** — filters large command lists live and allows typing custom commands / argument variants
+- **Navigation style presets** — switching between visual styles and structures works and persists
+- **OAuth refresh** (if touching `proxy.js` or the update flow) — `/oauth/refresh` issues a new access token when a refresh token is present, and `/api/oauth/status` reports the correct connection state
 
 ---
 
@@ -94,6 +105,8 @@ Manual testing is the current standard. When testing your changes, verify:
 - Comments for non-obvious logic (security checks, rate limits, migrations)
 - Defensive error handling — never leak stack traces to clients
 - Never bypass CSRF checks, webhook secret validation, or password hashing
+- When bumping `SCHEMA_VERSION`, write a non‑destructive migration (add tables/columns/indexes) and ensure `Settings → Schema health → Run auto-heal` can repair the change
+- For multi‑argument commands, preserve the longest‑match resolution and HTML‑escape user input in `{{args}}` / `{{argN}}`
 
 When adding a new endpoint: place it in the `fetch` router, apply the existing security helpers, and register it in the dashboard. When adding a new UI element: follow the existing design system, make sure it works on mobile, test in both themes.
 
@@ -114,6 +127,9 @@ mcp: add clear_ai_memory tool with confirm guard
 ai: fix streaming edit throttle for long replies
 installer: show beta badge when latest is a prerelease
 docs: clarify proxy deployment steps
+channels: auto-capture media into library on channel post
+media: support 2 GB auto-capture and bulk access grants
+oauth: add POST /oauth/refresh with offline_access fallback
 ```
 
 ---
@@ -122,7 +138,7 @@ docs: clarify proxy deployment steps
 
 1. Fork the repo and create a branch: `git checkout -b feature/your-feature`
 2. Make focused changes — keep the diff easy to review
-3. Test everything affected (dashboard, bot, MCP, installer)
+3. Test everything affected (dashboard, bot, MCP, installer, channels, media library)
 4. Update the README if your change affects user-facing behaviour
 5. Push to your fork and open a PR against `main`
 6. In the PR description, include what, why, and how you tested

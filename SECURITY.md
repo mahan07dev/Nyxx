@@ -8,6 +8,11 @@ your access token in its D1 database for up to 5 minutes until your own Nyxx wor
 (single use, deleted on collection). It does not keep tokens after that, but you are trusting
 whoever operates it. If that matters, self-host it (below) or use the API token method.
 
+Since v4.9.6 the relay also supports **refresh tokens**: it requests `offline_access` by default
+(with automatic fallback) and exposes `POST /oauth/refresh`. Expired access tokens are refreshed
+automatically in `/api/oauth/status`, so the dashboard shows the real connection state
+(Auto-refresh ON / No refresh token / Session expired).
+
 ## Self-hosting the proxy / relay
 
 1. Create a Worker from `proxy.js`.
@@ -21,6 +26,10 @@ whoever operates it. If that matters, self-host it (below) or use the API token 
 5. In `worker.js` set `RELAY_BASE` (or the `RELAY_BASE` variable) to your proxy URL, and update
    `DEFAULT_PROXY` / `OAUTH.CLIENT_ID` / `OAUTH.REDIRECT_URI` in `installer.html`.
 
+**Upgrading to v4.9.6?** Redeploy `proxy.js` so the new `/oauth/refresh` endpoint and
+`offline_access` flow are active. Ensure your Cloudflare OAuth client has the **Refresh Token
+grant** enabled if you want automatic refresh. The default hosted relay is updated automatically.
+
 ## How the relay is protected
 
 - No shared secret exists in source. Each login is bound to the Nyxx worker that started it via a
@@ -28,6 +37,8 @@ whoever operates it. If that matters, self-host it (below) or use the API token 
 - The relay shows a confirmation page naming the host that will receive the sign-in result.
 - State and exchange codes are single use (atomic delete), expire server-side, and callbacks must be
   `https://<host>/oauth/callback`.
+- Refresh tokens are stored per‑login and are only exchanged for a new access token through
+  `POST /oauth/refresh`; they are never exposed to the client.
 
 ## Reporting a vulnerability
 
