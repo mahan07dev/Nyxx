@@ -3521,7 +3521,9 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                     <label class="check" title="Shrink the buttons to fit their labels instead of stretching to the full width."><input type="checkbox" id="kbCmd-reply-resize" checked onchange="kbSettingChanged('kbCmd')"> Resize</label>
                     <label class="check" title="Hide the keyboard the moment the user taps a button. You must re-send the keyboard next time."><input type="checkbox" id="kbCmd-reply-onetime" onchange="kbSettingChanged('kbCmd')"> One-time</label>
                     <label class="check" title="Keep the keyboard visible when Telegram's own controls (like the back button) try to dismiss it."><input type="checkbox" id="kbCmd-reply-persistent" checked onchange="kbSettingChanged('kbCmd')"> Persistent</label>
+                    <label class="check" title="Briefly resets the keyboard before sending so Telegram updates input_field_placeholder immediately."><input type="checkbox" id="kbCmd-reply-refresh" onchange="kbSettingChanged('kbCmd')"> Refresh placeholder live</label>
                     <input class="input" id="kbCmd-reply-placeholder" placeholder="Input placeholder" style="flex:1 1 140px;min-width:120px;" oninput="kbSettingChanged('kbCmd')">
+                    <input class="input" id="kbCmd-reply-prompt" placeholder="Prompt when paired w/ inline (default: •)" style="flex:1 1 180px;min-width:140px;" oninput="kbSettingChanged('kbCmd')">
                 </div>
                 <div class="field-hint" style="margin-top:6px;">
                     <b>Resize</b> fits the keyboard to the button labels. <b>One-time</b> hides the keyboard after the user taps a button — you must resend it next time. <b>Persistent</b> keeps the keyboard visible when the user taps the Back button.
@@ -3675,7 +3677,9 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                         <label class="check" title="Shrink the buttons to fit their labels."><input type="checkbox" id="kbMe-reply-resize" checked onchange="kbSettingChanged('kbMe')"> Resize</label>
                         <label class="check" title="Hide the keyboard after the user taps a button."><input type="checkbox" id="kbMe-reply-onetime" onchange="kbSettingChanged('kbMe')"> One-time</label>
                         <label class="check" title="Keep the keyboard visible when Telegram tries to dismiss it."><input type="checkbox" id="kbMe-reply-persistent" checked onchange="kbSettingChanged('kbMe')"> Persistent</label>
+                        <label class="check" title="Briefly resets the keyboard before sending so Telegram updates input_field_placeholder immediately."><input type="checkbox" id="kbMe-reply-refresh" onchange="kbSettingChanged('kbMe')"> Refresh placeholder live</label>
                         <input class="input" id="kbMe-reply-placeholder" placeholder="Input placeholder" style="flex:1 1 140px;min-width:120px;" oninput="kbSettingChanged('kbMe')">
+                        <input class="input" id="kbMe-reply-prompt" placeholder="Prompt when paired w/ inline (default: •)" style="flex:1 1 180px;min-width:140px;" oninput="kbSettingChanged('kbMe')">
                     </div>
                     <div class="field-hint" style="margin-top:6px;">
                         <b>Resize</b> fits the keyboard to the button labels. <b>One-time</b> hides the keyboard after the user taps a button. <b>Persistent</b> keeps the keyboard visible when Telegram's own controls try to dismiss it.
@@ -7896,7 +7900,7 @@ var draftMedia = null;
 function createKeyboardBuilder(prefix, opts) {
     opts = opts || {};
     var inline = [];
-    var reply = { rows: [], actions: {}, resize: true, one_time: false, persistent: true, placeholder: '' };
+    var reply = { rows: [], actions: {}, resize: true, one_time: false, persistent: true, placeholder: '', prompt: '', force_refresh: false };
     var editingInline = null; // {ri, bi} | null
     var editingReply = null;  // {ri, bi} | null
 
@@ -8307,11 +8311,13 @@ function createKeyboardBuilder(prefix, opts) {
         if (el('reply-resize')) el('reply-resize').checked = reply.resize !== false;
         if (el('reply-onetime')) el('reply-onetime').checked = !!reply.one_time;
         if (el('reply-persistent')) el('reply-persistent').checked = reply.persistent !== false;
+        if (el('reply-refresh')) el('reply-refresh').checked = !!reply.force_refresh;
         if (el('reply-placeholder')) el('reply-placeholder').value = reply.placeholder || '';
+        if (el('reply-prompt')) el('reply-prompt').value = reply.prompt || '';
     }
 
     function loadReply(raw) {
-        reply = { rows: [], actions: {}, resize: true, one_time: false, persistent: true, placeholder: '' };
+        reply = { rows: [], actions: {}, resize: true, one_time: false, persistent: true, placeholder: '', prompt: '', force_refresh: false };
         if (raw) {
             try {
                 var o = typeof raw === 'string' ? JSON.parse(raw) : raw;
@@ -8331,7 +8337,9 @@ function createKeyboardBuilder(prefix, opts) {
                     if (typeof rep.resize === 'boolean') reply.resize = rep.resize;
                     if (typeof rep.one_time === 'boolean') reply.one_time = rep.one_time;
                     if (typeof rep.persistent === 'boolean') reply.persistent = rep.persistent;
+                    reply.force_refresh = !!rep.force_refresh;
                     reply.placeholder = rep.placeholder || '';
+                    reply.prompt = rep.prompt || '';
                 }
             } catch (e) {}
         }
@@ -8347,11 +8355,11 @@ function createKeyboardBuilder(prefix, opts) {
     function replyJSON() {
         var rows = cleanEmptyRows(reply.rows);
         if (!rows.length) return null;
-        return { v: 2, reply: { rows: rows, actions: reply.actions, resize: reply.resize, one_time: reply.one_time, persistent: reply.persistent, placeholder: reply.placeholder } };
+        return { v: 2, reply: { rows: rows, actions: reply.actions, resize: reply.resize, one_time: reply.one_time, persistent: reply.persistent, placeholder: reply.placeholder, prompt: reply.prompt, force_refresh: reply.force_refresh } };
     }
     function reset() {
         inline = [];
-        reply = { rows: [], actions: {}, resize: true, one_time: false, persistent: true, placeholder: '' };
+        reply = { rows: [], actions: {}, resize: true, one_time: false, persistent: true, placeholder: '', prompt: '', force_refresh: false };
         editingInline = null;
         editingReply = null;
         const ib = el('inline-add-btn'); if (ib) ib.innerHTML = '<i class="fa-solid fa-plus"></i>';
@@ -8375,7 +8383,9 @@ function createKeyboardBuilder(prefix, opts) {
         if (el('reply-resize')) reply.resize = el('reply-resize').checked;
         if (el('reply-onetime')) reply.one_time = el('reply-onetime').checked;
         if (el('reply-persistent')) reply.persistent = el('reply-persistent').checked;
+        if (el('reply-refresh')) reply.force_refresh = el('reply-refresh').checked;
         if (el('reply-placeholder')) reply.placeholder = el('reply-placeholder').value;
+        if (el('reply-prompt')) reply.prompt = el('reply-prompt').value;
     }
 
     var api = {
@@ -13055,7 +13065,7 @@ function kbNormalizeReply(raw) {
     let obj = raw;
     if (typeof raw === 'string') { try { obj = JSON.parse(raw); } catch (e) { return null; } }
     if (!obj || typeof obj !== 'object') return null;
-    const spec = { rows: [], actions: {}, resize: true, one_time: false, persistent: true, placeholder: '' };
+    const spec = { rows: [], actions: {}, resize: true, one_time: false, persistent: true, placeholder: '', prompt: '', force_refresh: false };
     const readItem = (item) => {
         if (typeof item === 'string') return { text: item, command: '' };
         if (item && typeof item === 'object') return { text: String(item.text || ''), command: String(item.command || item.value || ''), style: item.style || '' };
@@ -13068,7 +13078,9 @@ function kbNormalizeReply(raw) {
         if (typeof rep.resize === 'boolean') spec.resize = rep.resize;
         if (typeof rep.one_time === 'boolean') spec.one_time = rep.one_time;
         if (typeof rep.persistent === 'boolean') spec.persistent = rep.persistent;
+        if (rep.force_refresh) spec.force_refresh = true;
         if (rep.placeholder) spec.placeholder = String(rep.placeholder).slice(0, 64);
+        if (rep.prompt) spec.prompt = String(rep.prompt).slice(0, 200);
     } else if (Array.isArray(obj.keyboard)) {
         spec.rows = obj.keyboard.map(row => (Array.isArray(row) ? row.map(readItem) : [readItem(row)]).filter(b => b && b.text));
         if (obj.resize_keyboard === false) spec.resize = false;
@@ -19132,19 +19144,29 @@ async function tgCall(token, method, payload, opts = {}) {
     }
     return null;
 }
+async function resetReplyKeyboardSilently(token, chatId, opts = {}) {
+    const callOpts = opts.timeoutMs ? { timeoutMs: opts.timeoutMs } : {};
+    const tmp = await tgCall(token, 'sendMessage', {
+        chat_id: chatId, text: '•', reply_markup: { remove_keyboard: true }, disable_notification: true
+    }, callOpts);
+    if (tmp && tmp.ok && tmp.result && tmp.result.message_id) {
+        await tgCall(token, 'deleteMessage', { chat_id: chatId, message_id: tmp.result.message_id }, { retry: false });
+    }
+}
 async function sendReplyKeyboardMessage(token, chatId, replyMarkup, opts = {}) {
     if (!replyMarkup) return null;
     const isRemove = !!(replyMarkup.remove_keyboard);
+    const callOpts = opts.timeoutMs ? { timeoutMs: opts.timeoutMs } : {};
+    if (opts.force_refresh && !isRemove) {
+        await resetReplyKeyboardSilently(token, chatId, opts);
+    }
+    const text = (opts.text && String(opts.text).trim()) || '•';
     const base = Object.assign(
-        { chat_id: chatId, text: '\u2800', reply_markup: replyMarkup },
+        { chat_id: chatId, text, reply_markup: replyMarkup },
         opts.protect_content ? { protect_content: true } : {},
         isRemove ? { disable_notification: true } : {}
     );
-    const callOpts = opts.timeoutMs ? { timeoutMs: opts.timeoutMs } : {};
-    let res = await tgCall(token, 'sendMessage', base, callOpts);
-    if (!res || !res.ok) {
-        res = await tgCall(token, 'sendMessage', Object.assign({}, base, { text: '⌨️' }), callOpts);
-    }
+    const res = await tgCall(token, 'sendMessage', base, callOpts);
     if (isRemove && res && res.ok && res.result && res.result.message_id) {
         await tgCall(token, 'deleteMessage', { chat_id: chatId, message_id: res.result.message_id }, { retry: false });
     }
@@ -20501,11 +20523,18 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatTyp
     const markup = inlineMarkup || secondaryMarkup || undefined;
     const protect = !!cmdRecord.protect_content;
 
+    if (replyKeyboardMarkup && !inlineMarkup && replySpec && replySpec.force_refresh) {
+        await resetReplyKeyboardSilently(BOT_TOKEN, chatId);
+    }
     const sendSecondaryCleanup = async () => {
         if (inlineMarkup && removeReplyMarkup) {
             await sendReplyKeyboardMessage(BOT_TOKEN, chatId, removeReplyMarkup);
         } else if (inlineMarkup && replyKeyboardMarkup) {
-            await sendReplyKeyboardMessage(BOT_TOKEN, chatId, replyKeyboardMarkup, { protect_content: protect });
+            await sendReplyKeyboardMessage(BOT_TOKEN, chatId, replyKeyboardMarkup, {
+                protect_content: protect,
+                text: (replySpec && replySpec.prompt) || '•',
+                force_refresh: !!(replySpec && replySpec.force_refresh),
+            });
         }
     };
 
