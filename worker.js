@@ -3538,6 +3538,13 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                     <input class="input" id="cmd-back-label" placeholder='Leave blank for default ("Back" / "بازگشت")'>
                 </div>
             </div>
+            <div class="switch-row" id="cmd-remove-reply-row">
+                <div>
+                    <div class="sw-label">Close previous reply keyboard</div>
+                    <div class="sw-sub">Sends Telegram's <code>remove_keyboard</code> so any reply keyboard opened by a previous command (e.g. <code>/help</code>) closes here.</div>
+                </div>
+                <button type="button" class="switch" id="cmd-remove-reply" onclick="toggleCmdRemoveReply()"></button>
+            </div>
             <div class="field">
                 <label class="field-label">Who can run it?</label>
                 <div class="segmented segmented_mobile" id="cmd-access">
@@ -3673,6 +3680,13 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                     <div class="field-hint" style="margin-top:6px;">
                         <b>Resize</b> fits the keyboard to the button labels. <b>One-time</b> hides the keyboard after the user taps a button. <b>Persistent</b> keeps the keyboard visible when Telegram's own controls try to dismiss it.
                     </div>
+                </div>
+                <div class="switch-row" style="margin-top:10px;margin-bottom:0;">
+                    <div>
+                        <div class="sw-label">Close previous reply keyboard</div>
+                        <div class="sw-sub">Hides any open reply keyboard on the user's screen.</div>
+                    </div>
+                    <button type="button" class="switch" id="msg-remove-reply" onclick="toggleMsgRemoveReply()"></button>
                 </div>
             </div>
             <div class="err-box" id="msg-error"></div>
@@ -5154,8 +5168,16 @@ function toggleCmdSection(which) {
     var sec = which === 'inline' ? 'cmd-inline-section' : 'cmd-reply-section';
     var on = toggleSwitch(id);
     show($(sec), on);
+    if (on && which === 'reply') toggleSwitch('cmd-remove-reply', false);
     if (on && which === 'inline') kbCmd.renderInline();
     if (on && which === 'reply') kbCmd.render();
+}
+function toggleCmdRemoveReply() {
+    var on = toggleSwitch('cmd-remove-reply');
+    if (on) {
+        toggleSwitch('cmd-reply-toggle', false);
+        show($('cmd-reply-section'), false);
+    }
 }
 function parseStoredMediaItems(obj) {
     var items = [];
@@ -5220,6 +5242,7 @@ async function openCommandModal(cmd, parent, cloneMode) {
         toggleSwitch('cmd-auto-back', abOn);
         if ($('cmd-back-label')) $('cmd-back-label').value = srcCmd.back_label || '';
         show($('cmd-back-label-wrap'), abOn);
+        toggleSwitch('cmd-remove-reply', !!srcCmd.remove_reply_keyboard && !srcCmd.show_reply_keyboard);
         if (srcCmd.buttons_json) { kbCmd.loadInline(srcCmd.buttons_json); toggleSwitch('cmd-inline-toggle', true); show($('cmd-inline-section'), true); }
         if (srcCmd.show_reply_keyboard) { kbCmd.loadReply(srcCmd.reply_keyboard_json); toggleSwitch('cmd-reply-toggle', true); show($('cmd-reply-section'), true); }
     } else {
@@ -5230,6 +5253,7 @@ async function openCommandModal(cmd, parent, cloneMode) {
         if ($('cmd-expires-at')) $('cmd-expires-at').value = '';
         toggleSwitch('cmd-protect', false);
         toggleSwitch('cmd-auto-back', true);
+        toggleSwitch('cmd-remove-reply', false);
         if ($('cmd-back-label')) $('cmd-back-label').value = '';
         show($('cmd-back-label-wrap'), true);
         setSeg('cmd-media-source', 'url');
@@ -5326,7 +5350,8 @@ async function saveCommand() {
         show_reply_keyboard: sw('cmd-reply-toggle') ? 1 : 0,
         reply_keyboard_json: kbCmd.replyJSON() ? JSON.stringify(kbCmd.replyJSON()) : '',
         auto_back: sw('cmd-auto-back') ? 1 : 0,
-        back_label: $('cmd-back-label') ? $('cmd-back-label').value.trim() : ''
+        back_label: $('cmd-back-label') ? $('cmd-back-label').value.trim() : '',
+        remove_reply_keyboard: sw('cmd-remove-reply') ? 1 : 0
     };
     if (!payload.command) { err.textContent = 'Command is required.'; err.classList.add('show'); return; }
     if (mediaType === 'text' && !payload.content) { err.textContent = 'Content is required for text responses.'; err.classList.add('show'); return; }
@@ -7620,8 +7645,16 @@ function toggleMsgSection(which) {
     var m = map[which];
     var on = toggleSwitch(m[0]);
     show($(m[1]), on);
+    if (on && which === 'reply') toggleSwitch('msg-remove-reply', false);
     if (on && which === 'inline') kbMe.renderInline();
     if (on && which === 'reply') kbMe.render();
+}
+function toggleMsgRemoveReply() {
+    var on = toggleSwitch('msg-remove-reply');
+    if (on) {
+        toggleSwitch('msg-reply-toggle', false);
+        show($('msg-reply-section'), false);
+    }
 }
 function toggleMsgMedia() {
     var typeEl = $('msg-type');
@@ -7694,6 +7727,7 @@ function openMsgEditor(mode, id) {
     toggleSwitch('msg-kb-toggle', false);     show(_g('msg-kb-section'), false);
     toggleSwitch('msg-inline-toggle', false); show(_g('msg-inline-section'), false);
     toggleSwitch('msg-reply-toggle', false);  show(_g('msg-reply-section'), false);
+    toggleSwitch('msg-remove-reply', false);
     toggleSwitch('msg-protect', false);
     _sv('msg-photo', '');
     _sv('msg-text', '');
@@ -7768,9 +7802,11 @@ function closeMsgEditor() { $('msg-modal').classList.add('hidden'); untrackModal
 function collectButtons() {
     var inline = kbMe.inlineJSON();
     var reply = kbMe.replyJSON();
-    if (!inline && !reply) return null;
-    if (inline && reply) return JSON.stringify(Object.assign({}, inline, { reply: reply.reply }));
-    return JSON.stringify(inline || reply);
+    var rem = sw('msg-remove-reply');
+    if (!inline && !reply && !rem) return null;
+    var out = Object.assign({}, inline || {}, reply || {});
+    if (rem && !reply) out.remove_reply = true;
+    return JSON.stringify(out);
 }
 async function saveMsgEditor() {
     var err = $('msg-error'); err.classList.remove('show');
@@ -11365,6 +11401,7 @@ const DESIRED_SCHEMA = {
         protect_content: { type: 'INTEGER', default: '0' },
         auto_back: { type: 'INTEGER', default: '1' },
         back_label: { type: 'TEXT', default: "''" },
+        remove_reply_keyboard: { type: 'INTEGER', default: '0' },
         read_at: { type: 'DATETIME' }
     }},
     sessions: { columns: {
@@ -11907,6 +11944,7 @@ async function initializeDatabase(db) {
         } catch (e) { /* ignore */ }
 
         const SCHEMA_HEALS = [
+            `ALTER TABLE commands ADD COLUMN remove_reply_keyboard INTEGER DEFAULT 0`,
             `ALTER TABLE commands ADD COLUMN auto_back INTEGER DEFAULT 1`,
             `ALTER TABLE commands ADD COLUMN back_label TEXT DEFAULT ''`,
             `ALTER TABLE commands ADD COLUMN media_items_json TEXT DEFAULT ''`,
@@ -13109,8 +13147,10 @@ function buildReplyMarkup(buttonsJson) {
     const replySpec = obj.v === 2 && obj.reply ? kbNormalizeReply({ v: 2, reply: obj.reply }) : (obj.keyboard ? kbNormalizeReply(obj) : null);
     const inlineMarkup = kbInlineMarkup(inlineRows);
     const replyMarkup = kbReplyMarkup(replySpec);
-    if (!inlineMarkup && !replyMarkup) return null;
-    return { markup: inlineMarkup || replyMarkup, inlineMarkup, replyMarkup, replySpec: replySpec || null, both: !!(inlineMarkup && replyMarkup) };
+    const removeReplyMarkup = obj.remove_reply ? { remove_keyboard: true } : null;
+    if (!inlineMarkup && !replyMarkup && !removeReplyMarkup) return null;
+    const secondaryReply = replyMarkup || removeReplyMarkup;
+    return { markup: inlineMarkup || secondaryReply, inlineMarkup, replyMarkup, removeReplyMarkup, replySpec: replySpec || null, both: !!(inlineMarkup && secondaryReply) };
 }
 async function mergeReplyActions(db, actions) {
     if (!actions || !Object.keys(actions).length) return;
@@ -13300,8 +13340,9 @@ async function createCommand(request, env) {
         try {
             const autoBack = body.auto_back !== undefined ? (body.auto_back ? 1 : 0) : 1;
             const backLabel = body.back_label ? String(body.back_label).trim().slice(0, 64) : '';
-            await env.DB.prepare(`INSERT INTO commands (command, parent, response_type, content, media_url, file_id, media_meta, media_items_json, protect_content, buttons_json, is_admin_only, access_level, allowed_users, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, auto_back, back_label, order_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-            .bind(command, parent || null, rtype, content || '', finalMediaUrl, finalFileId, finalMediaMeta, finalItemsJson, protect_content ? 1 : 0, buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', autoBack, backLabel, orderIdx).run();
+            const removeReply = body.remove_reply_keyboard ? 1 : 0;
+            await env.DB.prepare(`INSERT INTO commands (command, parent, response_type, content, media_url, file_id, media_meta, media_items_json, protect_content, buttons_json, is_admin_only, access_level, allowed_users, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, auto_back, back_label, remove_reply_keyboard, order_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+                .bind(command, parent || null, rtype, content || '', finalMediaUrl, finalFileId, finalMediaMeta, finalItemsJson, protect_content ? 1 : 0, buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', autoBack, backLabel, removeReply, orderIdx).run();
         } catch (e) {
             const m = String(e.message || '');
             console.error('createCommand INSERT failed:', m);
@@ -13361,12 +13402,13 @@ async function updateCommand(request, env) {
         const finalProtect = protect_content !== undefined ? (protect_content ? 1 : 0) : ((existing && existing.protect_content) ? 1 : 0);
         const finalAutoBack = body.auto_back !== undefined ? (body.auto_back ? 1 : 0) : ((existing && existing.auto_back !== undefined && existing.auto_back !== null) ? (existing.auto_back ? 1 : 0) : 1);
         const finalBackLabel = body.back_label !== undefined ? String(body.back_label).trim().slice(0, 64) : ((existing && existing.back_label) || '');
+        const finalRemoveReply = body.remove_reply_keyboard !== undefined ? (body.remove_reply_keyboard ? 1 : 0) : ((existing && existing.remove_reply_keyboard) ? 1 : 0);
         if (command !== oldCommand) {
             const clash = await env.DB.prepare('SELECT command FROM commands WHERE command = ?').bind(command).first();
             if (clash) return apiJson({ error: `A command named "${command}" already exists.` }, 400);
             if (parent && await commandIsDescendant(env.DB, command, parent)) return apiJson({ error: 'You cannot nest a command inside its own child.' }, 400);
-            await env.DB.prepare(`UPDATE commands SET command = ?, parent = ?, response_type = ?, content = ?, media_url = ?, file_id = ?, media_meta = ?, media_items_json = ?, protect_content = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, allowed_users = ?, expires_at = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ?, auto_back = ?, back_label = ? WHERE command = ?`)
-                .bind(command, parent || null, rtype, content || '', finalMediaUrl, finalFileId, finalMediaMeta, finalItemsJson, finalProtect, buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', finalAutoBack, finalBackLabel, oldCommand).run();
+            await env.DB.prepare(`UPDATE commands SET command = ?, parent = ?, response_type = ?, content = ?, media_url = ?, file_id = ?, media_meta = ?, media_items_json = ?, protect_content = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, allowed_users = ?, expires_at = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ?, auto_back = ?, back_label = ?, remove_reply_keyboard = ? WHERE command = ?`)
+                .bind(command, parent || null, rtype, content || '', finalMediaUrl, finalFileId, finalMediaMeta, finalItemsJson, finalProtect, buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', finalAutoBack, finalBackLabel, finalRemoveReply, oldCommand).run();
             await env.DB.prepare('UPDATE commands SET parent = ? WHERE parent = ?').bind(command, oldCommand).run();
             const refRows = await env.DB.prepare('SELECT command, buttons_json, reply_keyboard_json FROM commands WHERE buttons_json LIKE ? OR reply_keyboard_json LIKE ?').bind(`%${oldCommand}%`, `%${oldCommand}%`).all();
             for (const row of refRows.results) {
@@ -13378,8 +13420,8 @@ async function updateCommand(request, env) {
             }
         } else {
             if (parent && await commandIsDescendant(env.DB, command, parent)) return apiJson({ error: 'You cannot nest a command inside its own child.' }, 400);
-            await env.DB.prepare(`UPDATE commands SET parent = ?, response_type = ?, content = ?, media_url = ?, file_id = ?, media_meta = ?, media_items_json = ?, protect_content = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, allowed_users = ?, expires_at = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ?, auto_back = ?, back_label = ? WHERE command = ?`)
-                .bind(parent || null, rtype, content || '', finalMediaUrl, finalFileId, finalMediaMeta, finalItemsJson, finalProtect, buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', finalAutoBack, finalBackLabel, command).run();
+            await env.DB.prepare(`UPDATE commands SET parent = ?, response_type = ?, content = ?, media_url = ?, file_id = ?, media_meta = ?, media_items_json = ?, protect_content = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, allowed_users = ?, expires_at = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ?, auto_back = ?, back_label = ?, remove_reply_keyboard = ? WHERE command = ?`)
+                .bind(parent || null, rtype, content || '', finalMediaUrl, finalFileId, finalMediaMeta, finalItemsJson, finalProtect, buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', finalAutoBack, finalBackLabel, finalRemoveReply, command).run();
         }
         await bumpDomainEpoch(env.DB, 'reply_buttons');
         return apiJson({ success: true });
@@ -14007,8 +14049,8 @@ async function sendUserPrivateMessage(request, env) {
             return apiJson({ error: friendly }, 500);
         }
         const messageId = resp.result && (Array.isArray(resp.result) ? (resp.result[0] && resp.result[0].message_id) : resp.result.message_id);
-        if (built && built.both && built.replyMarkup) {
-            await tgCall(token, 'sendMessage', Object.assign({ chat_id: userId, text: ' ', reply_markup: built.replyMarkup }, protectContent ? { protect_content: true } : {}));
+        if (built && built.both && (built.replyMarkup || built.removeReplyMarkup)) {
+            await sendReplyKeyboardMessage(token, userId, built.replyMarkup || built.removeReplyMarkup, { protect_content: !!protectContent });
         }
         if (built && built.replySpec && built.replySpec.actions) await mergeReplyActions(env.DB, built.replySpec.actions);
         await logDm(env.DB, userId, 'out', 'admin', mediaType, message || '', (items[0] && items[0].media_url) || photoUrl || null, messageId, buttonsJson || null, fileId || null, mediaMeta, mediaItemsStr);
@@ -14052,8 +14094,8 @@ async function editSentMessage(request, env) {
             }
             if (!resp || !resp.ok) return apiJson({ error: (resp && resp.description) || 'Telegram error' }, 500);
             const newMessageId = resp.result && resp.result.message_id;
-            if (built && built.both && built.replyMarkup) {
-                await tgCall(token, 'sendMessage', { chat_id: chatId, text: ' ', reply_markup: JSON.stringify(built.replyMarkup) });
+            if (built && built.both && (built.replyMarkup || built.removeReplyMarkup)) {
+                await sendReplyKeyboardMessage(token, chatId, built.replyMarkup || built.removeReplyMarkup);
             }
             if (built && built.replySpec && built.replySpec.actions) await mergeReplyActions(env.DB, built.replySpec.actions);
             await env.DB.prepare('DELETE FROM dm_messages WHERE chat_id = ? AND message_id = ?').bind(chatId, messageId).run();
@@ -14076,8 +14118,8 @@ async function editSentMessage(request, env) {
             resp = await tgCall(token, method, plain);
         }
         if (!resp.ok) return apiJson({ error: (resp && resp.description) || 'Telegram error' }, 500);
-        if (built && built.replyMarkup) {
-            await tgCall(token, 'sendMessage', { chat_id: chatId, text: ' ', reply_markup: JSON.stringify(built.replyMarkup) });
+        if (built && (built.replyMarkup || built.removeReplyMarkup)) {
+            await sendReplyKeyboardMessage(token, chatId, built.replyMarkup || built.removeReplyMarkup);
         }
         if (built && built.replySpec && built.replySpec.actions) await mergeReplyActions(env.DB, built.replySpec.actions);
         try {
@@ -14378,7 +14420,9 @@ async function sendGroupMessage(request, env, url) {
         const resp = await sendMultiMediaMessage(token, id, items, message || '', markup, { protect_content: !!protectContent });
         if (!resp || !resp.ok) return apiJson({ error: (resp && resp.description) || 'Telegram error' }, 500);
         const msgId = resp.result && (Array.isArray(resp.result) ? (resp.result[0] && resp.result[0].message_id) : resp.result.message_id);
-        if (built && built.both && built.replyMarkup) await tgCall(token, 'sendMessage', Object.assign({ chat_id: id, text: ' ', reply_markup: built.replyMarkup }, protectContent ? { protect_content: true } : {}));
+        if (built && built.both && (built.replyMarkup || built.removeReplyMarkup)) {
+            await sendReplyKeyboardMessage(token, id, built.replyMarkup || built.removeReplyMarkup, { protect_content: !!protectContent });
+        }
         if (built && built.replySpec && built.replySpec.actions) await mergeReplyActions(env.DB, built.replySpec.actions);
         await logDm(env.DB, id, 'out', 'group_announce', mediaType, message || '', (items[0] && items[0].media_url) || photoUrl || null, msgId, buttonsJson || null, fileId || null, mediaMeta, mediaItemsStr);
         await logAction(env.DB, null, `Announcement sent to group ${id}`);
@@ -14800,7 +14844,9 @@ async function broadcastToUser(token, uid, built, markup, content, timeoutMs) {
         const blocked = /blocked|deactivated|not started|chat not found|user not found|bot can't initiate|kicked/i.test(desc);
         return { ok: false, blocked: !!blocked, skipped: false, messageId: null };
     }
-    if (built && built.both && built.replyMarkup) await tgCall(token, 'sendMessage', Object.assign({ chat_id: uid, text: ' ', reply_markup: built.replyMarkup }, content.protect_content ? { protect_content: true } : {}), { timeoutMs });
+    if (built && built.both && (built.replyMarkup || built.removeReplyMarkup)) {
+        await sendReplyKeyboardMessage(token, uid, built.replyMarkup || built.removeReplyMarkup, { protect_content: !!content.protect_content, timeoutMs });
+    }
     const msgId = res.result ? (Array.isArray(res.result) ? (res.result[0] && res.result[0].message_id) : res.result.message_id) : null;
     return { ok: true, blocked: false, skipped: false, messageId: msgId };
 }
@@ -19086,6 +19132,24 @@ async function tgCall(token, method, payload, opts = {}) {
     }
     return null;
 }
+async function sendReplyKeyboardMessage(token, chatId, replyMarkup, opts = {}) {
+    if (!replyMarkup) return null;
+    const isRemove = !!(replyMarkup.remove_keyboard);
+    const base = Object.assign(
+        { chat_id: chatId, text: '\u2800', reply_markup: replyMarkup },
+        opts.protect_content ? { protect_content: true } : {},
+        isRemove ? { disable_notification: true } : {}
+    );
+    const callOpts = opts.timeoutMs ? { timeoutMs: opts.timeoutMs } : {};
+    let res = await tgCall(token, 'sendMessage', base, callOpts);
+    if (!res || !res.ok) {
+        res = await tgCall(token, 'sendMessage', Object.assign({}, base, { text: '⌨️' }), callOpts);
+    }
+    if (isRemove && res && res.ok && res.result && res.result.message_id) {
+        await tgCall(token, 'deleteMessage', { chat_id: chatId, message_id: res.result.message_id }, { retry: false });
+    }
+    return res;
+}
 async function sendRichText(token, chatId, text, extra = {}) {
     if (!text) return null;
     const chunks = text.length > 4000 ? splitEscapedHtml(text, 4000) : [text];
@@ -20432,8 +20496,18 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatTyp
         if (!hasBack) replySpec.rows.push([{ text: backLabel, command: '' }]);
     }
     const replyKeyboardMarkup = replySpec ? kbReplyMarkup(replySpec) : null;
-    const markup = inlineMarkup || replyKeyboardMarkup || undefined;
+    const removeReplyMarkup = (!replyKeyboardMarkup && cmdRecord.remove_reply_keyboard) ? { remove_keyboard: true } : null;
+    const secondaryMarkup = replyKeyboardMarkup || removeReplyMarkup || null;
+    const markup = inlineMarkup || secondaryMarkup || undefined;
     const protect = !!cmdRecord.protect_content;
+
+    const sendSecondaryCleanup = async () => {
+        if (inlineMarkup && removeReplyMarkup) {
+            await sendReplyKeyboardMessage(BOT_TOKEN, chatId, removeReplyMarkup);
+        } else if (inlineMarkup && replyKeyboardMarkup) {
+            await sendReplyKeyboardMessage(BOT_TOKEN, chatId, replyKeyboardMarkup, { protect_content: protect });
+        }
+    };
 
     if (mediaItems.length > 0) {
         const res = await sendMultiMediaMessage(BOT_TOKEN, chatId, mediaItems, finalContent, markup, { protect_content: protect });
@@ -20441,11 +20515,9 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatTyp
             const extra = Object.assign({}, markup ? { reply_markup: markup } : {}, protect ? { protect_content: true } : {});
             await sendRichText(BOT_TOKEN, chatId, finalContent, extra);
         } else if (!res && !finalContent && markup) {
-            await tgCall(BOT_TOKEN, 'sendMessage', Object.assign({ chat_id: chatId, text: ' ', reply_markup: markup }, protect ? { protect_content: true } : {}));
+            await tgCall(BOT_TOKEN, 'sendMessage', Object.assign({ chat_id: chatId, text: '\u2800', reply_markup: markup }, protect ? { protect_content: true } : {}));
         }
-        if (inlineMarkup && replyKeyboardMarkup) {
-            await tgCall(BOT_TOKEN, 'sendMessage', Object.assign({ chat_id: chatId, text: ' ', reply_markup: replyKeyboardMarkup }, protect ? { protect_content: true } : {}));
-        }
+        await sendSecondaryCleanup();
         return;
     }
 
@@ -20453,10 +20525,8 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatTyp
     if (markup) extra.reply_markup = markup;
     if (protect) extra.protect_content = true;
     if (finalContent) await sendRichText(BOT_TOKEN, chatId, finalContent, extra);
-    else if (extra.reply_markup) await tgCall(BOT_TOKEN, 'sendMessage', Object.assign({ chat_id: chatId, text: ' ', reply_markup: extra.reply_markup }, protect ? { protect_content: true } : {}));
-    if (inlineMarkup && replyKeyboardMarkup) {
-        await tgCall(BOT_TOKEN, 'sendMessage', Object.assign({ chat_id: chatId, text: ' ', reply_markup: replyKeyboardMarkup }, protect ? { protect_content: true } : {}));
-    }
+    else if (extra.reply_markup) await tgCall(BOT_TOKEN, 'sendMessage', Object.assign({ chat_id: chatId, text: '\u2800', reply_markup: extra.reply_markup }, protect ? { protect_content: true } : {}));
+    await sendSecondaryCleanup();
 }
 async function getAiHistory(db, chatId, limit) {
     if (!limit || limit <= 0) return [];
@@ -20656,7 +20726,7 @@ async function processAiReply(chatId, userId, text, aiSettings, env, BOT_TOKEN, 
                             if (Array.isArray(questions) && questions.length) {
                                 const rows = [];
                                 for (let i = 0; i < questions.length; i += 3) rows.push(questions.slice(i, i + 3).map(q => ({ text: q.label })));
-                                await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: ' ', reply_markup: { keyboard: rows, resize_keyboard: true, one_time_keyboard: aiSettings.ai_suggested_one_time !== '0' } });
+                                await sendReplyKeyboardMessage(BOT_TOKEN, chatId, { keyboard: rows, resize_keyboard: true, one_time_keyboard: aiSettings.ai_suggested_one_time !== '0' });
                             }
                         } catch (e) {}
                     }
@@ -20735,7 +20805,7 @@ async function processAiReply(chatId, userId, text, aiSettings, env, BOT_TOKEN, 
                     const rows = [];
                     for (let i = 0; i < questions.length; i += 3) rows.push(questions.slice(i, i + 3).map(q => ({ text: q.label })));
                     const oneTime = aiSettings.ai_suggested_one_time !== '0';
-                    await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: ' ', reply_markup: { keyboard: rows, resize_keyboard: true, one_time_keyboard: oneTime } });
+                    await sendReplyKeyboardMessage(BOT_TOKEN, chatId, { keyboard: rows, resize_keyboard: true, one_time_keyboard: oneTime });
                 }
             } catch (e) {}
         }
