@@ -2235,7 +2235,7 @@ body { overflow-x: hidden; }
                         <select class="input" id="mem-dm-save" style="max-width:200px;" onchange="saveMemPolicies()">
                             <option value="auto">Auto (only when AI is off)</option>
                             <option value="always">Always</option>
-                            <option value="featured_only">Never (featured only)</option>
+                            <option value="featured_only" selected>Never (featured only)</option>
                         </select>
                     </div>
                     <div class="switch-row" style="margin-bottom:0;">
@@ -2243,7 +2243,7 @@ body { overflow-x: hidden; }
                             <div class="sw-label">Save featured command messages</div>
                             <div class="sw-sub">Texts users send through <code>/contact</code> (or any DM featured command).</div>
                         </div>
-                        <button class="switch on" id="mem-save-featured" onclick="toggleMemSaveFeatured()"></button>
+                        <button class="switch" id="mem-save-featured" onclick="toggleMemSaveFeatured()"></button>
                     </div>
 
                     <div class="section-title">Auto-remove</div>
@@ -6237,8 +6237,8 @@ async function loadAutoRemove() {
         $('arm-dm-value').value = d.dm_value || 30;
         $('arm-dm-unit').value = d.dm_unit || 'days';
         show($('arm-settings'), d.enabled === '1');
-        if (d.dm_save_private && $('mem-dm-save')) $('mem-dm-save').value = d.dm_save_private;
-        if ($('mem-save-featured')) toggleSwitch('mem-save-featured', d.dm_save_featured !== '0');
+        if ($('mem-dm-save')) $('mem-dm-save').value = d.dm_save_private || 'featured_only';
+        if ($('mem-save-featured')) toggleSwitch('mem-save-featured', d.dm_save_featured === '1');
     } catch (e) { /* silent */ }
 }
 async function toggleMemSaveFeatured() { toggleSwitch('mem-save-featured'); saveMemPolicies(); }
@@ -11419,6 +11419,12 @@ const IDEMPOTENT_DATA_MIGRATIONS = [
 const REQUIRED_SETTINGS = {
     password_version: '',
     system_language: 'en',
+    ai_memory: '0',
+    ai_group_memory: '0',
+    mcp_memory_limit: '0',
+    auto_remove_enabled: '0',
+    dm_save_private: 'featured_only',
+    dm_save_featured: '0',
     contact_notify_enabled: '1',
     contact_notify_admins: 'all',
     contact_notify_include_user: '1',
@@ -11720,9 +11726,17 @@ async function initializeDatabase(db) {
             )`).run();
         } catch (e) { /* ignore */ }
 
-        // Ensure the system-language setting exists (default: English).
+        // Ensure system-language and default-off memory settings exist in D1.
         try {
-            await db.prepare("INSERT INTO settings (key, value) VALUES ('system_language', 'en') ON CONFLICT(key) DO NOTHING").run();
+            await db.batch([
+                db.prepare("INSERT INTO settings (key, value) VALUES ('system_language', 'en') ON CONFLICT(key) DO NOTHING"),
+                db.prepare("INSERT INTO settings (key, value) VALUES ('ai_memory', '0') ON CONFLICT(key) DO NOTHING"),
+                db.prepare("INSERT INTO settings (key, value) VALUES ('ai_group_memory', '0') ON CONFLICT(key) DO NOTHING"),
+                db.prepare("INSERT INTO settings (key, value) VALUES ('mcp_memory_limit', '0') ON CONFLICT(key) DO NOTHING"),
+                db.prepare("INSERT INTO settings (key, value) VALUES ('auto_remove_enabled', '0') ON CONFLICT(key) DO NOTHING"),
+                db.prepare("INSERT INTO settings (key, value) VALUES ('dm_save_private', 'featured_only') ON CONFLICT(key) DO NOTHING"),
+                db.prepare("INSERT INTO settings (key, value) VALUES ('dm_save_featured', '0') ON CONFLICT(key) DO NOTHING"),
+            ]);
         } catch (e) { /* ignore */ }
 
         // ── MARK SCHEMA READY ────────────────────────────────────────────
@@ -12445,7 +12459,7 @@ async function handleContactMessage(env, BOT_TOKEN, chatId, userId, userInfo, me
         }
 
         // 2. Store the message
-        const saveFeatured = (await getSetting(env.DB, 'dm_save_featured')) !== '0';
+        const saveFeatured = (await getSetting(env.DB, 'dm_save_featured')) === '1';
         if (saveFeatured) {
             await logDm(env.DB, userId, 'in', 'featured', 'text', message, null, null, null);
         }
@@ -12647,8 +12661,8 @@ async function getAutoRemoveSettings(env) {
         await initializeDatabase(env.DB);
         const cfg = await getAutoRemoveSettingsFromDb(env.DB);
         const aiMem = parseInt(await getSetting(env.DB, 'ai_memory')) || 0;
-        const dmSavePrivate = (await getSetting(env.DB, 'dm_save_private')) || 'auto';
-        const dmSaveFeatured = (await getSetting(env.DB, 'dm_save_featured')) !== '0' ? '1' : '0';
+        const dmSavePrivate = (await getSetting(env.DB, 'dm_save_private')) || 'featured_only';
+        const dmSaveFeatured = (await getSetting(env.DB, 'dm_save_featured')) === '1' ? '1' : '0';
         return apiJson({
             success: true,
             enabled: cfg.enabled ? '1' : '0',
@@ -19724,7 +19738,7 @@ async function processTelegramUpdate(update, env, ctx) {
                 //   'auto' (default)  → save regular private texts only when AI is off
                 //   'always'         → always save, even when AI is on
                 //   'featured_only'  → never save regular texts (only featured commands are kept)
-                const saveMode = (await getSetting(env.DB, 'dm_save_private')) || 'auto';
+                const saveMode = (await getSetting(env.DB, 'dm_save_private')) || 'featured_only';
                 const shouldLogToDm = isPrivate && saveMode !== 'featured_only' && (
                     saveMode === 'always' || aiSettings.ai_enabled !== '1'
                 );
@@ -19782,7 +19796,8 @@ async function processTelegramUpdate(update, env, ctx) {
                     }
                 }
                 const aiSettings = await getAiSettingsFromDb(env);
-                if (aiSettings.ai_enabled !== '1') {
+                const saveMode = (await getSetting(env.DB, 'dm_save_private')) || 'featured_only';
+                if (saveMode !== 'featured_only' && (saveMode === 'always' || aiSettings.ai_enabled !== '1')) {
                     const p = logDm(env.DB, msg.from.id, 'in', 'user', 'text', '[media]', null, msg.message_id, null);
                     if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(p);
                     else await p;
