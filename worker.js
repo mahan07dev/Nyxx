@@ -8395,7 +8395,7 @@ function kbInlineTypeToggle(prefix) {
             html = '<div class="cmd-ac-note">No matching commands — press + to use "' + esc(input.value.trim() || '/custom') + '" manually.</div>';
         } else {
             html += shown.map(function (c) {
-                var meta = (c.parent ? ('in ' + c.parent + ' · ') : '') + (c.response_type || 'text');
+                var meta = (c.parent ? ('in ' + c.parent + ' · ') : (c.response_type || 'text'));
                 return '<button type="button" class="cmd-ac-item" data-val="' + esc(c.command) + '">' +
                     '<span class="ac-cmd">' + esc(c.command) + '</span>' +
                     '<span class="ac-meta">' + esc(meta) + '</span></button>';
