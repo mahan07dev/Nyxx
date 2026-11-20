@@ -1,8 +1,8 @@
 // ============================================================================
-// NYXX — v4.9.7
+// NYXX — v4.9.8
 // Telegram bot builder + management dashboard for Cloudflare Workers + D1.
 // ============================================================================
-const VERSION = '4.9.7';
+const VERSION = '4.9.8';
 
 const RELAY_BASE = 'https://nyxx-proxy.nova-06272b19.workers.dev';
 // Forks: set the RELAY_BASE variable (or edit the line above) to point at your own relay.
@@ -17,9 +17,6 @@ const relayBase = (env) => String((env && env.RELAY_BASE) || RELAY_BASE).replace
 // be `https://<your-worker>.workers.dev/oauth/callback` — add it to the client.
 const CF_OAUTH = {
   CLIENT_ID: '87f4c44a2c2d4df7af66628871fc7502',                              // ← paste your OAuth client ID
-  SCOPES: ['account-settings.read', 'workers-scripts.edit'],
-  REQUEST_REFRESH_TOKEN: true,                // set false to skip offline_access
-  AUTH_URL:  'https://dash.cloudflare.com/oauth2/auth',
   TOKEN_URL: 'https://dash.cloudflare.com/oauth2/token',
   REVOKE_URL:'https://dash.cloudflare.com/oauth2/revoke',
 };
@@ -184,11 +181,6 @@ input, textarea, select, button { font-family: inherit; }
 .nav-group.collapsed .nav-chev { transform: rotate(-90deg); }
 .nav-group.collapsed .nav-items { display: none; }
 .nav-items { display: flex; flex-direction: column; gap: 2px; }
-.nav-subgroup { margin-top: 4px; margin-bottom: 4px; }
-.nav-subgroup .nav-sublabel { padding-left: 24px; font-size: 10px; opacity: 0.85; }
-.nav-subgroup .nav-subgroup { border-left: 1px solid var(--hairline); margin-left: 12px; padding-left: 0; }
-.nav-subgroup .nav-item { padding-left: 26px; font-size: 13px; min-height: 38px; }
-.nav-subgroup .nav-item i { font-size: 13px; }
 .nav-primary { margin-bottom: var(--s2); }
 .nav-primary .nav-item { font-weight: 600; }
 .nav-search { display: flex; align-items: center; gap: 8px; padding: 0 10px; height: 34px; background: var(--fill-1); border: 1px solid transparent; border-radius: var(--r-sm); margin: 0 4px var(--s3); transition: background 0.15s, border-color 0.15s, box-shadow 0.15s; }
@@ -512,6 +504,8 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
 .kb-btn-card .typ.type-url { background: var(--accent-soft); color: var(--accent); }
 .kb-btn-card .typ.type-command { background: var(--green-soft); color: var(--green); }
 .kb-btn-card .typ.type-callback { background: var(--orange-soft); color: var(--orange); }
+.kb-btn-card .typ.type-alert { background: var(--purple-soft); color: var(--purple); }
+.kb-btn-card .typ.type-toast { background: rgba(48,176,199,0.14); color: var(--teal); }
 .kb-btn-card .kb-color-row { display: flex; gap: 6px; align-items: center; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--hairline); }
 .kb-btn-card .kb-color-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-4); }
 .kb-color-swatch { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--hairline); cursor: pointer; padding: 0; transition: transform 0.12s, border-color 0.12s; flex-shrink: 0; }
@@ -548,6 +542,8 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
 .kb-preview .pvbtn.pv-url { color: var(--accent); }
 .kb-preview .pvbtn.pv-cmd { color: var(--green); }
 .kb-preview .pvbtn.pv-cb { color: var(--orange); }
+.kb-preview .pvbtn.pv-alert { color: var(--purple); }
+.kb-preview .pvbtn.pv-toast { color: var(--teal); }
 
 .toasts { position: fixed; top: 76px; right: var(--s5); z-index: 500; display: flex; flex-direction: column; gap: 10px; max-width: min(92vw, 420px); pointer-events: none; }
 .toast {
@@ -989,10 +985,6 @@ details.help > div { padding: 0 16px 14px; font-size: var(--fs-footnote); line-h
 .btn.loading .btn-spinner { display: flex; }
 .form-busy { opacity: .6; pointer-events: none; }
 
-/* Cron warnings */
-.cron-warn { background: var(--orange-soft); color: var(--orange); border-radius: var(--r-sm); padding: 10px 14px; font-size: var(--fs-footnote); margin-bottom: 12px; display: flex; gap: 8px; align-items: flex-start; }
-.cron-warn i { margin-top: 2px; }
-
 /* Group memory chat */
 .gm-memory-actions { display: flex; gap: 4px; }
 
@@ -1153,9 +1145,6 @@ body { overflow-x: hidden; }
 /* ===== Navigation Structure: Flat Sidebar ===== */
 .app.nav-struct-flat .nav-label { display: none !important; }
 .app.nav-struct-flat .nav-group.collapsed .nav-items { display: flex !important; }
-.app.nav-struct-flat .nav-subgroup .nav-subgroup,
-.app.nav-struct-flat .nav-subgroup { border-left: none; margin-left: 0; margin-top: 0; margin-bottom: 0; }
-.app.nav-struct-flat .nav-subgroup .nav-item { padding-left: var(--s3); font-size: var(--fs-subhead); min-height: 42px; }
 .app.nav-struct-flat .nav-group { margin-bottom: 2px; }
 
 /* ===== Collapsible warning / danger help boxes ===== */
@@ -1269,7 +1258,7 @@ details.help.danger > summary { color: var(--red); }
 .nav-preset-preview span.act { background: var(--accent); }
 
 /* ===== Searchable Command Combobox ===== */
-.cmd-ac-wrap { position: relative; display: flex; align-items: stretch; flex: 1 1 150px; min-width: 130px; }
+.cmd-ac-wrap { position: relative; display: flex; align-items: stretch; flex: 1 1 100%; min-width: 130px; }
 .cmd-ac-wrap .input { width: 100%; padding-right: 32px; }
 .cmd-ac-wrap.ac-plain .input { padding-right: 12px; }
 .cmd-ac-btn {
@@ -2055,7 +2044,7 @@ details.help.danger > summary { color: var(--red); }
                         <div class="row" style="margin-bottom:8px;gap:6px;flex-wrap:wrap;">
                             <input class="input" id="kbCh-inline-label" placeholder="Label" style="flex:1.2 1 130px;min-width:110px;">
                             <select class="input" id="kbCh-inline-type" onchange="kbInlineTypeToggle('kbCh')" style="width:auto;">
-                                <option value="url">URL</option><option value="command">Command</option><option value="callback">Callback</option>
+                                <option value="url">URL</option><option value="command">Command</option><option value="callback">Callback</option><option value="alert">Popup alert</option><option value="toast">Toast</option>
                             </select>
                             <select class="input" id="kbCh-inline-style" style="width:auto;">
                                 <option value="">Default</option><option value="primary">Blue</option><option value="success">Green</option><option value="danger">Red</option>
@@ -3559,10 +3548,10 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                 </div>
                 <div class="row" style="margin-bottom:8px;gap:6px;flex-wrap:wrap;">
                     <input class="input" id="kbCmd-inline-label" placeholder="Label" style="flex:1.2 1 130px;min-width:110px;">
-                    <select class="input" id="kbCmd-inline-type" onchange="kbInlineTypeToggle('kbCmd')" style="width:auto;">
-                        <option value="command">Command</option><option value="callback">Callback</option><option value="url">URL</option>
+                    <select class="input" id="kbCmd-inline-type" onchange="kbInlineTypeToggle('kbCmd')" style="flex: 1.2 1 130px;">
+                        <option value="command">Command</option><option value="callback">Callback</option><option value="url">URL</option><option value="alert">Popup alert</option><option value="toast">Toast</option>
                     </select>
-                    <select class="input" id="kbCmd-inline-style" style="width:auto;" title="Button color">
+                    <select class="input" id="kbCmd-inline-style" style="flex: 1.2 1 130px;" title="Button color">
                         <option value="">Default</option><option value="primary">Blue</option><option value="success">Green</option><option value="danger">Red</option>
                     </select>
                     <div class="cmd-ac-wrap" id="kbCmd-inline-wrap">
@@ -3578,7 +3567,8 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                     <summary><i class="fa-solid fa-shield-halved"></i> Tip: Sharing &amp; testing Telegram proxies with buttons</summary>
                     <div>
                         • <b>Connect button:</b> Set Type = <b>URL</b> and paste <code>https://t.me/proxy?server=HOST&amp;port=PORT&amp;secret=SECRET</code> (or <code>https://t.me/socks?server=HOST&amp;port=PORT</code>). Telegram clients open it directly as a proxy.<br>
-                        • <b>Test / Details button:</b> Set Type = <b>Callback</b> and value <code>PROXY:https://t.me/proxy?server=...</code> (or <code>PROXY:HOST:PORT</code>) to test reachability &amp; ping and show IP, country, ISP &amp; TLS details in a popup alert (use <code>PROXY_MSG:...</code> to send a chat message instead).
+                        • <b>Test / Details button:</b> Set Type = <b>Callback</b> and value <code>PROXY:https://t.me/proxy?server=...</code> (or <code>PROXY:HOST:PORT</code>) to test reachability &amp; ping and show IP, country, ISP &amp; TLS details in a popup alert (use <code>PROXY_MSG:...</code> to send a chat message instead).<br>
+                        • <b>Custom Popup / Toast:</b> Set Type = <b>Popup alert</b> (centered Telegram dialog) or <b>Toast</b> (top banner) with your own text (up to 200 chars). Supports <code>{{first_name}}</code>, <code>{{username}}</code>, <code>{{id}}</code>, <code>{{title}}</code>, <code>{{current_time}}</code>.
                     </div>
                 </details>
                 <div class="switch-row" style="margin-top:10px;">
@@ -3668,7 +3658,7 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                 </div>
                 <span class="field-hint">After this date/time, non-admins can no longer run this command. Leave blank for no expiration.</span>
             </div>
-            <div class="switch-row"><div><div class="sw-label">Edit current message</div><div class="sw-sub">When opened from an inline button, edit that message in place instead of sending a new one (falls back cleanly if media type changes).</div></div><button class="switch" id="cmd-edit-message" onclick="toggleSwitch('cmd-edit-message')"></button></div>
+            <div class="switch-row"><div><div class="sw-label">Edit current message</div><div class="sw-sub">When triggered from an inline button, reply keyboard button, or command, edit the bot's current message in place (supports cross inline/reply buttons and falls back cleanly if media type changes).</div></div><button class="switch" id="cmd-edit-message" onclick="toggleSwitch('cmd-edit-message')"></button></div>
             <div class="switch-row"><div><div class="sw-label">Protect content</div><div class="sw-sub">Prevent users from forwarding or saving files/messages in Telegram.</div></div><button class="switch" id="cmd-protect" onclick="toggleSwitch('cmd-protect')"></button></div>
             <div class="switch-row" style="margin-bottom:0;"><div><div class="sw-label">Enabled</div><div class="sw-sub">Disabled commands are hidden.</div></div><button class="switch on" id="cmd-enabled" onclick="toggleSwitch('cmd-enabled')"></button></div>
             <div class="err-box" id="cmd-error"></div>
@@ -3735,7 +3725,7 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                     <div class="row" style="margin-bottom:8px;gap:6px;flex-wrap:wrap;">
                         <input class="input" id="kbMe-inline-label" placeholder="Label" style="flex:1.2 1 130px;min-width:110px;">
                         <select class="input" id="kbMe-inline-type" onchange="kbInlineTypeToggle('kbMe')" style="width:auto;">
-                            <option value="command">Command</option><option value="callback">Callback</option><option value="url">URL</option>
+                            <option value="command">Command</option><option value="callback">Callback</option><option value="url">URL</option><option value="alert">Popup alert</option><option value="toast">Toast</option>
                         </select>
                         <select class="input" id="kbMe-inline-style" style="width:auto;" title="Button color">
                             <option value="">Default</option><option value="primary">Blue</option><option value="success">Green</option><option value="danger">Red</option>
@@ -4316,20 +4306,98 @@ function untrackModal(id) {
     if (!openModals.length) document.body.style.overflow = '';
 }
 
+/* ===== Dynamic Viewport Floating Positioning ===== */
+function positionFloatingMenu(anchor, menu, opts) {
+    if (!anchor || !menu) return;
+    opts = opts || {};
+    var margin = 8;
+    var gap = opts.gap || 6;
+    var vw = window.innerWidth || document.documentElement.clientWidth;
+    var vh = window.innerHeight || document.documentElement.clientHeight;
+    var rect = anchor.getBoundingClientRect();
+
+    menu.style.position = 'fixed';
+    menu.style.visibility = 'hidden';
+    menu.style.left = '0px';
+    menu.style.top = '0px';
+    menu.style.right = 'auto';
+    menu.style.bottom = 'auto';
+    menu.style.zIndex = String(opts.zIndex || 460);
+    menu.style.maxWidth = Math.max(120, vw - margin * 2) + 'px';
+    if (opts.matchWidth) {
+        menu.style.width = Math.min(Math.max(rect.width, opts.minWidth || 200), vw - margin * 2) + 'px';
+    } else {
+        menu.style.width = '';
+    }
+    menu.classList.remove('hidden');
+
+    var mw = menu.offsetWidth;
+    var mh = menu.offsetHeight;
+    var spaceBelow = vh - rect.bottom - margin - gap;
+    var spaceAbove = rect.top - margin - gap;
+    var openUp = spaceBelow < mh && spaceAbove > spaceBelow;
+
+    var maxH = Math.max(110, openUp ? spaceAbove : spaceBelow);
+    menu.style.maxHeight = maxH + 'px';
+    menu.style.overflowY = 'auto';
+
+    var renderedH = Math.min(mh, maxH);
+    var top = openUp ? (rect.top - renderedH - gap) : (rect.bottom + gap);
+    top = Math.max(margin, Math.min(top, vh - renderedH - margin));
+
+    var left = opts.alignLeft ? rect.left : (rect.right - mw);
+    left = Math.max(margin, Math.min(left, vw - mw - margin));
+
+    menu.style.top = Math.round(top) + 'px';
+    menu.style.left = Math.round(left) + 'px';
+    menu.style.visibility = '';
+}
+function resetFloatingMenu(menu) {
+    if (!menu) return;
+    menu.classList.add('hidden');
+    menu.style.position = '';
+    menu.style.top = '';
+    menu.style.left = '';
+    menu.style.right = '';
+    menu.style.bottom = '';
+    menu.style.width = '';
+    menu.style.maxWidth = '';
+    menu.style.maxHeight = '';
+    menu.style.overflowY = '';
+    menu.style.zIndex = '';
+    menu.style.visibility = '';
+}
+
 /* ===== Dropdown (mobile action menus) ===== */
 function toggleDropdown(btn) {
     var dd = btn.closest('.dropdown'); if (!dd) return;
     var menu = dd.querySelector('.dropdown-menu'); if (!menu) return;
     var isOpen = !menu.classList.contains('hidden');
     closeAllDropdowns();
-    if (!isOpen) menu.classList.remove('hidden');
+    if (!isOpen) {
+        menu._anchorEl = btn;
+        positionFloatingMenu(btn, menu, { gap: 4, zIndex: 460 });
+    }
 }
 function closeAllDropdowns() {
-    document.querySelectorAll('.dropdown-menu').forEach(function (m) { m.classList.add('hidden'); });
+    document.querySelectorAll('.dropdown-menu').forEach(function (m) {
+        m._anchorEl = null;
+        resetFloatingMenu(m);
+    });
 }
 document.addEventListener('click', function (e) {
     if (!e.target.closest('.dropdown')) { closeAllDropdowns(); return; }
     if (e.target.closest('.dropdown-menu button')) setTimeout(closeAllDropdowns, 0);
+});
+window.addEventListener('scroll', function (e) {
+    if (e.target && e.target.closest && (e.target.closest('.dropdown-menu') || e.target.closest('.cmd-ac-menu'))) return;
+    closeAllDropdowns();
+    document.querySelectorAll('.cmd-ac-menu:not(.hidden)').forEach(resetFloatingMenu);
+}, true);
+window.addEventListener('resize', function () {
+    closeAllDropdowns();
+    document.querySelectorAll('.cmd-ac-menu:not(.hidden)').forEach(resetFloatingMenu);
+    if (typeof closeTopbarDropdowns === 'function') closeTopbarDropdowns(null);
 });
 
 /* ============================================================
@@ -4439,6 +4507,24 @@ function toggleNavGroup(btn) {
         var willOpen = !group.classList.contains('tb-open');
         closeTopbarDropdowns(willOpen ? group : null);
         group.classList.toggle('tb-open', willOpen);
+        if (willOpen) {
+            var menu = group.querySelector(':scope > .nav-items');
+            if (menu) {
+                menu.style.left = '';
+                menu.style.right = '';
+                menu.style.maxHeight = '';
+                menu.style.overflowY = '';
+                var r = menu.getBoundingClientRect();
+                var vw = window.innerWidth;
+                var vh = window.innerHeight;
+                if (r.right > vw - 12) { menu.style.left = 'auto'; menu.style.right = '0'; }
+                else if (r.left < 12) { menu.style.left = '0'; menu.style.right = 'auto'; }
+                if (r.bottom > vh - 12) {
+                    menu.style.maxHeight = Math.max(140, vh - r.top - 16) + 'px';
+                    menu.style.overflowY = 'auto';
+                }
+            }
+        }
         return;
     }
     group.classList.toggle('collapsed');
@@ -4892,7 +4978,7 @@ async function loadCommands(force) {
                 commands = d.commands || [];
             } catch (e) { box.innerHTML = errorState(e.message, 'loadCommands(true)'); return; }
         }
-        buildTree(); renderCommands(); kbCmd.populateCommands();
+        buildTree(); renderCommands();
     } finally { _commandsLoading = false; }
 }
 var cmdFilter = 'all';
@@ -4961,21 +5047,42 @@ function renderCommands() {
             (function () {
                 var lvl = commandAccessLevel(c);
                 var b = '';
-                if (c.edit_message) b += '<span class="badge" title="Edits current message on inline tap"><i class="fa-regular fa-pen-to-square"></i> <span class="hide-mobile">Edit</span></span>';
-                if (c.protect_content) b += '<span class="badge orange" title="Forwarding/saving disabled"><i class="fa-solid fa-shield-halved"></i> <span class="hide-mobile">Protected</span></span>';
-                if (mediaCnt > 1) b += '<span class="badge blue"><i class="fa-solid fa-layer-group"></i> ' + mediaCnt + '</span>';
-                if (lvl === 'admin') b += '<span class="badge purple">Admin</span>';
-                else if (lvl === 'moderator') b += '<span class="badge purple">Mod+</span>';
-                else if (lvl === 'specific') b += '<span class="badge blue"><i class="fa-solid fa-user-lock"></i> Specific</span>';
-                if (c.allowed_users && String(c.allowed_users).trim()) {
-                    var cnt = String(c.allowed_users).trim().split(/[\\s,;]+/).filter(Boolean).length;
-                    if (cnt) b += '<span class="badge blue">' + cnt + ' user' + (cnt > 1 ? 's' : '') + '</span>';
+            
+                // Always visible (icons only on mobile)
+                if (c.edit_message) {
+                    b += '<span class="badge mobile-icon-badge" title="Edits current message on inline tap">' +
+                        '<i class="fa-regular fa-pen-to-square"></i> <span class="hide-mobile">Edit</span>' +
+                    '</span>';
                 }
+            
+                if (c.protect_content) {
+                    b += '<span class="badge orange mobile-icon-badge" title="Forwarding/saving disabled">' +
+                        '<i class="fa-solid fa-shield-halved"></i> <span class="hide-mobile">Protected</span>' +
+                    '</span>';
+                }
+            
+                if (mediaCnt > 1) {
+                    b += '<span class="badge blue" title="Media count">' +
+                        '<i class="fa-solid fa-layer-group"></i> ' + mediaCnt +
+                    '</span>';
+                }
+            
+                // Desktop only
+                if (lvl === 'admin') b += '<span class="badge purple hide-mobile">Admin</span>';
+                else if (lvl === 'moderator') b += '<span class="badge purple hide-mobile">Mod+</span>';
+                else if (lvl === 'specific') b += '<span class="badge blue hide-mobile"> <i class="fa-solid fa-user-lock"></i> Specific</span>';
+            
+                if (c.allowed_users && String(c.allowed_users).trim()) {
+                    var cnt = String(c.allowed_users).trim().split(/[\s,;]+/).filter(Boolean).length;
+                    if (cnt) b += '<span class="badge blue hide-mobile">' + cnt + ' user' + (cnt > 1 ? 's' : '') + '</span>';
+                }
+            
                 if (c.expires_at) {
                     var ms = parseIsoMs(c.expires_at);
-                    if (ms && Date.now() > ms) b += '<span class="badge red">Expired</span>';
-                    else if (ms) b += '<span class="badge orange">Expires</span>';
+                    if (ms && Date.now() > ms) b += '<span class="badge red hide-mobile">Expired</span>';
+                    else if (ms) b += '<span class="badge orange hide-mobile">Expires</span>';
                 }
+            
                 return b;
             })() +
             '<div class="lr-actions">' +
@@ -5334,13 +5441,6 @@ async function openCommandModal(cmd, parent, cloneMode) {
     editingCmd = (!cloneMode && cmd) ? cmd : null;
     var srcCmd = cmd || null;
     var parentSel = $('cmd-parent');
-    if (parentSel && parentSel.tagName === 'SELECT') {
-        parentSel.innerHTML = '<option value="">None (root)</option>';
-        commands.forEach(function (c) {
-            if (editingCmd && (c.command === editingCmd.command)) return;
-            var o = document.createElement('option'); o.value = c.command; o.textContent = c.command; parentSel.appendChild(o);
-        });
-    }
     $('cmd-error').classList.remove('show');
     kbCmd.reset();
     cmdAttachments = [];
@@ -5750,9 +5850,6 @@ async function loadContactSettings() {
         $('ct-rate-limit').value = contactSettings.contact_rate_limit || '5';
     } catch (e) { toast(e.message, 'error'); }
 }
-$('ct-notify-admins').addEventListener('change', function () {
-    if (!this) return;
-});
 async function loadContactStats() {
     try {
         var d = await api('GET', '/api/contact/stats');
@@ -6193,25 +6290,7 @@ async function markContactMessageRead(messageId, btn) {
         await Promise.all([loadContactStats(), loadContactMessages(), updateContactBadge()]);
     } catch (e) { toast(e.message, 'error'); }
 }
-async function markContactUserRead(userId, btn) {
-    try {
-        await withBusy(btn, function () { return api('POST', '/api/contact/mark_user_read', { userId: userId }); });
-        await Promise.all([loadContactStats(), loadContactMessages(), updateContactBadge()]);
-    } catch (e) { toast(e.message, 'error'); }
-}
 function kvCard(k, v) { return '<div class="card compact" style="margin:0;"><div class="tiny muted">' + esc(k) + '</div><div style="font-weight:600;margin-top:4px;word-break:break-word;">' + esc(v) + '</div></div>'; }
-async function toggleRole() {
-    var current = manageUser.role || 'user';
-    var next = current === 'user' ? 'moderator' : (current === 'moderator' ? 'admin' : 'user');
-    var label = next === 'admin' ? 'Promote to Admin' : (next === 'moderator' ? 'Promote to Moderator' : 'Demote to User');
-    if (!await confirmDialog('Set role to "' + next + '"?', label, false)) return;
-    try {
-        await api('PUT', '/api/users/role', { userId: manageUser.id, role: next });
-        toast('Role set to ' + next + '.');
-        manageUser.role = next;
-        openUser(manageUser);
-    } catch (e) { toast(e.message, 'error'); }
-}
 
 async function promoteUser() {
     var current = manageUser.role || 'user';
@@ -8132,7 +8211,6 @@ function openMsgEditor(mode, id) {
         var _th3 = _g('msg-type-hint'); if (_th3) _th3.textContent = '';
     }
 
-    kbMe.populateCommands();
     toggleMsgMedia();
     renderAttachmentList('msg-att-list', msgAttachments, 'msg');
     var _modal = _g('msg-modal'); if (_modal) _modal.classList.remove('hidden');
@@ -8302,7 +8380,7 @@ function createKeyboardBuilder(prefix, opts) {
             }
             row.forEach(function (b, bi) {
                 var editing = editingInline && editingInline.ri === ri && editingInline.bi === bi;
-                var typeClass = b.type === 'url' ? 'type-url' : (b.type === 'command' ? 'type-command' : 'type-callback');
+                var typeClass = b.type === 'url' ? 'type-url' : (b.type === 'command' ? 'type-command' : (b.type === 'alert' ? 'type-alert' : (b.type === 'toast' ? 'type-toast' : 'type-callback')));
                 var canMoveUp = ri > 0 || row.length > 1;
                 var canMoveDown = ri < inline.length - 1 || row.length > 1;
                 html += '<div class="kb-btn-card' + (editing ? ' editing' : '') + '">' +
@@ -8332,7 +8410,7 @@ function createKeyboardBuilder(prefix, opts) {
             if (!row.length) return;
             preview += '<div class="pvrow">';
             row.forEach(function (b) {
-                var cls = b.style ? ('pv-' + b.style) : (b.type === 'url' ? 'pv-url' : (b.type === 'command' ? 'pv-cmd' : 'pv-cb'));
+                var cls = b.style ? ('pv-' + b.style) : (b.type === 'url' ? 'pv-url' : (b.type === 'command' ? 'pv-cmd' : (b.type === 'alert' ? 'pv-alert' : (b.type === 'toast' ? 'pv-toast' : 'pv-cb'))));
                 preview += '<span class="pvbtn ' + cls + '">' + esc(b.text) + '</span>';
             });
             preview += '</div>';
@@ -8428,7 +8506,6 @@ function createKeyboardBuilder(prefix, opts) {
         var lbl = el('inline-label').value.trim();
         var type = el('inline-type').value;
         var val = el('inline-value').value.trim();
-        if (!val && type === 'command' && el('inline-cmd')) val = el('inline-cmd').value;
         var style = el('inline-style') ? el('inline-style').value : '';
         var rowTarget = el('inline-row') ? el('inline-row').value : 'auto';
         if (!lbl) { toast('Enter a label.', 'error'); return; }
@@ -8446,7 +8523,6 @@ function createKeyboardBuilder(prefix, opts) {
         var addBtn = el('inline-add-btn');
         if (addBtn) addBtn.innerHTML = '<i class="fa-solid fa-plus"></i>';
         el('inline-label').value = ''; el('inline-value').value = '';
-        if (el('inline-cmd')) el('inline-cmd').value = '';
         if (el('inline-style')) el('inline-style').value = '';
         renderInline();
     }
@@ -8455,7 +8531,6 @@ function createKeyboardBuilder(prefix, opts) {
         var lbl = el('reply-label').value.trim();
         if (!lbl) { toast('Enter button text.', 'error'); return; }
         var act = el('reply-value').value.trim();
-        if (!act && el('reply-cmd')) act = el('reply-cmd').value;
         var style = el('reply-style') ? el('reply-style').value : '';
         var rowTarget = el('reply-row') ? el('reply-row').value : 'auto';
         if (act && act.charAt(0) !== '/') act = '/' + act;
@@ -8475,7 +8550,6 @@ function createKeyboardBuilder(prefix, opts) {
         var addBtn = el('reply-add-btn');
         if (addBtn) addBtn.innerHTML = '<i class="fa-solid fa-plus"></i>';
         el('reply-label').value = ''; el('reply-value').value = '';
-        if (el('reply-cmd')) el('reply-cmd').value = '';
         if (el('reply-style')) el('reply-style').value = '';
         renderReply();
     }
@@ -8557,7 +8631,6 @@ function createKeyboardBuilder(prefix, opts) {
         el('inline-label').value = b.text;
         el('inline-type').value = b.type;
         el('inline-value').value = b.value || '';
-        if (el('inline-cmd')) el('inline-cmd').value = b.type === 'command' ? (b.value || '') : '';
         if (el('inline-style')) el('inline-style').value = b.style || '';
         if (typeof kbInlineTypeToggle === 'function') kbInlineTypeToggle(prefix);
         editingInline = { ri: ri, bi: bi };
@@ -8710,16 +8783,6 @@ function createKeyboardBuilder(prefix, opts) {
         renderReply();
     }
 
-    function populateCommands() {
-        ['inline-cmd', 'reply-cmd'].forEach(function (id) {
-            var sel = el(id); if (!sel) return;
-            var cur = sel.value;
-            sel.innerHTML = '<option value="">' + (id === 'inline-cmd' ? 'Select…' : 'Run command…') + '</option>';
-            commands.forEach(function (c) { var o = document.createElement('option'); o.value = c.command; o.textContent = c.command; sel.appendChild(o); });
-            if (cur) sel.value = cur;
-        });
-    }
-
     function syncSettings() {
         if (el('reply-resize')) reply.resize = el('reply-resize').checked;
         if (el('reply-onetime')) reply.one_time = el('reply-onetime').checked;
@@ -8734,7 +8797,7 @@ function createKeyboardBuilder(prefix, opts) {
         loadInline: loadInline, loadReply: loadReply,
         inlineJSON: inlineJSON, replyJSON: replyJSON,
         reset: reset, render: renderReply, renderInline: renderInline,
-        populateCommands: populateCommands, syncSettings: syncSettings
+        syncSettings: syncSettings
     };
     window[prefix + 'MoveI'] = moveI; window[prefix + 'MoveIR'] = moveIR; window[prefix + 'DelI'] = delI;
     window[prefix + 'MoveR'] = moveR; window[prefix + 'MoveRR'] = moveRR; window[prefix + 'DelR'] = delR;
@@ -8757,23 +8820,25 @@ function kbInlineTypeToggle(prefix) {
     var isCmd = type === 'command';
     if (valEl) {
         valEl.dataset.acEnabled = isCmd ? '1' : '0';
-        valEl.placeholder = isCmd ? '/command (search or type custom)' : (type === 'url' ? 'https://…' : 'Callback data');
+        valEl.placeholder = isCmd
+            ? '/command (search or type custom)'
+            : (type === 'url' ? 'https://… (or https://t.me/proxy?…)' : (type === 'alert' ? 'Centered popup text (max 200 chars)…' : (type === 'toast' ? 'Top toast text (max 200 chars)…' : 'Callback data (or PROXY:…)')));
     }
     if (wrap) {
         wrap.classList.toggle('ac-plain', !isCmd);
         var menu = wrap.querySelector('.cmd-ac-menu');
-        if (!isCmd && menu) menu.classList.add('hidden');
+        if (!isCmd && menu) resetFloatingMenu(menu);
     }
 }
 (function initCommandAutocomplete() {
     var MAX_RESULTS = 60;
     function closeAllAcMenus(except) {
         document.querySelectorAll('.cmd-ac-menu').forEach(function (m) {
-            if (m !== except) m.classList.add('hidden');
+            if (m !== except) resetFloatingMenu(m);
         });
     }
     function renderAcMenu(input, wrap, menu) {
-        if (input.dataset.acEnabled === '0') { menu.classList.add('hidden'); return; }
+        if (input.dataset.acEnabled === '0') { resetFloatingMenu(menu); return; }
         var mode = input.dataset.cmdAc || 'command';
         var q = (input.value || '').toLowerCase().trim();
         var list = (commands || []).slice();
@@ -8802,7 +8867,9 @@ function kbInlineTypeToggle(prefix) {
             html = '<div class="cmd-ac-note">No matching commands — press + to use "' + esc(input.value.trim() || '/custom') + '" manually.</div>';
         } else {
             html += shown.map(function (c) {
-                var meta = (c.parent ? ('in ' + c.parent + ' · ') : (c.response_type || 'text'));
+                var meta = window.matchMedia('(max-width: 768px)').matches
+                    ? ''
+                    : (c.parent ? ('in ' + c.parent) : (c.response_type || 'text'));
                 return '<button type="button" class="cmd-ac-item" data-val="' + esc(c.command) + '">' +
                     '<span class="ac-cmd">' + esc(c.command) + '</span>' +
                     '<span class="ac-meta">' + esc(meta) + '</span></button>';
@@ -8812,8 +8879,8 @@ function kbInlineTypeToggle(prefix) {
             }
         }
         menu.innerHTML = html;
-        menu.classList.remove('hidden');
         closeAllAcMenus(menu);
+        positionFloatingMenu(wrap || input, menu, { alignLeft: true, matchWidth: true, minWidth: 220, gap: 4, zIndex: 470 });
     }
     document.querySelectorAll('input[data-cmd-ac]').forEach(function (input) {
         var wrap = input.closest('.cmd-ac-wrap');
@@ -8829,12 +8896,12 @@ function kbInlineTypeToggle(prefix) {
         });
         input.addEventListener('input', function () { renderAcMenu(input, wrap, menu); });
         input.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape') { menu.classList.add('hidden'); }
+            if (e.key === 'Escape') { resetFloatingMenu(menu); }
         });
         if (btn) {
             btn.addEventListener('mousedown', function (e) { e.preventDefault(); });
             btn.addEventListener('click', function () {
-                if (!menu.classList.contains('hidden')) { menu.classList.add('hidden'); return; }
+                if (!menu.classList.contains('hidden')) { resetFloatingMenu(menu); return; }
                 input.focus();
                 renderAcMenu(input, wrap, menu);
             });
@@ -8844,7 +8911,7 @@ function kbInlineTypeToggle(prefix) {
             var item = e.target.closest('.cmd-ac-item');
             if (!item) return;
             input.value = item.dataset.val || '';
-            menu.classList.add('hidden');
+            resetFloatingMenu(menu);
             input.dispatchEvent(new Event('input', { bubbles: true }));
         });
     });
@@ -9477,7 +9544,6 @@ function applyChannelSettings(s) {
     show($('chm-btn-wrap'), !!s.auto_buttons_enabled);
     kbCh.reset();
     if (s.auto_buttons_json) kbCh.loadInline(s.auto_buttons_json);
-    kbCh.populateCommands();
     toggleSwitch('chm-silent-toggle', !!s.silent_by_default);
     toggleSwitch('chm-protect-toggle', !!s.protect_by_default);
     if ($('chm-post-silent')) $('chm-post-silent').checked = !!s.silent_by_default;
@@ -11077,7 +11143,6 @@ export default {
             if (request.method === 'GET'  && url.pathname === '/api/contact/messages')   return await getContactMessages(env, url);
             if (request.method === 'POST' && url.pathname === '/api/contact/mark_read') return await markContactRead(env);
             if (request.method === 'POST' && url.pathname === '/api/contact/mark_message_read') return await markContactMessageRead(request, env);
-            if (request.method === 'POST' && url.pathname === '/api/contact/mark_user_read') return await markContactUserRead(request, env);
             if (request.method === 'GET'  && url.pathname === '/api/contact/stats')      return await getContactStats(env);
             if (request.method === 'POST' && url.pathname === '/api/contact/test_notify') return await testContactNotify(env);
             if (request.method === 'POST' && url.pathname === '/api/contact/delete')     return await deleteContactMessageHandler(request, env);
@@ -11180,7 +11245,6 @@ export default {
             if (request.method === 'GET'  && url.pathname === '/api/media/library') return await getMediaLibrary(env);
             if (request.method === 'POST' && url.pathname === '/api/media/delete') return await deleteMediaLibraryItem(request, env);
             if (request.method === 'POST' && url.pathname === '/api/media/clear') return await clearMediaLibraryDb(env);
-            if (request.method === 'POST' && url.pathname === '/api/media/rename') return await renameMediaLibraryItem(request, env);
             if (request.method === 'POST' && url.pathname === '/api/media/update') return await updateMediaLibraryItem(request, env);
             if (request.method === 'POST' && url.pathname === '/api/media/validate') return await validateMediaLibraryItems(request, env);
             if (request.method === 'POST' && url.pathname === '/api/media/bulk') return await bulkMediaLibraryAction(request, env);
@@ -11193,7 +11257,6 @@ export default {
             if (request.method === 'GET'  && url.pathname === '/api/mcp/settings') return await getMcpSettings(request, env);
             if (request.method === 'POST' && url.pathname === '/api/mcp/settings') return await saveMcpSettings(request, env);
             if (request.method === 'POST' && url.pathname === '/api/mcp/ai/test') return await handleMcpAiTest(request, env);
-            if (request.method === 'POST' && url.pathname === '/api/mcp/chat') return await handleMcpDashboardChat(request, env);
             if (request.method === 'GET'  && url.pathname === '/api/mcp/tokens') return await listMcpTokens(env);
             if (request.method === 'POST' && url.pathname === '/api/mcp/token/generate') return await generateMcpTokenHandler(request, env);
             if (request.method === 'POST' && url.pathname === '/api/mcp/token/revoke') return await revokeMcpTokens(env);
@@ -11231,7 +11294,6 @@ export default {
             if (request.method === 'POST' && url.pathname === '/api/oauth/start')      return await handleCfOAuthStart(request, env);
             if (request.method === 'GET'  && url.pathname === '/api/oauth/status')     return await handleCfOAuthStatus(request, env);
             if (request.method === 'POST' && url.pathname === '/api/oauth/disconnect') return await handleCfOAuthDisconnect(request, env);
-            if (request.method === 'GET' && url.pathname === '/api/bootstrap') return await getBootstrap(env, request);
 
             return new Response('Not Found', { status: 404, headers: SECURITY_HEADERS });
         } catch (error) {
@@ -11561,7 +11623,7 @@ async function demoteAdminHandler(request, env) {
 // DATABASE
 // ============================================================================
 const dbInitCache = new WeakMap();
-const SCHEMA_VERSION = 23;
+const SCHEMA_VERSION = 24;
 
 const MIGRATIONS = {
     2: [
@@ -11736,6 +11798,11 @@ const MIGRATIONS = {
         `ALTER TABLE commands ADD COLUMN inline_back_label TEXT DEFAULT ''`,
         `ALTER TABLE contact_pending_reply ADD COLUMN contact_msg_id INTEGER DEFAULT 0`,
     ],
+    24: [
+        `ALTER TABLE sessions ADD COLUMN last_msg_id INTEGER DEFAULT 0`,
+        `ALTER TABLE sessions ADD COLUMN last_chat_id INTEGER DEFAULT 0`,
+        `ALTER TABLE sessions ADD COLUMN last_msg_kind TEXT DEFAULT 'text'`,
+    ],
 };
 
 // ============================================================================
@@ -11797,6 +11864,9 @@ const DESIRED_SCHEMA = {
         token: { type: 'TEXT', primary: true },
         user_id: { type: 'INTEGER', unique: true },
         command: { type: 'TEXT' },
+        last_msg_id: { type: 'INTEGER', default: '0' },
+        last_chat_id: { type: 'INTEGER', default: '0' },
+        last_msg_kind: { type: 'TEXT', default: "'text'" },
         created_at: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' },
         updated_at: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' },
         csrf_token: { type: 'TEXT', default: "''" },
@@ -12362,6 +12432,9 @@ async function initializeDatabase(db) {
             `ALTER TABLE dm_messages ADD COLUMN read_at DATETIME`,
             `ALTER TABLE broadcast_history ADD COLUMN file_id TEXT DEFAULT ''`,
             `ALTER TABLE broadcast_history ADD COLUMN media_meta TEXT DEFAULT ''`,
+            `ALTER TABLE sessions ADD COLUMN last_msg_id INTEGER DEFAULT 0`,
+            `ALTER TABLE sessions ADD COLUMN last_chat_id INTEGER DEFAULT 0`,
+            `ALTER TABLE sessions ADD COLUMN last_msg_kind TEXT DEFAULT 'text'`,
             `ALTER TABLE sessions ADD COLUMN csrf_token TEXT DEFAULT ''`,
             `ALTER TABLE sessions ADD COLUMN password_version TEXT DEFAULT ''`,
             `ALTER TABLE featured_replies ADD COLUMN admin_only INTEGER DEFAULT 0`,
@@ -12754,56 +12827,6 @@ async function getVersionInfo(env, fresh) {
     return apiJson({ current, latest, released, notes, worker_url: workerUrl });
 }
 
-async function getBootstrap(env, request) {
-    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
-    try {
-        await initializeDatabase(env.DB);
-        const [settings, statsRow, logsRows, contactStats, version] = await Promise.all([
-            getSettings(env, new URL(request.url).origin).then(r => r.json()).catch(() => ({})),
-            env.DB.prepare(`
-                SELECT
-                    (SELECT COUNT(*) FROM commands) as cmds,
-                    (SELECT COUNT(*) FROM commands WHERE enabled = 1) as enabled_cmds,
-                    (SELECT COUNT(*) FROM users) as users,
-                    (SELECT COUNT(*) FROM users WHERE private_started = 1) as private_users,
-                    (SELECT COUNT(*) FROM users WHERE role = 'admin') as admins,
-                    (SELECT COUNT(*) FROM groups) as groups_total,
-                    (SELECT COUNT(*) FROM groups WHERE is_active = 1) as groups_active,
-                    (SELECT COUNT(*) FROM ai_messages) as ai_count,
-                    (SELECT COUNT(*) FROM ai_messages WHERE role = 'assistant' AND timestamp > datetime('now', '-1 day')) as ai_last_24h,
-                    (SELECT value FROM settings WHERE key = 'bot_token') as bot_token,
-                    (SELECT value FROM settings WHERE key = 'ai_enabled') as ai_enabled,
-                    (SELECT value FROM settings WHERE key = 'bot_username') as bot_username
-            `).first(),
-            env.DB.prepare('SELECT id, user_id, action, timestamp FROM logs ORDER BY id DESC LIMIT 5').all(),
-            env.DB.prepare(`
-                SELECT
-                    COUNT(*) FILTER (WHERE read_at IS NULL) as unread,
-                    COUNT(*) as total
-                FROM dm_messages WHERE source = 'featured' AND direction = 'in'
-            `).first(),
-            getVersionInfo(env, false).then(r => r.json()).catch(() => ({})),
-        ]);
-        return apiJson({
-            success: true,
-            settings,
-            stats: {
-                bot_linked: !!(statsRow && statsRow.bot_token),
-                bot_username: statsRow ? (statsRow.bot_username || '') : '',
-                commands_total: statsRow ? statsRow.cmds : 0, commands_enabled: statsRow ? statsRow.enabled_cmds : 0,
-                users_total: statsRow ? statsRow.users : 0, users_private: statsRow ? statsRow.private_users : 0,
-                admins_total: statsRow ? statsRow.admins : 0,
-                groups_total: statsRow ? statsRow.groups_total : 0, groups_active: statsRow ? statsRow.groups_active : 0,
-                ai_memory_count: statsRow ? statsRow.ai_count : 0, ai_replies_24h: statsRow ? statsRow.ai_last_24h : 0,
-                ai_enabled: !!(statsRow && (statsRow.ai_enabled === '1' || statsRow.ai_enabled === true)),
-            },
-            logs: logsRows.results || [],
-            contact: { unread: contactStats ? contactStats.unread : 0, total: contactStats ? contactStats.total : 0 },
-            version,
-        });
-    } catch (err) { return internalError(err); }
-}
-
 // ============================================================================
 // STATS
 // ============================================================================
@@ -13036,19 +13059,6 @@ async function markContactMessageRead(request, env) {
             "UPDATE dm_messages SET read_at = CURRENT_TIMESTAMP WHERE id = ? AND source = 'featured' AND direction = 'in' AND read_at IS NULL"
         ).bind(messageId).run();
         return apiJson({ success: true, messageId, marked: (r && r.meta && r.meta.changes) || 0 });
-    } catch (err) { return internalError(err); }
-}
-async function markContactUserRead(request, env) {
-    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
-    try {
-        const body = await request.json();
-        const userId = parseInt(body.userId);
-        if (!userId) return apiJson({ error: 'Invalid userId.' }, 400);
-        await initializeDatabase(env.DB);
-        const r = await env.DB.prepare(
-            "UPDATE dm_messages SET read_at = CURRENT_TIMESTAMP WHERE chat_id = ? AND source = 'featured' AND direction = 'in' AND read_at IS NULL"
-        ).bind(userId).run();
-        return apiJson({ success: true, userId, marked: (r && r.meta && r.meta.changes) || 0 });
     } catch (err) { return internalError(err); }
 }
 async function getContactStats(env) {
@@ -13447,7 +13457,10 @@ function kbNormalizeInline(raw) {
     if (obj.v === 2 && obj.inline) {
         rows = (Array.isArray(obj.inline) ? obj.inline : []).map(row =>
             (Array.isArray(row) ? row : [row]).map(b => {
-                const type = b.type === 'url' ? 'url' : (b.type === 'command' || String(b.value || '').startsWith('/') ? 'command' : 'callback');
+                const type = b.type === 'url' ? 'url'
+                    : b.type === 'alert' ? 'alert'
+                    : b.type === 'toast' ? 'toast'
+                    : (b.type === 'command' || String(b.value || '').startsWith('/') ? 'command' : 'callback');
                 return { text: String(b.text || ''), type, value: String(b.value || ''), style: b.style || '' };
             }).filter(b => b.text)
         ).filter(row => row.length);
@@ -13516,10 +13529,16 @@ async function decodeCallbackValue(db, data) {
     }
     return data;
 }
+function kbInlineCallbackValue(b) {
+    const val = String(b.value || '');
+    if (b.type === 'alert') return val.startsWith('ALERT:') ? val : ('ALERT:' + val);
+    if (b.type === 'toast') return val.startsWith('TOAST:') ? val : ('TOAST:' + val);
+    return val;
+}
 function kbInlineMarkup(rows) {
     if (!rows || !rows.length) return null;
     return { inline_keyboard: rows.map(row => row.map(b => {
-        const btn = b.type === 'url' ? { text: b.text, url: b.value } : { text: b.text, callback_data: b.value };
+        const btn = b.type === 'url' ? { text: b.text, url: b.value } : { text: b.text, callback_data: kbInlineCallbackValue(b) };
         if (b.style) btn.style = b.style;
         return btn;
     })) };
@@ -13532,7 +13551,7 @@ async function kbInlineMarkupSafe(db, rows) {
         for (const b of row) {
             const btn = b.type === 'url'
                 ? { text: b.text, url: b.value }
-                : { text: b.text, callback_data: await encodeCallbackValue(db, b.value) };
+                : { text: b.text, callback_data: await encodeCallbackValue(db, kbInlineCallbackValue(b)) };
             if (b.style) btn.style = b.style;
             outRow.push(btn);
         }
@@ -14115,6 +14134,8 @@ function parseButtonsCommandArgs(args) {
             let type = 'text';
             if (/^https?:\/\//i.test(value)) type = 'url';
             else if (value.startsWith('/')) type = 'command';
+            else if (/^alert:/i.test(value)) type = 'alert';
+            else if (/^toast:/i.test(value)) type = 'toast';
             result.buttons.push({ text: label, type, value, style: parsed.style || '' });
         }
         return result;
@@ -14137,6 +14158,8 @@ function parseButtonsCommandArgs(args) {
         let type = 'text';
         if (/^https?:\/\//i.test(value)) type = 'url';
         else if (value.startsWith('/')) type = 'command';
+        else if (/^alert:/i.test(value)) type = 'alert';
+        else if (/^toast:/i.test(value)) type = 'toast';
         result.buttons.push({ text: label, type, value, style: parsed.style || '' });
     }
     return result;
@@ -14169,6 +14192,12 @@ async function buildFeaturedInlineKeyboard(db, buttons, defaultStyle) {
             tgBtn = { text: b.text, url: b.value };
         } else if (b.type === 'command') {
             tgBtn = { text: b.text, callback_data: b.value };
+        } else if (b.type === 'alert') {
+            const cb = await encodeCallbackValue(db, 'ALERT:' + String(b.value).replace(/^alert:/i, '').trim());
+            tgBtn = { text: b.text, callback_data: cb };
+        } else if (b.type === 'toast') {
+            const cb = await encodeCallbackValue(db, 'TOAST:' + String(b.value).replace(/^toast:/i, '').trim());
+            tgBtn = { text: b.text, callback_data: cb };
         } else {
             const cb = await encodeTextCallback(db, b.value);
             tgBtn = { text: b.text, callback_data: cb };
@@ -16672,17 +16701,6 @@ async function clearMediaLibraryDb(env) {
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
 }
-async function renameMediaLibraryItem(request, env) {
-    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
-    try {
-        const body = await request.json();
-        const id = parseInt(body.id);
-        const label = String(body.label || '').slice(0, 120);
-        if (!id) return apiJson({ error: 'Invalid id.' }, 400);
-        await env.DB.prepare('UPDATE media_library SET label = ? WHERE id = ?').bind(label, id).run();
-        return apiJson({ success: true });
-    } catch (err) { return internalError(err); }
-}
 async function updateMediaLibraryItem(request, env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
@@ -17725,9 +17743,11 @@ function normalizeInlineBtn(item) {
     if (!type) {
         if (/^https?:\/\//i.test(value)) type = 'url';
         else if (value.startsWith('/')) type = 'command';
+        else if (value.startsWith('ALERT:')) type = 'alert';
+        else if (value.startsWith('TOAST:')) type = 'toast';
         else type = 'callback';
     }
-    if (type !== 'url' && type !== 'command' && type !== 'callback') type = 'callback';
+    if (!['url', 'command', 'callback', 'alert', 'toast'].includes(type)) type = 'callback';
     const rawStyle = String(item.style || '').trim();
     const style = ['primary', 'success', 'danger'].includes(rawStyle) ? rawStyle : '';
     if (type === 'command' && value.charAt(0) !== '/') return { text, type, value: '/' + value, style };
@@ -17977,7 +17997,7 @@ function getMcpToolDefinitions(categories) {
                 type: 'object',
                 description: 'Structured keyboard: inline buttons and/or reply keyboard.',
                 properties: {
-                    inline: { type: 'array', description: 'Inline buttons. Each: {text, type:"callback"|"url"|"command", value, style:"primary"|"success"|"danger"} — style is optional (blue/green/red); omit for the client default. May be flat (auto-wrapped 3/row) or array-of-arrays for exact rows.' },
+                    inline: { type: 'array', description: 'Inline buttons. Each: {text, type:"callback"|"url"|"command"|"alert"|"toast", value, style:"primary"|"success"|"danger"} — style is optional (blue/green/red); omit for the client default. May be flat (auto-wrapped 3/row) or array-of-arrays for exact rows.' },
                     reply: { type: 'object', description: 'Reply keyboard: { rows: [[{text, style},...]], actions: {"Label":"/cmd"}, resize, one_time, persistent, placeholder }. Set style on a reply button to color it ("primary"|"success"|"danger").' }
                 }
             },
@@ -19046,42 +19066,6 @@ async function runAgentLoop({ env, sessionKey, persistSession, providerSettings,
     return { finalMessage: '(Reached maximum iterations without a final answer.)', toolCalls: toolCallsLog, messages: finalMessages, iterations: iteration };
 }
 
-async function handleMcpDashboardChat(request, env) {
-    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
-    try {
-        await initializeDatabase(env.DB);
-        await getSystemLanguageFromDb(env);
-        const enabled = await getSetting(env.DB, 'mcp_enabled');
-        if (enabled !== '1') return apiJson({ error: 'MCP is disabled. Enable it in the MCP tab first.' }, 400);
-        const body = await request.json().catch(() => null);
-        if (!body || typeof body !== 'object') return apiJson({ error: 'Invalid request body.' }, 400);
-        const msg = body.message;
-        if (typeof msg !== 'string' || !msg.trim()) return apiJson({ error: 'Message must be a non-empty string.' }, 400);
-        if (msg.length > 4000) return apiJson({ error: 'Message is too long (max 4000 chars).' }, 400);
-
-        // Stable key — history must survive logout/login cycles.
-        const sessionKey = 'dash:admin';
-
-        const clientHistory = Array.isArray(body.history)
-            ? body.history
-                .filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
-                .slice(-20)
-                .map(m => ({ role: m.role, content: String(m.content).slice(0, 4000) }))
-            : [];
-
-        const result = await runMcpAgent(msg.trim(), env, { sessionKey, history: clientHistory, maxIterations: 6 });
-        return apiJson({
-            success: !result.rateLimited,
-            response: result.finalMessage,
-            toolCalls: result.toolCalls,
-            iterations: result.iterations,
-            rateLimited: !!result.rateLimited
-        });
-    } catch (err) {
-        return apiJson({ success: false, error: String(err.message || err) }, 500);
-    }
-}
-
 async function handleMcpAiTest(request, env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
@@ -20106,14 +20090,6 @@ async function sendMultiMediaMessage(token, chatId, items, caption, replyMarkup,
 
     return lastResp;
 }
-async function resolveFileDownloadUrl(token, fileId) {
-    if (!fileId) return '';
-    try {
-        const r = await tgFetchJson(`https://api.telegram.org/bot${token}/getFile?file_id=${encodeURIComponent(fileId)}`);
-        if (r && r.ok && r.result && r.result.file_path) return `/api/file/${encodeURIComponent(fileId)}`;
-    } catch (e) {}
-    return '';
-}
 function stripTagsForPreview(text) { return String(text || '').replace(/<[^>]*>/g, ''); }
 const TG_MESSAGE_LIMIT = 4096;
 function splitTelegramMessage(text, limit = TG_MESSAGE_LIMIT) {
@@ -20488,42 +20464,7 @@ async function processTelegramUpdate(update, env, ctx) {
                 last_group_id = COALESCE(excluded.last_group_id, users.last_group_id)
         `).bind(from.id, from.username || '', from.first_name || '', privateStarted, groupId).run();
     };
-    const extractMediaFromTgMsg = (m) => {
-        if (!m) return null;
-        if (m.animation) {
-            const a = m.animation;
-            return { mediaType: 'animation', fileId: a.file_id, fileName: a.file_name || 'animation.mp4', fileSize: a.file_size || 0, meta: { duration: a.duration, width: a.width, height: a.height, file_name: a.file_name, file_size: a.file_size || 0 } };
-        }
-        if (m.document) {
-            const d = m.document;
-            return { mediaType: 'document', fileId: d.file_id, fileName: d.file_name || 'document', fileSize: d.file_size || 0, meta: { file_name: d.file_name, mime_type: d.mime_type, file_size: d.file_size || 0 } };
-        }
-        if (m.video) {
-            const v = m.video;
-            return { mediaType: 'video', fileId: v.file_id, fileName: v.file_name || 'video.mp4', fileSize: v.file_size || 0, meta: { duration: v.duration, width: v.width, height: v.height, file_name: v.file_name, file_size: v.file_size || 0 } };
-        }
-        if (m.audio) {
-            const au = m.audio;
-            return { mediaType: 'audio', fileId: au.file_id, fileName: au.file_name || au.title || 'audio', fileSize: au.file_size || 0, meta: { duration: au.duration, performer: au.performer, title: au.title, file_name: au.file_name, file_size: au.file_size || 0 } };
-        }
-        if (m.voice) {
-            const vo = m.voice;
-            return { mediaType: 'voice', fileId: vo.file_id, fileName: 'voice.ogg', fileSize: vo.file_size || 0, meta: { duration: vo.duration, file_size: vo.file_size || 0 } };
-        }
-        if (m.video_note) {
-            const vn = m.video_note;
-            return { mediaType: 'video_note', fileId: vn.file_id, fileName: 'video_note.mp4', fileSize: vn.file_size || 0, meta: { duration: vn.duration, length: vn.length, file_size: vn.file_size || 0 } };
-        }
-        if (m.sticker) {
-            const st = m.sticker;
-            return { mediaType: 'sticker', fileId: st.file_id, fileName: 'sticker.webp', fileSize: st.file_size || 0, meta: { width: st.width, height: st.height, file_size: st.file_size || 0 } };
-        }
-        if (Array.isArray(m.photo) && m.photo.length) {
-            const p = m.photo[m.photo.length - 1];
-            return { mediaType: 'photo', fileId: p.file_id, fileName: 'photo.jpg', fileSize: p.file_size || 0, meta: { width: p.width, height: p.height, file_size: p.file_size || 0 } };
-        }
-        return null;
-    };
+    const extractMediaFromTgMsg = extractMediaFromTgMessage;
     const saveCapturedMedia = async (m, extracted) => {
         if (!extracted || !extracted.fileId) return false;
         const dup = await env.DB.prepare('SELECT id FROM media_library WHERE file_id = ? LIMIT 1').bind(extracted.fileId).first();
@@ -20966,7 +20907,10 @@ async function processTelegramUpdate(update, env, ctx) {
 
                 // Execute the resolved command (regular command, reply-keyboard shortcut, or "back").
                 if (resolvedCommand && resolvedCommand.record) {
-                    await executeCommand(chatId, userId, resolvedCommand.record, BOT_TOKEN, env, msg.chat.type, resolvedCommand.args);
+                    await executeCommand(chatId, userId, resolvedCommand.record, BOT_TOKEN, env, msg.chat.type, resolvedCommand.args, {
+                        fromMessage: true,
+                        userMessageId: msg.message_id
+                    });
                     return;
                 }
                 if (bareSlashCmd === '/start') {
@@ -21086,6 +21030,23 @@ async function processTelegramUpdate(update, env, ctx) {
             }
             if (cb.from && !await checkPermissionForChat(env, cb.from.id, 'callback_queries', chatId, cb.message.chat.type)) {
                 await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
+                return;
+            }
+            if (data && (data.startsWith('ALERT:') || data.startsWith('TOAST:'))) {
+                const isAlert = data.startsWith('ALERT:');
+                const rawPopup = data.slice(6);
+                const formatted = replacePlaceholders(rawPopup, {
+                    user_first_name: (cb.from && cb.from.first_name) || 'User',
+                    user_username: (cb.from && cb.from.username) || '',
+                    chat_id: String(chatId),
+                    title: (cb.message && cb.message.chat && cb.message.chat.title) || '',
+                }).trim();
+                const text = (formatted || ' ').slice(0, 200);
+                await tgCall(BOT_TOKEN, 'answerCallbackQuery', {
+                    callback_query_id: cb.id,
+                    text,
+                    show_alert: isAlert
+                });
                 return;
             }
             if (data && (data.startsWith('PROXY:') || data.startsWith('PROXY_MSG:'))) {
@@ -21392,6 +21353,20 @@ function detectMessageMediaKind(msg) {
 }
 const EDITABLE_MEDIA_KINDS = new Set(['photo', 'video', 'animation', 'audio', 'document']);
 
+function extractFirstMessageId(resp) {
+    if (!resp || !resp.ok || !resp.result) return 0;
+    if (Array.isArray(resp.result)) return (resp.result[0] && resp.result[0].message_id) || 0;
+    return resp.result.message_id || 0;
+}
+async function saveLastBotMessage(db, userId, chatId, msgId, kind) {
+    if (!db || !userId || !msgId) return;
+    try {
+        await db.prepare(
+            'UPDATE sessions SET last_msg_id = ?, last_chat_id = ?, last_msg_kind = ? WHERE user_id = ?'
+        ).bind(msgId, chatId, kind || 'text', userId).run();
+    } catch (e) {}
+}
+
 async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatType, args, opts) {
     opts = opts || {};
     const strings = botStrings();
@@ -21468,6 +21443,16 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatTyp
         } catch (e) {}
     }
 
+    // Read previous bot message reference before updating session, for cross inline/reply editing
+    let prevBotMsg = null;
+    if (cmdRecord.edit_message && !(opts && opts.message)) {
+        try {
+            prevBotMsg = await env.DB.prepare(
+                "SELECT last_msg_id, last_chat_id, last_msg_kind FROM sessions WHERE user_id = ? AND token LIKE 'bot-%'"
+            ).bind(userId).first();
+        } catch (e) {}
+    }
+
     await env.DB.prepare(`
         INSERT INTO sessions (token, user_id, command, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)
         ON CONFLICT(user_id) DO UPDATE SET token = excluded.token, command = excluded.command, updated_at = CURRENT_TIMESTAMP
@@ -21518,10 +21503,16 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatTyp
     const markup = inlineMarkup || secondaryMarkup || undefined;
     const protect = !!cmdRecord.protect_content;
 
-    const sendSecondaryCleanup = async () => {
-        if (inlineMarkup && removeReplyMarkup) {
+    const targetKind = mediaItems.length > 1 ? 'album' : (mediaItems.length === 1 ? mediaItems[0].media_type : 'text');
+
+    const sendSecondaryCleanup = async (editedInPlace) => {
+        const shouldSendReply = editedInPlace
+            ? !!(removeReplyMarkup || replyKeyboardMarkup)
+            : !!(inlineMarkup && (removeReplyMarkup || replyKeyboardMarkup));
+        if (!shouldSendReply) return;
+        if (removeReplyMarkup) {
             await sendReplyKeyboardMessage(BOT_TOKEN, chatId, removeReplyMarkup);
-        } else if (inlineMarkup && replyKeyboardMarkup) {
+        } else if (replyKeyboardMarkup) {
             await sendReplyKeyboardMessage(BOT_TOKEN, chatId, replyKeyboardMarkup, {
                 protect_content: protect,
                 text: (replySpec && replySpec.prompt) || '•',
@@ -21530,17 +21521,24 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatTyp
         }
     };
 
-    // Edit-in-place mode when triggered from an inline button (callback_query)
+    // Edit-in-place mode: supports inline callbacks AND cross-mode reply keyboard / command triggers
     const sourceMsg = opts && opts.message ? opts.message : null;
-    if (cmdRecord.edit_message && sourceMsg && sourceMsg.message_id) {
-        const sourceKind = detectMessageMediaKind(sourceMsg);
+    const editTargetId = sourceMsg && sourceMsg.message_id
+        ? sourceMsg.message_id
+        : (prevBotMsg && Number(prevBotMsg.last_chat_id) === Number(chatId) && prevBotMsg.last_msg_id ? prevBotMsg.last_msg_id : 0);
+    const sourceKind = sourceMsg
+        ? detectMessageMediaKind(sourceMsg)
+        : (prevBotMsg ? (prevBotMsg.last_msg_kind || 'text') : 'text');
+    const sourceIsAlbum = sourceMsg ? !!sourceMsg.media_group_id : (sourceKind === 'album');
+
+    if (cmdRecord.edit_message && editTargetId) {
         const editMarkup = inlineMarkup || { inline_keyboard: [] };
         let editedOk = false;
 
-        if (mediaItems.length === 0 && sourceKind === 'text' && finalContent.length <= 4096) {
+        if (mediaItems.length === 0 && sourceKind === 'text' && !sourceIsAlbum && finalContent.length <= 4096) {
             const payload = {
                 chat_id: chatId,
-                message_id: sourceMsg.message_id,
+                message_id: editTargetId,
                 text: finalContent || '\u2800',
                 parse_mode: 'HTML',
                 reply_markup: editMarkup
@@ -21557,7 +21555,7 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatTyp
             }
         } else if (
             mediaItems.length === 1 &&
-            !sourceMsg.media_group_id &&
+            !sourceIsAlbum &&
             EDITABLE_MEDIA_KINDS.has(sourceKind) &&
             EDITABLE_MEDIA_KINDS.has(mediaItems[0].media_type) &&
             finalContent.length <= 1024
@@ -21573,7 +21571,7 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatTyp
             }
             const payload = {
                 chat_id: chatId,
-                message_id: sourceMsg.message_id,
+                message_id: editTargetId,
                 media: mediaObj,
                 reply_markup: editMarkup
             };
@@ -21589,7 +21587,11 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatTyp
         }
 
         if (editedOk) {
-            await sendSecondaryCleanup();
+            await saveLastBotMessage(env.DB, userId, chatId, editTargetId, targetKind);
+            await sendSecondaryCleanup(true);
+            if (opts && opts.fromMessage && opts.userMessageId) {
+                await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: opts.userMessageId }, { retry: false });
+            }
             return;
         }
         // Incompatible types (e.g. text <-> photo, album, >4096 chars, or uneditable >48h):
@@ -21603,15 +21605,22 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatTyp
             if ((!sentRes || !sentRes.ok) && finalContent) {
                 const extra = Object.assign({}, markup ? { reply_markup: markup } : {}, protect ? { protect_content: true } : {});
                 sentRes = await sendRichText(BOT_TOKEN, chatId, finalContent, extra);
+            } else if (!sentRes && !finalContent && markup) {
+                sentRes = await tgCall(BOT_TOKEN, 'sendMessage', Object.assign({ chat_id: chatId, text: '\u2800', reply_markup: markup }, protect ? { protect_content: true } : {}));
             }
         } else {
             const extra = Object.assign({}, markup ? { reply_markup: markup } : {}, protect ? { protect_content: true } : {});
             if (finalContent) sentRes = await sendRichText(BOT_TOKEN, chatId, finalContent, extra);
             else if (extra.reply_markup) sentRes = await tgCall(BOT_TOKEN, 'sendMessage', Object.assign({ chat_id: chatId, text: '\u2800', reply_markup: extra.reply_markup }, protect ? { protect_content: true } : {}));
         }
-        await sendSecondaryCleanup();
-        if (sentRes && sentRes.ok) {
-            await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: sourceMsg.message_id }, { retry: false });
+        await sendSecondaryCleanup(false);
+        const newSentId = extractFirstMessageId(sentRes);
+        if (newSentId) {
+            await saveLastBotMessage(env.DB, userId, chatId, newSentId, targetKind);
+            await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: editTargetId }, { retry: false });
+            if (opts && opts.fromMessage && opts.userMessageId) {
+                await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: opts.userMessageId }, { retry: false });
+            }
         }
         return;
     }
@@ -21620,24 +21629,29 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatTyp
         await resetReplyKeyboardSilently(BOT_TOKEN, chatId);
     }
 
+    let mainRes = null;
     if (mediaItems.length > 0) {
-        const res = await sendMultiMediaMessage(BOT_TOKEN, chatId, mediaItems, finalContent, markup, { protect_content: protect });
-        if ((!res || !res.ok) && finalContent) {
+        mainRes = await sendMultiMediaMessage(BOT_TOKEN, chatId, mediaItems, finalContent, markup, { protect_content: protect });
+        if ((!mainRes || !mainRes.ok) && finalContent) {
             const extra = Object.assign({}, markup ? { reply_markup: markup } : {}, protect ? { protect_content: true } : {});
-            await sendRichText(BOT_TOKEN, chatId, finalContent, extra);
-        } else if (!res && !finalContent && markup) {
-            await tgCall(BOT_TOKEN, 'sendMessage', Object.assign({ chat_id: chatId, text: '\u2800', reply_markup: markup }, protect ? { protect_content: true } : {}));
+            mainRes = await sendRichText(BOT_TOKEN, chatId, finalContent, extra);
+        } else if (!mainRes && !finalContent && markup) {
+            mainRes = await tgCall(BOT_TOKEN, 'sendMessage', Object.assign({ chat_id: chatId, text: '\u2800', reply_markup: markup }, protect ? { protect_content: true } : {}));
         }
-        await sendSecondaryCleanup();
+        const sentId = extractFirstMessageId(mainRes);
+        if (sentId) await saveLastBotMessage(env.DB, userId, chatId, sentId, targetKind);
+        await sendSecondaryCleanup(false);
         return;
     }
 
     const extra = {};
     if (markup) extra.reply_markup = markup;
     if (protect) extra.protect_content = true;
-    if (finalContent) await sendRichText(BOT_TOKEN, chatId, finalContent, extra);
-    else if (extra.reply_markup) await tgCall(BOT_TOKEN, 'sendMessage', Object.assign({ chat_id: chatId, text: '\u2800', reply_markup: extra.reply_markup }, protect ? { protect_content: true } : {}));
-    await sendSecondaryCleanup();
+    if (finalContent) mainRes = await sendRichText(BOT_TOKEN, chatId, finalContent, extra);
+    else if (extra.reply_markup) mainRes = await tgCall(BOT_TOKEN, 'sendMessage', Object.assign({ chat_id: chatId, text: '\u2800', reply_markup: extra.reply_markup }, protect ? { protect_content: true } : {}));
+    const sentId = extractFirstMessageId(mainRes);
+    if (sentId) await saveLastBotMessage(env.DB, userId, chatId, sentId, targetKind);
+    await sendSecondaryCleanup(false);
 }
 async function getAiHistory(db, chatId, limit) {
     if (!limit || limit <= 0) return [];

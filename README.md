@@ -42,7 +42,8 @@
   <li>Nested commands with folders and breadcrumbs</li>
   <li><b>Session-scoped nested navigation</b> — reply keyboard buttons and Back actions resolve against the user's active command chain, so multilingual folders (<code>/en</code> vs <code>/fa</code>) no longer cross-talk</li>
   <li><b>Multi-argument commands</b> — <code>/start</code>, <code>/start fa</code> and <code>/start fa game</code> can coexist; Nyxx resolves the longest match and passes trailing text into <code>{{args}}</code> / <code>{{arg1}}</code></li>
-  <li><b>Edit current message</b> — per-command toggle to edit messages in place when opened from inline buttons, with automatic fallback when media types change</li>
+  <li><b>Edit current message</b> — per-command toggle to edit the bot's message in place from inline buttons, reply keyboard buttons, or commands (with cross inline/reply keyboard support and automatic fallback when media types change)</li>
+  <li><b>Custom Popup alert &amp; Toast buttons</b> — inline buttons can open native Telegram centered popup alerts or top toast banners with custom text and placeholders</li>
   <li>Custom auto-back controls — separate toggles and custom back-button labels for both reply keyboards and inline keyboards</li>
   <li><b>Proxy sharing &amp; testing</b> — share MTProto/SOCKS5 buttons and test live ping, IP, location, ISP, and TLS secret details with <code>PROXY:</code> / <code>PROXY_MSG:</code> callbacks or <code>{{proxy_info:...}}</code></li>
   <li>Nine reply types: text, photo, video, animation, voice, audio, document, round video, sticker</li>
@@ -170,6 +171,7 @@ database_id = "&lt;your-d1-database-id&gt;"
 <p><b>Upgrading from a version before 4.9.4?</b> The <b>Connect Cloudflare</b> button in the dashboard stops working until the worker is updated, because the OAuth relay no longer uses a shared secret. Update once through the installer (OAuth or API token); everything else keeps working in the meantime.</p>
 <p><b>Upgrading to 4.9.6?</b> The schema moves to version <b>22</b> (adds the <code>channels</code> table plus <code>media_items_json</code>, <code>protect_content</code>, <code>auto_back</code> and <code>back_label</code> columns through non-destructive migrations). If you self-host <code>proxy.js</code>, redeploy it and make sure your Cloudflare OAuth client allows the <b>refresh token</b> grant so automatic token refresh works.</p>
 <p><b>Upgrading to 4.9.7?</b> The schema moves to version <b>23</b> (adds <code>edit_message</code>, <code>inline_auto_back</code>, <code>inline_back_label</code> on <code>commands</code> and <code>contact_msg_id</code> on <code>contact_pending_reply</code> via non-destructive migrations).</p>
+<p><b>Upgrading to 4.9.8?</b> The schema moves to version <b>24</b> (adds <code>last_msg_id</code>, <code>last_chat_id</code>, <code>last_msg_kind</code> on <code>sessions</code> for cross inline/reply message editing).</p>
 </blockquote>
 
 <p>If the dashboard ever shows <b>"Database schema is out of date"</b> after an update, open <b>Settings → Schema health → Run auto-heal</b> — it fixes missing tables, columns, indexes and settings without touching live data.</p>

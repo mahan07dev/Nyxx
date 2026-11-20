@@ -1,7 +1,7 @@
 {
-  "version": "4.9.7",
+  "version": "4.9.8",
   "released": "2026-11-20",
-  "notes": "✨ Inline message editing, inline auto-back, proxy share & live test, storage reindexing, per-message contact seen, Top Bar dropdowns & bulk progress modals",
+  "notes": "✨ Cross inline/reply keyboard message editing, custom Popup alert & Toast inline buttons, and dynamic viewport-aware dropdowns",
   "worker_url": "https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/worker.js",
   "worker_urls": [""]
 }

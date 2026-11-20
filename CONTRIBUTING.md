@@ -94,7 +94,9 @@ Manual testing is the current standard. When testing your changes, verify:
 - **Keyboard builders** — row/layout controls (Add row, move left/right/up/down) and per-button colours persist and render in both themes
 - **Searchable command combobox** — filters large command lists live and allows typing custom commands / argument variants
 - **Navigation style presets** — switching between visual styles and structures works and persists, and Top Bar dropdowns render cleanly without overlapping tab headers
-- **Inline edit & auto-back** — commands with `edit_message` edit in place on inline callback taps (with graceful fallback on incompatible media), and inline auto-back appends a working parent Back button
+- **Inline edit & auto-back** — commands with `edit_message` edit in place across both inline callbacks and reply keyboard buttons (with graceful fallback on incompatible media), and inline auto-back appends a working parent Back button
+- **Custom popup alert & toast buttons** — `Popup alert` (`ALERT:`) and `Toast` (`TOAST:`) inline buttons display native Telegram dialogs/banners with placeholders replaced
+- **Dynamic floating menus** — action dropdowns, command comboboxes, and Top Bar menus flip/clamp cleanly within the viewport on both mobile and desktop
 - **Proxy sharing & testing** — `PROXY:` / `PROXY_MSG:` callbacks resolve DNS, test latency, and display proxy details cleanly
 - **Storage reindexing & bulk modals** — `Reindex storage` probes and scans messages in chunks, and bulk actions across Users, Media Library, and Broadcast display live progress and cancel cleanly
 - **Per-message Contact tracking** — Inbox "Mark read" and admin DM notification buttons (Reply / Dismiss / Mark as seen) mark only the targeted message as read and update the topbar Inbox pill
