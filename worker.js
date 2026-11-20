@@ -21220,7 +21220,7 @@ self.addEventListener('install', function(event) {
     event.waitUntil(
         caches.open(CACHE).then(function(cache) {
             return fetch('/', { cache: 'reload' }).then(function(res) {
-                if (res && res.ok) return cache.put('/', res.clone());
+                if (res && res.ok) return cache.put('/', res.clone()).catch(function() {});
             }).catch(function() {});
         })
     );
@@ -21257,7 +21257,7 @@ self.addEventListener('fetch', function(event) {
             event.respondWith(
                 caches.open(API_CACHE).then(function(cache) {
                     return fetch(req).then(function(res) {
-                        if (res && res.ok) cache.put(req, res.clone());
+                        if (res && res.ok) cache.put(req, res.clone()).catch(function() {});
                         else if (res && res.status === 401) caches.delete(API_CACHE);
                         return res;
                     }).catch(function() {
@@ -21279,7 +21279,7 @@ self.addEventListener('fetch', function(event) {
                     return cache.match(req).then(function(cached) {
                         if (cached) return cached;
                         return fetch(req).then(function(res) {
-                            if (res && res.ok) cache.put(req, res.clone());
+                            if (res && res.ok) cache.put(req, res.clone()).catch(function() {});
                             return res;
                         });
                     });
@@ -21294,7 +21294,7 @@ self.addEventListener('fetch', function(event) {
                 caches.open(CACHE).then(function(cache) {
                     return cache.match('/').then(function(cached) {
                         const networkFetch = fetch('/', { cache: 'no-store' }).then(function(res) {
-                            if (res && res.ok) cache.put('/', res.clone());
+                            if (res && res.ok) cache.put('/', res.clone()).catch(function() {});
                             return res;
                         }).catch(function() { return cached; });
                         return cached || networkFetch;
@@ -21311,7 +21311,7 @@ self.addEventListener('fetch', function(event) {
             caches.open(CACHE).then(function(cache) {
                 return cache.match(req).then(function(cached) {
                     const networkFetch = fetch(req).then(function(res) {
-                        if (res && (res.ok || res.type === 'opaque')) cache.put(req, res.clone());
+                        if (res && (res.ok || res.type === 'opaque')) cache.put(req, res.clone()).catch(function() {});
                         return res;
                     }).catch(function() { return cached; });
                     return cached || networkFetch;
