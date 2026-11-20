@@ -2038,7 +2038,7 @@ details.help.danger > summary { color: var(--red); }
                     <div class="grid grid-2">
                         <div class="field">
                             <label class="field-label">Regular commands</label>
-                            <div class="segmented" id="gm-commands-perm segmented_mobile">
+                            <div class="segmented segmented_mobile" id="gm-commands-perm">
                                 <button data-v="inherit" onclick="setSeg('gm-commands-perm','inherit')">Inherit</button>
                                 <button data-v="everyone" onclick="setSeg('gm-commands-perm','everyone')">Everyone</button>
                                 <button data-v="moderator" onclick="setSeg('gm-commands-perm','moderator')">Mod+</button>
@@ -2048,7 +2048,7 @@ details.help.danger > summary { color: var(--red); }
                         </div>
                         <div class="field">
                             <label class="field-label">Featured commands</label>
-                            <div class="segmented" id="gm-featured-perm segmented_mobile">
+                            <div class="segmented segmented_mobile" id="gm-featured-perm">
                                 <button data-v="inherit" onclick="setSeg('gm-featured-perm','inherit')">Inherit</button>
                                 <button data-v="everyone" onclick="setSeg('gm-featured-perm','everyone')">Everyone</button>
                                 <button data-v="moderator" onclick="setSeg('gm-featured-perm','moderator')">Mod+</button>
@@ -2058,7 +2058,7 @@ details.help.danger > summary { color: var(--red); }
                         </div>
                         <div class="field">
                             <label class="field-label">AI replies</label>
-                            <div class="segmented" id="gm-ai-perm segmented_mobile">
+                            <div class="segmented segmented_mobile" id="gm-ai-perm">
                                 <button data-v="inherit" onclick="setSeg('gm-ai-perm','inherit')">Inherit</button>
                                 <button data-v="everyone" onclick="setSeg('gm-ai-perm','everyone')">Everyone</button>
                                 <button data-v="moderator" onclick="setSeg('gm-ai-perm','moderator')">Mod+</button>
@@ -2068,7 +2068,7 @@ details.help.danger > summary { color: var(--red); }
                         </div>
                         <div class="field">
                             <label class="field-label">Inline button taps</label>
-                            <div class="segmented" id="gm-callback-perm segmented_mobile">
+                            <div class="segmented segmented_mobile" id="gm-callback-perm">
                                 <button data-v="inherit" onclick="setSeg('gm-callback-perm','inherit')">Inherit</button>
                                 <button data-v="everyone" onclick="setSeg('gm-callback-perm','everyone')">Everyone</button>
                                 <button data-v="moderator" onclick="setSeg('gm-callback-perm','moderator')">Mod+</button>
@@ -2078,7 +2078,7 @@ details.help.danger > summary { color: var(--red); }
                         </div>
                         <div class="field">
                             <label class="field-label">/mcp command</label>
-                            <div class="segmented" id="gm-mcp-perm segmented_mobile">
+                            <div class="segmented segmented_mobile" id="gm-mcp-perm">
                                 <button data-v="inherit" onclick="setSeg('gm-mcp-perm','inherit')">Inherit</button>
                                 <button data-v="everyone" onclick="setSeg('gm-mcp-perm','everyone')">Everyone</button>
                                 <button data-v="moderator" onclick="setSeg('gm-mcp-perm','moderator')">Mod+</button>
@@ -2088,7 +2088,7 @@ details.help.danger > summary { color: var(--red); }
                         </div>
                         <div class="field">
                             <label class="field-label">/rules command</label>
-                            <div class="segmented" id="gm-rules-perm segmented_mobile">
+                            <div class="segmented segmented_mobile" id="gm-rules-perm">
                                 <button data-v="inherit" onclick="setSeg('gm-rules-perm','inherit')">Inherit</button>
                                 <button data-v="everyone" onclick="setSeg('gm-rules-perm','everyone')">Everyone</button>
                                 <button data-v="moderator" onclick="setSeg('gm-rules-perm','moderator')">Mod+</button>
@@ -16056,7 +16056,9 @@ function normalizeGroupSettings(raw) {
     if (!['admins', 'admins_moderators'].includes(out.link_filter_level)) out.link_filter_level = 'admins';
     if (!['admins', 'admins_moderators'].includes(out.anti_forward_level)) out.anti_forward_level = 'admins';
     if (!['admins', 'admins_moderators'].includes(out.blacklist_level)) out.blacklist_level = 'admins';
-    if (!['inherit', 'everyone', 'moderator', 'admin'].includes(out.rules_command_permission)) out.rules_command_permission = 'inherit';
+    for (const k of ['commands', 'featured_commands', 'ai_chat', 'callback_queries', 'mcp_telegram', 'rules_command']) {
+        if (!['inherit', 'everyone', 'moderator', 'admin'].includes(out[k + '_permission'])) out[k + '_permission'] = 'inherit';
+    }
     out.welcome_enabled = !!out.welcome_enabled;
     out.anti_flood = !!out.anti_flood;
     out.link_filter = !!out.link_filter;
