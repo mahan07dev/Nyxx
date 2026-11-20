@@ -1,7 +1,7 @@
 {
-  "version": "4.9.6",
-  "released": "2026-11-18",
-  "notes": "✨ Multi-media attachments, full keyboard row/color builders, command arguments matching (/cmd args), content protection & creator tools",
+  "version": "4.9.7",
+  "released": "2026-11-20",
+  "notes": "✨ Inline message editing, inline auto-back, proxy share & live test, storage reindexing, per-message contact seen, Top Bar dropdowns & bulk progress modals",
   "worker_url": "https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/worker.js",
   "worker_urls": [""]
 }

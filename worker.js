@@ -1,8 +1,8 @@
 // ============================================================================
-// NYXX — v4.9.6
+// NYXX — v4.9.7
 // Telegram bot builder + management dashboard for Cloudflare Workers + D1.
 // ============================================================================
-const VERSION = '4.9.6';
+const VERSION = '4.9.7';
 
 const RELAY_BASE = 'https://nyxx-proxy.nova-06272b19.workers.dev';
 // Forks: set the RELAY_BASE variable (or edit the line above) to point at your own relay.
@@ -1158,39 +1158,97 @@ body { overflow-x: hidden; }
 .app.nav-struct-flat .nav-subgroup .nav-item { padding-left: var(--s3); font-size: var(--fs-subhead); min-height: 42px; }
 .app.nav-struct-flat .nav-group { margin-bottom: 2px; }
 
+/* ===== Collapsible warning / danger help boxes ===== */
+details.help.warn { background: var(--orange-soft); border-left: 3px solid var(--orange); }
+details.help.warn > summary { color: var(--orange); }
+details.help.danger { background: var(--red-soft); border-left: 3px solid var(--red); }
+details.help.danger > summary { color: var(--red); }
+
 /* ===== Navigation Structure: Top Bar (Desktop) ===== */
 @media (min-width: 901px) {
     .app.nav-struct-topbar { flex-direction: column; }
     .app.nav-struct-topbar .main { margin-left: 0 !important; width: 100%; }
     .app.nav-struct-topbar .sidebar {
         position: sticky; top: 0; left: auto; bottom: auto; right: auto;
-        width: 100%; height: auto; flex-direction: row; align-items: center;
-        flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden;
+        width: 100%; height: 60px; flex-direction: row; align-items: center;
+        flex-wrap: nowrap; overflow: visible !important;
         border-right: none; border-bottom: 1px solid var(--hairline);
-        padding: 8px var(--s6); gap: 6px; transform: none !important;
-        z-index: 45; scrollbar-width: none;
+        padding: 0 var(--s6); gap: 4px; transform: none !important;
+        z-index: 70; background: var(--glass);
+        backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px);
     }
-    .app.nav-struct-topbar .sidebar::-webkit-scrollbar { display: none; }
-    .app.nav-struct-topbar .sidebar .brand,
+    .app.nav-struct-topbar .sidebar .brand {
+        padding: 0 14px 0 0; margin-right: 6px;
+        border-right: 1px solid var(--hairline);
+        flex-shrink: 0; gap: 10px;
+    }
+    .app.nav-struct-topbar .sidebar .brand img { width: 30px; height: 30px; border-radius: 8px; }
+    .app.nav-struct-topbar .sidebar .brand-name { font-size: 16px; }
+    .app.nav-struct-topbar .sidebar .brand-ver { display: none; }
     .app.nav-struct-topbar .sidebar .nav-search,
-    .app.nav-struct-topbar .sidebar .nav-label,
     .app.nav-struct-topbar .sidebar .nav-spacer,
     .app.nav-struct-topbar .sidebar #nav-no-results { display: none !important; }
-    .app.nav-struct-topbar .sidebar .nav-group { flex-direction: row; align-items: center; gap: 4px; margin-bottom: 0; flex-shrink: 0; }
-    .app.nav-struct-topbar .sidebar .nav-group.collapsed .nav-items { display: flex !important; }
-    .app.nav-struct-topbar .sidebar .nav-items { flex-direction: row; align-items: center; gap: 4px; }
-    .app.nav-struct-topbar .sidebar .nav-subgroup { border-left: none; margin: 0; display: flex; flex-direction: row; gap: 4px; }
-    .app.nav-struct-topbar .sidebar .nav-item {
-        width: auto; min-height: 34px; padding: 6px 12px; white-space: nowrap;
-        font-size: 13px; gap: 7px; flex-shrink: 0;
+    .app.nav-struct-topbar .sidebar .nav-group {
+        position: relative; margin-bottom: 0; flex-shrink: 0;
+        flex-direction: row; align-items: center;
     }
-    .app.nav-struct-topbar .sidebar .nav-item.active::before {
-        left: 10px; right: 10px; top: auto; bottom: 0; width: auto; height: 2.5px;
+    .app.nav-struct-topbar .sidebar .nav-primary .nav-item {
+        width: auto; min-height: 36px; padding: 7px 12px;
+        font-size: 13px; border-radius: var(--r-sm); gap: 7px;
     }
+    .app.nav-struct-topbar .sidebar .nav-primary .nav-item.active::before { display: none; }
+    .app.nav-struct-topbar .sidebar .nav-group[data-group] > .nav-label {
+        width: auto; min-height: 36px; padding: 7px 12px;
+        font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: normal;
+        color: var(--text-2); gap: 6px; border-radius: var(--r-sm); white-space: nowrap;
+    }
+    .app.nav-struct-topbar .sidebar .nav-group[data-group] > .nav-label:hover {
+        background: var(--fill-1); color: var(--text);
+    }
+    .app.nav-struct-topbar .sidebar .nav-group[data-group].has-active > .nav-label {
+        background: var(--accent-soft); color: var(--accent);
+    }
+    .app.nav-struct-topbar .sidebar .nav-group[data-group] > .nav-label .nav-chev {
+        transform: none !important; opacity: 0.65; transition: transform 0.18s ease;
+    }
+    .app.nav-struct-topbar .sidebar .nav-group[data-group].tb-open > .nav-label .nav-chev {
+        transform: rotate(180deg) !important;
+    }
+    .app.nav-struct-topbar .sidebar .nav-group[data-group] > .nav-items {
+        display: none !important;
+        position: absolute; top: calc(100% + 8px); left: 0;
+        min-width: 220px; padding: 6px;
+        background: var(--bg-elev); border: 1px solid var(--hairline);
+        border-radius: var(--r-md); box-shadow: var(--shadow-lg);
+        flex-direction: column; gap: 2px; z-index: 95;
+    }
+    .app.nav-struct-topbar .sidebar .nav-group[data-group].tb-open > .nav-items {
+        display: flex !important;
+        animation: fade 0.15s ease;
+    }
+    .app.nav-struct-topbar .sidebar .nav-group[data-group="system"] > .nav-items {
+        left: auto; right: 0;
+    }
+    .app.nav-struct-topbar .sidebar .nav-group[data-group] .nav-item {
+        width: 100%; min-height: 38px; padding: 8px 12px;
+        font-size: 13px; border-radius: var(--r-sm); white-space: nowrap;
+    }
+    .app.nav-struct-topbar .sidebar .nav-group[data-group] .nav-item.active::before { display: none; }
     .app.nav-struct-topbar .sidebar .nav-foot {
-        border-top: none; padding-top: 0; margin-left: auto; flex-direction: row; flex-shrink: 0; padding-left: 12px; border-left: 1px solid var(--hairline);
+        border-top: none; padding-top: 0; margin-left: auto;
+        flex-direction: row; flex-shrink: 0; padding-left: 12px;
+        border-left: 1px solid var(--hairline);
     }
     .app.nav-struct-topbar .sidebar .nav-foot .icon-btn { width: 34px; height: 34px; flex: 0 0 auto; }
+    /* Keep .topbar as a clean non-sticky status strip so it never collides with sticky topbar nav or page headers */
+    .app.nav-struct-topbar .topbar {
+        position: static; background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none;
+        border-bottom: none; min-height: 0;
+        padding: var(--s4) var(--s6) 0;
+        max-width: 1120px; width: 100%; margin: 0 auto;
+    }
+    .app.nav-struct-topbar .topbar .topbar-title { display: none; }
+    .app.nav-struct-topbar .content { padding-top: var(--s3); }
 }
 
 /* ===== Nav Preset Cards in Settings ===== */
@@ -1266,13 +1324,8 @@ body { overflow-x: hidden; }
                 <button class="nav-item" data-page="commands" data-label="commands cmd terminal bot replies" onclick="go('commands')"><i class="fa-solid fa-terminal"></i><span>Commands</span></button>
                 <button class="nav-item" data-page="menu" data-label="menu featured commands telegram" onclick="go('menu')"><i class="fa-solid fa-list"></i><span>Menu &amp; Featured</span></button>
                 <button class="nav-item" data-page="broadcast" data-label="broadcast send message users announce" onclick="go('broadcast')"><i class="fa-solid fa-bullhorn"></i><span>Broadcast</span></button>
-                <div class="nav-group nav-subgroup" data-group="contact-sub">
-                    <button class="nav-label nav-sublabel" type="button" onclick="toggleNavGroup(this)"><span>Contact</span><i class="fa-solid fa-chevron-down nav-chev"></i></button>
-                    <div class="nav-items">
-                        <button class="nav-item" data-page="contact" data-label="contact settings notifications auto-reply away mode rate limit" onclick="go('contact')"><i class="fa-solid fa-envelope"></i><span>Contact</span></button>
-                        <button class="nav-item" data-page="inbox" data-label="inbox messages replies unread contact" onclick="go('inbox')"><i class="fa-solid fa-inbox"></i><span>Inbox</span><span class="nav-badge" id="contact-nav-badge" style="display:none;"></span></button>
-                    </div>
-                </div>
+                <button class="nav-item" data-page="contact" data-label="contact settings notifications auto-reply away mode rate limit" onclick="go('contact')"><i class="fa-solid fa-envelope"></i><span>Contact</span></button>
+                <button class="nav-item" data-page="inbox" data-label="inbox messages replies unread contact" onclick="go('inbox')"><i class="fa-solid fa-inbox"></i><span>Inbox</span><span class="nav-badge" id="contact-nav-badge" style="display:none;"></span></button>
             </div>
         </nav>
 
@@ -1335,6 +1388,7 @@ body { overflow-x: hidden; }
             <div class="topbar-title" id="page-title">Overview</div>
             <div class="topbar-spacer"></div>
             <div class="status-pills" id="status-pills">
+                <span class="pill clickable warn hidden" id="pill-contact" onclick="go('inbox')" title="Unread contact messages — tap to open Inbox"><i class="fa-solid fa-inbox"></i><span class="txt" id="pill-contact-txt">0 new</span></span>
                 <span class="pill clickable" id="pill-d1" onclick="refreshStatusPill()" title="Database status — tap to recheck"><i class="fa-solid fa-database"></i><span class="txt">D1</span></span>
                 <span class="pill clickable" id="pill-bot" onclick="refreshStatusPill()" title="Bot status — tap to recheck"><i class="fa-brands fa-telegram"></i><span class="txt">Bot</span></span>
             </div>
@@ -1485,10 +1539,10 @@ body { overflow-x: hidden; }
                         <button class="btn btn-primary btn-sm" onclick="openCommandModal()"><i class="fa-solid fa-plus"></i> New command</button>
                     </div>
                 </div>
-                <div class="hint-banner">
-                    <i class="fa-solid fa-lightbulb"></i>
-                    <div><b>Commands, bundles &amp; arguments:</b> Create exact argument commands like <code>/help 123</code> or <code>/start vip</code> (works with Telegram deep links <code>t.me/bot?start=vip</code>) alongside base commands like <code>/help</code>. You can also attach <b>multiple documents or media</b> to a single command, gate access by user ID or expiration, and enable <b>Protect content</b> to block forwarding.</div>
-                </div>
+                <details class="help">
+                    <summary><i class="fa-solid fa-lightbulb"></i> Tips: commands, bundles, arguments &amp; access control</summary>
+                    <div>Create exact argument commands like <code>/help 123</code> or <code>/start vip</code> (works with Telegram deep links <code>t.me/bot?start=vip</code>) alongside base commands like <code>/help</code>. You can also attach <b>multiple documents or media</b> to a single command, gate access by user ID or expiration, and enable <b>Protect content</b> to block forwarding.</div>
+                </details>
                 <input type="file" id="pack-file" accept=".json" class="hidden" onchange="importCommandPack(event)">
                 <div class="toolbar">
                     <div class="search"><i class="fa-solid fa-magnifying-glass"></i><input id="cmd-search" placeholder="Search all commands by name or content…" oninput="debouncedCommands()"></div>
@@ -1568,9 +1622,17 @@ body { overflow-x: hidden; }
                         <button class="btn btn-gray btn-sm" onclick="loadUsers(true)"><i class="fa-solid fa-rotate"></i></button>
                     </div>
                 </div>
-                <div class="hint-banner">
-                    <i class="fa-solid fa-circle-info"></i>
+                <details class="help">
+                    <summary><i class="fa-solid fa-circle-info"></i> About reachable vs. unreachable users</summary>
                     <div><span class="badge green" style="margin-right:4px;"><i class="fa-solid fa-circle" style="font-size:8px;"></i></span> <b>Green</b> users started the bot — you can DM them. <span class="badge orange" style="margin-left:8px;margin-right:4px;"><i class="fa-solid fa-circle" style="font-size:8px;"></i></span> <b>Yellow</b> users are <b>not reachable</b> — they never started the bot, or they blocked it. Safe to delete in bulk; admins and moderators are preserved.</div>
+                </details>
+                <div class="card">
+                    <div class="card-head"><div class="card-title"><i class="fa-solid fa-user-plus"></i> Add a user</div></div>
+                    <div class="input-with-btn">
+                        <input class="input mono" id="usr-connect-input" placeholder="Numeric Telegram user ID (e.g. 123456789)">
+                        <button class="btn btn-primary btn-sm" id="usr-connect-btn" onclick="connectUserManually()"><i class="fa-solid fa-plus"></i> Add</button>
+                    </div>
+                    <span class="field-hint"><i class="fa-solid fa-triangle-exclamation" style="color:var(--orange)"></i> <b>Note:</b> Adding a user manually is <b>not</b> a guarantee you can text them — Telegram only lets bots DM users who have started or interacted with the bot first.</span>
                 </div>
                 <div class="toolbar"><div class="search"><i class="fa-solid fa-magnifying-glass"></i><input id="user-search" placeholder="Search by name or username" oninput="debouncedUsers()"></div></div>
                 <div class="chips" id="user-filters">
@@ -1644,6 +1706,14 @@ body { overflow-x: hidden; }
                     <div class="lead"><h1>Groups</h1><p>Configure how the bot behaves in each group and supergroup.</p></div>
                     <div class="page-actions"><button class="btn btn-gray btn-sm" onclick="loadGroups(true)"><i class="fa-solid fa-rotate"></i> Refresh</button></div>
                 </div>
+                <div class="card">
+                    <div class="card-head"><div class="card-title"><i class="fa-solid fa-link"></i> Connect a group</div></div>
+                    <div class="input-with-btn">
+                        <input class="input mono" id="grp-connect-input" placeholder="-1001234567890 or @groupusername">
+                        <button class="btn btn-primary btn-sm" id="grp-connect-btn" onclick="connectGroupManually()"><i class="fa-solid fa-plus"></i> Connect</button>
+                    </div>
+                    <span class="field-hint"><i class="fa-solid fa-circle-info"></i> Add your bot to the group first, then paste its numeric ID (<code>-100…</code> or <code>-…</code>) or public <code>@username</code> above. Groups also register automatically on activity.</span>
+                </div>
                 <div class="chips" id="group-filters">
                     <button class="chip active" data-gf="active" onclick="setGroupFilter('active')">Active</button>
                     <button class="chip" data-gf="inactive" onclick="setGroupFilter('inactive')">Left / removed</button>
@@ -1663,8 +1733,9 @@ body { overflow-x: hidden; }
                 <div class="grid grid-3" id="gm-cards" style="margin-bottom:16px;"></div>
 
                 <div class="card">
-                    <div class="row">
+                    <div class="row" style="gap:8px;flex-wrap:wrap;">
                         <button class="btn btn-gray btn-sm" onclick="syncGroup()"><i class="fa-solid fa-rotate"></i> Sync with Telegram</button>
+                        <button class="btn btn-gray btn-sm" id="gm-set-storage-btn" onclick="setGroupAsMediaStorage()"><i class="fa-solid fa-database"></i> Use as Media Storage</button>
                         <div style="flex:1"></div>
                         <span class="badge" id="gm-status-badge">—</span>
                     </div>
@@ -1845,10 +1916,10 @@ body { overflow-x: hidden; }
                             </div>
                         </div>
                     </div>
-                    <div class="hint-banner warn" style="margin-top:8px;">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    <details class="help warn" style="margin-top:8px;">
+                        <summary><i class="fa-solid fa-triangle-exclamation"></i> How anti-flood escalation works</summary>
                         <div>Example with defaults: on the 7th message in a minute → <b>mute 10 min</b>. Repeat → mute. After 2 mutes → <b>kick</b>. After 2 kicks → <b>permanent ban</b>. Bans can only be lifted by an admin in Telegram.</div>
-                    </div>
+                    </details>
 
                     <div class="switch-row"><div><div class="sw-label">Block links</div><div class="sw-sub">Delete messages containing URLs.</div></div><button class="switch" id="gm-link-toggle" onclick="gmToggle('link')"></button></div>
                     <div class="field hidden" id="gm-link-level-wrap" style="margin-top:4px;">
@@ -2078,7 +2149,7 @@ body { overflow-x: hidden; }
                     <div class="muted small" id="bc-count"></div>
                 </div>
                 <div class="card">
-                    <details class="help" open>
+                    <details class="help">
                         <summary><i class="fa-solid fa-gauge-high"></i> Delivery pacing</summary>
                         <div>
                             Telegram limits bots to roughly <b>30 messages per second</b>. The defaults below are safe for most cases. Increase only if you know what you're doing.
@@ -2241,22 +2312,21 @@ body { overflow-x: hidden; }
                         <button class="btn btn-gray btn-sm" onclick="loadMemory(true)"><i class="fa-solid fa-rotate"></i> Refresh</button>
                     </div>
                 </div>
-                <div class="hint-banner">
-                    <i class="fa-solid fa-circle-info"></i>
+                <details class="help">
+                    <summary><i class="fa-solid fa-circle-info"></i> What's stored in AI memory vs. Direct messages</summary>
                     <div><b>AI memory</b> is what the assistant remembers about each user's conversations. <b>Direct messages</b> are the private chats between you and your users (including messages sent through DM featured commands). Deleting is permanent.</div>
-                </div>
+                </details>
                 <div class="stats" id="mem-stats"></div>
 
                 <div class="card">
                     <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-clock-rotate-left"></i> Auto-remove memory</div></div>
-                    <div class="cron-warn">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
-                        <div><b>Requires a Cron Trigger.</b> Add <code>[triggers]</code> with <code>crons = ["0 3 * * *"]</code> to your <code>wrangler.toml</code>, then redeploy. See the <a href="#" onclick="go('cron');return false;">Cleanup tab</a> for details. Without a cron trigger, nothing is removed automatically — you must use <b>Cleanup → Run now</b>.</div>
-                    </div>
-                    <div class="hint-banner">
-                        <i class="fa-solid fa-circle-info"></i>
-                        <div><b>AI memory</b> is governed by the value you set in the <a href="#" onclick="go('ai');return false;">AI</a> tab — it is kept in sync here. <b>Direct messages</b> are pruned by age using the unit you pick below. Off by default.</div>
-                    </div>
+                    <details class="help warn">
+                        <summary><i class="fa-solid fa-triangle-exclamation"></i> Requires a Cron Trigger &amp; how retention sync works</summary>
+                        <div>
+                            <b>Requires a Cron Trigger:</b> Add <code>[triggers]</code> with <code>crons = ["0 3 * * *"]</code> to your <code>wrangler.toml</code>, then redeploy. See the <a href="#" onclick="go('cron');return false;">Cleanup tab</a> for details. Without a cron trigger, nothing is removed automatically — you must use <b>Cleanup → Run now</b>.<br><br>
+                            <b>Retention sync:</b> <b>AI memory</b> is governed by the value you set in the <a href="#" onclick="go('ai');return false;">AI</a> tab — it is kept in sync here. <b>Direct messages</b> are pruned by age using the unit you pick below. Off by default.
+                        </div>
+                    </details>
                     <div class="section-title" style="margin-top:0;">What gets saved</div>
                     <div class="switch-row">
                         <div>
@@ -2362,9 +2432,14 @@ body { overflow-x: hidden; }
                 <div class="card" id="media-storage-card">
                     <div class="media-storage-summary">
                         <div id="media-storage-info" class="small muted" style="flex:1;min-width:200px;">Loading storage destination…</div>
-                        <button type="button" class="btn btn-gray btn-sm" onclick="show($('media-storage-config'), $('media-storage-config').classList.contains('hidden'))">
-                            <i class="fa-solid fa-gear"></i> Configure
-                        </button>
+                        <div class="row" style="gap:6px;">
+                            <button type="button" class="btn btn-gray btn-sm" id="media-reindex-btn" onclick="openReindexStorage()" title="Scan existing media in your storage chat">
+                                <i class="fa-solid fa-clock-rotate-left"></i> Reindex storage
+                            </button>
+                            <button type="button" class="btn btn-gray btn-sm" onclick="show($('media-storage-config'), $('media-storage-config').classList.contains('hidden'))">
+                                <i class="fa-solid fa-gear"></i> Configure
+                            </button>
+                        </div>
                     </div>
                     <div id="media-storage-config" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--hairline);">
                         <div class="field">
@@ -2501,14 +2576,14 @@ body { overflow-x: hidden; }
 
                 <div class="card">
                     <div class="card-head"><div class="card-title c-purple"><i class="fa-solid fa-key"></i> Provider &amp; connection</div></div>
-                    <div class="hint-banner">
-                        <i class="fa-solid fa-circle-info"></i>
+                    <details class="help">
+                        <summary><i class="fa-solid fa-circle-info"></i> Provider setup tips (OpenAI, Gemini, DeepSeek, Groq, Ollama)</summary>
                         <div>
                             Pick an AI service, paste your API key, choose a model.<br>
                             <b>OpenAI</b>, <b>Gemini</b>, <b>DeepSeek</b>, <b>Groq</b> and <b>OpenRouter</b> all work with a key you can get from their website.<br>
                             <b>Ollama</b> is for self-hosted models — leave the base URL alone unless you run your own.
                         </div>
-                    </div>
+                    </details>
                     <div class="grid grid-2">
                         <div class="field"><label class="field-label">Provider</label>
                             <select class="input" id="ai-provider" onchange="onProviderChange()">
@@ -2959,10 +3034,10 @@ body { overflow-x: hidden; }
                 <div class="page-head"><div class="lead"><h1>Settings</h1><p>Bot connection and admin credentials.</p></div></div>
                 <div class="card">
                     <div class="card-head"><div class="card-title c-green"><i class="fa-solid fa-language"></i> Language</div></div>
-                    <div class="hint-banner">
-                        <i class="fa-solid fa-circle-info"></i>
+                    <details class="help">
+                        <summary><i class="fa-solid fa-circle-info"></i> What system language affects</summary>
                         <div>Changes the language of <b>system prompts</b> — messages the bot sends to users (contact notifications, error messages), the AI assistant's built-in rules, and the MCP admin prompt. It does <b>not</b> change the dashboard UI or AI replies (those follow the AI tab's language setting).</div>
-                    </div>
+                    </details>
                     <div class="field" style="margin-bottom:0;">
                         <label class="field-label">System language</label>
                         <div class="segmented" id="sys-lang">
@@ -3006,7 +3081,7 @@ body { overflow-x: hidden; }
 
                     <label class="field-label">Navigation structure</label>
                     <div class="nav-preset-grid" id="nav-struct-presets" style="margin-bottom:0;">
-                        <button type="button" class="nav-preset-card active" data-struct="grouped" onclick="setNavStructure('grouped')">
+                        <button type="button" class="nav-preset-card" data-struct="grouped" onclick="setNavStructure('grouped')">
                             <div class="nav-preset-preview" style="flex-direction:column;align-items:flex-start;height:36px;justify-content:center;"><span style="width:35%;height:5px;"></span><span class="act" style="width:65%;height:6px;"></span></div>
                             <div class="npc-head"><i class="fa-regular fa-folder-open"></i> Grouped</div>
                             <div class="npc-desc">Collapsible categories keep the sidebar tidy.</div>
@@ -3016,7 +3091,7 @@ body { overflow-x: hidden; }
                             <div class="npc-head"><i class="fa-solid fa-list"></i> Flat List</div>
                             <div class="npc-desc">Every page listed directly with zero folders.</div>
                         </button>
-                        <button type="button" class="nav-preset-card" data-struct="topbar" onclick="setNavStructure('topbar')">
+                        <button type="button" class="nav-preset-card active" data-struct="topbar" onclick="setNavStructure('topbar')">
                             <div class="nav-preset-preview" style="justify-content:flex-start;"><span class="act" style="width:22%;height:8px;"></span><span style="width:22%;height:8px;"></span><span style="width:22%;height:8px;"></span></div>
                             <div class="npc-head"><i class="fa-solid fa-window-maximize"></i> Top Bar</div>
                             <div class="npc-desc">Horizontal navigation bar on desktop; drawer on mobile.</div>
@@ -3029,10 +3104,10 @@ body { overflow-x: hidden; }
                     <div class="card-head"><div class="card-title c-purple"><i class="fa-solid fa-heart-pulse"></i> Schema health</div><div style="flex:1"></div>
                         <button class="btn btn-gray btn-sm" onclick="checkSchemaHealth()" aria-label="Check schema health"><i class="fa-solid fa-stethoscope"></i> Check health</button>
                     </div>
-                    <div class="hint-banner">
-                        <i class="fa-solid fa-circle-info"></i>
+                    <details class="help">
+                        <summary><i class="fa-solid fa-circle-info"></i> How schema auto-heal works</summary>
                         <div>The database schema is normally kept up-to-date automatically by migrations. If a migration failed silently (or the DB was modified manually), <b>Run auto-heal</b> inspects the actual tables and repairs any missing columns, indexes, settings, or backfills. This runs <b>once</b> — it is not executed on every request.</div>
-                    </div>
+                    </details>
                     <div id="schema-health-result" class="small" style="margin-bottom:12px;"></div>
                     <button class="btn btn-primary btn-sm" onclick="runSchemaHeal()"><i class="fa-solid fa-screwdriver-wrench"></i> Run auto-heal</button>
                 </div>
@@ -3048,10 +3123,10 @@ body { overflow-x: hidden; }
                 </div>
                 <div class="card">
                     <div class="card-head"><div class="card-title c-purple"><i class="fa-solid fa-link"></i> Webhook</div></div>
-                    <div class="hint-banner">
-                        <i class="fa-solid fa-circle-info"></i>
+                    <details class="help">
+                        <summary><i class="fa-solid fa-circle-info"></i> About Telegram webhook checks &amp; diagnostics</summary>
                         <div>Telegram delivers updates to this URL. Use <b>Health check</b> to repair a broken webhook automatically, or <b>Diagnostics</b> to measure latency, see pending updates and inspect the last error.</div>
-                    </div>
+                    </details>
                     <div class="input-with-btn">
                         <input class="input" id="set-hook" readonly style="font-size:12px;">
                         <button class="btn btn-gray btn-sm" onclick="copyVal('set-hook')" aria-label="Copy webhook URL"><i class="fa-regular fa-copy"></i></button>
@@ -3065,10 +3140,10 @@ body { overflow-x: hidden; }
                 </div>
                 <div class="card">
                     <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-lock"></i> Admin password</div></div>
-                    <div class="hint-banner">
-                        <i class="fa-solid fa-circle-info"></i>
+                    <details class="help">
+                        <summary><i class="fa-solid fa-circle-info"></i> Password behaviour &amp; ADMIN_PASS override</summary>
                         <div>Changing your password updates the password stored in D1 and <b>signs out every other browser and device</b> immediately (your current tab stays signed in).<br><b>Environment override:</b> You can also set an <code>ADMIN_PASS</code> environment variable / secret in your Cloudflare Worker settings — useful if you ever forget your D1 password or want a master password over it.</div>
-                    </div>
+                    </details>
                     <div class="grid grid-2" style="max-width:460px;">
                         <div class="field" style="margin-bottom:0;"><label class="field-label">New password</label>
                             <div class="pw-wrap">
@@ -3113,10 +3188,10 @@ body { overflow-x: hidden; }
 
             <section class="page" id="page-cron">
                 <div class="page-head"><div class="lead"><h1>Automatic cleanup</h1><p>Optionally prune old data on a schedule.</p></div></div>
-                <div class="hint-banner warn">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                    <div><b>Automatic cleanup requires a Cron Trigger in Cloudflare.</b> Enabling the switches below does <u>not</u> start the cleanup — Cloudflare must call your Worker on a schedule. Add the <code>[triggers]</code> block below to <code>wrangler.toml</code> and redeploy. Without it, nothing is deleted until you press <b>Run now</b>.</div>
-                </div>
+                <details class="help warn">
+                    <summary><i class="fa-solid fa-triangle-exclamation"></i> Automatic cleanup requires a Cron Trigger in Cloudflare</summary>
+                    <div>Enabling the switches below does <u>not</u> start the cleanup — Cloudflare must call your Worker on a schedule. Add the <code>[triggers]</code> block below to <code>wrangler.toml</code> and redeploy. Without it, nothing is deleted until you press <b>Run now</b>.</div>
+                </details>
                 <div class="card">
                     <div class="switch-row"><div><div class="sw-label">Enable automatic cleanup</div><div class="sw-sub">Requires a Cron trigger in wrangler.toml or press Run now.</div></div><button class="switch" id="cron-enable" onclick="toggleCronEnabled()"></button></div>
                     <div id="cron-rows"></div>
@@ -3499,6 +3574,24 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                     <button type="button" class="btn btn-gray btn-sm" onclick="kbCmd.addRow('inline')" title="Add an empty row"><i class="fa-solid fa-grip-lines"></i> + Row</button>
                 </div>
                 <div id="kbCmd-inline-list"></div>
+                <details class="help" style="margin-top:10px;margin-bottom:10px;">
+                    <summary><i class="fa-solid fa-shield-halved"></i> Tip: Sharing &amp; testing Telegram proxies with buttons</summary>
+                    <div>
+                        • <b>Connect button:</b> Set Type = <b>URL</b> and paste <code>https://t.me/proxy?server=HOST&amp;port=PORT&amp;secret=SECRET</code> (or <code>https://t.me/socks?server=HOST&amp;port=PORT</code>). Telegram clients open it directly as a proxy.<br>
+                        • <b>Test / Details button:</b> Set Type = <b>Callback</b> and value <code>PROXY:https://t.me/proxy?server=...</code> (or <code>PROXY:HOST:PORT</code>) to test reachability &amp; ping and show IP, country, ISP &amp; TLS details in a popup alert (use <code>PROXY_MSG:...</code> to send a chat message instead).
+                    </div>
+                </details>
+                <div class="switch-row" style="margin-top:10px;">
+                    <div>
+                        <div class="sw-label">Inline auto-back button</div>
+                        <div class="sw-sub">Off by default. When this command has a parent folder, automatically add an inline Back button row that opens the parent command.</div>
+                    </div>
+                    <button type="button" class="switch" id="cmd-inline-auto-back" onclick="toggleSwitch('cmd-inline-auto-back');show($('cmd-inline-back-label-wrap'),sw('cmd-inline-auto-back'))"></button>
+                </div>
+                <div class="field hidden" id="cmd-inline-back-label-wrap" style="margin-bottom:0;">
+                    <label class="field-label">Custom inline back button label <span class="muted small">(optional)</span></label>
+                    <input class="input" id="cmd-inline-back-label" placeholder='Leave blank for default ("Back" / "بازگشت")'>
+                </div>
             </div>
             <div class="switch-row"><div><div class="sw-label">Reply keyboard</div><div class="sw-sub">Persistent buttons below the input box. Can be combined with an inline keyboard — Telegram will deliver the reply keyboard on a second, empty message.</div></div><button class="switch" id="cmd-reply-toggle" onclick="toggleCmdSection('reply')"></button></div>
             <div id="cmd-reply-section" class="hidden" style="margin-bottom:16px;">
@@ -3575,6 +3668,7 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                 </div>
                 <span class="field-hint">After this date/time, non-admins can no longer run this command. Leave blank for no expiration.</span>
             </div>
+            <div class="switch-row"><div><div class="sw-label">Edit current message</div><div class="sw-sub">When opened from an inline button, edit that message in place instead of sending a new one (falls back cleanly if media type changes).</div></div><button class="switch" id="cmd-edit-message" onclick="toggleSwitch('cmd-edit-message')"></button></div>
             <div class="switch-row"><div><div class="sw-label">Protect content</div><div class="sw-sub">Prevent users from forwarding or saving files/messages in Telegram.</div></div><button class="switch" id="cmd-protect" onclick="toggleSwitch('cmd-protect')"></button></div>
             <div class="switch-row" style="margin-bottom:0;"><div><div class="sw-label">Enabled</div><div class="sw-sub">Disabled commands are hidden.</div></div><button class="switch on" id="cmd-enabled" onclick="toggleSwitch('cmd-enabled')"></button></div>
             <div class="err-box" id="cmd-error"></div>
@@ -3931,25 +4025,25 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
     </div>
 </div>
 
-<div class="modal hidden" id="check-modal" role="dialog" aria-modal="true" aria-labelledby="check-title">
+<div class="modal hidden" id="progress-modal" role="dialog" aria-modal="true" aria-labelledby="pm-title">
     <div class="modal-bg"></div>
     <div class="sheet small">
-        <div class="sheet-head"><div class="sheet-title" id="check-title">Checking users…</div></div>
+        <div class="sheet-head"><div class="sheet-title" id="pm-title">Processing…</div></div>
         <div class="sheet-body">
-            <div id="check-current" class="muted small" style="margin-bottom:12px;min-height:18px;">Starting…</div>
+            <div id="pm-current" class="muted small" style="margin-bottom:12px;min-height:18px;word-break:break-word;">Starting…</div>
             <div style="height:12px;background:var(--fill-1);border-radius:var(--r-pill);overflow:hidden;display:flex;">
-                <div id="check-bar-green" style="height:100%;background:var(--green);transition:width 0.25s ease;width:0%"></div>
-                <div id="check-bar-yellow" style="height:100%;background:var(--orange);transition:width 0.25s ease;width:0%"></div>
+                <div id="pm-bar-ok" style="height:100%;background:var(--green);transition:width 0.25s ease;width:0%"></div>
+                <div id="pm-bar-bad" style="height:100%;background:var(--orange);transition:width 0.25s ease;width:0%"></div>
             </div>
             <div style="display:flex;justify-content:space-between;margin-top:12px;gap:8px;flex-wrap:wrap;" class="small">
-                <span><b id="check-checked">0</b> / <span id="check-total">0</span> checked</span>
-                <span><span style="color:var(--green)"><b id="check-reachable">0</b> reachable</span> · <span style="color:var(--orange)"><b id="check-unreachable">0</b> unreachable</span></span>
+                <span><b id="pm-done-count">0</b> / <span id="pm-total">0</span> <span id="pm-unit">processed</span></span>
+                <span><span style="color:var(--green)"><b id="pm-ok-count">0</b> <span id="pm-ok-label">succeeded</span></span> · <span style="color:var(--orange)"><b id="pm-bad-count">0</b> <span id="pm-bad-label">failed</span></span></span>
             </div>
-            <div id="check-remaining" class="muted small" style="margin-top:6px;">0 remaining</div>
+            <div id="pm-remaining" class="muted small" style="margin-top:6px;">0 remaining</div>
         </div>
         <div class="sheet-foot">
-            <button class="btn btn-gray" id="check-cancel" onclick="cancelCheckUsers()">Cancel</button>
-            <button class="btn btn-primary hidden" id="check-done" onclick="closeCheckModal()">Done</button>
+            <button class="btn btn-gray" id="pm-cancel" onclick="cancelProgressModal()">Cancel</button>
+            <button class="btn btn-primary hidden" id="pm-done" onclick="closeProgressModal()">Done</button>
         </div>
     </div>
 </div>
@@ -3965,7 +4059,7 @@ var __setupDone = null;   // null = unknown, true = setup done, false = needs se
 var __loadedModules = {};
 function ensureModule(name) {
     if (__loadedModules[name]) return __loadedModules[name];
-    __loadedModules[name] = import('/js/' + name + '.js').catch(function (err) {
+    __loadedModules[name] = import('/js/' + name + '.js?v=${VERSION}').catch(function (err) {
         console.error('[nyxx] failed to load module ' + name, err);
         delete __loadedModules[name];
     });
@@ -4289,6 +4383,10 @@ function go(page) {
     document.querySelectorAll('.page').forEach(function (p) { p.classList.remove('active'); });
     var el = $('page-' + page); if (el) el.classList.add('active');
     document.querySelectorAll('.nav-item').forEach(function (n) { n.classList.toggle('active', n.dataset.page === page); });
+    document.querySelectorAll('.nav-group[data-group]').forEach(function (g) {
+        g.classList.remove('tb-open');
+        g.classList.toggle('has-active', !!g.querySelector('.nav-item.active'));
+    });
     if (typeof expandNavGroupFor === 'function') expandNavGroupFor(page);
     var __navSearch = document.getElementById('nav-search-input');
     if (__navSearch && __navSearch.value) { __navSearch.value = ''; if (typeof filterNav === 'function') filterNav(''); }
@@ -4326,9 +4424,24 @@ function toggleSidebar(force) {
     var overlay = document.getElementById('sidebar-overlay');
     if (overlay) overlay.classList.toggle('show', open);
 }
+function isTopbarDesktop() {
+    return currentNavStructure === 'topbar' && window.innerWidth > 900;
+}
+function closeTopbarDropdowns(except) {
+    document.querySelectorAll('.nav-group[data-group].tb-open').forEach(function (g) {
+        if (g !== except) g.classList.remove('tb-open');
+    });
+}
 function toggleNavGroup(btn) {
     var group = btn.closest('.nav-group');
-    if (group && group.hasAttribute('data-group')) group.classList.toggle('collapsed');
+    if (!group || !group.hasAttribute('data-group')) return;
+    if (isTopbarDesktop()) {
+        var willOpen = !group.classList.contains('tb-open');
+        closeTopbarDropdowns(willOpen ? group : null);
+        group.classList.toggle('tb-open', willOpen);
+        return;
+    }
+    group.classList.toggle('collapsed');
 }
 function expandNavGroupFor(page) {
     var item = document.querySelector('.nav-item[data-page="' + page + '"]');
@@ -4343,9 +4456,15 @@ function expandNavGroupFor(page) {
 function initNav() {
     // Collapse every data-group except the one containing the active page.
     document.querySelectorAll('.nav-group[data-group]').forEach(function (g) {
-        if (!g.querySelector('.nav-item.active')) g.classList.add('collapsed');
+        var hasActive = !!g.querySelector('.nav-item.active');
+        g.classList.toggle('has-active', hasActive);
+        if (!hasActive) g.classList.add('collapsed');
     });
 }
+document.addEventListener('click', function (e) {
+    if (!isTopbarDesktop()) return;
+    if (!e.target.closest('.nav-group[data-group]')) closeTopbarDropdowns(null);
+});
 function filterNav(q) {
     q = String(q || '').toLowerCase().trim();
     var anyVisible = false;
@@ -4624,6 +4743,9 @@ async function submitLogin() {
 }
 async function logout() {
     try { await api('POST', '/api/logout'); } catch (e) {}
+    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+        try { navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_API_CACHE' }); } catch (e) {}
+    }
     __csrf = null;
     showStep('step-login');
 }
@@ -4839,6 +4961,7 @@ function renderCommands() {
             (function () {
                 var lvl = commandAccessLevel(c);
                 var b = '';
+                if (c.edit_message) b += '<span class="badge" title="Edits current message on inline tap"><i class="fa-regular fa-pen-to-square"></i> <span class="hide-mobile">Edit</span></span>';
                 if (c.protect_content) b += '<span class="badge orange" title="Forwarding/saving disabled"><i class="fa-solid fa-shield-halved"></i> <span class="hide-mobile">Protected</span></span>';
                 if (mediaCnt > 1) b += '<span class="badge blue"><i class="fa-solid fa-layer-group"></i> ' + mediaCnt + '</span>';
                 if (lvl === 'admin') b += '<span class="badge purple">Admin</span>';
@@ -5240,8 +5363,13 @@ async function openCommandModal(cmd, parent, cloneMode) {
         setSeg('cmd-access', commandAccessLevel(srcCmd));
         if ($('cmd-allowed-users')) $('cmd-allowed-users').value = srcCmd.allowed_users || '';
         if ($('cmd-expires-at')) $('cmd-expires-at').value = toLocalInputFromIso(srcCmd.expires_at || '');
+        toggleSwitch('cmd-edit-message', !!srcCmd.edit_message);
         toggleSwitch('cmd-protect', !!srcCmd.protect_content);
         toggleSwitch('cmd-enabled', srcCmd.enabled != 0);
+        var inAbOn = !!(srcCmd.inline_auto_back && srcCmd.inline_auto_back != 0);
+        toggleSwitch('cmd-inline-auto-back', inAbOn);
+        if ($('cmd-inline-back-label')) $('cmd-inline-back-label').value = srcCmd.inline_back_label || '';
+        show($('cmd-inline-back-label-wrap'), inAbOn);
         var abOn = srcCmd.auto_back === undefined || srcCmd.auto_back === null ? true : (srcCmd.auto_back != 0);
         toggleSwitch('cmd-auto-back', abOn);
         if ($('cmd-back-label')) $('cmd-back-label').value = srcCmd.back_label || '';
@@ -5255,7 +5383,11 @@ async function openCommandModal(cmd, parent, cloneMode) {
         $('cmd-content').value = ''; $('cmd-media').value = '';
         if ($('cmd-allowed-users')) $('cmd-allowed-users').value = '';
         if ($('cmd-expires-at')) $('cmd-expires-at').value = '';
+        toggleSwitch('cmd-edit-message', false);
         toggleSwitch('cmd-protect', false);
+        toggleSwitch('cmd-inline-auto-back', false);
+        if ($('cmd-inline-back-label')) $('cmd-inline-back-label').value = '';
+        show($('cmd-inline-back-label-wrap'), false);
         toggleSwitch('cmd-auto-back', true);
         toggleSwitch('cmd-remove-reply', false);
         if ($('cmd-back-label')) $('cmd-back-label').value = '';
@@ -5344,6 +5476,7 @@ async function saveCommand() {
         file_id: fileId,
         media_meta: mediaMeta,
         media_items_json: finalItems.length ? JSON.stringify(finalItems) : '',
+        edit_message: sw('cmd-edit-message') ? 1 : 0,
         protect_content: sw('cmd-protect') ? 1 : 0,
         access_level: accessLevel,
         allowed_users: $('cmd-allowed-users') ? $('cmd-allowed-users').value.trim() : '',
@@ -5351,6 +5484,8 @@ async function saveCommand() {
         is_admin_only: accessLevel === 'admin' ? 1 : 0,
         enabled: sw('cmd-enabled') ? 1 : 0,
         buttons_json: kbCmd.inlineJSON() ? JSON.stringify(kbCmd.inlineJSON()) : '',
+        inline_auto_back: sw('cmd-inline-auto-back') ? 1 : 0,
+        inline_back_label: $('cmd-inline-back-label') ? $('cmd-inline-back-label').value.trim() : '',
         show_reply_keyboard: sw('cmd-reply-toggle') ? 1 : 0,
         reply_keyboard_json: kbCmd.replyJSON() ? JSON.stringify(kbCmd.replyJSON()) : '',
         auto_back: sw('cmd-auto-back') ? 1 : 0,
@@ -5661,7 +5796,7 @@ async function loadContactMessages() {
                     '<div style="flex:1"></div>' +
                     '<button class="btn btn-gray btn-sm" onclick="openUser(' + m.userId + ')" title="Open user profile"><i class="fa-solid fa-user"></i> Open</button>' +
                     (m.is_unread
-                        ? '<button class="btn btn-primary btn-sm" onclick="markContactUserRead(' + m.userId + ', this)" title="Mark all messages from this user as read"><i class="fa-solid fa-envelope-open"></i> Mark read</button>'
+                        ? '<button class="btn btn-primary btn-sm" onclick="markContactMessageRead(' + m.id + ', this)" title="Mark this message as read"><i class="fa-solid fa-envelope-open"></i> Mark read</button>'
                         : '<span class="badge green" style="align-self:center;"><i class="fa-solid fa-check"></i> Read</span>') +
                     '<button class="btn btn-danger btn-sm" onclick="deleteContactMessage(' + m.id + ', this)" title="Delete this message"><i class="fa-solid fa-trash-can"></i></button>' +
                 '</div>' +
@@ -5733,10 +5868,23 @@ async function clearAllContactMessages() {
 async function updateContactBadge() {
     try {
         var d = await api('GET', '/api/contact/stats');
+        var unread = (d && d.unread) || 0;
         var badge = $('contact-nav-badge');
-        if (!badge) return;
-        if (d.unread > 0) { badge.textContent = d.unread > 99 ? '99+' : String(d.unread); badge.style.display = 'inline-block'; }
-        else { badge.style.display = 'none'; }
+        if (badge) {
+            if (unread > 0) { badge.textContent = unread > 99 ? '99+' : String(unread); badge.style.display = 'inline-block'; }
+            else { badge.style.display = 'none'; }
+        }
+        var pill = $('pill-contact');
+        var pillTxt = $('pill-contact-txt');
+        if (pill) {
+            if (unread > 0) {
+                pill.classList.remove('hidden');
+                if (pillTxt) pillTxt.textContent = unread === 1 ? '1 new' : (unread + ' new');
+                pill.title = unread + ' unread contact message(s) — tap to open Inbox';
+            } else {
+                pill.classList.add('hidden');
+            }
+        }
     } catch (e) { /* silent */ }
 }
 function setUserFilter(f) {
@@ -5819,79 +5967,102 @@ function renderUsers() {
     });
     box.innerHTML = html + '</div>';
 }
-var checkState = { active: false, cancelled: false, total: 0, checked: 0, reachable: 0, unreachable: 0 };
-function openCheckModal(total, title) {
-    checkState = { active: true, cancelled: false, total: total, checked: 0, reachable: 0, unreachable: 0 };
-    $('check-title').textContent = title || (total > 1 ? 'Checking reachability' : 'Checking user');
-    $('check-current').textContent = 'Starting…';
-    $('check-checked').textContent = '0';
-    $('check-total').textContent = String(total);
-    $('check-reachable').textContent = '0';
-    $('check-unreachable').textContent = '0';
-    $('check-remaining').textContent = total + ' remaining';
-    $('check-bar-green').style.width = '0%';
-    $('check-bar-yellow').style.width = '0%';
-    $('check-cancel').disabled = false;
-    $('check-cancel').textContent = 'Cancel';
-    show($('check-cancel'), true);
-    show($('check-done'), false);
-    $('check-modal').classList.remove('hidden');
-    trackModal('check-modal');
+var pmState = { active: false, cancelled: false, total: 0, done: 0, ok: 0, bad: 0, onClose: null };
+function openProgressModal(opts) {
+    opts = opts || {};
+    pmState = {
+        active: true, cancelled: false,
+        total: opts.total || 0, done: 0, ok: 0, bad: 0,
+        onClose: opts.onClose || null
+    };
+    $('pm-title').textContent = opts.title || 'Processing…';
+    $('pm-current').textContent = opts.initialText || 'Starting…';
+    $('pm-done-count').textContent = '0';
+    $('pm-total').textContent = String(pmState.total);
+    $('pm-unit').textContent = opts.unit || 'processed';
+    $('pm-ok-count').textContent = '0';
+    $('pm-ok-label').textContent = opts.okLabel || 'succeeded';
+    $('pm-bad-count').textContent = '0';
+    $('pm-bad-label').textContent = opts.badLabel || 'failed';
+    $('pm-remaining').textContent = pmState.total + ' remaining';
+    $('pm-bar-ok').style.width = '0%';
+    $('pm-bar-bad').style.width = '0%';
+    $('pm-cancel').disabled = false;
+    $('pm-cancel').textContent = 'Cancel';
+    show($('pm-cancel'), true);
+    show($('pm-done'), false);
+    $('progress-modal').classList.remove('hidden');
+    trackModal('progress-modal');
 }
-function updateCheckBar() {
-    var total = checkState.total || 1;
-    $('check-bar-green').style.width = ((checkState.reachable / total) * 100) + '%';
-    $('check-bar-yellow').style.width = ((checkState.unreachable / total) * 100) + '%';
+function updateProgressModal(deltaDone, deltaOk, deltaBad, statusText) {
+    pmState.done += (deltaDone || 0);
+    pmState.ok += (deltaOk || 0);
+    pmState.bad += (deltaBad || 0);
+    var total = pmState.total || 1;
+    $('pm-done-count').textContent = String(Math.min(pmState.done, pmState.total));
+    $('pm-ok-count').textContent = String(pmState.ok);
+    $('pm-bad-count').textContent = String(pmState.bad);
+    $('pm-remaining').textContent = Math.max(0, pmState.total - pmState.done) + ' remaining';
+    if (statusText !== undefined) $('pm-current').textContent = statusText;
+    $('pm-bar-ok').style.width = (Math.min(100, (pmState.ok / total) * 100)) + '%';
+    $('pm-bar-bad').style.width = (Math.min(100, (pmState.bad / total) * 100)) + '%';
 }
-function updateCheckProgress(u) {
-    checkState.checked++;
-    $('check-checked').textContent = String(checkState.checked);
-    $('check-reachable').textContent = String(checkState.reachable);
-    $('check-unreachable').textContent = String(checkState.unreachable);
-    $('check-remaining').textContent = Math.max(0, checkState.total - checkState.checked) + ' remaining';
-    $('check-current').textContent = u ? ('Now checking: ' + (u.first_name || 'User') + (u.username ? ' (@' + u.username + ')' : '')) : '';
-    updateCheckBar();
+function finishProgressModal(summaryText) {
+    pmState.active = false;
+    $('pm-current').textContent = summaryText || (pmState.cancelled
+        ? 'Cancelled after ' + pmState.done + ' of ' + pmState.total + '.'
+        : 'Complete.');
+    show($('pm-cancel'), false);
+    show($('pm-done'), true);
 }
-function finishCheckModal() {
-    checkState.active = false;
-    $('check-current').textContent = checkState.cancelled
-        ? 'Cancelled after ' + checkState.checked + ' of ' + checkState.total + '.'
-        : 'Complete.';
-    show($('check-cancel'), false);
-    show($('check-done'), true);
+function cancelProgressModal() {
+    pmState.cancelled = true;
+    $('pm-cancel').disabled = true;
+    $('pm-cancel').textContent = 'Cancelling…';
 }
-function cancelCheckUsers() {
-    checkState.cancelled = true;
-    $('check-cancel').disabled = true;
-    $('check-cancel').textContent = 'Cancelling…';
+function closeProgressModal() {
+    if (pmState.active) pmState.cancelled = true;
+    $('progress-modal').classList.add('hidden');
+    untrackModal('progress-modal');
+    $('pm-cancel').disabled = false;
+    $('pm-cancel').textContent = 'Cancel';
+    if (typeof pmState.onClose === 'function') {
+        var cb = pmState.onClose; pmState.onClose = null; cb();
+    }
 }
-function closeCheckModal() {
-    if (checkState.active) checkState.cancelled = true;
-    $('check-modal').classList.add('hidden');
-    untrackModal('check-modal');
-    $('check-cancel').disabled = false;
-    $('check-cancel').textContent = 'Cancel';
+
+async function connectUserManually() {
+    var inp = $('usr-connect-input');
+    var raw = inp ? inp.value.trim() : '';
+    if (!raw) { toast('Enter a numeric Telegram user ID.', 'error'); return; }
+    await withBusy($('usr-connect-btn'), async function () {
+        try {
+            var d = await api('POST', '/api/users/add', { userId: raw });
+            if (inp) inp.value = '';
+            toast(d.warning ? d.warning : 'User added and reachable!', d.warning ? 'info' : 'success');
+            loadUsers(true);
+        } catch (e) { toast(e.message, 'error'); }
+    });
 }
 
 async function checkUser(id) {
-    if (checkState.active) { toast('A check is already running.', 'error'); return; }
+    if (pmState.active) { toast('A bulk task is already running.', 'error'); return; }
     var u = users.find(function (x) { return sameId(x.id, id); }) || { id: id, first_name: 'User' };
-    openCheckModal(1, 'Checking user');
+    openProgressModal({ title: 'Checking user', total: 1, unit: 'checked', okLabel: 'reachable', badLabel: 'unreachable' });
+    var ok = 0, bad = 0;
     try {
         var r = await api('POST', '/api/users/' + id + '/check_started', {});
-        if (r.can_message) checkState.reachable++; else checkState.unreachable++;
-    } catch (e) {
-        checkState.unreachable++;
-    }
-    updateCheckProgress(u);
-    finishCheckModal();
+        if (r.can_message) ok = 1; else bad = 1;
+    } catch (e) { bad = 1; }
+    updateProgressModal(1, ok, bad, 'Checked: ' + (u.first_name || 'User') + (u.username ? ' (@' + u.username + ')' : ''));
+    finishProgressModal();
     loadUsers();
 }
 
 async function checkAllUsers() {
-    if (checkState.active) { toast('A check is already running.', 'error'); return; }
+    if (pmState.active) { toast('A bulk task is already running.', 'error'); return; }
     if (!users.length) { toast('No users to check.', 'error'); return; }
-    checkState.active = true; // Reserve the lock while we confirm/fetch
+    pmState.active = true;
     try {
         var confirmMsg = null;
         if (usersTotalPages > 1) {
@@ -5901,58 +6072,69 @@ async function checkAllUsers() {
         }
         if (confirmMsg) {
             var ok = await confirmDialog(confirmMsg, 'Check users', false);
-            if (!ok) { checkState.active = false; return; }
+            if (!ok) { pmState.active = false; return; }
         }
         if (usersTotalPages > 1) {
             try {
                 var all = [];
-                // usersTotalPages was computed with per_page=50, but this loop
-                // fetches per_page=200 — recompute the true number of pages.
                 var fetchPages = Math.max(1, Math.ceil(usersTotal / 200));
                 for (var p = 1; p <= fetchPages; p++) {
                     var d = await api('GET', '/api/users?filter=' + userFilter + '&page=' + p + '&per_page=200');
                     all = all.concat(d.users || []);
                 }
                 users = all;
-            } catch (e) { checkState.active = false; toast(e.message, 'error'); return; }
+            } catch (e) { pmState.active = false; toast(e.message, 'error'); return; }
         }
         var total = users.length;
-        openCheckModal(total, 'Checking all users');
+        openProgressModal({ title: 'Checking all users', total: total, unit: 'checked', okLabel: 'reachable', badLabel: 'unreachable' });
         const CONCURRENCY = 3;
         var idx = 0;
         async function worker() {
-            while (idx < users.length && !checkState.cancelled) {
+            while (idx < users.length && !pmState.cancelled) {
                 var u = users[idx++];
+                var ok = 0, bad = 0;
                 try {
                     var r = await api('POST', '/api/users/' + u.id + '/check_started', {});
-                    if (r.can_message) checkState.reachable++; else checkState.unreachable++;
-                } catch (e) {
-                    checkState.unreachable++;
-                }
-                updateCheckProgress(u);
+                    if (r.can_message) ok = 1; else bad = 1;
+                } catch (e) { bad = 1; }
+                updateProgressModal(1, ok, bad, 'Now checking: ' + (u.first_name || 'User') + (u.username ? ' (@' + u.username + ')' : ''));
             }
         }
         await Promise.all(Array.from({ length: Math.min(CONCURRENCY, total) }, function () { return worker(); }));
-        finishCheckModal();
+        finishProgressModal();
         loadUsers();
     } catch (e) {
-        checkState.active = false;
+        pmState.active = false;
         toast(e.message, 'error');
     }
 }
 async function deleteUnreachableUsers() {
+    if (pmState.active) { toast('A bulk task is already running.', 'error'); return; }
     var btn = getClickBtn();
+    var ids = [];
+    await withBusy(btn, async function () {
+        var d = await api('GET', '/api/users/unreachable_ids');
+        ids = (d && d.ids) || [];
+    });
+    if (!ids.length) { toast('No unreachable users to delete.', 'info'); return; }
     var ok = await confirmDialog(
-        'Delete every non-admin user who has never started the bot? Their AI memory, DM history and blocks are removed. Admins and moderators are preserved. This cannot be undone.',
+        'Delete ' + ids.length + ' unreachable non-admin user(s)? Their AI memory, DM history and blocks are removed. Admins and moderators are preserved. This cannot be undone.',
         'Delete unreachable users', true);
     if (!ok) return;
-    await withBusy(btn, async function () {
+    openProgressModal({ title: 'Deleting unreachable users', total: ids.length, unit: 'processed', okLabel: 'deleted', badLabel: 'failed' });
+    var CHUNK = 25;
+    for (var i = 0; i < ids.length && !pmState.cancelled; i += CHUNK) {
+        var slice = ids.slice(i, i + CHUNK);
         try {
-            var d = await api('POST', '/api/users/delete_unreachable');
-            toast('Deleted ' + (d.deleted || 0) + ' user(s).');
-            loadUsers(true);
-        } catch (e) { toast(e.message, 'error'); }
-    });
+            var res = await api('POST', '/api/users/delete_unreachable', { ids: slice });
+            var del = (res && res.deleted) || 0;
+            updateProgressModal(slice.length, del, Math.max(0, slice.length - del), 'Deleting batch ' + (Math.floor(i / CHUNK) + 1) + ' (' + Math.min(i + slice.length, ids.length) + '/' + ids.length + ')…');
+        } catch (e) {
+            updateProgressModal(slice.length, 0, slice.length, 'Error: ' + e.message);
+        }
+    }
+    finishProgressModal();
+    loadUsers(true);
 }
 async function deleteUser(id, name) {
     var btn = getClickBtn();
@@ -6004,6 +6186,12 @@ async function openUser(idOrUser) {
         '<button class="btn btn-danger btn-sm" onclick="toggleBlock(\\'full\\')"><i class="fa-solid fa-ban"></i> ' + (manageUser.block_type === 'full' ? 'Unblock' : 'Block all') + '</button>';
     $('um-input').value = ''; $('um-photo').value = '';
     loadDmMessages(manageUser.id); loadAiMemory();
+}
+async function markContactMessageRead(messageId, btn) {
+    try {
+        await withBusy(btn, function () { return api('POST', '/api/contact/mark_message_read', { messageId: messageId }); });
+        await Promise.all([loadContactStats(), loadContactMessages(), updateContactBadge()]);
+    } catch (e) { toast(e.message, 'error'); }
 }
 async function markContactUserRead(userId, btn) {
     try {
@@ -6455,6 +6643,10 @@ async function openGroup(id) {
             badge.className = 'badge ' + (manageGroup.is_active == 1 ? 'green' : 'red');
             badge.innerHTML = '<i class="fa-solid fa-circle" style="font-size:8px;"></i> ' + (manageGroup.is_active == 1 ? 'Active' : 'Left / removed');
         }
+        var gsbBtn = $('gm-set-storage-btn');
+        if (gsbBtn) gsbBtn.innerHTML = d.is_media_storage
+            ? '<i class="fa-solid fa-circle-check" style="color:var(--green)"></i> Media Storage Group'
+            : '<i class="fa-solid fa-database"></i> Use as Media Storage';
         loadGroupMemory();
         loadGroupChatMessages();
         // Best-effort background sync — don't block the UI.
@@ -6578,6 +6770,15 @@ async function removeGroup() {
         try { await api('DELETE', '/api/groups/' + manageGroup.id); toast('Removed.'); groups = []; go('groups'); }
         catch (e) { toast(e.message, 'error'); }
     });
+}
+
+async function setGroupAsMediaStorage() {
+    if (!manageGroup) return;
+    try {
+        await api('POST', '/api/settings/media_storage', { chatId: String(manageGroup.id) });
+        toast('Set "' + (manageGroup.title || manageGroup.id) + '" as your Media Storage group.');
+        if ($('gm-set-storage-btn')) $('gm-set-storage-btn').innerHTML = '<i class="fa-solid fa-circle-check" style="color:var(--green)"></i> Media Storage Group';
+    } catch (e) { toast(e.message, 'error'); }
 }
 
 async function syncGroup() {
@@ -7239,41 +7440,139 @@ async function saveAddFileId() {
     });
 }
 
+async function runMediaValidationWithProgress(ids, title) {
+    if (!ids.length) return;
+    if (pmState.active) { toast('A bulk task is already running.', 'error'); return; }
+    openProgressModal({ title: title || 'Validating media…', total: ids.length, unit: 'checked', okLabel: 'valid', badLabel: 'invalid' });
+    var CHUNK = 5;
+    for (var i = 0; i < ids.length && !pmState.cancelled; i += CHUNK) {
+        var slice = ids.slice(i, i + CHUNK);
+        var firstItem = mediaLibrary.find(function (m) { return m.id === slice[0]; });
+        var label = firstItem ? (firstItem.label || firstItem.file_name || ('#' + slice[0])) : ('#' + slice[0]);
+        try {
+            var d = await api('POST', '/api/media/validate', { ids: slice });
+            updateProgressModal(d.checked || slice.length, d.valid || 0, d.invalid || 0, 'Checking: ' + label + (slice.length > 1 ? ' (+' + (slice.length - 1) + ' more)' : ''));
+        } catch (e) {
+            updateProgressModal(slice.length, 0, slice.length, 'Error: ' + e.message);
+        }
+    }
+    finishProgressModal();
+    loadMediaLibrary(true);
+}
+async function openReindexStorage() {
+    if (pmState.active) { toast('A bulk task is already running.', 'error'); return; }
+    var btn = $('media-reindex-btn');
+    var probe = null;
+    try {
+        await withBusy(btn, async function () {
+            probe = await api('POST', '/api/media/reindex_probe', {});
+        });
+    } catch (e) {
+        toast(e.message, 'error');
+        return;
+    }
+    if (!probe || !probe.max_message_id || probe.max_message_id < 1) {
+        toast('No messages found in storage chat.', 'info');
+        return;
+    }
+    var defaultStart = Math.max(1, probe.max_message_id > 500 ? (probe.max_message_id - 499) : 1);
+    var extraHtml =
+        '<div class="grid grid-2" style="margin-top:12px;">' +
+            '<div class="field" style="margin-bottom:0;"><label class="field-label tiny">From message ID</label><input type="number" class="input" id="rx-from" min="1" max="' + probe.max_message_id + '" value="1"></div>' +
+            '<div class="field" style="margin-bottom:0;"><label class="field-label tiny">To message ID</label><input type="number" class="input" id="rx-to" min="1" max="' + probe.max_message_id + '" value="' + probe.max_message_id + '"></div>' +
+        '</div>' +
+        '<label class="check" style="margin-top:10px;"><input type="checkbox" id="rx-skip" checked> <span>Skip message IDs already in Media Library</span></label>' +
+        '<div class="tiny muted" style="margin-top:8px;">Detected latest message ID: <b>#' + probe.max_message_id + '</b>' + (probe.max_message_id > 500 ? ' (tip: narrow the range if old messages are only text; suggested recent window: ' + defaultStart + '–' + probe.max_message_id + ')' : '') + '. Note: protected-content chats cannot be reindexed via Bot API.</div>';
+    var ok = await confirmDialog(
+        'Scan "' + (probe.chat_title || probe.chat_id) + '" for existing photos, videos, documents, and audio?',
+        'Reindex storage chat',
+        false,
+        extraHtml
+    );
+    if (!ok) return;
+
+    var fromId = Math.max(1, parseInt($('rx-from').value, 10) || 1);
+    var toId = Math.min(probe.max_message_id, parseInt($('rx-to').value, 10) || probe.max_message_id);
+    var skipExisting = !!($('rx-skip') && $('rx-skip').checked);
+    if (fromId > toId) { toast('"From message ID" must be ≤ "To message ID".', 'error'); return; }
+
+    var ids = [];
+    for (var m = fromId; m <= toId; m++) ids.push(m);
+
+    openProgressModal({
+        title: 'Reindexing storage',
+        total: ids.length,
+        unit: 'scanned',
+        okLabel: 'indexed',
+        badLabel: 'skipped'
+    });
+
+    var CHUNK = 10;
+    for (var i = 0; i < ids.length && !pmState.cancelled; ) {
+        var slice = ids.slice(i, i + CHUNK);
+        try {
+            var r = await api('POST', '/api/media/reindex_batch', {
+                messageIds: slice,
+                skipExisting: skipExisting
+            });
+            if (r && r.rate_limited) {
+                var waitSec = Math.min(Math.max(parseInt(r.retry_after, 10) || 3, 1), 15);
+                $('pm-current').textContent = 'Telegram rate limit — pausing ' + waitSec + 's…';
+                await new Promise(function (resolve) { setTimeout(resolve, waitSec * 1000); });
+                continue;
+            }
+            var added = (r && r.added) || 0;
+            var scanned = (r && r.scanned) || slice.length;
+            var skipped = Math.max(0, scanned - added);
+            updateProgressModal(
+                scanned,
+                added,
+                skipped,
+                'Scanning messages #' + slice[0] + '–#' + slice[slice.length - 1] + ' (found ' + added + ' new)…'
+            );
+            i += CHUNK;
+        } catch (e) {
+            updateProgressModal(slice.length, 0, slice.length, 'Error: ' + e.message);
+            i += CHUNK;
+        }
+    }
+    finishProgressModal();
+    loadMediaLibrary(true);
+}
+
 async function validateAllVisibleMedia() {
     var list = getFilteredMediaList();
     if (!list.length) { toast('No media to validate.', 'info'); return; }
-    var ids = list.slice(0, 40).map(function (m) { return m.id; });
-    await withSelfBusy(async function () {
-        try {
-            var d = await api('POST', '/api/media/validate', { ids: ids });
-            toast('Validated ' + d.checked + ' item(s): ' + d.valid + ' valid, ' + d.invalid + ' invalid.', d.invalid ? 'error' : 'success');
-            loadMediaLibrary(true);
-        } catch (e) { toast(e.message, 'error'); }
-    });
+    var ids = list.map(function (m) { return m.id; });
+    await runMediaValidationWithProgress(ids, 'Validating visible media');
 }
 async function bulkMediaValidate() {
     var ids = Array.from(mediaSelected);
     if (!ids.length) return;
-    await withSelfBusy(async function () {
-        try {
-            var d = await api('POST', '/api/media/validate', { ids: ids.slice(0, 40) });
-            toast('Validated ' + d.checked + ' item(s): ' + d.valid + ' valid, ' + d.invalid + ' invalid.', d.invalid ? 'error' : 'success');
-            loadMediaLibrary(true);
-        } catch (e) { toast(e.message, 'error'); }
-    });
+    await runMediaValidationWithProgress(ids, 'Validating selected media');
 }
 async function bulkMediaUserAccess(mode) {
+    if (pmState.active) { toast('A bulk task is already running.', 'error'); return; }
     var ids = Array.from(mediaSelected);
     if (!ids.length) return;
     var raw = prompt((mode === 'grant' ? 'Grant access — enter Telegram user ID(s) to ADD' : 'Revoke access — enter Telegram user ID(s) to REMOVE') + ' (comma separated):');
     if (!raw) return;
-    try {
-        await api('POST', '/api/media/bulk', { action: mode === 'grant' ? 'grant_access' : 'revoke_access', ids: ids, userIds: raw });
-        toast('Updated access on ' + ids.length + ' item(s).');
-        loadMediaLibrary(true);
-    } catch (e) { toast(e.message, 'error'); }
+    openProgressModal({ title: mode === 'grant' ? 'Granting user access' : 'Revoking user access', total: ids.length, unit: 'updated', okLabel: 'updated', badLabel: 'failed' });
+    var CHUNK = 25;
+    for (var i = 0; i < ids.length && !pmState.cancelled; i += CHUNK) {
+        var slice = ids.slice(i, i + CHUNK);
+        try {
+            await api('POST', '/api/media/bulk', { action: mode === 'grant' ? 'grant_access' : 'revoke_access', ids: slice, userIds: raw });
+            updateProgressModal(slice.length, slice.length, 0, 'Updated ' + Math.min(i + slice.length, ids.length) + ' of ' + ids.length + ' item(s)…');
+        } catch (e) {
+            updateProgressModal(slice.length, 0, slice.length, 'Error: ' + e.message);
+        }
+    }
+    finishProgressModal();
+    loadMediaLibrary(true);
 }
 async function bulkMediaSetExpiry() {
+    if (pmState.active) { toast('A bulk task is already running.', 'error'); return; }
     var ids = Array.from(mediaSelected);
     if (!ids.length) return;
     var hoursStr = prompt('Set expiration in hours from now (e.g. 24, 168 for 7 days, or 0 to CLEAR expiration):', '168');
@@ -7281,25 +7580,42 @@ async function bulkMediaSetExpiry() {
     var h = parseFloat(hoursStr);
     if (isNaN(h) || h < 0) { toast('Enter 0 or a positive number of hours.', 'error'); return; }
     var expiresAt = h === 0 ? '' : new Date(Date.now() + h * 3600 * 1000).toISOString();
-    try {
-        await api('POST', '/api/media/bulk', { action: 'set_expiration', ids: ids, expires_at: expiresAt });
-        toast(h === 0 ? 'Cleared expiration on ' + ids.length + ' item(s).' : 'Expiration set on ' + ids.length + ' item(s).');
-        loadMediaLibrary(true);
-    } catch (e) { toast(e.message, 'error'); }
+    openProgressModal({ title: h === 0 ? 'Clearing expirations' : 'Setting expirations', total: ids.length, unit: 'updated', okLabel: 'updated', badLabel: 'failed' });
+    var CHUNK = 25;
+    for (var i = 0; i < ids.length && !pmState.cancelled; i += CHUNK) {
+        var slice = ids.slice(i, i + CHUNK);
+        try {
+            await api('POST', '/api/media/bulk', { action: 'set_expiration', ids: slice, expires_at: expiresAt });
+            updateProgressModal(slice.length, slice.length, 0, 'Updated ' + Math.min(i + slice.length, ids.length) + ' of ' + ids.length + ' item(s)…');
+        } catch (e) {
+            updateProgressModal(slice.length, 0, slice.length, 'Error: ' + e.message);
+        }
+    }
+    finishProgressModal();
+    loadMediaLibrary(true);
 }
 async function bulkMediaDelete() {
+    if (pmState.active) { toast('A bulk task is already running.', 'error'); return; }
     var ids = Array.from(mediaSelected);
     if (!ids.length) return;
     var ok = await confirmDialog('Delete ' + ids.length + ' selected item(s) from the Media Library?', 'Bulk delete', true,
         '<label class="check" style="margin-top:10px;"><input type="checkbox" id="bulk-del-tg"> <span>Also delete stored messages from Telegram storage chat (when available)</span></label>');
     if (!ok) return;
     var delTg = !!($('bulk-del-tg') && $('bulk-del-tg').checked);
-    try {
-        await api('POST', '/api/media/bulk', { action: 'delete', ids: ids, delete_telegram_messages: delTg });
-        mediaSelected.clear();
-        toast('Deleted ' + ids.length + ' item(s).');
-        loadMediaLibrary(true);
-    } catch (e) { toast(e.message, 'error'); }
+    openProgressModal({ title: 'Deleting selected media', total: ids.length, unit: 'deleted', okLabel: 'deleted', badLabel: 'failed' });
+    var CHUNK = delTg ? 5 : 20;
+    for (var i = 0; i < ids.length && !pmState.cancelled; i += CHUNK) {
+        var slice = ids.slice(i, i + CHUNK);
+        try {
+            await api('POST', '/api/media/bulk', { action: 'delete', ids: slice, delete_telegram_messages: delTg });
+            slice.forEach(function (id) { mediaSelected.delete(id); });
+            updateProgressModal(slice.length, slice.length, 0, 'Deleted ' + Math.min(i + slice.length, ids.length) + ' of ' + ids.length + ' item(s)…');
+        } catch (e) {
+            updateProgressModal(slice.length, 0, slice.length, 'Error: ' + e.message);
+        }
+    }
+    finishProgressModal();
+    loadMediaLibrary(true);
 }
 
 async function deleteMedia(id) {
@@ -7524,6 +7840,7 @@ function updateBcCount() {
     $('bc-count').textContent = n + ' recipient(s) will receive this message' + warn;
 }
 async function sendBroadcast() {
+    if (pmState.active) { toast('A bulk task is already running.', 'error'); return; }
     var text = $('bc-text').value.trim();
     var photo = $('bc-photo').value.trim();
     var hasDraftItems = draftMedia && Array.isArray(draftMedia.media_items) && draftMedia.media_items.length > 0;
@@ -7531,26 +7848,50 @@ async function sendBroadcast() {
     var ids = getBroadcastIds();
     if (!ids.length) { toast('No recipients selected.', 'error'); return; }
     if (!text && !photo && !hasDraftMedia) { toast('Write a message first.', 'error'); return; }
-    var body = { userIds: ids, message: text };
-    if (photo) body.photo_url = photo;
-    if (draftButtonsJson) body.buttons_json = draftButtonsJson;
+    var baseBody = { message: text };
+    if (photo) baseBody.photo_url = photo;
+    if (draftButtonsJson) baseBody.buttons_json = draftButtonsJson;
     if (draftMedia) {
-        body.media_type = draftMedia.media_type;
-        body.file_id = draftMedia.file_id;
-        body.media_meta = draftMedia.media_meta;
-        if (hasDraftItems) body.media_items_json = JSON.stringify(draftMedia.media_items);
-        if (draftMedia.protect_content) body.protect_content = 1;
-        if (draftMedia.media_type === 'text' && !hasDraftItems) { body.photo_url = ''; body.file_id = ''; body.media_meta = ''; }
-        else if (draftMedia.file_id) body.photo_url = '';
+        baseBody.media_type = draftMedia.media_type;
+        baseBody.file_id = draftMedia.file_id;
+        baseBody.media_meta = draftMedia.media_meta;
+        if (hasDraftItems) baseBody.media_items_json = JSON.stringify(draftMedia.media_items);
+        if (draftMedia.protect_content) baseBody.protect_content = 1;
+        if (draftMedia.media_type === 'text' && !hasDraftItems) { baseBody.photo_url = ''; baseBody.file_id = ''; baseBody.media_meta = ''; }
+        else if (draftMedia.file_id) baseBody.photo_url = '';
     }
-    try {
-        var d = await withBusy($('bc-send'), function () { return api('POST', '/api/broadcast', body); });
-        toast('Delivered to ' + d.sent + ' user(s).');
-        if (d.warning) toast(d.warning, 'info');
-        $('bc-text').value = ''; $('bc-photo').value = '';
-        clearComposeStatus('bc');
-        loadBroadcastHistory();
-    } catch (e) { toast(e.message, 'error'); }
+    if (ids.length === 1) {
+        try {
+            var d = await withBusy($('bc-send'), function () { return api('POST', '/api/broadcast', Object.assign({ userIds: ids }, baseBody)); });
+            toast('Delivered to ' + d.sent + ' user(s).');
+            $('bc-text').value = ''; $('bc-photo').value = '';
+            clearComposeStatus('bc');
+            loadBroadcastHistory();
+        } catch (e) { toast(e.message, 'error'); }
+        return;
+    }
+    openProgressModal({ title: 'Sending broadcast', total: ids.length, unit: 'processed', okLabel: 'delivered', badLabel: 'failed/skipped' });
+    var CHUNK = 20;
+    var broadcastId = null;
+    for (var i = 0; i < ids.length && !pmState.cancelled; i += CHUNK) {
+        var slice = ids.slice(i, i + CHUNK);
+        var isFinal = (i + CHUNK >= ids.length);
+        var chunkBody = Object.assign({ userIds: slice, totalCount: ids.length, isFinal: isFinal }, baseBody);
+        if (broadcastId !== null) chunkBody.broadcastId = broadcastId;
+        try {
+            var res = await api('POST', '/api/broadcast', chunkBody);
+            if (broadcastId === null && res && res.broadcast_id) broadcastId = res.broadcast_id;
+            var sent = (res && res.sent) || 0;
+            var notSent = ((res && res.failed) || 0) + ((res && res.skipped) || 0);
+            updateProgressModal(slice.length, sent, notSent, 'Sent wave ' + (Math.floor(i / CHUNK) + 1) + ' (' + Math.min(i + slice.length, ids.length) + '/' + ids.length + ')…');
+        } catch (e) {
+            updateProgressModal(slice.length, 0, slice.length, 'Error: ' + e.message);
+        }
+    }
+    finishProgressModal();
+    $('bc-text').value = ''; $('bc-photo').value = '';
+    clearComposeStatus('bc');
+    loadBroadcastHistory();
 }
 async function loadBroadcastHistory() {
     var box = $('bc-chat');
@@ -8777,14 +9118,21 @@ async function saveCfApiToken() {
 
 async function startCfOAuth() {
   var btn = $('cf-oauth-connect');
-  await withBusy(btn, async function () {
-    try {
-      var d = await api('POST', '/api/oauth/start', {});
-      if (!d || !d.authorize_url) throw new Error('Could not start OAuth.');
-      window.location.href = d.authorize_url;
-    } catch (e) { toast(e.message, 'error'); }
-  });
+  if (btn && btn.classList.contains('loading')) return;
+  busy(btn, true);
+  try {
+    var d = await api('POST', '/api/oauth/start', {});
+    if (!d || !d.authorize_url) throw new Error('Could not start OAuth.');
+    window.location.href = d.authorize_url;
+  } catch (e) {
+    busy(btn, false);
+    toast(e.message, 'error');
+  }
 }
+window.addEventListener('pageshow', function () {
+  var btn = $('cf-oauth-connect');
+  if (btn) busy(btn, false);
+});
 
 async function disconnectCfOAuth() {
   if (!await confirmDialog('Disconnect from Cloudflare? Future updates will need a manual API token unless you reconnect.', 'Disconnect Cloudflare')) return;
@@ -8883,6 +9231,9 @@ async function performUpdate(force) {
       '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Updated to ' +
       esc(r.version || 'latest') + '.</span>';
     toast('Update complete.');
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistration().then(function (reg) { if (reg) reg.update(); }).catch(function () {});
+    }
     checkUpdate(true);
     loadCfOAuthStatus();
   } catch (e) {
@@ -8958,9 +9309,9 @@ document.addEventListener('keydown', function (e) {
         else if (top === 'backup-modal') closeCustomBackup();
         else if (top === 'about-modal') closeAboutModal();
         else if (top === 'token-modal') closeTokenModal();
-        else if (top === 'check-modal') closeCheckModal();
+        else if (top === 'progress-modal') closeProgressModal();
     }
-    if (e.key === 'Escape') closeAllDropdowns();
+    if (e.key === 'Escape') { closeAllDropdowns(); if (typeof closeTopbarDropdowns === 'function') closeTopbarDropdowns(null); }
     if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey && !/^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || '')) {
         var dash = document.getElementById('step-dashboard');
         if (dash && !dash.classList.contains('hidden')) {
@@ -8974,12 +9325,12 @@ document.addEventListener('keydown', function (e) {
    NAVIGATION STYLE & STRUCTURE PRESETS
    ============================================================ */
 var currentNavStyle = 'classic';
-var currentNavStructure = 'grouped';
+var currentNavStructure = 'topbar';
 function applyNavLayout(style, structure) {
     var app = document.querySelector('.app');
     if (!app) return;
     style = ['classic', 'pills', 'glass', 'compact'].indexOf(style) >= 0 ? style : 'classic';
-    structure = ['grouped', 'flat', 'topbar'].indexOf(structure) >= 0 ? structure : 'grouped';
+    structure = ['grouped', 'flat', 'topbar'].indexOf(structure) >= 0 ? structure : 'topbar';
     currentNavStyle = style;
     currentNavStructure = structure;
     ['classic', 'pills', 'glass', 'compact'].forEach(function (s) { app.classList.toggle('nav-style-' + s, s === style); });
@@ -8992,10 +9343,10 @@ function applyNavLayout(style, structure) {
     } catch (e) {}
 }
 (function initNavLayout() {
-    var s = 'classic', st = 'grouped';
+    var s = 'classic', st = 'topbar';
     try {
         s = localStorage.getItem('nyxx-nav-style') || 'classic';
-        st = localStorage.getItem('nyxx-nav-structure') || 'grouped';
+        st = localStorage.getItem('nyxx-nav-structure') || 'topbar';
     } catch (e) {}
     applyNavLayout(s, st);
 })();
@@ -9052,10 +9403,10 @@ function renderChannels() {
         var s = {};
         try { s = JSON.parse(c.settings_json || '{}'); } catch (e) {}
         var badges = '';
-        if (s.auto_signature_enabled) badges += '<span class="badge blue">Auto-sign</span>';
-        if (s.auto_buttons_enabled) badges += '<span class="badge purple">Auto-buttons</span>';
-        if (s.auto_capture_media) badges += '<span class="badge green">Auto-capture</span>';
-        if (c.is_active != 1) badges += '<span class="badge red">Removed</span>';
+        if (s.auto_signature_enabled) badges += '<span class="badge blue hide-mobile">Auto-sign</span>';
+        if (s.auto_buttons_enabled) badges += '<span class="badge purple hide-mobile">Auto-buttons</span>';
+        if (s.auto_capture_media) badges += '<span class="badge green hide-mobile">Auto-capture</span>';
+        if (c.is_active != 1) badges += '<span class="badge red hide-mobile">Removed</span>';
         return '<div class="list-row">' +
             '<div class="cmd-icon-box"><i class="fa-solid fa-tower-broadcast" style="color:var(--accent);"></i></div>' +
             '<div class="lr-main" onclick="openChannel(' + c.id + ')" style="cursor:pointer;">' +
@@ -9066,6 +9417,19 @@ function renderChannels() {
             '<div class="lr-actions"><button class="icon-btn" onclick="openChannel(' + c.id + ')" aria-label="Open channel"><i class="fa-solid fa-chevron-right"></i></button></div>' +
         '</div>';
     }).join('') + '</div>';
+}
+async function connectGroupManually() {
+    var inp = $('grp-connect-input');
+    var chatId = inp ? inp.value.trim() : '';
+    if (!chatId) { toast('Enter a group ID (-100…) or @username.', 'error'); return; }
+    await withBusy($('grp-connect-btn'), async function () {
+        try {
+            var d = await api('POST', '/api/groups/add', { chatId: chatId });
+            if (inp) inp.value = '';
+            toast(d.warning ? d.warning : 'Group connected!', d.warning ? 'info' : 'success');
+            loadGroups(true);
+        } catch (e) { toast(e.message, 'error'); }
+    });
 }
 async function connectChannelManually() {
     var inp = $('ch-connect-input');
@@ -9338,7 +9702,7 @@ async function deleteChannelPost(idx) {
 // automatically when VERSION is bumped).
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
-        try { navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function () {}); } catch (e) {}
+        try { navigator.serviceWorker.register('/sw.js', { scope: '/', updateViaCache: 'none' }).catch(function () {}); } catch (e) {}
     });
 }
 
@@ -9396,7 +9760,7 @@ async function loadSettings(force) {
         if (d.cf_token_set) $('up-token').placeholder = 'Token already stored — click Generate to replace';
         setSeg('sys-lang', d.system_language || 'en');
         if (typeof window.applyNavLayout === 'function' && (d.nav_style || d.nav_structure)) {
-            window.applyNavLayout(d.nav_style || 'classic', d.nav_structure || 'grouped');
+            window.applyNavLayout(d.nav_style || 'classic', d.nav_structure || 'topbar');
         }
     } catch (e) { /* silent */ }
 }
@@ -10364,7 +10728,7 @@ function renderMcpSnippets() {
     if ($('mcp-snippet-cursor')) $('mcp-snippet-cursor').textContent =
         '{\\n  "mcpServers": {\\n    "nyxx": {\\n      "url": "' + endpoint + '",\\n      "headers": { "Authorization": "Bearer ' + tok + '" }\\n    }\\n  }\\n}';
     if ($('mcp-snippet-curl')) $('mcp-snippet-curl').textContent =
-        'curl -X POST ' + endpoint + ' \\\\n  -H "Authorization: Bearer ' + tok + '" \\\\n  -H "Content-Type: application/json" \\\\n  -d \\'{"jsonrpc":"2.0","id":1,"method":"tools/list"}\\'';
+        'curl -X POST ' + endpoint + ' \\\\\\n  -H "Authorization: Bearer ' + tok + '" \\\\\\n  -H "Content-Type: application/json" \\\\\\n  -d \\'{"jsonrpc":"2.0","id":1,"method":"tools/list"}\\'';
 }
 
 function onMcpProviderChange() {
@@ -10712,6 +11076,7 @@ export default {
             if (request.method === 'POST' && url.pathname === '/api/contact/settings')   return await saveContactSettings(request, env);
             if (request.method === 'GET'  && url.pathname === '/api/contact/messages')   return await getContactMessages(env, url);
             if (request.method === 'POST' && url.pathname === '/api/contact/mark_read') return await markContactRead(env);
+            if (request.method === 'POST' && url.pathname === '/api/contact/mark_message_read') return await markContactMessageRead(request, env);
             if (request.method === 'POST' && url.pathname === '/api/contact/mark_user_read') return await markContactUserRead(request, env);
             if (request.method === 'GET'  && url.pathname === '/api/contact/stats')      return await getContactStats(env);
             if (request.method === 'POST' && url.pathname === '/api/contact/test_notify') return await testContactNotify(env);
@@ -10724,6 +11089,8 @@ export default {
             if (request.method === 'POST' && url.pathname === '/api/memory/auto_remove') return await saveAutoRemoveSettings(request, env);
 
             if (request.method === 'GET' && url.pathname === '/api/users') return await getUsers(env, url);
+            if (request.method === 'POST' && url.pathname === '/api/users/add') return await addUserManually(request, env);
+            if (request.method === 'GET' && url.pathname === '/api/users/unreachable_ids') return await getUnreachableUserIds(env);
             if (request.method === 'GET' && /^\/api\/users\/[0-9]+$/.test(url.pathname)) return await getUserById(env, url);
             if (request.method === 'PUT' && url.pathname === '/api/users/role') return await updateUserRole(request, env);
             if (request.method === 'POST' && url.pathname === '/api/users/send_message') return await sendUserPrivateMessage(request, env);
@@ -10740,10 +11107,11 @@ export default {
                 if (request.method === 'PUT') return await updateAiMessage(request, env, url);
                 if (request.method === 'DELETE') return await deleteAiMessage(env, url);
             }
-            if (request.method === 'POST' && url.pathname === '/api/users/delete_unreachable') return await deleteUnreachableUsers(env);
+            if (request.method === 'POST' && url.pathname === '/api/users/delete_unreachable') return await deleteUnreachableUsers(env, request);
             if (request.method === 'DELETE' && /^\/api\/users\/[0-9]+$/.test(url.pathname)) return await deleteUser(request, env, url);
 
             if (request.method === 'GET' && url.pathname === '/api/groups') return await getGroups(env);
+            if (request.method === 'POST' && url.pathname === '/api/groups/add') return await addGroupManually(request, env);
             if (request.method === 'GET' && /^\/api\/groups\/-?[0-9]+$/.test(url.pathname)) return await getGroupDetail(env, url);
             if (request.method === 'POST' && /^\/api\/groups\/-?[0-9]+\/sync$/.test(url.pathname)) return await syncGroupStatus(env, url);
             if (request.method === 'GET' && /^\/api\/groups\/-?[0-9]+\/memory$/.test(url.pathname)) return await getGroupMemory(env, url);
@@ -10818,6 +11186,8 @@ export default {
             if (request.method === 'POST' && url.pathname === '/api/media/bulk') return await bulkMediaLibraryAction(request, env);
             if (request.method === 'POST' && url.pathname === '/api/media/add_file_id') return await addMediaByFileId(request, env);
             if (request.method === 'POST' && url.pathname === '/api/media/send_test') return await sendMediaTest(request, env);
+            if (request.method === 'POST' && url.pathname === '/api/media/reindex_probe') return await reindexMediaProbe(env);
+            if (request.method === 'POST' && url.pathname === '/api/media/reindex_batch') return await reindexMediaBatch(request, env);
             if (request.method === 'GET'  && url.pathname === '/api/media/storage_chat') return await getMediaStorageChatInfo(env, url);
             // ---- MCP dashboard API ----
             if (request.method === 'GET'  && url.pathname === '/api/mcp/settings') return await getMcpSettings(request, env);
@@ -11191,7 +11561,7 @@ async function demoteAdminHandler(request, env) {
 // DATABASE
 // ============================================================================
 const dbInitCache = new WeakMap();
-const SCHEMA_VERSION = 22;
+const SCHEMA_VERSION = 23;
 
 const MIGRATIONS = {
     2: [
@@ -11360,6 +11730,12 @@ const MIGRATIONS = {
         `ALTER TABLE dm_messages ADD COLUMN media_items_json TEXT DEFAULT ''`,
         `ALTER TABLE broadcast_history ADD COLUMN media_items_json TEXT DEFAULT ''`,
     ],
+    23: [
+        `ALTER TABLE commands ADD COLUMN edit_message INTEGER DEFAULT 0`,
+        `ALTER TABLE commands ADD COLUMN inline_auto_back INTEGER DEFAULT 0`,
+        `ALTER TABLE commands ADD COLUMN inline_back_label TEXT DEFAULT ''`,
+        `ALTER TABLE contact_pending_reply ADD COLUMN contact_msg_id INTEGER DEFAULT 0`,
+    ],
 };
 
 // ============================================================================
@@ -11409,6 +11785,9 @@ const DESIRED_SCHEMA = {
         media_meta: { type: 'TEXT', default: "''" },
         media_items_json: { type: 'TEXT', default: "''" },
         protect_content: { type: 'INTEGER', default: '0' },
+        edit_message: { type: 'INTEGER', default: '0' },
+        inline_auto_back: { type: 'INTEGER', default: '0' },
+        inline_back_label: { type: 'TEXT', default: "''" },
         auto_back: { type: 'INTEGER', default: '1' },
         back_label: { type: 'TEXT', default: "''" },
         remove_reply_keyboard: { type: 'INTEGER', default: '0' },
@@ -11550,6 +11929,7 @@ const DESIRED_SCHEMA = {
         admin_id: { type: 'INTEGER', primary: true },
         target_user_id: { type: 'INTEGER' },
         source_message_id: { type: 'INTEGER', default: '0' },
+        contact_msg_id: { type: 'INTEGER', default: '0' },
         created_at: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' }
     }},
     media_library: { columns: {
@@ -11954,6 +12334,10 @@ async function initializeDatabase(db) {
         } catch (e) { /* ignore */ }
 
         const SCHEMA_HEALS = [
+            `ALTER TABLE commands ADD COLUMN edit_message INTEGER DEFAULT 0`,
+            `ALTER TABLE commands ADD COLUMN inline_auto_back INTEGER DEFAULT 0`,
+            `ALTER TABLE commands ADD COLUMN inline_back_label TEXT DEFAULT ''`,
+            `ALTER TABLE contact_pending_reply ADD COLUMN contact_msg_id INTEGER DEFAULT 0`,
             `ALTER TABLE commands ADD COLUMN remove_reply_keyboard INTEGER DEFAULT 0`,
             `ALTER TABLE commands ADD COLUMN auto_back INTEGER DEFAULT 1`,
             `ALTER TABLE commands ADD COLUMN back_label TEXT DEFAULT ''`,
@@ -12641,6 +13025,19 @@ async function markContactRead(env) {
         return apiJson({ success: true, marked: (r && r.meta && r.meta.changes) || 0 });
     } catch (err) { return internalError(err); }
 }
+async function markContactMessageRead(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const body = await request.json();
+        const messageId = parseInt(body.messageId);
+        if (!messageId) return apiJson({ error: 'Invalid messageId.' }, 400);
+        await initializeDatabase(env.DB);
+        const r = await env.DB.prepare(
+            "UPDATE dm_messages SET read_at = CURRENT_TIMESTAMP WHERE id = ? AND source = 'featured' AND direction = 'in' AND read_at IS NULL"
+        ).bind(messageId).run();
+        return apiJson({ success: true, messageId, marked: (r && r.meta && r.meta.changes) || 0 });
+    } catch (err) { return internalError(err); }
+}
 async function markContactUserRead(request, env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
@@ -12742,8 +13139,9 @@ async function handleContactMessage(env, BOT_TOKEN, chatId, userId, userInfo, me
 
         // 2. Store the message
         const saveFeatured = (await getSetting(env.DB, 'dm_save_featured')) === '1';
+        let contactRowId = 0;
         if (saveFeatured) {
-            await logDm(env.DB, userId, 'in', 'featured', 'text', message, null, null, null);
+            contactRowId = (await logDm(env.DB, userId, 'in', 'featured', 'text', message, null, null, null)) || 0;
         }
 
         // 3. Away mode (UTC hours)
@@ -12782,10 +13180,15 @@ async function handleContactMessage(env, BOT_TOKEN, chatId, userId, userInfo, me
             }
             const body = '\n\n' + escapeTelegramHTML(preview);
             const replyKb = {
-                inline_keyboard: [[
-                    { text: L.contact_reply_btn, callback_data: 'CR:' + userId + ':reply' },
-                    { text: L.contact_dismiss_btn, callback_data: 'CR:' + userId + ':cancel' }
-                ]]
+                inline_keyboard: [
+                    [
+                        { text: L.contact_reply_btn, callback_data: 'CR:' + userId + ':reply:' + contactRowId },
+                        { text: L.contact_dismiss_btn, callback_data: 'CR:' + userId + ':cancel:' + contactRowId }
+                    ],
+                    [
+                        { text: L.contact_seen_btn, callback_data: 'CR:' + userId + ':seen:' + contactRowId }
+                    ]
+                ]
             };
             for (const adminId of adminIds) {
                 if (Number(adminId) === Number(userId)) continue;
@@ -13259,7 +13662,7 @@ async function getCommands(env, url) {
         await initializeDatabase(env.DB);
         const summary = url && url.searchParams.get('summary') === '1';
         const cols = summary
-            ? "command, parent, response_type, enabled, access_level, allowed_users, expires_at, is_admin_only, protect_content, media_items_json, order_idx, CASE WHEN buttons_json != '' THEN 1 ELSE 0 END AS has_buttons, show_reply_keyboard"
+            ? "command, parent, response_type, enabled, access_level, allowed_users, expires_at, is_admin_only, protect_content, edit_message, media_items_json, order_idx, CASE WHEN buttons_json != '' THEN 1 ELSE 0 END AS has_buttons, show_reply_keyboard"
             : '*';
         const result = await env.DB.prepare(`SELECT ${cols} FROM commands ORDER BY order_idx, command`).all();
         return apiJson({ commands: result.results || [] });
@@ -13350,11 +13753,14 @@ async function createCommand(request, env) {
         const maxOrder = await env.DB.prepare('SELECT MAX(order_idx) as max FROM commands').first();
         const orderIdx = (maxOrder && maxOrder.max !== null) ? maxOrder.max + 1 : 0;
         try {
+            const editMessage = body.edit_message ? 1 : 0;
+            const inlineAutoBack = body.inline_auto_back ? 1 : 0;
+            const inlineBackLabel = body.inline_back_label ? String(body.inline_back_label).trim().slice(0, 64) : '';
             const autoBack = body.auto_back !== undefined ? (body.auto_back ? 1 : 0) : 1;
             const backLabel = body.back_label ? String(body.back_label).trim().slice(0, 64) : '';
             const removeReply = body.remove_reply_keyboard ? 1 : 0;
-            await env.DB.prepare(`INSERT INTO commands (command, parent, response_type, content, media_url, file_id, media_meta, media_items_json, protect_content, buttons_json, is_admin_only, access_level, allowed_users, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, auto_back, back_label, remove_reply_keyboard, order_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-                .bind(command, parent || null, rtype, content || '', finalMediaUrl, finalFileId, finalMediaMeta, finalItemsJson, protect_content ? 1 : 0, buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', autoBack, backLabel, removeReply, orderIdx).run();
+            await env.DB.prepare(`INSERT INTO commands (command, parent, response_type, content, media_url, file_id, media_meta, media_items_json, protect_content, edit_message, inline_auto_back, inline_back_label, buttons_json, is_admin_only, access_level, allowed_users, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, auto_back, back_label, remove_reply_keyboard, order_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+                .bind(command, parent || null, rtype, content || '', finalMediaUrl, finalFileId, finalMediaMeta, finalItemsJson, protect_content ? 1 : 0, editMessage, inlineAutoBack, inlineBackLabel, buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', autoBack, backLabel, removeReply, orderIdx).run();
         } catch (e) {
             const m = String(e.message || '');
             console.error('createCommand INSERT failed:', m);
@@ -13411,6 +13817,9 @@ async function updateCommand(request, env) {
         const accessLevel = resolveCommandAccessInput(body.access_level, is_admin_only, existing);
         const allowedUsers = body.allowed_users !== undefined ? normalizeAllowedUsersStr(body.allowed_users) : ((existing && existing.allowed_users) || '');
         const expiresAt = body.expires_at !== undefined ? (body.expires_at ? String(body.expires_at).trim() : null) : (existing ? existing.expires_at : null);
+        const finalEditMessage = body.edit_message !== undefined ? (body.edit_message ? 1 : 0) : ((existing && existing.edit_message) ? 1 : 0);
+        const finalInlineAutoBack = body.inline_auto_back !== undefined ? (body.inline_auto_back ? 1 : 0) : ((existing && existing.inline_auto_back) ? 1 : 0);
+        const finalInlineBackLabel = body.inline_back_label !== undefined ? String(body.inline_back_label).trim().slice(0, 64) : ((existing && existing.inline_back_label) || '');
         const finalProtect = protect_content !== undefined ? (protect_content ? 1 : 0) : ((existing && existing.protect_content) ? 1 : 0);
         const finalAutoBack = body.auto_back !== undefined ? (body.auto_back ? 1 : 0) : ((existing && existing.auto_back !== undefined && existing.auto_back !== null) ? (existing.auto_back ? 1 : 0) : 1);
         const finalBackLabel = body.back_label !== undefined ? String(body.back_label).trim().slice(0, 64) : ((existing && existing.back_label) || '');
@@ -13419,8 +13828,8 @@ async function updateCommand(request, env) {
             const clash = await env.DB.prepare('SELECT command FROM commands WHERE command = ?').bind(command).first();
             if (clash) return apiJson({ error: `A command named "${command}" already exists.` }, 400);
             if (parent && await commandIsDescendant(env.DB, command, parent)) return apiJson({ error: 'You cannot nest a command inside its own child.' }, 400);
-            await env.DB.prepare(`UPDATE commands SET command = ?, parent = ?, response_type = ?, content = ?, media_url = ?, file_id = ?, media_meta = ?, media_items_json = ?, protect_content = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, allowed_users = ?, expires_at = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ?, auto_back = ?, back_label = ?, remove_reply_keyboard = ? WHERE command = ?`)
-                .bind(command, parent || null, rtype, content || '', finalMediaUrl, finalFileId, finalMediaMeta, finalItemsJson, finalProtect, buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', finalAutoBack, finalBackLabel, finalRemoveReply, oldCommand).run();
+            await env.DB.prepare(`UPDATE commands SET command = ?, parent = ?, response_type = ?, content = ?, media_url = ?, file_id = ?, media_meta = ?, media_items_json = ?, protect_content = ?, edit_message = ?, inline_auto_back = ?, inline_back_label = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, allowed_users = ?, expires_at = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ?, auto_back = ?, back_label = ?, remove_reply_keyboard = ? WHERE command = ?`)
+                .bind(command, parent || null, rtype, content || '', finalMediaUrl, finalFileId, finalMediaMeta, finalItemsJson, finalProtect, finalEditMessage, finalInlineAutoBack, finalInlineBackLabel, buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', finalAutoBack, finalBackLabel, finalRemoveReply, oldCommand).run();
             await env.DB.prepare('UPDATE commands SET parent = ? WHERE parent = ?').bind(command, oldCommand).run();
             const refRows = await env.DB.prepare('SELECT command, buttons_json, reply_keyboard_json FROM commands WHERE buttons_json LIKE ? OR reply_keyboard_json LIKE ?').bind(`%${oldCommand}%`, `%${oldCommand}%`).all();
             for (const row of refRows.results) {
@@ -13432,8 +13841,8 @@ async function updateCommand(request, env) {
             }
         } else {
             if (parent && await commandIsDescendant(env.DB, command, parent)) return apiJson({ error: 'You cannot nest a command inside its own child.' }, 400);
-            await env.DB.prepare(`UPDATE commands SET parent = ?, response_type = ?, content = ?, media_url = ?, file_id = ?, media_meta = ?, media_items_json = ?, protect_content = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, allowed_users = ?, expires_at = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ?, auto_back = ?, back_label = ?, remove_reply_keyboard = ? WHERE command = ?`)
-                .bind(parent || null, rtype, content || '', finalMediaUrl, finalFileId, finalMediaMeta, finalItemsJson, finalProtect, buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', finalAutoBack, finalBackLabel, finalRemoveReply, command).run();
+            await env.DB.prepare(`UPDATE commands SET parent = ?, response_type = ?, content = ?, media_url = ?, file_id = ?, media_meta = ?, media_items_json = ?, protect_content = ?, edit_message = ?, inline_auto_back = ?, inline_back_label = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, allowed_users = ?, expires_at = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ?, auto_back = ?, back_label = ?, remove_reply_keyboard = ? WHERE command = ?`)
+                .bind(parent || null, rtype, content || '', finalMediaUrl, finalFileId, finalMediaMeta, finalItemsJson, finalProtect, finalEditMessage, finalInlineAutoBack, finalInlineBackLabel, buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', finalAutoBack, finalBackLabel, finalRemoveReply, command).run();
         }
         await bumpDomainEpoch(env.DB, 'reply_buttons');
         return apiJson({ success: true });
@@ -13479,7 +13888,7 @@ async function exportCommandPack(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
-        const commands = await env.DB.prepare('SELECT command, parent, response_type, content, media_url, file_id, media_meta, media_items_json, protect_content, buttons_json, is_admin_only, access_level, allowed_users, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, auto_back, back_label FROM commands ORDER BY order_idx, command').all();
+        const commands = await env.DB.prepare('SELECT command, parent, response_type, content, media_url, file_id, media_meta, media_items_json, protect_content, edit_message, inline_auto_back, inline_back_label, buttons_json, is_admin_only, access_level, allowed_users, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, auto_back, back_label FROM commands ORDER BY order_idx, command').all();
         let menu = [];
         const raw = await getSetting(env.DB, 'menu_commands');
         if (raw) { try { menu = JSON.parse(raw); } catch (e) {} }
@@ -13501,19 +13910,20 @@ async function importCommandPack(request, env) {
         const stmts = valid.map((c, i) => {
             const access = effectiveCommandAccess(c);
             return env.DB.prepare(`
-            INSERT INTO commands (command, parent, response_type, content, media_url, file_id, media_meta, media_items_json, protect_content, buttons_json, is_admin_only, access_level, allowed_users, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, auto_back, back_label, order_idx)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO commands (command, parent, response_type, content, media_url, file_id, media_meta, media_items_json, protect_content, edit_message, inline_auto_back, inline_back_label, buttons_json, is_admin_only, access_level, allowed_users, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, auto_back, back_label, order_idx)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(command) DO UPDATE SET
                 parent = excluded.parent, response_type = excluded.response_type, content = excluded.content,
                 media_url = excluded.media_url, file_id = excluded.file_id, media_meta = excluded.media_meta,
                 media_items_json = excluded.media_items_json, protect_content = excluded.protect_content,
+                edit_message = excluded.edit_message, inline_auto_back = excluded.inline_auto_back, inline_back_label = excluded.inline_back_label,
                 buttons_json = excluded.buttons_json,
                 is_admin_only = excluded.is_admin_only, access_level = excluded.access_level,
                 allowed_users = excluded.allowed_users, expires_at = excluded.expires_at,
                 enabled = excluded.enabled,
                 show_reply_keyboard = excluded.show_reply_keyboard, reply_keyboard_json = excluded.reply_keyboard_json,
                 auto_back = excluded.auto_back, back_label = excluded.back_label
-        `).bind(c.command, c.parent || null, c.response_type || 'text', c.content || '', c.media_url || '', c.file_id || '', c.media_meta || '', c.media_items_json || '', c.protect_content ? 1 : 0, c.buttons_json || '', access === 'admin' ? 1 : 0, access, normalizeAllowedUsersStr(c.allowed_users), c.expires_at || null, c.enabled != 0 ? 1 : 0, c.show_reply_keyboard ? 1 : 0, c.reply_keyboard_json || '', c.auto_back !== undefined && c.auto_back !== null ? (c.auto_back ? 1 : 0) : 1, c.back_label || '', i);
+        `).bind(c.command, c.parent || null, c.response_type || 'text', c.content || '', c.media_url || '', c.file_id || '', c.media_meta || '', c.media_items_json || '', c.protect_content ? 1 : 0, c.edit_message ? 1 : 0, c.inline_auto_back ? 1 : 0, c.inline_back_label || '', c.buttons_json || '', access === 'admin' ? 1 : 0, access, normalizeAllowedUsersStr(c.allowed_users), c.expires_at || null, c.enabled != 0 ? 1 : 0, c.show_reply_keyboard ? 1 : 0, c.reply_keyboard_json || '', c.auto_back !== undefined && c.auto_back !== null ? (c.auto_back ? 1 : 0) : 1, c.back_label || '', i);
         });
         await runBatchChunks(env.DB, stmts);
         if (Array.isArray(data.menu) && data.menu.length) {
@@ -13877,18 +14287,94 @@ async function deleteUser(request, env, url) {
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
 }
-async function deleteUnreachableUsers(env) {
+async function addUserManually(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const body = await request.json();
+        const raw = String(body.userId || '').trim();
+        const userId = parseInt(raw, 10);
+        if (!userId || userId <= 0 || String(userId) !== raw) {
+            return apiJson({ error: 'Enter a valid positive numeric Telegram user ID.' }, 400);
+        }
+        await initializeDatabase(env.DB);
+        const token = await getSetting(env.DB, 'bot_token');
+        let firstName = 'User ' + userId;
+        let username = '';
+        let privateStarted = 0;
+        let warning = 'User added, but Telegram could not verify reachability yet. They must start the bot before you can DM them.';
+        if (token) {
+            try {
+                const info = await tgCall(token, 'getChat', { chat_id: userId });
+                if (info && info.ok && info.result) {
+                    if (info.result.type && info.result.type !== 'private') {
+                        return apiJson({ error: `ID ${userId} belongs to a "${info.result.type}", not a user.` }, 400);
+                    }
+                    firstName = [info.result.first_name, info.result.last_name].filter(Boolean).join(' ') || info.result.username || firstName;
+                    username = info.result.username || '';
+                }
+            } catch (e) {}
+            try {
+                const act = await tgCall(token, 'sendChatAction', { chat_id: userId, action: 'typing' });
+                if (act && act.ok) {
+                    privateStarted = 1;
+                    warning = '';
+                } else {
+                    warning = 'User added as unreachable. They must start or interact with the bot before you can text them.';
+                }
+            } catch (e) {}
+        }
+        await env.DB.prepare(`
+            INSERT INTO users (id, username, first_name, private_started, last_active)
+            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(id) DO UPDATE SET
+                username = CASE WHEN excluded.username != '' THEN excluded.username ELSE users.username END,
+                first_name = CASE WHEN excluded.first_name != '' THEN excluded.first_name ELSE users.first_name END,
+                private_started = excluded.private_started,
+                last_active = CURRENT_TIMESTAMP
+        `).bind(userId, username, firstName, privateStarted).run();
+        await logAction(env.DB, userId, 'User added manually');
+        return apiJson({ success: true, private_started: privateStarted, warning });
+    } catch (err) { return internalError(err); }
+}
+async function getUnreachableUserIds(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
-        // Only delete plain users. Promoted admins and moderators may
-        // legitimately have private_started = 0 (e.g. they were promoted from
-        // group tracking without ever messaging the bot), and silently
-        // stripping their role via bulk delete would be data loss.
         const rows = await env.DB.prepare(
             "SELECT id FROM users WHERE COALESCE(private_started, 0) = 0 AND (role IS NULL OR role = 'user')"
         ).all();
-        const ids = (rows.results || []).map(r => r.id);
+        return apiJson({ ids: (rows.results || []).map(r => r.id) });
+    } catch (err) { return internalError(err); }
+}
+async function deleteUnreachableUsers(env, request) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        let requestedIds = null;
+        if (request) {
+            try {
+                const body = await request.json();
+                if (body && Array.isArray(body.ids)) {
+                    requestedIds = body.ids.map(Number).filter(n => Number.isInteger(n) && n > 0);
+                }
+            } catch (e) {}
+        }
+        let ids = [];
+        if (requestedIds && requestedIds.length) {
+            for (let i = 0; i < requestedIds.length; i += 200) {
+                const slice = requestedIds.slice(i, i + 200);
+                const ph = slice.map(() => '?').join(', ');
+                const rows = await env.DB.prepare(
+                    `SELECT id FROM users WHERE id IN (${ph}) AND COALESCE(private_started, 0) = 0 AND (role IS NULL OR role = 'user')`
+                ).bind(...slice).all();
+                ids = ids.concat((rows.results || []).map(r => r.id));
+            }
+        } else if (!requestedIds) {
+            const rows = await env.DB.prepare(
+                "SELECT id FROM users WHERE COALESCE(private_started, 0) = 0 AND (role IS NULL OR role = 'user')"
+            ).all();
+            ids = (rows.results || []).map(r => r.id);
+        }
         if (!ids.length) return apiJson({ success: true, deleted: 0 });
         const chunk = 200;
         for (let i = 0; i < ids.length; i += chunk) {
@@ -13970,9 +14456,10 @@ async function logDm(db, chatId, direction, source, kind, text, mediaUrl, messag
     try {
         const metaStr = mediaMeta ? (typeof mediaMeta === 'string' ? mediaMeta : JSON.stringify(mediaMeta)) : null;
         const itemsStr = mediaItemsJson ? (typeof mediaItemsJson === 'string' ? mediaItemsJson : JSON.stringify(mediaItemsJson)) : '';
-        await db.prepare('INSERT INTO dm_messages (chat_id, message_id, direction, source, kind, text, photo_url, buttons_json, file_id, media_meta, media_items_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+        const res = await db.prepare('INSERT INTO dm_messages (chat_id, message_id, direction, source, kind, text, photo_url, buttons_json, file_id, media_meta, media_items_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
             .bind(chatId, messageId || null, direction, source || null, kind || 'text', text || '', mediaUrl || null, buttonsJson || null, fileId || null, metaStr, itemsStr).run();
-    } catch (e) {}
+        return res && res.meta ? res.meta.last_row_id : null;
+    } catch (e) { return null; }
 }
 async function getUserDmMessages(env, url) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
@@ -14215,6 +14702,45 @@ function normalizeGroupSettings(raw) {
     out.flood_ban_after = Number.isFinite(banAfter) && banAfter > 0 ? Math.min(banAfter, 20) : 2;
     return out;
 }
+async function addGroupManually(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const body = await request.json();
+        const chatId = String(body.chatId || '').trim();
+        if (!chatId) return apiJson({ error: 'Enter a group ID (-100…) or @username.' }, 400);
+        await initializeDatabase(env.DB);
+        const token = await getSetting(env.DB, 'bot_token');
+        if (!token) return apiJson({ error: 'Bot token is not set.' }, 400);
+        const info = await tgCall(token, 'getChat', { chat_id: chatId });
+        if (!info || !info.ok || !info.result) return apiJson({ error: (info && info.description) || 'Group not found or bot is not a member.' }, 400);
+        const chat = info.result;
+        if (chat.type !== 'group' && chat.type !== 'supergroup') {
+            return apiJson({ error: `That chat is a "${chat.type}", not a group or supergroup.` }, 400);
+        }
+        let memberCount = 0;
+        try { const c = await tgCall(token, 'getChatMemberCount', { chat_id: chat.id }); if (c && c.ok) memberCount = c.result || 0; } catch (e) {}
+        let warning = '';
+        let isActive = true;
+        try {
+            const me = await tgFetchJson(`https://api.telegram.org/bot${token}/getMe`);
+            if (me && me.ok && me.result && me.result.id) {
+                const m = await tgCall(token, 'getChatMember', { chat_id: chat.id, user_id: me.result.id });
+                const st = m && m.ok && m.result ? m.result.status : '';
+                if (!st || st === 'left' || st === 'kicked') {
+                    isActive = false;
+                    warning = 'Group saved, but the bot is currently not a member of this group.';
+                }
+            }
+        } catch (e) {}
+        await upsertGroup(env.DB, chat, isActive);
+        if (memberCount > 0) {
+            await env.DB.prepare('UPDATE groups SET member_count = ? WHERE id = ?').bind(memberCount, chat.id).run();
+        }
+        await bumpDomainEpoch(env.DB, 'groups');
+        await logAction(env.DB, null, `Group ${chat.id} connected manually`);
+        return apiJson({ success: true, group: chat, warning });
+    } catch (err) { return internalError(err); }
+}
 async function getGroups(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
@@ -14237,7 +14763,9 @@ async function getGroupDetail(env, url) {
         if (!row) return apiJson({ error: 'Group not found.' }, 404);
         let settings = {};
         try { settings = JSON.parse(row.settings_json || '{}'); } catch (e) {}
-        return apiJson({ group: row, settings: normalizeGroupSettings(settings) });
+        const storageChat = String((await getSetting(env.DB, 'media_storage_chat_id')) || '').trim();
+        const isMediaStorage = storageChat === String(id) || (row.username && storageChat.toLowerCase() === ('@' + row.username.toLowerCase()));
+        return apiJson({ group: row, settings: normalizeGroupSettings(settings), is_media_storage: isMediaStorage });
     } catch (err) { return internalError(err); }
 }
 async function saveGroupSettings(request, env, url) {
@@ -14895,11 +15423,15 @@ async function handleBroadcast(request, env) {
             for (const r of (rows.results || [])) blockedSet.add(r.user_id);
         }
         const content = { mediaType, text: message || '', mediaUrl: fileId || (items[0] && items[0].media_url) || photoUrl || '', mediaMeta, items, protect_content: !!protectContent };
-        let broadcastId = null;
-        try {
-            const histRes = await env.DB.prepare('INSERT INTO broadcast_history (message, photo_url, kind, buttons_json, file_id, media_meta, media_items_json, recipient_count, sent_count, sent_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, datetime("now"))').bind(message || '', (items[0] && items[0].media_url) || photoUrl || null, mediaType, buttonsJson || null, fileId || null, JSON.stringify(mediaMeta || {}), mediaItemsStr, uniqueIds.length).run();
-            broadcastId = histRes && histRes.meta ? histRes.meta.last_row_id : null;
-        } catch (e) {}
+        const existingBroadcastId = bcBody.broadcastId ? parseInt(bcBody.broadcastId) : null;
+        const totalRecipientCount = bcBody.totalCount ? parseInt(bcBody.totalCount) : uniqueIds.length;
+        let broadcastId = existingBroadcastId;
+        if (!broadcastId) {
+            try {
+                const histRes = await env.DB.prepare('INSERT INTO broadcast_history (message, photo_url, kind, buttons_json, file_id, media_meta, media_items_json, recipient_count, sent_count, sent_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, datetime("now"))').bind(message || '', (items[0] && items[0].media_url) || photoUrl || null, mediaType, buttonsJson || null, fileId || null, JSON.stringify(mediaMeta || {}), mediaItemsStr, totalRecipientCount).run();
+                broadcastId = histRes && histRes.meta ? histRes.meta.last_row_id : null;
+            } catch (e) {}
+        }
         let sent = 0, failed = 0, skipped = 0;
         const unreachableIds = [];
         const recipientRows = [];
@@ -14936,9 +15468,16 @@ async function handleBroadcast(request, env) {
         if (broadcastId !== null && recipientRows.length) {
             try { await runBatchChunks(env.DB, recipientRows.map(r => env.DB.prepare('INSERT OR IGNORE INTO broadcast_recipients (broadcast_id, chat_id, message_id) VALUES (?, ?, ?)').bind(...r)), 100); } catch (e) {}
         }
-        if (broadcastId !== null) { try { await env.DB.prepare('UPDATE broadcast_history SET sent_count = ? WHERE id = ?').bind(sent, broadcastId).run(); } catch (e) {} }
+        if (broadcastId !== null) {
+            try {
+                if (existingBroadcastId) await env.DB.prepare('UPDATE broadcast_history SET sent_count = COALESCE(sent_count, 0) + ? WHERE id = ?').bind(sent, broadcastId).run();
+                else await env.DB.prepare('UPDATE broadcast_history SET sent_count = ? WHERE id = ?').bind(sent, broadcastId).run();
+            } catch (e) {}
+        }
         if (built && built.replySpec && built.replySpec.actions) await mergeReplyActions(env.DB, built.replySpec.actions);
-        await logAction(env.DB, null, `Broadcast sent to ${sent}/${uniqueIds.length}`);
+        if (!existingBroadcastId || bcBody.isFinal) {
+            await logAction(env.DB, null, `Broadcast sent to ${sent}/${uniqueIds.length}` + (existingBroadcastId ? ` (batch #${broadcastId})` : ''));
+        }
         const bcResponse = { success: true, sent, failed, skipped, broadcast_id: broadcastId };
         if (uniqueIds.length > SUBREQUEST_SAFE_LIMIT) {
             bcResponse.warning = `You targeted ${uniqueIds.length} recipients, which exceeds Cloudflare's per-invocation subrequest budget on the free plan. If some users show as "sent: no", split the broadcast into batches of ${SUBREQUEST_SAFE_LIMIT} or fewer using the "Specific user IDs" option.`;
@@ -15546,7 +16085,7 @@ async function getSettings(env, originUrl) {
             media_storage_delete_after_upload: mediaDeleteAfter === '1' ? '1' : '0',
             system_language: systemLanguage === 'fa' ? 'fa' : 'en',
             nav_style: ['classic', 'pills', 'glass', 'compact'].includes(navStyle) ? navStyle : 'classic',
-            nav_structure: ['grouped', 'flat', 'topbar'].includes(navStructure) ? navStructure : 'grouped',
+            nav_structure: ['grouped', 'flat', 'topbar'].includes(navStructure) ? navStructure : 'topbar',
         });
     } catch (err) { return internalError(err); }
 }
@@ -15555,7 +16094,7 @@ async function saveNavLayoutSetting(request, env) {
     try {
         const body = await request.json();
         const style = ['classic', 'pills', 'glass', 'compact'].includes(body.nav_style) ? body.nav_style : 'classic';
-        const structure = ['grouped', 'flat', 'topbar'].includes(body.nav_structure) ? body.nav_structure : 'grouped';
+        const structure = ['grouped', 'flat', 'topbar'].includes(body.nav_structure) ? body.nav_structure : 'topbar';
         await initializeDatabase(env.DB);
         await setSettingsBatch(env.DB, [['nav_style', style], ['nav_structure', structure]]);
         return apiJson({ success: true, nav_style: style, nav_structure: structure });
@@ -15912,8 +16451,8 @@ async function restoreBackup(request, env) {
         if (wants('commands') && Array.isArray(data.commands)) {
             await runBatchChunks(env.DB, data.commands.filter(c => c && c.command).map(c => {
                 const access = effectiveCommandAccess(c);
-                return env.DB.prepare(`INSERT INTO commands (command, parent, response_type, content, media_url, file_id, media_meta, media_items_json, protect_content, buttons_json, is_admin_only, access_level, allowed_users, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, order_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-                    .bind(c.command, c.parent || null, c.response_type || 'text', c.content || '', c.media_url || '', c.file_id || '', c.media_meta || '', c.media_items_json || '', c.protect_content ? 1 : 0, c.buttons_json || '', access === 'admin' ? 1 : 0, access, normalizeAllowedUsersStr(c.allowed_users), c.expires_at || null, c.enabled !== undefined ? c.enabled : 1, c.show_reply_keyboard ? 1 : 0, c.reply_keyboard_json || '', c.order_idx || 0);
+                return env.DB.prepare(`INSERT INTO commands (command, parent, response_type, content, media_url, file_id, media_meta, media_items_json, protect_content, edit_message, inline_auto_back, inline_back_label, buttons_json, is_admin_only, access_level, allowed_users, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, order_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+                    .bind(c.command, c.parent || null, c.response_type || 'text', c.content || '', c.media_url || '', c.file_id || '', c.media_meta || '', c.media_items_json || '', c.protect_content ? 1 : 0, c.edit_message ? 1 : 0, c.inline_auto_back ? 1 : 0, c.inline_back_label || '', c.buttons_json || '', access === 'admin' ? 1 : 0, access, normalizeAllowedUsersStr(c.allowed_users), c.expires_at || null, c.enabled !== undefined ? c.enabled : 1, c.show_reply_keyboard ? 1 : 0, c.reply_keyboard_json || '', c.order_idx || 0);
             }));
         }
         if (wants('media_library') && Array.isArray(data.media_library)) {
@@ -16293,6 +16832,160 @@ async function sendMediaTest(request, env) {
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
 }
+function extractMediaFromTgMessage(m) {
+    if (!m) return null;
+    if (m.animation) {
+        const a = m.animation;
+        return { mediaType: 'animation', fileId: a.file_id, fileName: a.file_name || 'animation.mp4', fileSize: a.file_size || 0, meta: { duration: a.duration, width: a.width, height: a.height, file_name: a.file_name, file_size: a.file_size || 0 } };
+    }
+    if (m.document) {
+        const d = m.document;
+        return { mediaType: 'document', fileId: d.file_id, fileName: d.file_name || 'document', fileSize: d.file_size || 0, meta: { file_name: d.file_name, mime_type: d.mime_type, file_size: d.file_size || 0 } };
+    }
+    if (m.video) {
+        const v = m.video;
+        return { mediaType: 'video', fileId: v.file_id, fileName: v.file_name || 'video.mp4', fileSize: v.file_size || 0, meta: { duration: v.duration, width: v.width, height: v.height, file_name: v.file_name, file_size: v.file_size || 0 } };
+    }
+    if (m.audio) {
+        const au = m.audio;
+        return { mediaType: 'audio', fileId: au.file_id, fileName: au.file_name || au.title || 'audio', fileSize: au.file_size || 0, meta: { duration: au.duration, performer: au.performer, title: au.title, file_name: au.file_name, file_size: au.file_size || 0 } };
+    }
+    if (m.voice) {
+        const vo = m.voice;
+        return { mediaType: 'voice', fileId: vo.file_id, fileName: 'voice.ogg', fileSize: vo.file_size || 0, meta: { duration: vo.duration, file_size: vo.file_size || 0 } };
+    }
+    if (m.video_note) {
+        const vn = m.video_note;
+        return { mediaType: 'video_note', fileId: vn.file_id, fileName: 'video_note.mp4', fileSize: vn.file_size || 0, meta: { duration: vn.duration, length: vn.length, file_size: vn.file_size || 0 } };
+    }
+    if (m.sticker) {
+        const st = m.sticker;
+        return { mediaType: 'sticker', fileId: st.file_id, fileName: 'sticker.webp', fileSize: st.file_size || 0, meta: { width: st.width, height: st.height, file_size: st.file_size || 0 } };
+    }
+    if (Array.isArray(m.photo) && m.photo.length) {
+        const p = m.photo[m.photo.length - 1];
+        return { mediaType: 'photo', fileId: p.file_id, fileName: 'photo.jpg', fileSize: p.file_size || 0, meta: { width: p.width, height: p.height, file_size: p.file_size || 0 } };
+    }
+    return null;
+}
+
+async function reindexMediaProbe(env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        const token = await getSetting(env.DB, 'bot_token');
+        if (!token) return apiJson({ error: 'Bot token is not set.' }, 400);
+        const storageChat = String((await getSetting(env.DB, 'media_storage_chat_id')) || '').trim();
+        if (!storageChat) return apiJson({ error: 'Configure a media storage chat first.' }, 400);
+
+        const chatInfo = await tgCall(token, 'getChat', { chat_id: storageChat });
+        if (!chatInfo || !chatInfo.ok || !chatInfo.result) {
+            return apiJson({ error: (chatInfo && chatInfo.description) || 'Could not access the storage chat.' }, 400);
+        }
+        const chat = chatInfo.result;
+        const chatTitle = chat.title || [chat.first_name, chat.last_name].filter(Boolean).join(' ') || chat.username || String(chat.id);
+
+        // Send a silent temporary message and delete it immediately to discover the latest message_id
+        const probeMsg = await tgCall(token, 'sendMessage', {
+            chat_id: chat.id,
+            text: '.',
+            disable_notification: true
+        }, { retry: false });
+        if (!probeMsg || !probeMsg.ok || !probeMsg.result || !probeMsg.result.message_id) {
+            return apiJson({ error: (probeMsg && probeMsg.description) || 'Bot needs permission to post and delete messages in the storage chat.' }, 400);
+        }
+        const probeId = probeMsg.result.message_id;
+        await tgCall(token, 'deleteMessage', { chat_id: chat.id, message_id: probeId }, { retry: false });
+
+        return apiJson({
+            success: true,
+            chat_id: chat.id,
+            chat_title: chatTitle,
+            max_message_id: Math.max(0, probeId - 1)
+        });
+    } catch (err) { return internalError(err); }
+}
+
+async function reindexMediaBatch(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const body = await request.json().catch(() => ({}));
+        const messageIds = Array.isArray(body.messageIds)
+            ? body.messageIds.map(Number).filter(n => Number.isInteger(n) && n > 0).slice(0, 15)
+            : [];
+        if (!messageIds.length) return apiJson({ error: 'No message IDs provided.' }, 400);
+        const skipExisting = body.skipExisting !== false;
+
+        await initializeDatabase(env.DB);
+        const token = await getSetting(env.DB, 'bot_token');
+        if (!token) return apiJson({ error: 'Bot token is not set.' }, 400);
+        const storageChatRaw = String((await getSetting(env.DB, 'media_storage_chat_id')) || '').trim();
+        if (!storageChatRaw) return apiJson({ error: 'No storage chat configured.' }, 400);
+
+        const chatInfo = await tgCall(token, 'getChat', { chat_id: storageChatRaw });
+        if (!chatInfo || !chatInfo.ok || !chatInfo.result) {
+            return apiJson({ error: (chatInfo && chatInfo.description) || 'Storage chat unreachable.' }, 400);
+        }
+        const chatIdStr = String(chatInfo.result.id);
+
+        const existingMsgIds = new Set();
+        if (skipExisting) {
+            const ph = messageIds.map(() => '?').join(', ');
+            const rows = await env.DB.prepare(
+                `SELECT storage_message_id FROM media_library WHERE (storage_chat_id = ? OR storage_chat_id = ?) AND storage_message_id IN (${ph})`
+            ).bind(chatIdStr, storageChatRaw, ...messageIds).all();
+            for (const r of (rows.results || [])) {
+                if (r.storage_message_id) existingMsgIds.add(Number(r.storage_message_id));
+            }
+        }
+
+        let added = 0;
+        let scanned = 0;
+
+        for (const msgId of messageIds) {
+            if (existingMsgIds.has(msgId)) {
+                scanned++;
+                continue;
+            }
+            const fwd = await tgCall(token, 'forwardMessage', {
+                chat_id: chatIdStr,
+                from_chat_id: chatIdStr,
+                message_id: msgId,
+                disable_notification: true
+            }, { retry: false });
+
+            if (fwd && !fwd.ok && fwd.error_code === 429) {
+                const retryAfter = (fwd.parameters && fwd.parameters.retry_after) ? parseInt(fwd.parameters.retry_after, 10) : 3;
+                return apiJson({ success: true, rate_limited: true, retry_after: retryAfter, scanned, added });
+            }
+
+            scanned++;
+            if (!fwd || !fwd.ok || !fwd.result) continue;
+
+            const fwdMsg = fwd.result;
+            // Clean up the temporary forwarded message right away
+            if (fwdMsg.message_id) {
+                await tgCall(token, 'deleteMessage', { chat_id: chatIdStr, message_id: fwdMsg.message_id }, { retry: false });
+            }
+
+            const extracted = extractMediaFromTgMessage(fwdMsg);
+            if (!extracted || !extracted.fileId) continue;
+
+            const dup = await env.DB.prepare('SELECT id FROM media_library WHERE file_id = ? LIMIT 1').bind(extracted.fileId).first();
+            if (dup) continue;
+
+            const caption = fwdMsg.caption ? String(fwdMsg.caption).slice(0, 1024) : '';
+            const label = (caption ? caption.split('\n')[0].slice(0, 80) : '') || extracted.fileName || extracted.mediaType;
+            await env.DB.prepare(
+                'INSERT INTO media_library (file_id, media_type, media_meta, label, caption, file_name, file_size, storage_chat_id, storage_message_id, is_valid, last_validated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP)'
+            ).bind(extracted.fileId, extracted.mediaType, JSON.stringify(extracted.meta), label, caption, extracted.fileName, extracted.fileSize, chatIdStr, msgId).run();
+            added++;
+        }
+
+        return apiJson({ success: true, scanned, added });
+    } catch (err) { return internalError(err); }
+}
+
 async function getMediaStorageChatInfo(env, url) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
@@ -17276,6 +17969,9 @@ function getMcpToolDefinitions(categories) {
             media_url: { type: 'string', description: 'Photo URL when response_type is photo.' },
             is_admin_only: { type: 'boolean' },
             access_level: { type: 'string', enum: ['everyone','moderator','admin'], description: 'Who can run the command. Overrides is_admin_only when set.' },
+            edit_message: { type: 'boolean', description: 'When triggered via an inline button, edit the existing message instead of sending a new one.' },
+            inline_auto_back: { type: 'boolean', description: 'Auto-append an inline Back button to parent command (default false).' },
+            inline_back_label: { type: 'string', description: 'Custom inline Back button label.' },
             enabled: { type: 'boolean', description: 'Default true.' },
             buttons: {
                 type: 'object',
@@ -17303,6 +17999,9 @@ function getMcpToolDefinitions(categories) {
             media_url: { type: 'string' },
             is_admin_only: { type: 'boolean' },
             access_level: { type: 'string', enum: ['everyone','moderator','admin'], description: 'Who can run the command. Overrides is_admin_only when set.' },
+            edit_message: { type: 'boolean' },
+            inline_auto_back: { type: 'boolean' },
+            inline_back_label: { type: 'string' },
             enabled: { type: 'boolean' },
             buttons: {
                 type: 'object',
@@ -17573,6 +18272,9 @@ async function executeMcpTool(name, args, env, categories) {
                 content: row.content || '', media_url: row.media_url || '',
                 file_id: row.file_id || '', media_meta: row.media_meta || '',
                 media_items: mediaItems, protect_content: !!row.protect_content,
+                edit_message: !!row.edit_message,
+                inline_auto_back: !!row.inline_auto_back,
+                inline_back_label: row.inline_back_label || '',
                 allowed_users: row.allowed_users || '', expires_at: row.expires_at || null,
                 is_admin_only: !!row.is_admin_only, access_level: effectiveCommandAccess(row), enabled: row.enabled !== 0,
                 show_reply_keyboard: !!row.show_reply_keyboard,
@@ -17648,6 +18350,9 @@ async function executeMcpTool(name, args, env, categories) {
                 file_id: args.file_id || '',
                 media_items_json: args.media_items ? JSON.stringify(args.media_items) : '',
                 protect_content: args.protect_content ? 1 : 0,
+                edit_message: args.edit_message ? 1 : 0,
+                inline_auto_back: args.inline_auto_back ? 1 : 0,
+                inline_back_label: args.inline_back_label || '',
                 allowed_users: args.allowed_users || '',
                 expires_at: args.expires_at || '',
                 is_admin_only: args.is_admin_only ? 1 : 0,
@@ -17678,6 +18383,9 @@ async function executeMcpTool(name, args, env, categories) {
                 media_meta: existing.media_meta || '',
                 media_items_json: args.media_items !== undefined ? JSON.stringify(args.media_items) : (existing.media_items_json || ''),
                 protect_content: args.protect_content !== undefined ? (args.protect_content ? 1 : 0) : (existing.protect_content ? 1 : 0),
+                edit_message: args.edit_message !== undefined ? (args.edit_message ? 1 : 0) : (existing.edit_message ? 1 : 0),
+                inline_auto_back: args.inline_auto_back !== undefined ? (args.inline_auto_back ? 1 : 0) : (existing.inline_auto_back ? 1 : 0),
+                inline_back_label: args.inline_back_label !== undefined ? String(args.inline_back_label) : (existing.inline_back_label || ''),
                 allowed_users: args.allowed_users !== undefined ? String(args.allowed_users) : (existing.allowed_users || ''),
                 expires_at: args.expires_at !== undefined ? String(args.expires_at) : (existing.expires_at || ''),
                 is_admin_only: args.is_admin_only !== undefined ? (args.is_admin_only ? 1 : 0) : (existing.is_admin_only ? 1 : 0),
@@ -18820,113 +19528,125 @@ async function send(){
 
 
 async function handleServiceWorker(request, env) {
-    // Minimal Service Worker that caches the HTML shell (the DASHBOARD_HTML
-    // string) and serves it cache-first on subsequent navigations. HTML
-    // invalidates automatically when VERSION changes — the CACHE constant
-    // embeds the version string, so each new deploy installs a fresh cache.
-    //
-    // API/webhook/MCP/chat/oauth traffic is NEVER intercepted — those always
-    // hit the network so live data is preserved end-to-end.
     const sw = `// Nyxx Service Worker v${VERSION}
-    const CACHE = 'nyxx-shell-v${VERSION}';
+const CACHE = 'nyxx-shell-v${VERSION}';
+const API_CACHE = 'nyxx-api-v${VERSION}';
 
-    self.addEventListener('install', function(event) {
+self.addEventListener('install', function(event) {
     self.skipWaiting();
     event.waitUntil(
         caches.open(CACHE).then(function(cache) {
-            return fetch('/').then(function(res) {
+            return fetch('/', { cache: 'reload' }).then(function(res) {
                 if (res && res.ok) return cache.put('/', res.clone());
-                }).catch(function() {});
+            }).catch(function() {});
         })
     );
-    });
-    
-    self.addEventListener('activate', function(event) {
-        event.waitUntil(
-            caches.keys().then(function(keys) {
-                return Promise.all(
-                    keys.filter(function(k) { return k !== CACHE; })
+});
+
+self.addEventListener('activate', function(event) {
+    event.waitUntil(
+        caches.keys().then(function(keys) {
+            return Promise.all(
+                keys.filter(function(k) { return k !== CACHE && k !== API_CACHE; })
                     .map(function(k) { return caches.delete(k); })
-                    );
-                    }).then(function() { return self.clients.claim(); })
-                    );
-                    });
-                    
-                    self.addEventListener('fetch', function(event) {
-                        const req = event.request;
-                        if (req.method !== 'GET') return;
-                        const url = new URL(req.url);
-                        
-                        // Stale-while-revalidate for two hot read endpoints. Returning users
-                        // see the last-known body instantly; fresh data is fetched in the
-                        // background and used on the next navigation. The ETag + 304
-                        // coordination in getOverview() means the network fetch is cheap
-                        // when nothing has changed.
-                        if (url.origin === self.location.origin &&
-                        (url.pathname === '/api/overview' || url.pathname === '/api/settings')) {
-                            event.respondWith(
-                                caches.open(CACHE).then(function(cache) {
-                                    return cache.match(req).then(function(cached) {
-                                        const networkFetch = fetch(req).then(function(res) {
-                                            if (res && res.ok) cache.put(req, res.clone());
-                                            return res;
-                                            }).catch(function() { return cached; });
-                                            return cached || networkFetch;
-                                            });
-                                            })
-                                            );
-                                            return;
-                                            }
-                                            
-                                            // Never touch other dynamic endpoints
-                                            if (url.pathname.startsWith('/api/')) return;
-                                            if (url.pathname === '/webhook') return;
-                                            if (url.pathname === '/mcp') return;
-                                            if (url.pathname === '/chat') return;
-                                            if (url.pathname === '/sw.js') return;
-                                            if (url.pathname.indexOf('/oauth') === 0) return;
-                                            
-                                            // Navigation → cache-first, background revalidate.
-                                            if (req.mode === 'navigate' || (url.pathname === '/' && req.headers.get('accept') && req.headers.get('accept').indexOf('text/html') >= 0)) {
-                                                event.respondWith(
-                                                    caches.open(CACHE).then(function(cache) {
-                                                        return cache.match('/').then(function(cached) {
-                    const networkFetch = fetch(req).then(function(res) {
-                        if (res && res.ok) cache.put('/', res.clone());
+            );
+        }).then(function() { return self.clients.claim(); })
+    );
+});
+
+self.addEventListener('message', function(event) {
+    if (event.data && event.data.type === 'CLEAR_API_CACHE') {
+        event.waitUntil(caches.delete(API_CACHE));
+    }
+});
+
+self.addEventListener('fetch', function(event) {
+    const req = event.request;
+    if (req.method !== 'GET') return;
+    const url = new URL(req.url);
+
+    // Never touch dynamic/auth/webhook/MCP endpoints
+    if (url.origin === self.location.origin) {
+        if (url.pathname === '/webhook' || url.pathname === '/mcp' || url.pathname === '/chat' || url.pathname === '/sw.js' || url.pathname.indexOf('/oauth') === 0) return;
+
+        // Network-first for overview & settings: always fresh when online, falls back to cache offline
+        if (url.pathname === '/api/overview' || url.pathname === '/api/settings') {
+            event.respondWith(
+                caches.open(API_CACHE).then(function(cache) {
+                    return fetch(req).then(function(res) {
+                        if (res && res.ok) cache.put(req, res.clone());
+                        else if (res && res.status === 401) caches.delete(API_CACHE);
                         return res;
+                    }).catch(function() {
+                        return cache.match(req).then(function(cached) {
+                            return cached || new Response(JSON.stringify({ error: 'Offline' }), { status: 503, headers: { 'Content-Type': 'application/json' } });
+                        });
+                    });
+                })
+            );
+            return;
+        }
+
+        if (url.pathname.startsWith('/api/')) return;
+
+        // Versioned client modules (/js/*.js?v=...) → cache-first
+        if (url.pathname.startsWith('/js/') && url.searchParams.get('v') === '${VERSION}') {
+            event.respondWith(
+                caches.open(CACHE).then(function(cache) {
+                    return cache.match(req).then(function(cached) {
+                        if (cached) return cached;
+                        return fetch(req).then(function(res) {
+                            if (res && res.ok) cache.put(req, res.clone());
+                            return res;
+                        });
+                    });
+                })
+            );
+            return;
+        }
+
+        // Navigation → cache-first with background revalidation
+        if (req.mode === 'navigate' || (url.pathname === '/' && req.headers.get('accept') && req.headers.get('accept').indexOf('text/html') >= 0)) {
+            event.respondWith(
+                caches.open(CACHE).then(function(cache) {
+                    return cache.match('/').then(function(cached) {
+                        const networkFetch = fetch('/', { cache: 'no-store' }).then(function(res) {
+                            if (res && res.ok) cache.put('/', res.clone());
+                            return res;
                         }).catch(function() { return cached; });
                         return cached || networkFetch;
-                        });
-                        })
-                        );
-                        return;
-                        }
-                        
-                        // Font Awesome CSS → stale-while-revalidate
-                        if (url.hostname === 'cdnjs.cloudflare.com') {
-                            event.respondWith(
-                                caches.open(CACHE).then(function(cache) {
-                                    return cache.match(req).then(function(cached) {
+                    });
+                })
+            );
+            return;
+        }
+    }
+
+    // Font Awesome CSS/fonts → stale-while-revalidate
+    if (url.hostname === 'cdnjs.cloudflare.com') {
+        event.respondWith(
+            caches.open(CACHE).then(function(cache) {
+                return cache.match(req).then(function(cached) {
                     const networkFetch = fetch(req).then(function(res) {
                         if (res && (res.ok || res.type === 'opaque')) cache.put(req, res.clone());
                         return res;
-                        });
-                        return cached || networkFetch;
-                        });
-                        })
-                        );
-                        }
-                        });
-                        `;
-                        return new Response(sw, {
-                            headers: {
-                                'Content-Type': 'application/javascript; charset=utf-8',
-                                'Cache-Control': 'public, max-age=3600',
-                                'Service-Worker-Allowed': '/',
-                                'X-Content-Type-Options': 'nosniff',
-                            },
-                        });
-                    }
+                    }).catch(function() { return cached; });
+                    return cached || networkFetch;
+                });
+            })
+        );
+    }
+});
+`;
+    return new Response(sw, {
+        headers: {
+            'Content-Type': 'application/javascript; charset=utf-8',
+            'Cache-Control': 'no-cache, max-age=0, must-revalidate',
+            'Service-Worker-Allowed': '/',
+            'X-Content-Type-Options': 'nosniff',
+        },
+    });
+}
                     
                     async function handleChatPage(request, env) {
                         const session = await getSession(request, env);
@@ -19484,6 +20204,9 @@ const SYSTEM_STRINGS = {
         contact_id: 'ID:',
         contact_reply_btn: '💬 Reply',
         contact_dismiss_btn: '❌ Dismiss',
+        contact_seen_btn: '👁 Mark as seen',
+        contact_seen_ok: '✅ Marked as seen.',
+        contact_dismissed: '✅ Dismissed and marked as seen.',
         contact_reply_intro: '💬 <b>You are replying to',
         contact_reply_hint: 'Send your reply as a text message. Or tap Cancel to abort.',
         contact_cancel_btn: '❌ Cancel reply',
@@ -19546,6 +20269,9 @@ Guidelines:
         contact_id: 'شناسه:',
         contact_reply_btn: '💬 پاسخ',
         contact_dismiss_btn: '❌ رد کردن',
+        contact_seen_btn: '👁 علامت به‌عنوان خوانده‌شده',
+        contact_seen_ok: '✅ به‌عنوان خوانده‌شده علامت خورد.',
+        contact_dismissed: '✅ پیام رد شد و خوانده‌شده علامت خورد.',
         contact_reply_intro: '💬 <b>شما در حال پاسخ دادن به',
         contact_reply_hint: 'پاسخ خود را به صورت پیام متنی ارسال کنید. یا برای انصراف روی «لغو» بزنید.',
         contact_cancel_btn: '❌ لغو پاسخ',
@@ -19875,7 +20601,9 @@ async function processTelegramUpdate(update, env, ctx) {
             const isPrivate = msg.chat.type === 'private';
             if (isGroup) {
                 const storageChat = String((await getSetting(env.DB, 'media_storage_chat_id')) || '').trim();
-                if (storageChat && String(msg.chat.id) === storageChat) {
+                const matchesId = storageChat && String(msg.chat.id) === storageChat;
+                const matchesUser = storageChat && msg.chat.username && ('@' + msg.chat.username.toLowerCase()) === storageChat.toLowerCase();
+                if (matchesId || matchesUser) {
                     const extracted = extractMediaFromTgMsg(msg);
                     if (extracted) await saveCapturedMedia(msg, extracted);
                 }
@@ -19983,7 +20711,7 @@ async function processTelegramUpdate(update, env, ctx) {
                 // Contact reply mode: if an admin clicked "Reply" on a contact
                 // notification, their next private text goes to the target user.
                 if (isPrivate) {
-                    const pending = await env.DB.prepare('SELECT target_user_id FROM contact_pending_reply WHERE admin_id = ?').bind(userId).first();
+                    const pending = await env.DB.prepare('SELECT target_user_id, source_message_id, contact_msg_id FROM contact_pending_reply WHERE admin_id = ?').bind(userId).first();
                     if (pending && pending.target_user_id) {
                         const L = sysStr();
                         if (text === '/cancel' || text.startsWith('/cancel@') || text.startsWith('/cancel ')) {
@@ -19997,6 +20725,20 @@ async function processTelegramUpdate(update, env, ctx) {
                             const sendRes = await sendRichText(BOT_TOKEN, targetId, text);
                             if (sendRes && sendRes.ok) {
                                 await env.DB.prepare('DELETE FROM contact_pending_reply WHERE admin_id = ?').bind(userId).run();
+                                if (pending.contact_msg_id > 0) {
+                                    await env.DB.prepare(
+                                        "UPDATE dm_messages SET read_at = CURRENT_TIMESTAMP WHERE id = ? AND source = 'featured' AND direction = 'in' AND read_at IS NULL"
+                                    ).bind(pending.contact_msg_id).run();
+                                }
+                                if (pending.source_message_id > 0) {
+                                    try {
+                                        await tgCall(BOT_TOKEN, 'editMessageReplyMarkup', {
+                                            chat_id: chatId,
+                                            message_id: pending.source_message_id,
+                                            reply_markup: { inline_keyboard: [[{ text: L.contact_reply_btn, callback_data: 'CR:' + targetId + ':reply:' + (pending.contact_msg_id || 0) }]] }
+                                        });
+                                    } catch (e) {}
+                                }
                                 await logDm(env.DB, targetId, 'out', 'admin_reply', 'text', text, null, sendRes.result && sendRes.result.message_id, null);
                                 await sendRichText(BOT_TOKEN, chatId,
                                     L.contact_sent_ok + ' <b>' + escapeTelegramHTML((targetRow && targetRow.first_name) || 'User') + '</b>.',
@@ -20285,22 +21027,54 @@ async function processTelegramUpdate(update, env, ctx) {
                 const parts = data.split(':');
                 const targetUserId = parseInt(parts[1]);
                 const action = parts[2];
+                const contactMsgId = parseInt(parts[3]) || 0;
                 const adminId = cb.from.id;
                 const L = sysStr();
-                await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
-                if (action === 'cancel') {
+                if (action === 'seen') {
+                    if (contactMsgId > 0) {
+                        await env.DB.prepare(
+                            "UPDATE dm_messages SET read_at = CURRENT_TIMESTAMP WHERE id = ? AND source = 'featured' AND direction = 'in' AND read_at IS NULL"
+                        ).bind(contactMsgId).run();
+                    }
+                    try {
+                        await tgCall(BOT_TOKEN, 'editMessageReplyMarkup', {
+                            chat_id: chatId,
+                            message_id: cb.message.message_id,
+                            reply_markup: { inline_keyboard: [[
+                                { text: L.contact_reply_btn, callback_data: 'CR:' + targetUserId + ':reply:' + contactMsgId },
+                                { text: L.contact_dismiss_btn, callback_data: 'CR:' + targetUserId + ':cancel:' + contactMsgId }
+                            ]] }
+                        });
+                    } catch (e) {}
+                    await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id, text: L.contact_seen_ok });
+                    return;
+                }
+                if (action === 'abort') {
+                    await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
                     await env.DB.prepare('DELETE FROM contact_pending_reply WHERE admin_id = ?').bind(adminId).run();
                     try { await tgCall(BOT_TOKEN, 'editMessageReplyMarkup', { chat_id: chatId, message_id: cb.message.message_id, reply_markup: { inline_keyboard: [] } }); } catch (e) {}
                     await sendRichText(BOT_TOKEN, chatId, L.contact_cancelled);
                     return;
                 }
+                if (action === 'cancel') {
+                    if (contactMsgId > 0) {
+                        await env.DB.prepare(
+                            "UPDATE dm_messages SET read_at = CURRENT_TIMESTAMP WHERE id = ? AND source = 'featured' AND direction = 'in' AND read_at IS NULL"
+                        ).bind(contactMsgId).run();
+                    }
+                    await env.DB.prepare('DELETE FROM contact_pending_reply WHERE admin_id = ?').bind(adminId).run();
+                    try { await tgCall(BOT_TOKEN, 'editMessageReplyMarkup', { chat_id: chatId, message_id: cb.message.message_id, reply_markup: { inline_keyboard: [] } }); } catch (e) {}
+                    await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id, text: L.contact_dismissed });
+                    return;
+                }
+                await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
                 if (targetUserId) {
                     const userRow = await env.DB.prepare('SELECT first_name, username FROM users WHERE id = ?').bind(targetUserId).first();
                     const nameDisplay = userRow ? (userRow.first_name || 'User') + (userRow.username ? ' (@' + userRow.username + ')' : '') : 'User ' + targetUserId;
                     await env.DB.prepare(
-                        'INSERT INTO contact_pending_reply (admin_id, target_user_id, source_message_id) VALUES (?, ?, ?) ON CONFLICT(admin_id) DO UPDATE SET target_user_id = excluded.target_user_id, source_message_id = excluded.source_message_id, created_at = CURRENT_TIMESTAMP'
-                    ).bind(adminId, targetUserId, cb.message.message_id || 0).run();
-                    const cancelKb = { inline_keyboard: [[{ text: L.contact_cancel_btn, callback_data: 'CR:' + targetUserId + ':cancel' }]] };
+                        'INSERT INTO contact_pending_reply (admin_id, target_user_id, source_message_id, contact_msg_id) VALUES (?, ?, ?, ?) ON CONFLICT(admin_id) DO UPDATE SET target_user_id = excluded.target_user_id, source_message_id = excluded.source_message_id, contact_msg_id = excluded.contact_msg_id, created_at = CURRENT_TIMESTAMP'
+                    ).bind(adminId, targetUserId, cb.message.message_id || 0, contactMsgId).run();
+                    const cancelKb = { inline_keyboard: [[{ text: L.contact_cancel_btn, callback_data: 'CR:' + targetUserId + ':abort' }]] };
                     await sendRichText(BOT_TOKEN, chatId,
                         L.contact_reply_intro + ' ' + escapeTelegramHTML(nameDisplay) + '</b>\n\n' +
                         '<blockquote>' + escapeTelegramHTML((cb.message.text || '').slice(0, 500)) + '</blockquote>\n\n' +
@@ -20314,11 +21088,15 @@ async function processTelegramUpdate(update, env, ctx) {
                 await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
                 return;
             }
+            if (data && (data.startsWith('PROXY:') || data.startsWith('PROXY_MSG:'))) {
+                await handleProxyCallback(BOT_TOKEN, chatId, cb, data);
+                return;
+            }
             if (data && data.startsWith('/')) {
                 const cbMatch = await resolveCommandMatch(env.DB, data);
                 if (cbMatch && cbMatch.record) {
                     const answer = tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
-                    await executeCommand(chatId, cb.from.id, cbMatch.record, BOT_TOKEN, env, cb.message.chat.type, cbMatch.args);
+                    await executeCommand(chatId, cb.from.id, cbMatch.record, BOT_TOKEN, env, cb.message.chat.type, cbMatch.args, { message: cb.message });
                     await answer;
                     return;
                 }
@@ -20418,7 +21196,204 @@ async function resolveCommandMatch(db, rawInput) {
     }
     return null;
 }
-async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatType, args) {
+function parseProxySpec(raw) {
+    let s = String(raw || '').replace(/^PROXY(?:_MSG)?:/i, '').trim();
+    if (!s) return null;
+    if (/^(https?:\/\/|tg:\/\/)/i.test(s) || s.includes('server=')) {
+        try {
+            const normalized = s.replace(/^tg:\/\//i, 'https://t.me/');
+            const u = new URL(normalized.startsWith('http') ? normalized : ('https://t.me/proxy?' + normalized));
+            const server = (u.searchParams.get('server') || '').trim();
+            const port = parseInt(u.searchParams.get('port') || '', 10);
+            const secret = (u.searchParams.get('secret') || '').trim();
+            const isSocks = u.pathname.toLowerCase().includes('socks');
+            if (!server || !port || port < 1 || port > 65535) return null;
+            return { kind: isSocks ? 'SOCKS5' : 'MTProto', server, port, secret };
+        } catch (e) { return null; }
+    }
+    const parts = s.split(':');
+    if (parts.length >= 2) {
+        const server = parts[0].trim();
+        const port = parseInt(parts[1].trim(), 10);
+        const secret = parts.slice(2).join(':').trim();
+        if (server && port >= 1 && port <= 65535) return { kind: secret ? 'MTProto' : 'TCP', server, port, secret };
+    }
+    return null;
+}
+function describeMtprotoSecret(secret) {
+    if (!secret) return 'Standard';
+    const s = String(secret).trim();
+    if (/^[0-9a-f]+$/i.test(s)) {
+        if (s.length === 32) return 'Standard';
+        if (s.length === 34 && s.toLowerCase().startsWith('dd')) return 'Padding (dd)';
+        if (s.length > 34 && s.toLowerCase().startsWith('ee')) {
+            try {
+                const bytes = hexToBytes(s.slice(34));
+                const domain = bytes ? new TextDecoder().decode(bytes).replace(/[^\x20-\x7e]/g, '') : '';
+                return domain ? `Fake TLS (${domain})` : 'Fake TLS (ee)';
+            } catch (e) { return 'Fake TLS (ee)'; }
+        }
+    }
+    if (/^[A-Za-z0-9_-]{22,}$/.test(s)) {
+        try {
+            const b64 = s.replace(/-/g, '+').replace(/_/g, '/');
+            const bin = atob(b64);
+            if (bin.charCodeAt(0) === 0xee && bin.length > 17) {
+                const domain = bin.slice(17).replace(/[^\x20-\x7e]/g, '');
+                return domain ? `Fake TLS (${domain})` : 'Fake TLS';
+            }
+        } catch (e) {}
+    }
+    return 'Custom';
+}
+function countryCodeToFlag(cc) {
+    if (!cc || cc.length !== 2) return '🏳️';
+    try { return String.fromCodePoint(...[...cc.toUpperCase()].map(c => 127397 + c.charCodeAt(0))); }
+    catch (e) { return '🏳️'; }
+}
+async function inspectProxy(spec) {
+    let ip = spec.server;
+    const isIpv4 = /^\d{1,3}(\.\d{1,3}){3}$/.test(spec.server);
+    const isIpv6 = spec.server.includes(':');
+    if (!isIpv4 && !isIpv6) {
+        try {
+            const dnsRes = await fetch(`https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(spec.server)}&type=A`, {
+                headers: { Accept: 'application/dns-json' },
+                signal: AbortSignal.timeout(3000)
+            });
+            if (dnsRes.ok) {
+                const dnsJson = await dnsRes.json();
+                const ans = (dnsJson.Answer || []).find(a => a.type === 1 && a.data);
+                if (ans) ip = ans.data;
+            }
+        } catch (e) {}
+    }
+
+    const geoPromise = (async () => {
+        try {
+            const gRes = await fetch(`http://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,country,countryCode,city,isp,org,query`, {
+                signal: AbortSignal.timeout(4000)
+            });
+            if (gRes.ok) {
+                const g = await gRes.json();
+                if (g && g.status === 'success') return g;
+            }
+        } catch (e) {}
+        return null;
+    })();
+
+    const tcpPromise = (async () => {
+        try {
+            const mod = await import('cloudflare:sockets');
+            if (!mod || typeof mod.connect !== 'function') return { status: 'unknown', ms: null };
+            const t0 = Date.now();
+            const socket = mod.connect({ hostname: ip, port: spec.port });
+            await Promise.race([
+                socket.opened,
+                new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 3500))
+            ]);
+            const ms = Date.now() - t0;
+            try { await socket.close(); } catch (e) {}
+            return { status: 'online', ms };
+        } catch (e) {
+            const msg = String((e && e.message) || e || '').toLowerCase();
+            if (msg.includes('not permitted') || msg.includes('cannot connect to') || msg.includes('cloudflare') || msg.includes('module')) {
+                return { status: 'restricted', ms: null };
+            }
+            return { status: 'offline', ms: null };
+        }
+    })();
+
+    const [geo, tcp] = await Promise.all([geoPromise, tcpPromise]);
+    return {
+        kind: spec.kind,
+        server: spec.server,
+        ip: (geo && geo.query) || ip,
+        port: spec.port,
+        secretType: spec.kind === 'MTProto' ? describeMtprotoSecret(spec.secret) : '',
+        status: tcp.status,
+        pingMs: tcp.ms,
+        country: geo ? geo.country : '',
+        countryCode: geo ? geo.countryCode : '',
+        city: geo ? geo.city : '',
+        isp: geo ? (geo.isp || geo.org || '') : ''
+    };
+}
+function formatProxyAlertText(info) {
+    const statusLine = info.status === 'online'
+        ? `🟢 Proxy Online (${info.pingMs}ms)`
+        : info.status === 'offline'
+            ? '🔴 Proxy Unreachable'
+            : '🟡 Reachability check skipped';
+    const flag = countryCodeToFlag(info.countryCode);
+    const loc = info.country ? `${flag} ${info.country}${info.city ? ' (' + info.city + ')' : ''}` : `${flag} Unknown location`;
+    const lines = [
+        statusLine,
+        `🌐 ${info.ip}:${info.port}`,
+        loc,
+    ];
+    if (info.isp) lines.push(`🏢 ${info.isp.slice(0, 42)}`);
+    lines.push(`🔐 ${info.kind}${info.secretType ? ' · ' + info.secretType : ''}`);
+    let out = lines.join('\n');
+    if (out.length > 198) out = out.slice(0, 195) + '…';
+    return out;
+}
+function formatProxyHtmlText(info) {
+    const statusLine = info.status === 'online'
+        ? `🟢 <b>Online</b> (${info.pingMs} ms)`
+        : info.status === 'offline'
+            ? '🔴 <b>Unreachable</b>'
+            : '🟡 <b>Check skipped</b>';
+    const flag = countryCodeToFlag(info.countryCode);
+    const loc = info.country ? `${flag} ${escapeTelegramHTML(info.country)}${info.city ? ' (' + escapeTelegramHTML(info.city) + ')' : ''}` : `${flag} Unknown`;
+    const parts = [
+        `• Status: ${statusLine}`,
+        `• Endpoint: <code>${escapeTelegramHTML(info.ip)}:${info.port}</code>`,
+        `• Location: ${loc}`,
+    ];
+    if (info.isp) parts.push(`• ISP: ${escapeTelegramHTML(info.isp)}`);
+    parts.push(`• Protocol: ${escapeTelegramHTML(info.kind)}${info.secretType ? ' · ' + escapeTelegramHTML(info.secretType) : ''}`);
+    return parts.join('\n');
+}
+async function handleProxyCallback(BOT_TOKEN, chatId, cb, data) {
+    const asMessage = data.startsWith('PROXY_MSG:');
+    const spec = parseProxySpec(data);
+    if (!spec) {
+        await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id, text: '⚠️ Invalid proxy format.', show_alert: true });
+        return;
+    }
+    try {
+        const info = await inspectProxy(spec);
+        if (asMessage) {
+            await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
+            await sendRichText(BOT_TOKEN, chatId, '<b>Proxy Details</b>\n\n' + formatProxyHtmlText(info));
+        } else {
+            await tgCall(BOT_TOKEN, 'answerCallbackQuery', {
+                callback_query_id: cb.id,
+                text: formatProxyAlertText(info),
+                show_alert: true
+            });
+        }
+    } catch (e) {
+        await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id, text: '⚠️ Could not test proxy right now.', show_alert: true });
+    }
+}
+function detectMessageMediaKind(msg) {
+    if (!msg) return 'text';
+    if (msg.photo) return 'photo';
+    if (msg.video) return 'video';
+    if (msg.animation) return 'animation';
+    if (msg.audio) return 'audio';
+    if (msg.document) return 'document';
+    if (msg.voice) return 'voice';
+    if (msg.video_note) return 'video_note';
+    if (msg.sticker) return 'sticker';
+    return 'text';
+}
+const EDITABLE_MEDIA_KINDS = new Set(['photo', 'video', 'animation', 'audio', 'document']);
+
+async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatType, args, opts) {
+    opts = opts || {};
     const strings = botStrings();
     if (!await checkPermissionForChat(env, userId, 'commands', chatId, chatType)) {
         await sendMessage(chatId, strings.unauthorized, BOT_TOKEN, 'HTML');
@@ -20500,20 +21475,40 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatTyp
 
     const argsRaw = String(args || '');
     const argsTokens = argsRaw.split(/\s+/).filter(Boolean).map(escapeArgsForHtml);
-    const finalContent = cmdRecord.content ? String(cmdRecord.content)
+    let finalContent = cmdRecord.content ? String(cmdRecord.content)
         .split('{{args}}').join(escapeArgsForHtml(argsRaw))
         .replace(/\{\{arg(\d+)\}\}/g, (m, n) => argsTokens[parseInt(n, 10) - 1] || '') : '';
-    const built = cmdRecord.buttons_json ? buildReplyMarkup(cmdRecord.buttons_json) : null;
-    let inlineMarkup = null;
-    if (built && built.inlineMarkup) {
-        const inlineRows = kbNormalizeInline(cmdRecord.buttons_json);
-        inlineMarkup = inlineRows ? await kbInlineMarkupSafe(env.DB, inlineRows) : built.inlineMarkup;
+    if (finalContent && /\{\{proxy_info(?::[^}]*)?\}\}/i.test(finalContent)) {
+        const matches = finalContent.match(/\{\{proxy_info(?::([^}]*))?\}\}/gi) || [];
+        for (const tag of matches) {
+            const inner = tag.replace(/^\{\{proxy_info:?/i, '').replace(/\}\}$/, '').trim();
+            const spec = parseProxySpec(inner || argsRaw);
+            let replacement = '⚠️ Invalid proxy.';
+            if (spec) {
+                try { replacement = formatProxyHtmlText(await inspectProxy(spec)); }
+                catch (e) { replacement = '⚠️ Proxy check failed.'; }
+            }
+            finalContent = finalContent.split(tag).join(replacement);
+        }
     }
+
+    let inlineRows = cmdRecord.buttons_json ? kbNormalizeInline(cmdRecord.buttons_json) : null;
+    const inlineAutoBackOn = !!(cmdRecord.inline_auto_back && cmdRecord.inline_auto_back != 0);
+    if (inlineAutoBackOn && cmdRecord.parent) {
+        if (!inlineRows) inlineRows = [];
+        const inlineBackLabel = (cmdRecord.inline_back_label && String(cmdRecord.inline_back_label).trim()) || strings.back;
+        const hasInlineBack = inlineRows.some(row => row.some(b => b.type === 'command' && b.value === cmdRecord.parent));
+        if (!hasInlineBack) {
+            inlineRows.push([{ text: inlineBackLabel, type: 'command', value: cmdRecord.parent, style: '' }]);
+        }
+    }
+    const inlineMarkup = (inlineRows && inlineRows.length) ? await kbInlineMarkupSafe(env.DB, inlineRows) : null;
+
     let replySpec = (cmdRecord.show_reply_keyboard && cmdRecord.reply_keyboard_json) ? kbNormalizeReply(cmdRecord.reply_keyboard_json) : null;
     const autoBackOn = cmdRecord.auto_back === undefined || cmdRecord.auto_back === null ? true : (cmdRecord.auto_back != 0);
     const backLabel = (cmdRecord.back_label && String(cmdRecord.back_label).trim()) || strings.back;
     if (autoBackOn && cmdRecord.parent && cmdRecord.show_reply_keyboard) {
-        if (!replySpec) replySpec = { rows: [], actions: {}, resize: true, one_time: false, persistent: true, placeholder: '' };
+        if (!replySpec) replySpec = { rows: [], actions: {}, resize: true, one_time: false, persistent: true, placeholder: '', prompt: '', force_refresh: false };
         const hasBack = replySpec.rows.some(row => row.some(b => b.text === backLabel));
         if (!hasBack) replySpec.rows.push([{ text: backLabel, command: '' }]);
     }
@@ -20523,9 +21518,6 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatTyp
     const markup = inlineMarkup || secondaryMarkup || undefined;
     const protect = !!cmdRecord.protect_content;
 
-    if (replyKeyboardMarkup && !inlineMarkup && replySpec && replySpec.force_refresh) {
-        await resetReplyKeyboardSilently(BOT_TOKEN, chatId);
-    }
     const sendSecondaryCleanup = async () => {
         if (inlineMarkup && removeReplyMarkup) {
             await sendReplyKeyboardMessage(BOT_TOKEN, chatId, removeReplyMarkup);
@@ -20537,6 +21529,96 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatTyp
             });
         }
     };
+
+    // Edit-in-place mode when triggered from an inline button (callback_query)
+    const sourceMsg = opts && opts.message ? opts.message : null;
+    if (cmdRecord.edit_message && sourceMsg && sourceMsg.message_id) {
+        const sourceKind = detectMessageMediaKind(sourceMsg);
+        const editMarkup = inlineMarkup || { inline_keyboard: [] };
+        let editedOk = false;
+
+        if (mediaItems.length === 0 && sourceKind === 'text' && finalContent.length <= 4096) {
+            const payload = {
+                chat_id: chatId,
+                message_id: sourceMsg.message_id,
+                text: finalContent || '\u2800',
+                parse_mode: 'HTML',
+                reply_markup: editMarkup
+            };
+            let res = await tgCall(BOT_TOKEN, 'editMessageText', payload, { retry: false });
+            if (res && !res.ok && isHtmlParseError(res)) {
+                const plain = Object.assign({}, payload);
+                delete plain.parse_mode;
+                plain.text = htmlToPlain(payload.text);
+                res = await tgCall(BOT_TOKEN, 'editMessageText', plain, { retry: false });
+            }
+            if ((res && res.ok) || (res && /message is not modified/i.test(String(res.description || '')))) {
+                editedOk = true;
+            }
+        } else if (
+            mediaItems.length === 1 &&
+            !sourceMsg.media_group_id &&
+            EDITABLE_MEDIA_KINDS.has(sourceKind) &&
+            EDITABLE_MEDIA_KINDS.has(mediaItems[0].media_type) &&
+            finalContent.length <= 1024
+        ) {
+            const item = mediaItems[0];
+            const mediaObj = {
+                type: item.media_type,
+                media: item.file_id || item.media_url,
+            };
+            if (finalContent) {
+                mediaObj.caption = finalContent;
+                mediaObj.parse_mode = 'HTML';
+            }
+            const payload = {
+                chat_id: chatId,
+                message_id: sourceMsg.message_id,
+                media: mediaObj,
+                reply_markup: editMarkup
+            };
+            let res = await tgCall(BOT_TOKEN, 'editMessageMedia', payload, { retry: false });
+            if (res && !res.ok && finalContent && isHtmlParseError(res)) {
+                payload.media = Object.assign({}, mediaObj, { caption: htmlToPlain(finalContent) });
+                delete payload.media.parse_mode;
+                res = await tgCall(BOT_TOKEN, 'editMessageMedia', payload, { retry: false });
+            }
+            if ((res && res.ok) || (res && /message is not modified/i.test(String(res.description || '')))) {
+                editedOk = true;
+            }
+        }
+
+        if (editedOk) {
+            await sendSecondaryCleanup();
+            return;
+        }
+        // Incompatible types (e.g. text <-> photo, album, >4096 chars, or uneditable >48h):
+        // send the new message(s) first, then clean up the old message on success.
+        if (replyKeyboardMarkup && !inlineMarkup && replySpec && replySpec.force_refresh) {
+            await resetReplyKeyboardSilently(BOT_TOKEN, chatId);
+        }
+        let sentRes = null;
+        if (mediaItems.length > 0) {
+            sentRes = await sendMultiMediaMessage(BOT_TOKEN, chatId, mediaItems, finalContent, markup, { protect_content: protect });
+            if ((!sentRes || !sentRes.ok) && finalContent) {
+                const extra = Object.assign({}, markup ? { reply_markup: markup } : {}, protect ? { protect_content: true } : {});
+                sentRes = await sendRichText(BOT_TOKEN, chatId, finalContent, extra);
+            }
+        } else {
+            const extra = Object.assign({}, markup ? { reply_markup: markup } : {}, protect ? { protect_content: true } : {});
+            if (finalContent) sentRes = await sendRichText(BOT_TOKEN, chatId, finalContent, extra);
+            else if (extra.reply_markup) sentRes = await tgCall(BOT_TOKEN, 'sendMessage', Object.assign({ chat_id: chatId, text: '\u2800', reply_markup: extra.reply_markup }, protect ? { protect_content: true } : {}));
+        }
+        await sendSecondaryCleanup();
+        if (sentRes && sentRes.ok) {
+            await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: sourceMsg.message_id }, { retry: false });
+        }
+        return;
+    }
+
+    if (replyKeyboardMarkup && !inlineMarkup && replySpec && replySpec.force_refresh) {
+        await resetReplyKeyboardSilently(BOT_TOKEN, chatId);
+    }
 
     if (mediaItems.length > 0) {
         const res = await sendMultiMediaMessage(BOT_TOKEN, chatId, mediaItems, finalContent, markup, { protect_content: protect });

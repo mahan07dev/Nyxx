@@ -42,7 +42,9 @@
   <li>Nested commands with folders and breadcrumbs</li>
   <li><b>Session-scoped nested navigation</b> — reply keyboard buttons and Back actions resolve against the user's active command chain, so multilingual folders (<code>/en</code> vs <code>/fa</code>) no longer cross-talk</li>
   <li><b>Multi-argument commands</b> — <code>/start</code>, <code>/start fa</code> and <code>/start fa game</code> can coexist; Nyxx resolves the longest match and passes trailing text into <code>{{args}}</code> / <code>{{arg1}}</code></li>
-  <li>Custom auto-back controls — per-command toggle and custom back-button label</li>
+  <li><b>Edit current message</b> — per-command toggle to edit messages in place when opened from inline buttons, with automatic fallback when media types change</li>
+  <li>Custom auto-back controls — separate toggles and custom back-button labels for both reply keyboards and inline keyboards</li>
+  <li><b>Proxy sharing &amp; testing</b> — share MTProto/SOCKS5 buttons and test live ping, IP, location, ISP, and TLS secret details with <code>PROXY:</code> / <code>PROXY_MSG:</code> callbacks or <code>{{proxy_info:...}}</code></li>
   <li>Nine reply types: text, photo, video, animation, voice, audio, document, round video, sticker</li>
   <li><b>Multi-media attachments</b> — attach up to 10 compatible items per message via smart <code>sendMediaGroup</code> batching</li>
   <li><b>Media upload</b> through the dashboard (stored on Telegram via <code>file_id</code>) or direct URLs</li>
@@ -59,7 +61,8 @@
   <li><b>Channels tab</b> — auto-discovers channels when the bot is promoted or receives posts; manual connect via <code>@username</code> or <code>-100…</code> ID</li>
   <li><b>Channel post composer &amp; history</b> — rich HTML posts, multi-media albums, inline buttons, silent posts, <code>protect_content</code> posts, plus edit / pin / delete from the dashboard</li>
   <li><b>Channel automation</b> — auto-signature footer, auto-attach inline buttons, auto-capture media into the library, auto-pin new posts, one-click use as media storage channel</li>
-  <li><b>Infinite Telegram archiving</b> — use a channel, group or your own DM as storage; the "delete after upload" switch now defaults to OFF so files stay archived</li>
+  <li><b>Infinite Telegram archiving</b> — use a channel, group (with one-click <b>Use as Media Storage</b>), or your own DM as storage; the "delete after upload" switch defaults to OFF so files stay archived</li>
+  <li><b>Reindex storage chat</b> — scan and import existing media from your storage channel, group, or supergroup with range selection, duplicate skipping, and live progress tracking</li>
   <li><b>2 GB auto-capture</b> — post media (up to 2 GB) into the storage chat or send it to the bot as an admin and Nyxx records the <code>file_id</code>, filename, size and caption, bypassing the 45 MB Bot API upload limit</li>
   <li><b>Access control &amp; expiry</b> — restrict commands and linked media to specific users, or set <code>expires_at</code>; admins always retain access</li>
   <li><b>Modern library UI</b> — list, grid and detailed views, lazy loading, bulk actions (validate, grant / revoke access, set expiry, delete)</li>
@@ -67,10 +70,10 @@
 
 <h3>Users &amp; groups</h3>
 <ul>
-  <li>User management with roles (user / moderator / admin)</li>
+  <li>User management with roles (user / moderator / admin) and manual <b>Add a user</b> / <b>Connect a group</b> tools</li>
   <li>Block users entirely or only from the AI</li>
   <li>Per-user direct messages (send / edit / delete with full media) and AI memory (view / edit / delete)</li>
-  <li><b>Contact inbox</b> — collects messages from DM featured commands, with unread badge, per-user read tracking, search, and stats</li>
+  <li><b>Contact inbox</b> — collects messages from DM featured commands, with topbar &amp; sidebar unread indicators, per-message read tracking, 3-button admin DM notifications (Reply / Dismiss / Mark as seen), search, and stats</li>
   <li><b>Contact automation</b> — admin notifications, auto-reply, away mode, and per-user rate limits</li>
   <li>Per-group settings: AI mode, AI trigger (mention / reply / either / both / every message), memory, welcome, rules, anti-flood, link filter, service-message cleanup, member tracking</li>
   <li><b>Anti-flood escalation</b> — first offense triggers mute / kick / ban, then escalates after configurable thresholds</li>
@@ -105,7 +108,8 @@
 <h3>Dashboard</h3>
 <ul>
   <li>Responsive UI, light &amp; dark themes, mobile friendly</li>
-  <li><b>Navigation style presets</b> — switch live between visual styles (Classic, Modern Pills, Frosted Glass, Compact) and structures (Grouped, Flat List, Top Bar)</li>
+  <li><b>Navigation style presets</b> — switch live between visual styles (Classic, Modern Pills, Frosted Glass, Compact) and structures (Top Bar default with category dropdowns, Grouped, Flat List)</li>
+  <li><b>Unified bulk progress modals</b> — live item counts, progress bars, and cancellation across reachability checks, deleting unreachable users, media validation/bulk edits, storage reindexing, and multi-wave broadcasts</li>
   <li><b>Privacy-first defaults</b> — on fresh D1 setups, memory and DM-saving options (<code>ai_memory</code>, <code>ai_group_memory</code>, <code>mcp_memory_limit</code>, <code>dm_save_private</code>, <code>dm_save_featured</code>) default to <b>OFF</b></li>
   <li><b>Searchable command combobox</b> — parent-folder and button-command pickers filter large command sets live and accept custom commands or argument variants</li>
   <li>Live status indicators and toast notifications, with errors surfaced as toasts above modals instead of inline boxes</li>
@@ -165,6 +169,7 @@ database_id = "&lt;your-d1-database-id&gt;"
 <blockquote>
 <p><b>Upgrading from a version before 4.9.4?</b> The <b>Connect Cloudflare</b> button in the dashboard stops working until the worker is updated, because the OAuth relay no longer uses a shared secret. Update once through the installer (OAuth or API token); everything else keeps working in the meantime.</p>
 <p><b>Upgrading to 4.9.6?</b> The schema moves to version <b>22</b> (adds the <code>channels</code> table plus <code>media_items_json</code>, <code>protect_content</code>, <code>auto_back</code> and <code>back_label</code> columns through non-destructive migrations). If you self-host <code>proxy.js</code>, redeploy it and make sure your Cloudflare OAuth client allows the <b>refresh token</b> grant so automatic token refresh works.</p>
+<p><b>Upgrading to 4.9.7?</b> The schema moves to version <b>23</b> (adds <code>edit_message</code>, <code>inline_auto_back</code>, <code>inline_back_label</code> on <code>commands</code> and <code>contact_msg_id</code> on <code>contact_pending_reply</code> via non-destructive migrations).</p>
 </blockquote>
 
 <p>If the dashboard ever shows <b>"Database schema is out of date"</b> after an update, open <b>Settings → Schema health → Run auto-heal</b> — it fixes missing tables, columns, indexes and settings without touching live data.</p>
