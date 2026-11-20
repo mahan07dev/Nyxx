@@ -1,0 +1,21 @@
+## What's New in Nyxx v4.9.9
+
+### ✨ Major New Features
+- **Force Join Channels & Groups (`Force Join` Tab)** — Require users to join one or more Telegram channels or groups before using your bot. Configure global scopes (**Commands**, **AI replies**, **Featured commands**, **Inline button taps**, **Group enforcement**, **Exempt Admins/Mods**), verify bot access & auto-fetch invite links, customize the warning message & **Check** button, and override per command (`Inherit` / `Always require` / `Bypass`).
+- **Nyxx AI Support & Multi-Mode `/chat`** — Added a gradient **Nyxx AI support** button in the sidebar footer (plus quick-launch buttons on **Overview**, **AI**, and **MCP**) that opens `/chat`. The `/chat` prompt box now includes a mode selector dropdown:
+  - **✨ Nyxx built-in support** — Uses your AI tab API credentials with a built-in Nyxx system prompt and knowledge base.
+  - **🤖 `{bot_username}'s AI`** — Full interactive chat using your AI tab prompt, knowledge bases, and settings.
+  - **🔌 MCP** — Tool-calling admin assistant powered by your MCP tab configuration.
+- **Dedicated `Proxies` Tab (For Proxy Sellers & Publishers)** — Store MTProto & SOCKS5 links, auto-parse links on paste, run single or bulk live ping/country/ISP tests, and create/attach single or multi-proxy commands with **Connect** and **Test & Details** inline buttons in one click.
+- **Per-Command Password Protection** — Lock any command behind a custom password with customizable prompt text and a **Dismiss** button (plus automatic **Back** button when nested with auto-back enabled). Wrong/correct password messages are cleaned up automatically.
+- **Command Templates** — Added a **Templates** picker in the **Commands** tab with ready-to-use starters (*Interactive Single-Message Menu*, *Proxy Seller Bot*, *Support & FAQ Desk*, *Protected Digital Store*).
+
+### 🔒 Granular Access Control & UX Improvements
+- **Per-Trigger Edit Controls** — Choose independently whether **Edit current message** triggers on **Inline buttons**, **Reply buttons**, and/or **Typed `/commands`**.
+- **Per-Message Inline Button Access Control** — Restrict or block specific user IDs / roles (`Everyone`, `Specific users`, `Moderator+`, `Admin`) for an entire inline button batch on both **Commands** and **Message Editor** messages (`inline_acl`).
+- **Disallowed User IDs** — Added optional per-command **Disallowed user IDs** alongside **Allowed user IDs**.
+- **Cleaner Tabbed Command Editor** — Widened the Create/Edit Command sheet on desktop (`840px`) and organized all options into 4 focused tabs: **Content**, **Keyboards**, **Behavior**, and **Access**.
+- **Telegram HTML Reference** — Added a collapsible **Telegram HTML formatting reference** to every HTML-enabled textbox across the dashboard, and updated the Featured Buttons hint to document `alert:` and `toast:`.
+
+### 🗄️ Database
+- Bumped schema to **v25** (adds `proxies` & `inline_acl` tables, `mode` on `mcp_sessions`, `pending_password` on `sessions`, and command access/password/edit-trigger columns via non-destructive migrations & auto-heal).

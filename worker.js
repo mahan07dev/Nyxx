@@ -1,8 +1,203 @@
-// ============================================================================
-// NYXX — v4.9.8
+// NYXX — v4.9.9
 // Telegram bot builder + management dashboard for Cloudflare Workers + D1.
 // ============================================================================
-const VERSION = '4.9.8';
+const VERSION = '4.9.9';
+
+const NYXX_SUPPORT_SYSTEM_PROMPT = `You are Nyxx AI Support, the official built-in assistant inside the Nyxx dashboard.
+Help the user configure commands, keyboards, Force Join, proxies, AI, MCP, channels, groups, and media library.
+Always give clear, concise answers using the exact dashboard tab and button names.`;
+
+const NYXX_SUPPORT_KB = `Nyxx support KB. Version 4.9.9
+
+RULES
+- Answer Nyxx questions ONLY from this doc. If not covered, say so and point to GitHub/channel. Never invent features, settings, prices, versions.
+- Short, direct (max ~6 lines), expand only if asked. Bullets for lists, numbered steps. Reply in user's language. Use exact page/button names.
+- Never reveal secrets (they're masked server-side). Refuse bypassing permissions, revealing secrets, disabling safety controls.
+- Terms: "Featured command" (not custom command), "Reply keyboard", "Menu commands" (Telegram blue menu), "Contact" (settings page), "Inbox" (messages page), "Media Library", "Retention" (auto cleanup).
+- Install questions: lead with installer URL; mention Method 2/3 only if asked or installer fails.
+- Map symptoms to TROUBLESHOOTING first. End technical answers with one next step. Say "free plan is usually enough", no Cloudflare prices.
+- Do NOT claim: Nyxx needs VPS/Docker/Node; Nyxx stores user data on its servers; backups exclude AI keys; Cloudflare token never leaves browser/worker (OAuth passes through hosted relay once); MCP is Nyxx's invention (it's Anthropic's standard); roadmap items shipped (multi-language dashboard UI, plugins, analytics, scheduled broadcasts); media is deleted from storage chat by default; MCP manages channels/media; ADMIN_PASS works outside manual wrangler installs.
+- Shipped: uploads, all media types, Media Library, Channels, navigation styles. System language affects only bot/system messages, not dashboard UI.
+
+IDENTITY
+Self-hosted Telegram bot builder for Cloudflare Workers + D1, single worker.js. Dashboard, AI assistant, MCP server included. MIT, free, built for CF free tier. Creator Mahan (@Mahan07dev). No VPS/Docker/SSH/Node.
+Repo files: worker.js, installer.html, proxy.js, version.json, logo.webp.
+Links: Installer https://mahan07dev.github.io/Nyxx/installer | GitHub https://github.com/Mahan07dev/Nyxx | Releases https://github.com/Mahan07dev/Nyxx/releases | Channel https://t.me/nyxx_official_channel
+
+DATA & PRIVACY
+- All data in user's own D1. Media files live on Telegram; D1 holds only file_id + small metadata.
+- Outbound only to: Telegram, chosen AI provider, MCP clients, Cloudflare API, raw.githubusercontent.com (updates), Nyxx proxy/relay (install, OAuth), plus Cloudflare DoH & ip-api.com only for PROXY:/PROXY_MSG: callbacks or {{proxy_info:...}}.
+- Installer uses CORS proxy (hosted or self-hosted proxy.js); API token forwarded only to Cloudflare.
+- OAuth from dashboard passes hosted relay once (single-use code); token then stored in user's D1.
+- Backups EXCLUDE bot token, webhook secret, CF credentials. They INCLUDE AI API keys in plain text: keep private.
+
+INSTALL
+Needs: free Cloudflare account, bot token from @BotFather, modern browser.
+Method 1 (recommended): installer URL. Steps: Welcome → Account & Token → Security & Proxy → Install (Scan Account / Create New) → Create → Result.
+- CF connect: OAuth (recommended, revocable) or API token. Proxy: hosted default or self-hosted (https).
+- Create New: optional worker name (starts "nyxx-"); 8 retryable steps (verify token, find account, subdomain, create D1, download code, deploy, enable subdomain, wait online).
+- Scan Account: update (keeps DB) or delete (irreversible) existing Nyxx Workers/D1.
+- After: open panel URL, set admin password. Propagation 1–3 min; if workers.dev blocked, add custom domain.
+Method 2: deploy proxy.js to own Worker as self-hosted proxy. OAuth relay needs D1 binding named DB on it.
+Method 3: wrangler. wrangler.toml: name="nyxx", main="worker.js", compatibility_date="2026-08-16", [[d1_databases]] binding="DB", database_name="nyxx", database_id="<id>". Then "npx wrangler deploy", open URL, finish wizard (schema auto-created).
+- Optional [vars] ADMIN_PASS skips wizard (manual wrangler only). Optional [triggers] crons=["0 3 * * *"] for scheduled cleanup.
+First run: wizard = admin password (min 6), optional bot token; webhook auto-registered with secret.
+
+DASHBOARD PAGES
+Overview | Messaging: Commands, Menu & Featured, Broadcast, Contact, Inbox | People: Users, Groups, Channels, Force Join | Content: Media, Proxies, Memory | AI: AI Assistant, MCP | System: Settings, Bot Info, Permissions, Update, Backup, Activity Log, Retention.
+Sidebar page search ("/"). Top Bar default on desktop. Light/dark, mobile friendly. Gradient "Nyxx AI support" button opens /chat?mode=support.
+
+COMMANDS
+- Response types: Text, Photo, Video, Animation, Voice, Audio, Document, Round video, Sticker (file_id only). Telegram HTML (b,i,u,s,code,pre,a,blockquote,tg-spoiler). >4096 chars auto-split; captions >1024 go to follow-up text.
+- Media source: URL, Upload, or Media Library pick. Multiple files = bundle.
+- Exact-arg commands (e.g. /start vip, deep links) alongside base command.
+- Placeholders: {{args}}, {{arg1}}, {{arg2}}… (HTML-escaped); {{proxy_info:...}} tests proxy.
+- Editor tabs: Content, Keyboards, Behavior, Access.
+- Edit current message (edit_message): edits bot's message in place; triggers: Inline button, Reply button, Typed /command. Falls back to new message + delete old if media incompatible, albums, >4096 chars, or >48h old.
+- Auto-back: inline_auto_back (OFF default, label inline_back_label); reply auto_back (ON default, label back_label). Needs parent folder.
+- Proxy sharing/testing: URL buttons support t.me/proxy?server=HOST&port=PORT&secret=SECRET (or /socks). Callback "PROXY:<url or host:port>" shows popup with ping, DNS, country/ISP, MTProto secret type; "PROXY_MSG:<...>" sends as chat message.
+- Access: Everyone / Specific users / Moderator+ / Admin; allowed/disallowed IDs; Force Join override (Inherit/Always/Bypass); expiration; command password (custom prompt, Dismiss label). Media can also have user-ID/expiry limits. Protect content blocks forward/save.
+- Inline keyboard access restriction: per-command/per-message level + ID lists, applies to whole inline batch.
+- Export/Import; Templates button (replaces ALL commands after confirmation). Filters: All, Enabled, Disabled, Media & Bundles, Restricted, Expiring. Nested folders, breadcrumbs, reorder, enable/disable.
+- Inline buttons: Command / Callback / URL / Popup alert (native modal, ≤200 chars) / Toast. Support {{first_name}}, {{username}}, {{id}}, {{title}}, {{current_time}}. Colors: Default/Blue/Green/Red. Visual builder (Auto row wraps 3, "+ New row", ↑/↓).
+- Reply keyboard: resize, one-time, persistent, placeholder; buttons map to commands; optional colors. No JSON needed.
+
+FORCE JOIN (People → Force Join)
+Bot must be member/admin in each channel/group. Global enforcement covers Commands, AI replies, Featured commands, Inline callbacks, optionally groups; Admins/Mods exempt by default. Or leave global OFF and set per command. Users get join buttons + Check button.
+
+PROXIES (Content → Proxies)
+Store MTProto/SOCKS5 (auto-parses t.me links), single/bulk ping/geo/ISP tests, one-click publish of commands with Connect + Test buttons.
+
+MENU & FEATURED
+- Menu commands: lowercase, no slash, /start fixed; "Publish to Telegram" applies. No bot token = saved locally only.
+- Featured kinds:
+  - DM: "/contact hello" → saved to Contact inbox (and Users → Direct messages); trigger msg deleted (toggle); bot doesn't reply to note.
+  - Buttons: /menu "Hi" {Google}(https://google.com){Say hi}(Hi!) or simple: /menu Hi there! | Google:https://google.com | Say hi:Hi! (http=url, /=command, else text). Colors via [blue]/[green]/[red] prefix or {[green]Yes}(Yes!); prefix alert:/toast: for popups (Info:alert:Msg).
+  - MCP: "/mcp instruction" runs MCP agent from chat.
+- Each has hint (when typed alone), success text, failure text, access level (Everyone/Mod+/Admin), enabled, delete_user_message. Blank text = silent.
+
+USERS
+- Roles user/moderator/admin (promote/demote). Add user by numeric ID (checks reachability; no DM guarantee until user starts bot).
+- States: "Started bot" (green, DM-able) / not reachable (yellow). Filters: All, Started bot, Not reachable, Admins, Blocked.
+- Bulk (live progress): Check all reachable, Delete unreachable (keeps admins/mods), Broadcast.
+- User page: Direct messages tab (send/edit/delete, Compose options for media/keyboards), AI memory tab (inspect/edit/delete/Clear all). Actions: role, block AI-only, block all, check reachability.
+
+GROUPS
+- Connect: paste -100… ID or @username after adding bot. Sync with Telegram (presence, title, member count). "Use as Media Storage".
+- AI reply (Inherit/On/Off); memory inherit/disabled/5/10/20 (shared by members); trigger: inherit / mention / reply / mention or reply / mention and reply / every text.
+- Per-group permissions (Inherit/Everyone/Mod+/Admin): commands, featured commands, AI replies, inline taps, /mcp, /rules.
+- Welcome message and /rules (placeholders {{first_name}}, {{username}}, {{title}}, {{id}}).
+- Moderation: anti-flood (Mute/Kick/Ban escalation; defaults 2 mutes→kick, 2 kicks→ban; bot needs Restrict+Ban), block links, block forwards, blacklisted words (each with exemption: admins or admins+mods), block other bots, clean service messages, track members (off default).
+- Group chat panel: dashboard-sent messages editable/deletable.
+
+CHANNELS
+- Connect: @username or -100… ID; bot admin with Post, Edit, Delete (Pin for auto-pin). Also auto-registers on new posts. Filters Active/Removed/All.
+- Page: Sync with Telegram, Use as Media Storage, Remove.
+- Automation (Save automation settings): auto-capture media to Media Library, auto-pin (silent), auto-signature/footer HTML (needs Edit), auto inline buttons, silent/protect defaults.
+- Publish posts: HTML, Compose options, Silent, Protect, Pin. MCP does not cover channels.
+
+CONTACT & INBOX
+- Contact = settings for DM featured commands (e.g. /contact); Inbox = read/filter/search/manage; "Open" jumps to user profile. Unread pill in topbar opens Inbox.
+- Settings: notifications on/off, recipients (all admins or custom IDs), include sender details, Send test notification, auto-reply text, Away mode (UTC window, wraps midnight, separate text), rate limit per user/hour (0 = unlimited; over limit = warning, not stored).
+- Admin DM buttons: Reply, Dismiss, Mark as seen. Each (or Inbox "Mark read") marks only that message read.
+- Rate limit needs "Save featured command messages" ON (Memory tab).
+
+BROADCAST
+- Audience: everyone who started / private only / AI-blocked / fully blocked / all except blocked / specific IDs / pick from list / custom list. Media + keyboards via Compose options. Unreachable users always skipped.
+- 2+ recipients: chunks of 20, live progress, Cancel, single history entry. Pacing: batch size, delay (ms), timeout (ms), "Save pacing" (Telegram ~30 msg/s).
+- Past broadcasts editable/deletable from recipients' chats; changing media type re-sends.
+
+MEDIA LIBRARY (Media page)
+- Storage chat: private channel (-100…, bot admin, recommended), group, or own numeric ID (start bot first). "Delete message from storage chat after upload" OFF by default.
+- Reindex storage: imports files already in storage chat (range, skip indexed, progress). Not possible for protected-content chats.
+- Upload types: Auto-detect, Document (lossless), Photo, Video, Animation, Audio, Voice, Round video, Sticker. Browser upload ≤45 MB, multiple, drag&drop, optional label prefix/allowed IDs/expiry/caption.
+- Up to 2 GB: post in storage channel/group (auto-indexed), or send/forward to bot in DM as admin (auto-saved, replies with file_id), or "Add file_id".
+- Validate (getFile, chunked). >20 MB can't preview in browser but work normally.
+- Filters: All access/Restricted/Has expiration/Expired/Invalid; sort Newest/Oldest/Largest/Name/Expiring soon.
+- Bulk (progress): Create command, Validate, Grant user, Revoke user, Expiration, Delete.
+- file_id is bot-specific: changing bot token breaks uploaded media → re-upload or use URL.
+
+MEMORY
+Combined AI + DM overview per user. Clear one scope/user/everything. Auto-remove DM by age (off default; runs with scheduled cleanup); AI memory follows AI-tab depth. Save policy: regular private chats (Auto = only when AI off / Always / Never), featured command messages on/off.
+
+AI
+- Providers (7): OpenAI, Gemini, DeepSeek, Groq, OpenRouter, Ollama (local), Custom (OpenAI-compatible). Main + up to 5 fallbacks in order. Test connections.
+- Settings: API key (masked), model, base URL, custom headers (JSON), display name, language (auto/English/Farsi/Arabic/Spanish/French/German/Russian), style (friendly/professional/casual/formal/funny), length, temperature, max tokens, top-p, fallback message.
+- System prompt templates (custom, personal assistant, customer support, restaurant, programming helper, tutor). Placeholders: {{bot_name}}, {{user_first_name}}, {{user_username}}, {{company_name}}, {{website}}, {{phone}}, {{current_time}}, {{available_commands}}, {{title}}, custom {{key}} from key=value lines.
+- Knowledge bases: multiple, toggleable, injected in prompts. Strict mode: answer only from instructions + KBs. RTL support.
+- Trigger: only when no command matches (recommended) / every text / text contains X. Ignore prefixes (default / ! #), ignore bots (recommended), ignore forwarded. Private reply toggle, memory 0/5/10/20; group defaults overridable per group.
+- Rate limits: per-user/min (10 reasonable, 0 none), global per min/hour. Response delay, typing indicator, retry once then fallbacks, streaming, quick replies (one-time keyboard), Playground.
+- MCP tools in AI: streaming auto-disabled; prompt mode Auto/Full/Minimal; tool categories inherit/read/read+write/read+write+outbound. Enable only if you trust the prompt.
+
+MCP
+- Model Context Protocol (Anthropic standard). JSON-RPC 2.0, POST /mcp on Worker URL, Streamable HTTP protocol 2025-03-26 (2024-11-05 accepted). GET=405, DELETE=200.
+- Auth: bearer token (SHA-256 hashed, shown once, treat like admin password; Revoke all). Session memory 10/20/40 exchanges + retention hours. Rate limit default 20 (0 none).
+- /chat mode dropdown: Nyxx built-in support (AI-tab key + built-in prompt/KB), @{bot}'s AI (AI-tab prompt/KB/settings), MCP (MCP-tab provider & tools). Support and Bot AI modes need only an AI API key, not MCP enabled.
+- Works with Claude Desktop (mcp-remote), Cursor, Cline, any MCP client; snippets and curl in MCP tab; Inspector: npx @modelcontextprotocol/inspector.
+- Separate MCP AI provider (OpenAI, Gemini, DeepSeek, Groq, OpenRouter, Custom) powers dashboard chat and /mcp; Save provider, Test connection.
+- 32 tools:
+  - Read (16): get_stats, list_users, get_user, list_commands, get_command, list_groups, get_menu, get_settings, test_webhook, get_memory_overview, get_bot_info, get_group_settings, get_user_memory, get_logs, get_broadcast_history, list_featured_commands.
+  - Write (11): create_command, update_command, delete_command, set_menu, update_ai_settings, set_bot_info, update_group_settings, promote_user, demote_user, block_user, unblock_user. Commands accept inline button type callback|url|command|alert|toast, plus edit_message, inline_auto_back, inline_back_label.
+  - Outbound (2): send_dm, send_broadcast.
+  - Dangerous (3): delete_user, clear_ai_memory, clear_user_memory (need confirm:true).
+  - Read/write on by default; outbound/dangerous off.
+
+SETTINGS
+- System language English/Farsi: only system messages (contact notifications, errors), AI built-in rules, MCP admin prompt. NOT dashboard UI or AI replies (those follow AI tab language).
+- Navigation style: Classic, Modern Pills, Frosted Glass, Compact. Structure: Top Bar (default), Grouped, Flat List.
+- Bot token change/reveal (reveal logged). Webhook: Test (URL match, pending, last error), Health check re-registers, Diagnostics latency.
+- Admin password (min 6; logs out other sessions). ADMIN_PASS env = master password (manual wrangler only).
+- Schema health: Check health; Run auto-heal (fixes missing tables/columns/indexes/settings, prunes orphans; safe to repeat).
+- Factory reset: type FACTORY RESET; erases everything, no undo.
+
+BOT INFO: Name, Description, Short description; Load from Telegram, Publish.
+PERMISSIONS: global feature access + administrators list (promote by numeric ID as Moderator/Admin). Applies to commands, AI, MCP tools, featured commands, button taps. Groups can override.
+
+RETENTION (off until enabled)
+Enable + Save; needs Cron Trigger (or "Run now"); shows last run. Cron can be added in CF dashboard: Workers → Worker → Settings → Triggers. Defaults: dashboard sessions 1d, bot sessions 30d, login attempts 2h, rate-limit buckets 24h, activity log 30d, broadcast history 30d. AI memory, DM history, inactive users: 0 (keep forever).
+
+BACKUP: Full or custom sections. Restore overwrites included sections, no undo. Includes AI keys in plain text (dashboard warns).
+ACTIVITY LOG: recent admin actions, Clear all, optional auto-delete after N days (off).
+
+UPDATE
+Tab shows current/latest version, CF connection (OAuth recommended, or API token with Workers Scripts:Edit + Account Settings:Read), "Check for updates".
+"Update now": reads Worker bindings (aborts if it can't, D1 safe), downloads worker.js from raw.githubusercontent.com only, validates, deploys with same bindings, rotates webhook secret. D1/KV/R2 bindings, env vars, token, data, config preserved.
+Pre-release shows beta notice (optional). "Force redeploy" redeploys GitHub main even if version matches. Manual: replace worker code and redeploy. Credentials stored in user's own D1.
+
+SECURITY
+PBKDF2 SHA-256 100k (legacy sha256 re-hashed on login). Login block after 20 failures in 5 min. Webhook requires X-Telegram-Bot-Api-Secret-Token (rotated on updates). Mutating calls need same-origin Origin/Referer + X-Nyxx-CSRF. Cookies HttpOnly, SameSite=Lax, Secure on HTTPS, 24h. Destructive MCP tools need confirm:true. proxy.js allow-list: api.cloudflare.com, dash.cloudflare.com, raw.githubusercontent.com, *.workers.dev; blocks private/loopback/link-local/CGNAT/metadata (incl. via DoH); 60s timeout, 25 MB cap. CSP, nosniff, Referrer-Policy, X-Frame-Options, HSTS, Permissions-Policy; pages noindex.
+
+FAQ
+- Free? Yes. VPS? No.
+- CF token stored? OAuth: installer doesn't keep it. API-token mode: browser local storage. Dashboard updater stores token/OAuth session in user's own D1, never on a Nyxx server.
+- Customize worker? Yes, open source. Update/delete panel? Update tab or installer Scan Account. Avoid hosted proxy? Self-host proxy.js.
+- Import pre-existing storage files? Media Library → Reindex storage.
+- Chrome "dangerous"/password-leak warning at sign-in: Chrome's leaked-password check; password is in a breach list. Set new unique password (Settings → Admin password or ADMIN_PASS).
+
+TROUBLESHOOTING (symptom → cause → fix)
+- "Session expired"/"No Cloudflare credentials" on Update → creds rejected/OAuth expired → reconnect or token with Workers Scripts:Edit.
+- "Update aborted ... bindings" → CF refused reading settings; nothing changed → check creds + script name, retry.
+- "Downloaded update file looks invalid" → GitHub download failed; nothing changed → retry later.
+- Update fails → creds lack Workers Scripts:Edit or script name mismatch. Deployment broken → Force redeploy.
+- "Too many failed attempts" → wait a few minutes. Forgot password → set ADMIN_PASS secret in Worker settings.
+- Bot silent everywhere → Settings → Webhook → Health check.
+- Bot silent in groups → AI trigger needs mention, permissions restrict, or group read permission; check group AI trigger + Permissions.
+- "unauthorised" → global Permissions or group override restricts to Mod+/Admin.
+- Can't DM user → hasn't pressed Start (Users shows not reachable, even if manually added).
+- AI silent → disabled, no key, trigger mismatch, rate limit, or group mention required. "API key is missing" → paste key, Save AI settings. Test fails → wrong model/key/provider; Custom: check base URL + headers.
+- Menu button empty → publish from Menu & Featured.
+- Installer proxy errors → default proxy down or self-host misconfigured → check proxy health notice or switch mode; self-hosted OAuth needs DB binding.
+- Panel not loading after install → wait 1–3 min, refresh; blocked workers.dev → custom domain.
+- MCP 401 → bad token, regenerate. 403 "disabled" → enable MCP endpoint. Tool "disabled" → enable category. Rate limited → raise or 0 in MCP tab.
+- "no such column/table" → Settings → Schema health → Run auto-heal.
+- Media upload fails → check storage chat; bot must be able to message it (admin in channel/group; DM: press Start). Browser ≤45 MB; use channel/group/DM for larger.
+- Reindex fails/skips → bot needs post & delete permission; Content Protection blocks forwarding.
+- Proxy check "Check skipped" → Workers block sockets to some ports/IPs (e.g. Cloudflare-proxied); IP/country/ISP/secret still resolve.
+- Media won't preview → >20 MB, still valid.
+- Media broken after token change → file_id bot-specific → re-upload or use URL.
+- Channel features not working → bot needs admin with Post, Edit, Delete (Pin) → fix, then Sync with Telegram.
+- Contact rate limit not working → enable "Save featured command messages" (Memory tab).
+- Cleanup never runs → needs Cron Trigger, or Retention → Run now.`;
 
 const RELAY_BASE = 'https://nyxx-proxy.nova-06272b19.workers.dev';
 // Forks: set the RELAY_BASE variable (or edit the line above) to point at your own relay.
@@ -533,7 +728,8 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
     .kb-btn-card .lbl { font-size: 15px; }
     .kb-btn-card .val { font-size: 12px; }
     .kb-btn-card .arw { width: 36px; height: 36px; font-size: 14px; }
-    .kb-btn-card .kb-card-actions { gap: 6px; padding-top: 10px; margin-top: 6px; }
+    .kb-btn-card .kb-card-actions { flex-wrap: wrap; justify-content: center; row-gap: 8px; column-gap: 6px; padding-top: 10px; margin-top: 6px; }
+    .kb-btn-card .arw-spacer { flex: 0 0 100%; height: 0; margin: -4px 0; padding: 0; overflow: hidden; pointer-events: none; }
 }
 .kb-preview { display: flex; flex-direction: column; gap: 4px; margin-top: var(--s3); padding: var(--s3); background: var(--surface-2); border-radius: var(--r-sm); border: 1px dashed var(--hairline); }
 .kb-preview .pv-label { font-size: var(--fs-caption2); color: var(--text-4); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
@@ -544,6 +740,49 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
 .kb-preview .pvbtn.pv-cb { color: var(--orange); }
 .kb-preview .pvbtn.pv-alert { color: var(--purple); }
 .kb-preview .pvbtn.pv-toast { color: var(--teal); }
+
+/* ===== v4.9.9: Nyxx AI Support gradient button, Command Modal tabs & Proxies ===== */
+.nyxx-ai-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; height: 38px; padding: 0 14px; border: none; border-radius: var(--r-sm);
+    background: linear-gradient(135deg, var(--accent), var(--purple));
+    color: #fff; font-size: var(--fs-footnote); font-weight: 700; font-family: var(--font);
+    cursor: pointer; white-space: nowrap;
+    box-shadow: 0 8px 20px -8px rgba(10,132,255,0.65);
+    transition: transform 0.14s ease, box-shadow 0.16s ease, filter 0.16s ease;
+}
+.nyxx-ai-btn:hover { transform: translateY(-1px); filter: brightness(1.06); box-shadow: 0 12px 26px -8px rgba(94,92,230,0.75); }
+.nyxx-ai-btn:active { transform: scale(0.97); }
+@media (min-width: 980px) {
+    .app.nav-struct-topbar .sidebar .nyxx-ai-btn { width: auto; height: 34px; padding: 0 12px; font-size: 12px; border-radius: var(--r-pill); }
+}
+
+#cmd-modal .sheet { max-width: 840px; width: min(94vw, 840px); }
+@media (max-width: 640px) { #cmd-modal .sheet { max-width: 100%; width: 100%; } }
+.cmd-tabbar { position: sticky; top: calc(-1 * var(--s5)); z-index: 10; background: var(--bg-elev); margin: calc(-1 * var(--s5)) calc(-1 * var(--s5)) var(--s4); padding: var(--s2) var(--s4) 0; border-bottom: 1px solid var(--hairline); }
+.cmd-tabbar button .tab-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); margin-left: 6px; vertical-align: middle; }
+.cmd-tabpane { display: none; }
+.cmd-tabpane.active { display: block; animation: fade 0.16s ease; }
+
+.edit-trig-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: var(--s3); }
+@media (max-width: 640px) { .edit-trig-grid { grid-template-columns: 1fr; } }
+.edit-trig-chip {
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+    background: var(--surface-2); border: 1px solid var(--hairline); border-radius: var(--r-sm);
+    cursor: pointer; font-size: var(--fs-footnote); font-weight: 600; transition: border-color 0.15s, background 0.15s;
+}
+.edit-trig-chip:hover { border-color: var(--accent); }
+.edit-trig-chip input { width: 17px; height: 17px; accent-color: var(--accent); flex-shrink: 0; }
+.edit-trig-chip small { display: block; font-weight: 400; font-size: 11px; color: var(--text-4); }
+
+.proxy-card {
+    background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--r-md);
+    padding: 14px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 10px;
+}
+.proxy-card-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.proxy-card-meta { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.proxy-card-actions { display: flex; gap: 6px; flex-wrap: wrap; padding-top: 8px; border-top: 1px dashed var(--hairline); }
+.html-ref-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 6px 14px; margin-top: 6px; font-size: 12px; }
 
 .toasts { position: fixed; top: 76px; right: var(--s5); z-index: 500; display: flex; flex-direction: column; gap: 10px; max-width: min(92vw, 420px); pointer-events: none; }
 .toast {
@@ -931,12 +1170,12 @@ details.help > div { padding: 0 16px 14px; font-size: var(--fs-footnote); line-h
     .perm-seg { width: 100%; display: flex; }
     .perm-seg button { flex: 1 1 0; padding: 9px 4px; font-size: 12px; }
 }
-@media (min-width: 901px) {
+@media (min-width: 980px) {
     .app.sidebar-open .main { margin-left: 276px; }
     .app.sidebar-open .overlay-sidebar { display: none !important; }
     .hamburger { display: none; }
 }
-@media (max-width: 900px) {
+@media (max-width: 980px) {
     .app.sidebar-open .overlay-sidebar.show { display: block; }
     .app.sidebar-open .main { margin-left: 0; }
     .content { padding: var(--s4) var(--s4) var(--s12); }
@@ -1138,7 +1377,7 @@ body { overflow-x: hidden; }
 .app.nav-style-compact .nav-item { min-height: 34px; padding: 6px 10px; font-size: 13px; border-radius: 7px; }
 .app.nav-style-compact .nav-label { min-height: 28px; padding: 4px 10px; font-size: 10px; }
 .app.nav-style-compact .brand { padding: var(--s1) var(--s2) var(--s3); }
-@media (min-width: 901px) {
+@media (min-width: 980px) {
     .app.nav-style-compact.sidebar-open .main { margin-left: 240px; }
 }
 
@@ -1154,7 +1393,7 @@ details.help.danger { background: var(--red-soft); border-left: 3px solid var(--
 details.help.danger > summary { color: var(--red); }
 
 /* ===== Navigation Structure: Top Bar (Desktop) ===== */
-@media (min-width: 901px) {
+@media (min-width: 980px) {
     .app.nav-struct-topbar { flex-direction: column; }
     .app.nav-struct-topbar .main { margin-left: 0 !important; width: 100%; }
     .app.nav-struct-topbar .sidebar {
@@ -1324,6 +1563,7 @@ details.help.danger > summary { color: var(--red); }
                 <button class="nav-item" data-page="users" data-label="users people members audience" onclick="go('users')"><i class="fa-solid fa-user-group"></i><span>Users</span></button>
                 <button class="nav-item" data-page="groups" data-label="groups chats communities" onclick="go('groups')"><i class="fa-solid fa-comments"></i><span>Groups</span></button>
                 <button class="nav-item" data-page="channels" data-label="channels broadcast posts auto signature" onclick="go('channels')"><i class="fa-solid fa-tower-broadcast"></i><span>Channels</span></button>
+                <button class="nav-item" data-page="forcejoin" data-label="force join required channels groups subscribe check" onclick="go('forcejoin')"><i class="fa-solid fa-user-check"></i><span>Force Join</span></button>
             </div>
         </nav>
 
@@ -1331,6 +1571,7 @@ details.help.danger > summary { color: var(--red); }
             <button class="nav-label" type="button" onclick="toggleNavGroup(this)"><span>Content</span><i class="fa-solid fa-chevron-down nav-chev"></i></button>
             <div class="nav-items">
                 <button class="nav-item" data-page="media" data-label="media library files photos videos audio" onclick="go('media')"><i class="fa-solid fa-photo-film"></i><span>Media Library</span></button>
+                <button class="nav-item" data-page="proxies" data-label="proxies mtproto socks5 sell test ping" onclick="go('proxies')"><i class="fa-solid fa-network-wired"></i><span>Proxies</span></button>
                 <button class="nav-item" data-page="memory" data-label="memory chat history conversations stored" onclick="go('memory')"><i class="fa-solid fa-database"></i><span>Memory</span></button>
             </div>
         </nav>
@@ -1362,6 +1603,7 @@ details.help.danger > summary { color: var(--red); }
         </div>
         <div class="nav-spacer"></div>
         <div class="nav-foot">
+            <button class="nyxx-ai-btn" onclick="openNyxxChat('support')" title="Open Nyxx AI Support"><i class="fa-solid fa-wand-magic-sparkles"></i><span>Nyxx AI support</span></button>
             <div class="nav-foot-row">
                 <button class="icon-btn" id="theme-btn" onclick="cycleTheme()" title="Switch appearance" aria-label="Switch appearance"><i class="fa-solid fa-circle-half-stroke"></i></button>
                 <button class="icon-btn" onclick="showInfo()" title="About Nyxx" aria-label="About Nyxx"><i class="fa-regular fa-circle-question"></i></button>
@@ -1469,7 +1711,10 @@ details.help.danger > summary { color: var(--red); }
             <section class="page active" id="page-overview">
                 <div class="page-head">
                     <div class="lead"><h1>Overview</h1><p>Everything happening in your bot right now.</p></div>
-                    <div class="page-actions"><button class="btn btn-gray btn-sm" onclick="loadOverview(true)"><i class="fa-solid fa-rotate"></i> Refresh</button></div>
+                    <div class="page-actions">
+                        <button class="nyxx-ai-btn" style="width:auto;height:32px;padding:0 12px;font-size:13px;" onclick="openNyxxChat('support')"><i class="fa-solid fa-wand-magic-sparkles"></i> Nyxx AI support</button>
+                        <button class="btn btn-gray btn-sm" onclick="loadOverview(true)"><i class="fa-solid fa-rotate"></i> Refresh</button>
+                    </div>
                 </div>
                 <div class="stats" id="ov-stats"></div>
 
@@ -1523,6 +1768,7 @@ details.help.danger > summary { color: var(--red); }
                 <div class="page-head">
                     <div class="lead"><h1>Commands</h1><p>Build nested replies, multi-file bundles, protected media and keyboards.</p></div>
                     <div class="page-actions">
+                        <button class="btn btn-gray btn-sm" onclick="openCmdTemplatesModal()"><i class="fa-solid fa-wand-magic-sparkles"></i> Templates</button>
                         <button class="btn btn-gray btn-sm" onclick="exportCommandPack()"><i class="fa-solid fa-file-export"></i> Export</button>
                         <button class="btn btn-gray btn-sm" onclick="document.getElementById('pack-file').click()"><i class="fa-solid fa-file-import"></i> Import</button>
                         <button class="btn btn-primary btn-sm" onclick="openCommandModal()"><i class="fa-solid fa-plus"></i> New command</button>
@@ -1589,8 +1835,8 @@ details.help.danger > summary { color: var(--red); }
                         <div>
                             <b>DM commands</b> quietly deliver a note from a user to you. When a user types <code>/contact hello boss</code>, the text <code>hello boss</code> lands in <b>Users → Direct messages</b> under that user. Configure whether the trigger message is deleted below.<br><br>
                             <b>Buttons commands</b> let users build their own inline keyboards. The <b>simplest syntax</b> is:<br>
-                            <code>/menu Hi there! | Google:https://google.com | Say hi:Hi!</code><br>
-                            The part before the first <code>|</code> is the message. Each <code>Label:value</code> pair becomes a button (3 per row). Values starting with <b>http</b> open a link, <code>/</code> runs a command, anything else is posted back as a new message.<br><br>
+                            <code>/menu Hi there! | Google:https://google.com | Info:alert:Popup! | Notice:toast:Done! | Say hi:Hi!</code><br>
+                            The part before the first <code>|</code> is the message. Each <code>Label:value</code> pair becomes a button (3 per row). Values starting with <b>http</b> open a link, <code>/</code> runs a command, <code>alert:text</code> opens a centered Telegram popup dialog, <code>toast:text</code> shows a top toast banner, and anything else is posted back as a new message.<br><br>
                             The <b>advanced syntax</b> uses braces: <code>/menu "Hi there!" {Google}(https://google.com){Say hi}(Hi!)</code><br><br>
 <b>Per-button colors</b> — prefix the label with <code>[blue]</code>, <code>[green]</code> or <code>[red]</code>: <code>/menu Hi | [blue]Google:https://google.com | [red]Say hi:Hi!</code>. Works in both syntaxes (<code>{[green]Yes}(Yes!)</code>). Buttons without a bracket use the <b>Default button color</b> dropdown in the editor.<br><br>
                             Each featured command has three separate messages: the <b>hint</b> (sent when the command is typed alone), the <b>success message</b> (after the action) and the <b>failure message</b>. Leave a field blank to stay silent in that case.<br><br>
@@ -1792,7 +2038,7 @@ details.help.danger > summary { color: var(--red); }
                     <div class="grid grid-2">
                         <div class="field">
                             <label class="field-label">Regular commands</label>
-                            <div class="segmented" id="gm-commands-perm">
+                            <div class="segmented" id="gm-commands-perm segmented_mobile">
                                 <button data-v="inherit" onclick="setSeg('gm-commands-perm','inherit')">Inherit</button>
                                 <button data-v="everyone" onclick="setSeg('gm-commands-perm','everyone')">Everyone</button>
                                 <button data-v="moderator" onclick="setSeg('gm-commands-perm','moderator')">Mod+</button>
@@ -1802,7 +2048,7 @@ details.help.danger > summary { color: var(--red); }
                         </div>
                         <div class="field">
                             <label class="field-label">Featured commands</label>
-                            <div class="segmented" id="gm-featured-perm">
+                            <div class="segmented" id="gm-featured-perm segmented_mobile">
                                 <button data-v="inherit" onclick="setSeg('gm-featured-perm','inherit')">Inherit</button>
                                 <button data-v="everyone" onclick="setSeg('gm-featured-perm','everyone')">Everyone</button>
                                 <button data-v="moderator" onclick="setSeg('gm-featured-perm','moderator')">Mod+</button>
@@ -1812,7 +2058,7 @@ details.help.danger > summary { color: var(--red); }
                         </div>
                         <div class="field">
                             <label class="field-label">AI replies</label>
-                            <div class="segmented" id="gm-ai-perm">
+                            <div class="segmented" id="gm-ai-perm segmented_mobile">
                                 <button data-v="inherit" onclick="setSeg('gm-ai-perm','inherit')">Inherit</button>
                                 <button data-v="everyone" onclick="setSeg('gm-ai-perm','everyone')">Everyone</button>
                                 <button data-v="moderator" onclick="setSeg('gm-ai-perm','moderator')">Mod+</button>
@@ -1822,7 +2068,7 @@ details.help.danger > summary { color: var(--red); }
                         </div>
                         <div class="field">
                             <label class="field-label">Inline button taps</label>
-                            <div class="segmented" id="gm-callback-perm">
+                            <div class="segmented" id="gm-callback-perm segmented_mobile">
                                 <button data-v="inherit" onclick="setSeg('gm-callback-perm','inherit')">Inherit</button>
                                 <button data-v="everyone" onclick="setSeg('gm-callback-perm','everyone')">Everyone</button>
                                 <button data-v="moderator" onclick="setSeg('gm-callback-perm','moderator')">Mod+</button>
@@ -1832,7 +2078,7 @@ details.help.danger > summary { color: var(--red); }
                         </div>
                         <div class="field">
                             <label class="field-label">/mcp command</label>
-                            <div class="segmented" id="gm-mcp-perm">
+                            <div class="segmented" id="gm-mcp-perm segmented_mobile">
                                 <button data-v="inherit" onclick="setSeg('gm-mcp-perm','inherit')">Inherit</button>
                                 <button data-v="everyone" onclick="setSeg('gm-mcp-perm','everyone')">Everyone</button>
                                 <button data-v="moderator" onclick="setSeg('gm-mcp-perm','moderator')">Mod+</button>
@@ -1842,7 +2088,7 @@ details.help.danger > summary { color: var(--red); }
                         </div>
                         <div class="field">
                             <label class="field-label">/rules command</label>
-                            <div class="segmented" id="gm-rules-perm">
+                            <div class="segmented" id="gm-rules-perm segmented_mobile">
                                 <button data-v="inherit" onclick="setSeg('gm-rules-perm','inherit')">Inherit</button>
                                 <button data-v="everyone" onclick="setSeg('gm-rules-perm','everyone')">Everyone</button>
                                 <button data-v="moderator" onclick="setSeg('gm-rules-perm','moderator')">Mod+</button>
@@ -1861,11 +2107,12 @@ details.help.danger > summary { color: var(--red); }
                         <textarea class="textarea" id="gm-welcome-text" rows="3" placeholder="Welcome {{first_name}} to {{title}}!"></textarea>
                         <span class="field-hint">Placeholders: <code>{{first_name}}</code> <code>{{username}}</code> <code>{{title}}</code> <code>{{id}}</code></span>
                     </div>
-                    <div class="field" style="margin-bottom:0;">
+                    <div class="field" style="margin-bottom:8px;">
                         <label class="field-label">Rules text <span class="muted small">(sent by /rules)</span></label>
                         <textarea class="textarea" id="gm-rules" rows="3" placeholder="1. Be kind&#10;2. No spam…"></textarea>
                         <span class="field-hint">Anyone typing <code>/rules</code> in this group gets this text. Leave blank to disable.</span>
                     </div>
+                    <details class="help" data-html-ref style="margin-bottom:0;"></details>
                 </div>
 
                 <div class="card">
@@ -2035,6 +2282,7 @@ details.help.danger > summary { color: var(--red); }
                     <div class="field hidden" id="chm-sig-wrap">
                         <label class="field-label">Footer text (HTML allowed)</label>
                         <textarea class="textarea" id="chm-sig-text" rows="2" placeholder="📢 Join @mychannel · 🌐 example.com"></textarea>
+                        <details class="help" data-html-ref style="margin-top:8px;margin-bottom:0;"></details>
                     </div>
                     <div class="switch-row">
                         <div><div class="sw-label">Auto-attach inline buttons to posts</div><div class="sw-sub">Automatically adds inline buttons below every new channel post.</div></div>
@@ -2043,10 +2291,10 @@ details.help.danger > summary { color: var(--red); }
                     <div id="chm-btn-wrap" class="hidden" style="margin-bottom:14px;">
                         <div class="row" style="margin-bottom:8px;gap:6px;flex-wrap:wrap;">
                             <input class="input" id="kbCh-inline-label" placeholder="Label" style="flex:1.2 1 130px;min-width:110px;">
-                            <select class="input" id="kbCh-inline-type" onchange="kbInlineTypeToggle('kbCh')" style="width:auto;">
+                            <select class="input" id="kbCh-inline-type" onchange="kbInlineTypeToggle('kbCh')" style="flex: 1.2 1 130px;">
                                 <option value="url">URL</option><option value="command">Command</option><option value="callback">Callback</option><option value="alert">Popup alert</option><option value="toast">Toast</option>
                             </select>
-                            <select class="input" id="kbCh-inline-style" style="width:auto;">
+                            <select class="input" id="kbCh-inline-style" style="flex: 1.2 1 130px;">
                                 <option value="">Default</option><option value="primary">Blue</option><option value="success">Green</option><option value="danger">Red</option>
                             </select>
                             <div class="cmd-ac-wrap ac-plain" id="kbCh-inline-wrap">
@@ -2218,6 +2466,7 @@ details.help.danger > summary { color: var(--red); }
                         <label class="field-label">Auto-reply text</label>
                         <textarea class="textarea" id="ct-autoreply-text" rows="3" placeholder="Thanks for your message — we will get back to you as soon as possible."></textarea>
                         <span class="field-hint">HTML tags are allowed. Empty = no reply sent.</span>
+                        <details class="help" data-html-ref style="margin-top:8px;margin-bottom:0;"></details>
                     </div>
                 </div>
 
@@ -2393,6 +2642,121 @@ details.help.danger > summary { color: var(--red); }
                 <div id="mem-groups-list" style="margin-top:20px;"></div>
             </section>
 
+            <section class="page" id="page-forcejoin">
+                <div class="page-head">
+                    <div class="lead"><h1>Force Join</h1><p>Require users to join selected channels or groups before using your bot, AI, or specific commands.</p></div>
+                    <div class="page-actions">
+                        <button class="btn btn-gray btn-sm" onclick="verifyAllForceJoinChats()"><i class="fa-solid fa-stethoscope"></i> Verify bot access</button>
+                        <button class="btn btn-primary btn-sm" onclick="saveForceJoin()"><i class="fa-solid fa-check"></i> Save</button>
+                    </div>
+                </div>
+
+                <details class="help">
+                    <summary><i class="fa-solid fa-circle-info"></i> How Force Join works</summary>
+                    <div>
+                        • Add one or more Telegram channels or groups below. Your bot <b>must be a member or administrator</b> of each chat so Telegram allows it to check membership (<code>getChatMember</code>).<br>
+                        • You can enforce Force Join <b>globally</b> across the bot (Commands, AI, Featured commands, Callbacks), or leave global enforcement OFF and enable Force Join on individual commands under <b>Commands → Access &amp; Security</b>.<br>
+                        • Users receive a warning message with join link buttons and a <b>Check</b> button that re-verifies immediately.
+                    </div>
+                </details>
+
+                <div class="card">
+                    <div class="switch-row">
+                        <div><div class="sw-label">Enable global Force Join</div><div class="sw-sub">When ON, applies to the selected scopes below unless overridden per command.</div></div>
+                        <button class="switch" id="fj-enabled" onclick="toggleSwitch('fj-enabled')"></button>
+                    </div>
+                    <div class="grid grid-2" style="gap:10px;margin-top:10px;">
+                        <div class="switch-row" style="margin:0;"><div><div class="sw-label">Commands</div><div class="sw-sub">Check before running commands.</div></div><button class="switch on" id="fj-cmd" onclick="toggleSwitch('fj-cmd')"></button></div>
+                        <div class="switch-row" style="margin:0;"><div><div class="sw-label">AI replies</div><div class="sw-sub">Check before AI answers.</div></div><button class="switch on" id="fj-ai" onclick="toggleSwitch('fj-ai')"></button></div>
+                        <div class="switch-row" style="margin:0;"><div><div class="sw-label">Featured commands</div><div class="sw-sub">DM, Buttons &amp; MCP commands.</div></div><button class="switch on" id="fj-feat" onclick="toggleSwitch('fj-feat')"></button></div>
+                        <div class="switch-row" style="margin:0;"><div><div class="sw-label">Inline button taps</div><div class="sw-sub">Check when tapping inline buttons.</div></div><button class="switch on" id="fj-cb" onclick="toggleSwitch('fj-cb')"></button></div>
+                        <div class="switch-row" style="margin:0;"><div><div class="sw-label">Exempt Admins &amp; Mods</div><div class="sw-sub">Recommended so you never lock yourself out.</div></div><button class="switch on" id="fj-exempt" onclick="toggleSwitch('fj-exempt')"></button></div>
+                        <div class="switch-row" style="margin:0;"><div><div class="sw-label">Enforce inside groups too</div><div class="sw-sub">Off by default (private DMs only).</div></div><button class="switch" id="fj-groups" onclick="toggleSwitch('fj-groups')"></button></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head"><div class="card-title"><i class="fa-solid fa-plus"></i> Required channels &amp; groups</div></div>
+                    <div class="grid grid-2" style="margin-bottom:10px;">
+                        <div class="field" style="margin-bottom:0;">
+                            <label class="field-label tiny">Chat ID or @username</label>
+                            <input class="input mono" id="fj-add-id" placeholder="-1001234567890 or @mychannel">
+                        </div>
+                        <div class="field" style="margin-bottom:0;">
+                            <label class="field-label tiny">Invite link <span class="muted">(optional — auto-detected if public/admin)</span></label>
+                            <input class="input" id="fj-add-link" placeholder="https://t.me/+… or https://t.me/mychannel">
+                        </div>
+                    </div>
+                    <div class="row" style="gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+                        <button class="btn btn-primary btn-sm" id="fj-add-btn" onclick="addForceJoinChat()"><i class="fa-solid fa-plus"></i> Verify &amp; Add</button>
+                        <select class="input" id="fj-quick-pick" style="width:auto;max-width:260px;" onchange="quickPickForceJoin(this.value)">
+                            <option value="">+ Quick pick connected channel/group…</option>
+                        </select>
+                    </div>
+                    <div id="fj-chats-list"></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head"><div class="card-title c-purple"><i class="fa-solid fa-message"></i> Prompt &amp; buttons</div></div>
+                    <div class="field">
+                        <label class="field-label">Warning message (HTML allowed)</label>
+                        <textarea class="textarea" id="fj-message" rows="3" placeholder="⚠️ To use this bot, please join the required channel(s) below first, then tap Check."></textarea>
+                        <span class="field-hint">Placeholders: <code>{{first_name}}</code> <code>{{username}}</code></span>
+                        <details class="help" data-html-ref style="margin-top:8px;margin-bottom:0;"></details>
+                    </div>
+                    <div class="grid grid-3">
+                        <div class="field" style="margin-bottom:0;"><label class="field-label tiny">Check button label</label><input class="input" id="fj-check-label" placeholder="✅ I've Joined — Check"></div>
+                        <div class="field" style="margin-bottom:0;"><label class="field-label tiny">Not-joined alert popup</label><input class="input" id="fj-not-joined" placeholder="❌ Please join all required chats first!"></div>
+                        <div class="field" style="margin-bottom:0;"><label class="field-label tiny">Verified message</label><input class="input" id="fj-joined-text" placeholder="✅ Verified! You can now use the bot."></div>
+                    </div>
+                </div>
+
+                <div class="sticky-actions">
+                    <button class="btn btn-primary" onclick="saveForceJoin()"><i class="fa-solid fa-check"></i> Save Force Join</button>
+                </div>
+            </section>
+
+            <section class="page" id="page-proxies">
+                <div class="page-head">
+                    <div class="lead"><h1>Proxies</h1><p>Manage MTProto &amp; SOCKS5 proxies, run live ping/geo tests, and publish proxy commands in one click.</p></div>
+                    <div class="page-actions">
+                        <button class="btn btn-gray btn-sm" onclick="testAllProxies()"><i class="fa-solid fa-gauge-high"></i> Test all</button>
+                        <button class="btn btn-gray btn-sm" onclick="createMultiProxyCmd()"><i class="fa-solid fa-layer-group"></i> Build multi-proxy cmd</button>
+                        <button class="btn btn-primary btn-sm" onclick="openProxyModal()"><i class="fa-solid fa-plus"></i> Add proxy</button>
+                    </div>
+                </div>
+
+                <details class="help">
+                    <summary><i class="fa-solid fa-circle-info"></i> Built for proxy publishers &amp; sellers</summary>
+                    <div>
+                        • Paste any <code>https://t.me/proxy?...</code>, <code>tg://proxy?...</code>, or <code>https://t.me/socks?...</code> link and Nyxx automatically extracts server, port, and secret type (Standard / <code>dd</code> / Fake TLS SNI).<br>
+                        • Click <b>Test</b> (or <b>Test all</b>) to check live TCP latency, IP, country flag, and ISP.<br>
+                        • Click <b>Create Cmd</b> on any proxy—or select multiple proxies and click <b>Build multi-proxy cmd</b>—to automatically create a command with native <b>Connect</b> + <b>Test &amp; Details</b> inline buttons!
+                    </div>
+                </details>
+
+                <div class="toolbar">
+                    <div class="search"><i class="fa-solid fa-magnifying-glass"></i><input id="proxy-search" placeholder="Search by label, server, country, or ISP…" oninput="renderProxies()"></div>
+                    <select class="input" id="proxy-filter" onchange="renderProxies()" style="width:auto;">
+                        <option value="all">All proxies</option>
+                        <option value="online">Online only</option>
+                        <option value="offline">Offline / unreachable</option>
+                        <option value="MTProto">MTProto</option>
+                        <option value="SOCKS5">SOCKS5</option>
+                    </select>
+                </div>
+
+                <div class="media-bulk-bar" id="proxy-bulk-bar">
+                    <span class="badge blue" id="proxy-bulk-count">0 selected</span>
+                    <button class="btn btn-gray btn-sm" onclick="clearProxySelection()">Clear</button>
+                    <div style="flex:1"></div>
+                    <button class="btn btn-primary btn-sm" onclick="createMultiProxyCmd()"><i class="fa-solid fa-terminal"></i> Build command from selected</button>
+                    <button class="btn btn-danger btn-sm" onclick="bulkDeleteProxies()"><i class="fa-regular fa-trash-can"></i> Delete</button>
+                </div>
+
+                <div id="proxies-list"></div>
+            </section>
+
             <section class="page" id="page-media">
                 <div class="page-head">
                     <div class="lead"><h1>Media Library</h1><p>Upload, organize, gate by user ID, expire, and validate Telegram files for commands &amp; digital delivery.</p></div>
@@ -2554,7 +2918,13 @@ details.help.danger > summary { color: var(--red); }
             </section>
 
             <section class="page" id="page-ai">
-                <div class="page-head"><div class="lead"><h1>AI</h1><p>Connect an AI provider and shape how your bot replies.</p></div></div>
+                <div class="page-head">
+                    <div class="lead"><h1>AI</h1><p>Connect an AI provider and shape how your bot replies.</p></div>
+                    <div class="page-actions">
+                        <button class="btn btn-primary btn-sm" onclick="openNyxxChat('bot_ai')"><i class="fa-solid fa-comments"></i> Open Bot AI Chat</button>
+                        <button class="nyxx-ai-btn" style="width:auto;height:32px;padding:0 12px;font-size:13px;" onclick="openNyxxChat('support')"><i class="fa-solid fa-wand-magic-sparkles"></i> Nyxx AI support</button>
+                    </div>
+                </div>
 
                 <div class="card">
                     <div class="switch-row" style="margin-bottom:0;">
@@ -2958,8 +3328,8 @@ details.help.danger > summary { color: var(--red); }
                         <div>Open a full-screen chat in its own tab — ask Nyxx to read stats, create commands, manage groups, tweak AI settings, and more. Each chat is a separate thread you can return to later.</div>
                     </div>
                     <div class="row">
-                        <a class="btn btn-primary btn-lg" href="/chat" target="_blank" rel="noopener"><i class="fa-solid fa-up-right-from-square"></i> Open Chat</a>
-                        <a class="btn btn-gray btn-lg" href="/chat" target="_blank" rel="noopener"><i class="fa-solid fa-plus"></i> Start a new chat</a>
+                        <a class="btn btn-primary btn-lg" href="/chat?mode=mcp" target="_blank" rel="noopener"><i class="fa-solid fa-up-right-from-square"></i> Open MCP Chat</a>
+                        <button type="button" class="nyxx-ai-btn" style="width:auto;height:44px;padding:0 20px;" onclick="openNyxxChat('support')"><i class="fa-solid fa-wand-magic-sparkles"></i> Nyxx AI support</button>
                     </div>
                 </div>
 
@@ -3480,187 +3850,256 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
             <button class="btn btn-plain" id="cmd-save" onclick="saveCommand()">Save</button>
         </div>
         <div class="sheet-body">
-            <div class="field"><label class="field-label">Command</label><input class="input" id="cmd-name" placeholder="/start or /help 123" style="font-family:var(--mono);"><span class="field-hint">Include the leading slash. Supports exact argument variants too, e.g. <code>/help 123</code> or <code>/start vip</code> (for <code>t.me/bot?start=vip</code>).</span></div>
-            <div class="field">
-                <label class="field-label">Parent folder</label>
-                <div class="cmd-ac-wrap">
-                    <input class="input mono" id="cmd-parent" data-cmd-ac="parent" placeholder="None (root) — type to search or enter /folder" autocomplete="off">
-                    <button type="button" class="cmd-ac-btn" tabindex="-1" aria-label="Browse folders"><i class="fa-solid fa-chevron-down"></i></button>
-                </div>
-                <span class="field-hint">Leave blank for root, pick an existing command, or type a folder name manually.</span>
+            <div class="tabbar cmd-tabbar" id="cmd-tabs">
+                <button type="button" class="active" data-ctab="content" onclick="cmdModalSetTab('content')"><i class="fa-regular fa-file-lines"></i> Content</button>
+                <button type="button" data-ctab="keyboards" onclick="cmdModalSetTab('keyboards')"><i class="fa-regular fa-keyboard"></i> Keyboards</button>
+                <button type="button" data-ctab="behavior" onclick="cmdModalSetTab('behavior')"><i class="fa-solid fa-sliders"></i> Behavior</button>
+                <button type="button" data-ctab="access" onclick="cmdModalSetTab('access')"><i class="fa-solid fa-shield-halved"></i> Access</button>
             </div>
-            <div class="field"><label class="field-label">Reply type</label>
-                <select class="input" id="cmd-type" onchange="toggleMedia()">
-                    <option value="text">Text</option>
-                    <option value="photo">Photo</option>
-                    <option value="video">Video</option>
-                    <option value="animation">Animation (GIF)</option>
-                    <option value="voice">Voice message</option>
-                    <option value="audio">Audio / music</option>
-                    <option value="document">Document / file</option>
-                    <option value="video_note">Round video message</option>
-                    <option value="sticker">Sticker (file_id only)</option>
-                </select>
-            </div>
-            <div class="field">
-                <label class="field-label" id="cmd-content-label">Content</label>
-                <textarea class="textarea" id="cmd-content" rows="3" placeholder="What the bot replies with…"></textarea>
-                <span class="field-hint" id="cmd-content-hint">HTML tags are allowed: <code>&lt;b&gt;</code> <code>&lt;i&gt;</code> <code>&lt;code&gt;</code> <code>&lt;a href="…"&gt;</code></span>
-            </div>
-            <div class="hint-banner" style="margin-top:-8px;font-size:12px;">
-                <i class="fa-solid fa-keyboard"></i>
-                <div><b>Arguments &amp; Placeholders:</b> Create exact commands like <code>/help 123</code> for dedicated replies, OR use <code>{{args}}</code> / <code>{{arg1}}</code> inside <code>/help</code> to echo or insert trailing words (e.g. <code>/say hello</code> → <code>You said: hello</code>).</div>
-            </div>
-            <div id="cmd-text-attach-bar" style="margin-bottom:14px;">
-                <button type="button" class="btn btn-gray btn-sm" onclick="quickAttachToCmd()"><i class="fa-solid fa-paperclip"></i> Attach media / multiple files</button>
-            </div>
-            <div class="field hidden" id="cmd-media-wrap">
-                <label class="field-label">Media attachments <span class="muted small" id="cmd-att-count-badge"></span></label>
-                <div class="row" style="margin-bottom:10px;gap:8px;flex-wrap:wrap;">
-                    <div class="segmented" id="cmd-media-source">
-                        <button data-v="url" type="button" onclick="setSeg('cmd-media-source','url');toggleCmdMediaSource()">URL</button>
-                        <button data-v="file" type="button" onclick="setSeg('cmd-media-source','file');toggleCmdMediaSource()">Upload</button>
+
+            <div class="cmd-tabpane active" id="cmd-pane-content">
+                <div class="grid grid-2">
+                    <div class="field"><label class="field-label">Command</label><input class="input" id="cmd-name" placeholder="/start or /help 123" style="font-family:var(--mono);"><span class="field-hint">Include leading slash. Exact args supported (e.g. <code>/start vip</code>).</span></div>
+                    <div class="field">
+                        <label class="field-label">Parent folder</label>
+                        <div class="cmd-ac-wrap">
+                            <input class="input mono" id="cmd-parent" data-cmd-ac="parent" placeholder="None (root) — search or type /folder" autocomplete="off">
+                            <button type="button" class="cmd-ac-btn" tabindex="-1" aria-label="Browse folders"><i class="fa-solid fa-chevron-down"></i></button>
+                        </div>
+                        <span class="field-hint">Optional parent command for nesting &amp; Back buttons.</span>
                     </div>
-                    <button type="button" class="btn btn-gray btn-sm" onclick="openMediaPicker('cmd')"><i class="fa-solid fa-photo-film"></i> Pick from library</button>
                 </div>
-                <div id="cmd-media-url-panel">
+                <div class="field"><label class="field-label">Reply type</label>
+                    <select class="input" id="cmd-type" onchange="toggleMedia()">
+                        <option value="text">Text</option>
+                        <option value="photo">Photo</option>
+                        <option value="video">Video</option>
+                        <option value="animation">Animation (GIF)</option>
+                        <option value="voice">Voice message</option>
+                        <option value="audio">Audio / music</option>
+                        <option value="document">Document / file</option>
+                        <option value="video_note">Round video message</option>
+                        <option value="sticker">Sticker (file_id only)</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label class="field-label" id="cmd-content-label">Content</label>
+                    <textarea class="textarea" id="cmd-content" rows="4" placeholder="What the bot replies with…"></textarea>
+                    <span class="field-hint" id="cmd-content-hint">Supports <code>{{args}}</code>, <code>{{arg1}}</code>, and Telegram HTML.</span>
+                    <details class="help" data-html-ref style="margin-top:8px;margin-bottom:0;"></details>
+                </div>
+                <div id="cmd-text-attach-bar" style="margin-bottom:10px;">
+                    <button type="button" class="btn btn-gray btn-sm" onclick="quickAttachToCmd()"><i class="fa-solid fa-paperclip"></i> Attach media / multiple files</button>
+                </div>
+                <div class="field hidden" id="cmd-media-wrap">
+                    <label class="field-label">Media attachments <span class="muted small" id="cmd-att-count-badge"></span></label>
+                    <div class="row" style="margin-bottom:10px;gap:8px;flex-wrap:wrap;">
+                        <div class="segmented" id="cmd-media-source">
+                            <button data-v="url" type="button" onclick="setSeg('cmd-media-source','url');toggleCmdMediaSource()">URL</button>
+                            <button data-v="file" type="button" onclick="setSeg('cmd-media-source','file');toggleCmdMediaSource()">Upload</button>
+                        </div>
+                        <button type="button" class="btn btn-gray btn-sm" onclick="openMediaPicker('cmd')"><i class="fa-solid fa-photo-film"></i> Pick from library</button>
+                    </div>
+                    <div id="cmd-media-url-panel">
+                        <div class="input-with-btn">
+                            <input class="input" id="cmd-media" placeholder="https://…" oninput="renderMediaPreview('cmd')">
+                            <button type="button" class="btn btn-primary btn-sm" onclick="addCmdUrlAttachment()" title="Add URL to attachments"><i class="fa-solid fa-plus"></i> Add</button>
+                        </div>
+                        <span class="field-hint" id="cmd-media-hint">Paste a direct link. Click <b>+ Add</b> to attach multiple URLs.</span>
+                    </div>
+                    <div id="cmd-media-file-panel" class="hidden">
+                        <input type="file" class="input" id="cmd-media-file" multiple onchange="uploadCmdMedia()" style="align-content: center;">
+                        <span class="field-hint" id="cmd-media-file-hint">Select one or <b>multiple files</b> — stored on Telegram.</span>
+                        <div id="cmd-media-file-status" class="small" style="margin-top:8px;"></div>
+                    </div>
+                    <div id="cmd-att-list" class="att-list"></div>
+                    <div id="cmd-media-preview" class="media-preview"></div>
+                    <input type="hidden" id="cmd-file-id">
+                    <input type="hidden" id="cmd-media-meta">
+                </div>
+            </div>
+
+            <div class="cmd-tabpane" id="cmd-pane-keyboards">
+                <div class="switch-row"><div><div class="sw-label">Inline keyboard</div><div class="sw-sub">Buttons attached under the message.</div></div><button class="switch" id="cmd-inline-toggle" onclick="toggleCmdSection('inline')"></button></div>
+                <div id="cmd-inline-section" class="hidden" style="margin-bottom:16px;">
+                    <div class="row" style="margin-bottom:8px;gap:6px;flex-wrap:wrap;">
+                        <input class="input" id="kbCmd-inline-label" placeholder="Label" style="flex:1.2 1 130px;min-width:110px;">
+                        <select class="input" id="kbCmd-inline-type" onchange="kbInlineTypeToggle('kbCmd')" style="flex: 1.2 1 130px;">
+                            <option value="command">Command</option><option value="callback">Callback</option><option value="url">URL</option><option value="alert">Popup alert</option><option value="toast">Toast</option>
+                        </select>
+                        <select class="input" id="kbCmd-inline-style" style="flex: 1.2 1 130px;" title="Button color">
+                            <option value="">Default</option><option value="primary">Blue</option><option value="success">Green</option><option value="danger">Red</option>
+                        </select>
+                        <div class="cmd-ac-wrap" id="kbCmd-inline-wrap">
+                            <input class="input" id="kbCmd-inline-value" data-cmd-ac="command" placeholder="/command (search or type custom)" autocomplete="off">
+                            <button type="button" class="cmd-ac-btn" tabindex="-1" aria-label="Browse commands"><i class="fa-solid fa-chevron-down"></i></button>
+                        </div>
+                        <select class="input" id="kbCmd-inline-row" style="width:auto;" title="Target row"><option value="auto">Auto row</option><option value="new">+ New row</option></select>
+                        <button type="button" class="btn btn-primary btn-sm" id="kbCmd-inline-add-btn" onclick="kbCmd.inlineAdd()" title="Add / Save button"><i class="fa-solid fa-plus"></i></button>
+                        <button type="button" class="btn btn-gray btn-sm" onclick="kbCmd.addRow('inline')" title="Add an empty row"><i class="fa-solid fa-grip-lines"></i> + Row</button>
+                    </div>
+                    <div id="kbCmd-inline-list"></div>
+                    <details class="help" style="margin-top:10px;margin-bottom:10px;">
+                        <summary><i class="fa-solid fa-shield-halved"></i> Tip: Sharing proxies, testing proxies &amp; custom popups</summary>
+                        <div>
+                            • <b>Proxy connect:</b> Type = <b>URL</b> → <code>https://t.me/proxy?server=HOST&amp;port=PORT&amp;secret=SECRET</code> (or <code>/socks?...</code>).<br>
+                            • <b>Proxy live test:</b> Type = <b>Callback</b> → <code>PROXY:https://t.me/proxy?...</code> (popup) or <code>PROXY_MSG:...</code> (message).<br>
+                            • <b>Custom Popup / Toast:</b> Type = <b>Popup alert</b> or <b>Toast</b> (up to 200 chars). Supports <code>{{first_name}}</code>, <code>{{username}}</code>, <code>{{id}}</code>, <code>{{title}}</code>, <code>{{current_time}}</code>.
+                        </div>
+                    </details>
+                    <details class="help" style="margin-top:8px;margin-bottom:10px;">
+                        <summary><i class="fa-solid fa-user-lock"></i> Inline buttons access restriction (optional)</summary>
+                        <div>
+                            <div class="field" style="margin-top:6px;">
+                                <label class="field-label tiny">Who can tap these inline buttons?</label>
+                                <div class="segmented segmented_mobile" id="cmd-inline-access">
+                                    <button type="button" data-v="everyone" onclick="setSeg('cmd-inline-access','everyone')">Everyone</button>
+                                    <button type="button" data-v="specific" onclick="setSeg('cmd-inline-access','specific')">Specific users</button>
+                                    <button type="button" data-v="moderator" onclick="setSeg('cmd-inline-access','moderator')">Mod+</button>
+                                    <button type="button" data-v="admin" onclick="setSeg('cmd-inline-access','admin')">Admin</button>
+                                </div>
+                            </div>
+                            <div class="grid grid-2">
+                                <div class="field" style="margin-bottom:0;"><label class="field-label tiny">Allowed user IDs</label><input class="input mono" id="cmd-inline-allowed" placeholder="123456, 789012"></div>
+                                <div class="field" style="margin-bottom:0;"><label class="field-label tiny">Disallowed user IDs</label><input class="input mono" id="cmd-inline-disallowed" placeholder="555666"></div>
+                            </div>
+                        </div>
+                    </details>
+                    <div class="switch-row" style="margin-top:10px;">
+                        <div>
+                            <div class="sw-label">Inline auto-back button</div>
+                            <div class="sw-sub">Off by default. Adds an inline Back button row to open the parent folder.</div>
+                        </div>
+                        <button type="button" class="switch" id="cmd-inline-auto-back" onclick="toggleSwitch('cmd-inline-auto-back');show($('cmd-inline-back-label-wrap'),sw('cmd-inline-auto-back'))"></button>
+                    </div>
+                    <div class="field hidden" id="cmd-inline-back-label-wrap" style="margin-bottom:0;">
+                        <label class="field-label">Custom inline back button label <span class="muted small">(optional)</span></label>
+                        <input class="input" id="cmd-inline-back-label" placeholder='Leave blank for default ("Back" / "بازگشت")'>
+                    </div>
+                </div>
+
+                <div class="switch-row"><div><div class="sw-label">Reply keyboard</div><div class="sw-sub">Persistent buttons below the chat input box.</div></div><button class="switch" id="cmd-reply-toggle" onclick="toggleCmdSection('reply')"></button></div>
+                <div id="cmd-reply-section" class="hidden" style="margin-bottom:16px;">
+                    <div class="row" style="margin-bottom:8px;gap:6px;flex-wrap:wrap;">
+                        <input class="input" id="kbCmd-reply-label" placeholder="Button text" style="flex:1.2 1 130px;min-width:110px;">
+                        <div class="cmd-ac-wrap">
+                            <input class="input" id="kbCmd-reply-value" data-cmd-ac="command" placeholder="Run /command (search or type custom)" autocomplete="off">
+                            <button type="button" class="cmd-ac-btn" tabindex="-1" aria-label="Browse commands"><i class="fa-solid fa-chevron-down"></i></button>
+                        </div>
+                        <select class="input" id="kbCmd-reply-style" style="flex: 1.2 1 130px;" title="Button color">
+                            <option value="">Default</option><option value="primary">Blue</option><option value="success">Green</option><option value="danger">Red</option>
+                        </select>
+                        <select class="input" id="kbCmd-reply-row" style="flex: 1.2 1 130px;" title="Target row"><option value="auto">Auto row</option><option value="new">+ New row</option></select>
+                        <button type="button" class="btn btn-primary btn-sm" id="kbCmd-reply-add-btn" onclick="kbCmd.replyAdd()" title="Add / Save button"><i class="fa-solid fa-plus"></i></button>
+                        <button type="button" class="btn btn-gray btn-sm" onclick="kbCmd.addRow('reply')" title="Add an empty row"><i class="fa-solid fa-grip-lines"></i> + Row</button>
+                    </div>
+                    <div id="kbCmd-reply-list"></div>
+                    <div id="kbCmd-reply-preview" class="kb-preview"></div>
+                    <div class="row" style="margin-top:8px;font-size:13px;color:var(--text-3);flex-wrap:wrap;gap:8px;">
+                        <label class="check"><input type="checkbox" id="kbCmd-reply-resize" checked onchange="kbSettingChanged('kbCmd')"> Resize</label>
+                        <label class="check"><input type="checkbox" id="kbCmd-reply-onetime" onchange="kbSettingChanged('kbCmd')"> One-time</label>
+                        <label class="check"><input type="checkbox" id="kbCmd-reply-persistent" checked onchange="kbSettingChanged('kbCmd')"> Persistent</label>
+                        <label class="check"><input type="checkbox" id="kbCmd-reply-refresh" onchange="kbSettingChanged('kbCmd')"> Refresh placeholder live</label>
+                        <input class="input" id="kbCmd-reply-placeholder" placeholder="Input placeholder" style="flex:1 1 140px;min-width:120px;" oninput="kbSettingChanged('kbCmd')">
+                        <input class="input" id="kbCmd-reply-prompt" placeholder="Prompt when paired w/ inline (default: •)" style="flex:1 1 180px;min-width:140px;" oninput="kbSettingChanged('kbCmd')">
+                    </div>
+                    <div class="switch-row" style="margin-top:10px;">
+                        <div>
+                            <div class="sw-label">Auto-back button</div>
+                            <div class="sw-sub">Adds a Back button row to this reply keyboard when nested under a parent.</div>
+                        </div>
+                        <button type="button" class="switch on" id="cmd-auto-back" onclick="toggleSwitch('cmd-auto-back');show($('cmd-back-label-wrap'),sw('cmd-auto-back'))"></button>
+                    </div>
+                    <div class="field" id="cmd-back-label-wrap" style="margin-bottom:0;">
+                        <label class="field-label">Custom back button label <span class="muted small">(optional)</span></label>
+                        <input class="input" id="cmd-back-label" placeholder='Leave blank for default ("Back" / "بازگشت")'>
+                    </div>
+                </div>
+
+                <div class="switch-row" id="cmd-remove-reply-row" style="margin-bottom:0;">
+                    <div>
+                        <div class="sw-label">Close previous reply keyboard</div>
+                        <div class="sw-sub">Sends Telegram's <code>remove_keyboard</code> so any open reply keyboard closes here.</div>
+                    </div>
+                    <button type="button" class="switch" id="cmd-remove-reply" onclick="toggleCmdRemoveReply()"></button>
+                </div>
+            </div>
+
+            <div class="cmd-tabpane" id="cmd-pane-behavior">
+                <div class="switch-row">
+                    <div>
+                        <div class="sw-label">Edit current message</div>
+                        <div class="sw-sub">Edit the bot's current message in place instead of sending a new one (falls back cleanly if media type changes).</div>
+                    </div>
+                    <button type="button" class="switch" id="cmd-edit-message" onclick="toggleSwitch('cmd-edit-message');show($('cmd-edit-triggers-wrap'),sw('cmd-edit-message'))"></button>
+                </div>
+                <div id="cmd-edit-triggers-wrap" class="hidden">
+                    <div class="edit-trig-grid">
+                        <label class="edit-trig-chip"><input type="checkbox" id="cmd-edit-trig-inline" checked> <div>Inline button<small>When tapped on inline keyboard</small></div></label>
+                        <label class="edit-trig-chip"><input type="checkbox" id="cmd-edit-trig-reply" checked> <div>Reply button<small>When tapped on reply keyboard</small></div></label>
+                        <label class="edit-trig-chip"><input type="checkbox" id="cmd-edit-trig-command" checked> <div>Typed /command<small>When sent directly as /cmd</small></div></label>
+                    </div>
+                </div>
+                <div class="switch-row"><div><div class="sw-label">Protect content</div><div class="sw-sub">Prevent users from forwarding or saving files/messages in Telegram.</div></div><button class="switch" id="cmd-protect" onclick="toggleSwitch('cmd-protect')"></button></div>
+                <div class="switch-row" style="margin-bottom:0;"><div><div class="sw-label">Enabled</div><div class="sw-sub">Disabled commands are hidden.</div></div><button class="switch on" id="cmd-enabled" onclick="toggleSwitch('cmd-enabled')"></button></div>
+            </div>
+
+            <div class="cmd-tabpane" id="cmd-pane-access">
+                <div class="field">
+                    <label class="field-label">Who can run it?</label>
+                    <div class="segmented segmented_mobile" id="cmd-access">
+                        <button type="button" data-v="everyone" onclick="setSeg('cmd-access','everyone');onCmdAccessChange()">Everyone</button>
+                        <button type="button" data-v="specific" onclick="setSeg('cmd-access','specific');onCmdAccessChange()">Specific users</button>
+                        <button type="button" data-v="moderator" onclick="setSeg('cmd-access','moderator');onCmdAccessChange()">Moderator+</button>
+                        <button type="button" data-v="admin" onclick="setSeg('cmd-access','admin');onCmdAccessChange()">Admin only</button>
+                    </div>
+                </div>
+                <div class="grid grid-2">
+                    <div class="field" id="cmd-allowed-users-wrap">
+                        <label class="field-label">Allowed user IDs <span class="muted small">(optional)</span></label>
+                        <textarea class="textarea mono" id="cmd-allowed-users" rows="2" placeholder="123456789, 987654321"></textarea>
+                        <span class="field-hint">Required when set to <b>Specific users</b>.</span>
+                    </div>
+                    <div class="field">
+                        <label class="field-label">Disallowed user IDs <span class="muted small">(optional)</span></label>
+                        <textarea class="textarea mono" id="cmd-disallowed-users" rows="2" placeholder="555666777"></textarea>
+                        <span class="field-hint">These users are blocked from running this command.</span>
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="field-label">Force Join override</label>
+                    <select class="input" id="cmd-fj-mode">
+                        <option value="inherit">Inherit global Force Join setting</option>
+                        <option value="required">Always require Force Join for this command</option>
+                        <option value="off">Bypass Force Join for this command</option>
+                    </select>
+                    <span class="field-hint">Uses the required chats configured in the <b>Force Join</b> tab.</span>
+                </div>
+                <div class="field">
+                    <label class="field-label">Command password <span class="muted small">(optional)</span></label>
+                    <input class="input" id="cmd-password" placeholder="Leave blank for no password" autocomplete="off" oninput="show($('cmd-pw-opts'), !!this.value.trim())">
+                    <div id="cmd-pw-opts" class="hidden" style="margin-top:10px;">
+                        <div class="grid grid-2">
+                            <div class="field" style="margin-bottom:0;"><label class="field-label tiny">Password prompt text</label><input class="input" id="cmd-pw-prompt" placeholder="🔒 Enter the password to continue:"></div>
+                            <div class="field" style="margin-bottom:0;"><label class="field-label tiny">Dismiss button label</label><input class="input" id="cmd-pw-dismiss" placeholder="❌ Dismiss"></div>
+                        </div>
+                        <span class="field-hint">If this command has a parent folder and auto-back is enabled, a Back button is also attached automatically.</span>
+                    </div>
+                </div>
+                <div class="field" style="margin-bottom:0;">
+                    <label class="field-label">Expiration <span class="muted small">(optional)</span></label>
                     <div class="input-with-btn">
-                        <input class="input" id="cmd-media" placeholder="https://…" oninput="renderMediaPreview('cmd')">
-                        <button type="button" class="btn btn-primary btn-sm" onclick="addCmdUrlAttachment()" title="Add URL to attachments"><i class="fa-solid fa-plus"></i> Add</button>
+                        <input type="datetime-local" class="input" id="cmd-expires-at">
+                        <button type="button" class="btn btn-gray btn-sm" onclick="$('cmd-expires-at').value=''">Clear</button>
                     </div>
-                    <span class="field-hint" id="cmd-media-hint">Paste a direct link. Click <b>+ Add</b> to attach multiple URLs to this command.</span>
-                </div>
-                <div id="cmd-media-file-panel" class="hidden">
-                    <input type="file" class="input" id="cmd-media-file" multiple onchange="uploadCmdMedia()" style="align-content: center;">
-                    <span class="field-hint" id="cmd-media-file-hint">Select one or <b>multiple files</b> — stored on Telegram and attached to this command.</span>
-                    <div id="cmd-media-file-status" class="small" style="margin-top:8px;"></div>
-                </div>
-                <div id="cmd-att-list" class="att-list"></div>
-                <div id="cmd-media-preview" class="media-preview"></div>
-                <input type="hidden" id="cmd-file-id">
-                <input type="hidden" id="cmd-media-meta">
-            </div>
-            <div class="switch-row"><div><div class="sw-label">Inline keyboard</div><div class="sw-sub">Buttons under the message.</div></div><button class="switch" id="cmd-inline-toggle" onclick="toggleCmdSection('inline')"></button></div>
-            <div id="cmd-inline-section" class="hidden" style="margin-bottom:16px;">
-                <div class="hint-banner" style="margin-bottom:10px;font-size:12px;">
-                    <i class="fa-solid fa-circle-info"></i>
-                    <div>Add buttons to <b>Auto</b>, <b>+ New row</b>, or any specific row. Use the <b>↑ / ↓</b> row buttons on any card to move individual buttons between rows (e.g. 2 buttons on Row 1, 1 on Row 2) and click the swatches to color buttons.</div>
-                </div>
-                <div class="row" style="margin-bottom:8px;gap:6px;flex-wrap:wrap;">
-                    <input class="input" id="kbCmd-inline-label" placeholder="Label" style="flex:1.2 1 130px;min-width:110px;">
-                    <select class="input" id="kbCmd-inline-type" onchange="kbInlineTypeToggle('kbCmd')" style="flex: 1.2 1 130px;">
-                        <option value="command">Command</option><option value="callback">Callback</option><option value="url">URL</option><option value="alert">Popup alert</option><option value="toast">Toast</option>
-                    </select>
-                    <select class="input" id="kbCmd-inline-style" style="flex: 1.2 1 130px;" title="Button color">
-                        <option value="">Default</option><option value="primary">Blue</option><option value="success">Green</option><option value="danger">Red</option>
-                    </select>
-                    <div class="cmd-ac-wrap" id="kbCmd-inline-wrap">
-                        <input class="input" id="kbCmd-inline-value" data-cmd-ac="command" placeholder="/command (search or type custom)" autocomplete="off">
-                        <button type="button" class="cmd-ac-btn" tabindex="-1" aria-label="Browse commands"><i class="fa-solid fa-chevron-down"></i></button>
+                    <div class="row" style="margin-top:6px;gap:6px;">
+                        <button type="button" class="btn btn-gray btn-sm" onclick="setCmdExpiryPreset(24)">+24h</button>
+                        <button type="button" class="btn btn-gray btn-sm" onclick="setCmdExpiryPreset(168)">+7d</button>
+                        <button type="button" class="btn btn-gray btn-sm" onclick="setCmdExpiryPreset(720)">+30d</button>
                     </div>
-                    <select class="input" id="kbCmd-inline-row" style="width:auto;" title="Target row"><option value="auto">Auto row</option><option value="new">+ New row</option></select>
-                    <button type="button" class="btn btn-primary btn-sm" id="kbCmd-inline-add-btn" onclick="kbCmd.inlineAdd()" title="Add / Save button"><i class="fa-solid fa-plus"></i></button>
-                    <button type="button" class="btn btn-gray btn-sm" onclick="kbCmd.addRow('inline')" title="Add an empty row"><i class="fa-solid fa-grip-lines"></i> + Row</button>
-                </div>
-                <div id="kbCmd-inline-list"></div>
-                <details class="help" style="margin-top:10px;margin-bottom:10px;">
-                    <summary><i class="fa-solid fa-shield-halved"></i> Tip: Sharing &amp; testing Telegram proxies with buttons</summary>
-                    <div>
-                        • <b>Connect button:</b> Set Type = <b>URL</b> and paste <code>https://t.me/proxy?server=HOST&amp;port=PORT&amp;secret=SECRET</code> (or <code>https://t.me/socks?server=HOST&amp;port=PORT</code>). Telegram clients open it directly as a proxy.<br>
-                        • <b>Test / Details button:</b> Set Type = <b>Callback</b> and value <code>PROXY:https://t.me/proxy?server=...</code> (or <code>PROXY:HOST:PORT</code>) to test reachability &amp; ping and show IP, country, ISP &amp; TLS details in a popup alert (use <code>PROXY_MSG:...</code> to send a chat message instead).<br>
-                        • <b>Custom Popup / Toast:</b> Set Type = <b>Popup alert</b> (centered Telegram dialog) or <b>Toast</b> (top banner) with your own text (up to 200 chars). Supports <code>{{first_name}}</code>, <code>{{username}}</code>, <code>{{id}}</code>, <code>{{title}}</code>, <code>{{current_time}}</code>.
-                    </div>
-                </details>
-                <div class="switch-row" style="margin-top:10px;">
-                    <div>
-                        <div class="sw-label">Inline auto-back button</div>
-                        <div class="sw-sub">Off by default. When this command has a parent folder, automatically add an inline Back button row that opens the parent command.</div>
-                    </div>
-                    <button type="button" class="switch" id="cmd-inline-auto-back" onclick="toggleSwitch('cmd-inline-auto-back');show($('cmd-inline-back-label-wrap'),sw('cmd-inline-auto-back'))"></button>
-                </div>
-                <div class="field hidden" id="cmd-inline-back-label-wrap" style="margin-bottom:0;">
-                    <label class="field-label">Custom inline back button label <span class="muted small">(optional)</span></label>
-                    <input class="input" id="cmd-inline-back-label" placeholder='Leave blank for default ("Back" / "بازگشت")'>
                 </div>
             </div>
-            <div class="switch-row"><div><div class="sw-label">Reply keyboard</div><div class="sw-sub">Persistent buttons below the input box. Can be combined with an inline keyboard — Telegram will deliver the reply keyboard on a second, empty message.</div></div><button class="switch" id="cmd-reply-toggle" onclick="toggleCmdSection('reply')"></button></div>
-            <div id="cmd-reply-section" class="hidden" style="margin-bottom:16px;">
-                <div class="row" style="margin-bottom:8px;gap:6px;flex-wrap:wrap;">
-                    <input class="input" id="kbCmd-reply-label" placeholder="Button text" style="flex:1.2 1 130px;min-width:110px;">
-                    <div class="cmd-ac-wrap">
-                        <input class="input" id="kbCmd-reply-value" data-cmd-ac="command" placeholder="Run /command (search or type custom)" autocomplete="off">
-                        <button type="button" class="cmd-ac-btn" tabindex="-1" aria-label="Browse commands"><i class="fa-solid fa-chevron-down"></i></button>
-                    </div>
-                    <select class="input" id="kbCmd-reply-style" style="width:auto;" title="Button color">
-                        <option value="">Default</option><option value="primary">Blue</option><option value="success">Green</option><option value="danger">Red</option>
-                    </select>
-                    <select class="input" id="kbCmd-reply-row" style="width:auto;" title="Target row"><option value="auto">Auto row</option><option value="new">+ New row</option></select>
-                    <button type="button" class="btn btn-primary btn-sm" id="kbCmd-reply-add-btn" onclick="kbCmd.replyAdd()" title="Add / Save button"><i class="fa-solid fa-plus"></i></button>
-                    <button type="button" class="btn btn-gray btn-sm" onclick="kbCmd.addRow('reply')" title="Add an empty row"><i class="fa-solid fa-grip-lines"></i> + Row</button>
-                </div>
-                <div id="kbCmd-reply-list"></div>
-                <div id="kbCmd-reply-preview" class="kb-preview"></div>
-                <div class="row" style="margin-top:8px;font-size:13px;color:var(--text-3);flex-wrap:wrap;gap:8px;">
-                    <label class="check" title="Shrink the buttons to fit their labels instead of stretching to the full width."><input type="checkbox" id="kbCmd-reply-resize" checked onchange="kbSettingChanged('kbCmd')"> Resize</label>
-                    <label class="check" title="Hide the keyboard the moment the user taps a button. You must re-send the keyboard next time."><input type="checkbox" id="kbCmd-reply-onetime" onchange="kbSettingChanged('kbCmd')"> One-time</label>
-                    <label class="check" title="Keep the keyboard visible when Telegram's own controls (like the back button) try to dismiss it."><input type="checkbox" id="kbCmd-reply-persistent" checked onchange="kbSettingChanged('kbCmd')"> Persistent</label>
-                    <label class="check" title="Briefly resets the keyboard before sending so Telegram updates input_field_placeholder immediately."><input type="checkbox" id="kbCmd-reply-refresh" onchange="kbSettingChanged('kbCmd')"> Refresh placeholder live</label>
-                    <input class="input" id="kbCmd-reply-placeholder" placeholder="Input placeholder" style="flex:1 1 140px;min-width:120px;" oninput="kbSettingChanged('kbCmd')">
-                    <input class="input" id="kbCmd-reply-prompt" placeholder="Prompt when paired w/ inline (default: •)" style="flex:1 1 180px;min-width:140px;" oninput="kbSettingChanged('kbCmd')">
-                </div>
-                <div class="field-hint" style="margin-top:6px;">
-                    <b>Resize</b> fits the keyboard to the button labels. <b>One-time</b> hides the keyboard after the user taps a button — you must resend it next time. <b>Persistent</b> keeps the keyboard visible when the user taps the Back button.
-                </div>
-                <div class="switch-row" style="margin-top:10px;">
-                    <div>
-                        <div class="sw-label">Auto-back button</div>
-                        <div class="sw-sub">When this command has a parent folder, automatically add a Back button row to this reply keyboard.</div>
-                    </div>
-                    <button type="button" class="switch on" id="cmd-auto-back" onclick="toggleSwitch('cmd-auto-back');show($('cmd-back-label-wrap'),sw('cmd-auto-back'))"></button>
-                </div>
-                <div class="field" id="cmd-back-label-wrap" style="margin-bottom:0;">
-                    <label class="field-label">Custom back button label <span class="muted small">(optional)</span></label>
-                    <input class="input" id="cmd-back-label" placeholder='Leave blank for default ("Back" / "بازگشت")'>
-                </div>
-            </div>
-            <div class="switch-row" id="cmd-remove-reply-row">
-                <div>
-                    <div class="sw-label">Close previous reply keyboard</div>
-                    <div class="sw-sub">Sends Telegram's <code>remove_keyboard</code> so any reply keyboard opened by a previous command (e.g. <code>/help</code>) closes here.</div>
-                </div>
-                <button type="button" class="switch" id="cmd-remove-reply" onclick="toggleCmdRemoveReply()"></button>
-            </div>
-            <div class="field">
-                <label class="field-label">Who can run it?</label>
-                <div class="segmented segmented_mobile" id="cmd-access">
-                    <button data-v="everyone" onclick="setSeg('cmd-access','everyone');onCmdAccessChange()">Everyone</button>
-                    <button data-v="specific" onclick="setSeg('cmd-access','specific');onCmdAccessChange()">Specific users</button>
-                    <button data-v="moderator" onclick="setSeg('cmd-access','moderator');onCmdAccessChange()">Moderator+</button>
-                    <button data-v="admin" onclick="setSeg('cmd-access','admin');onCmdAccessChange()">Admin only</button>
-                </div>
-                <span class="field-hint">Pick <b>Specific users</b> to restrict this command (or paid content) to listed Telegram user IDs. Admins can always run it.</span>
-            </div>
-            <div class="field" id="cmd-allowed-users-wrap">
-                <label class="field-label">Allowed user IDs <span class="muted small">(optional unless Specific users)</span></label>
-                <textarea class="textarea mono" id="cmd-allowed-users" rows="2" placeholder="123456789, 987654321 (comma or newline separated)"></textarea>
-                <span class="field-hint"><i class="fa-solid fa-user-lock"></i> If filled, only these Telegram user IDs (plus admins and role-permitted users if Moderator+) can access it. Also respects any allowance/expiration set on attached Media Library files.</span>
-            </div>
-            <div class="field">
-                <label class="field-label">Expiration <span class="muted small">(optional)</span></label>
-                <div class="input-with-btn">
-                    <input type="datetime-local" class="input" id="cmd-expires-at">
-                    <button type="button" class="btn btn-gray btn-sm" onclick="$('cmd-expires-at').value=''">Clear</button>
-                </div>
-                <div class="row" style="margin-top:6px;gap:6px;">
-                    <button type="button" class="btn btn-gray btn-sm" onclick="setCmdExpiryPreset(24)">+24h</button>
-                    <button type="button" class="btn btn-gray btn-sm" onclick="setCmdExpiryPreset(168)">+7d</button>
-                    <button type="button" class="btn btn-gray btn-sm" onclick="setCmdExpiryPreset(720)">+30d</button>
-                </div>
-                <span class="field-hint">After this date/time, non-admins can no longer run this command. Leave blank for no expiration.</span>
-            </div>
-            <div class="switch-row"><div><div class="sw-label">Edit current message</div><div class="sw-sub">When triggered from an inline button, reply keyboard button, or command, edit the bot's current message in place (supports cross inline/reply buttons and falls back cleanly if media type changes).</div></div><button class="switch" id="cmd-edit-message" onclick="toggleSwitch('cmd-edit-message')"></button></div>
-            <div class="switch-row"><div><div class="sw-label">Protect content</div><div class="sw-sub">Prevent users from forwarding or saving files/messages in Telegram.</div></div><button class="switch" id="cmd-protect" onclick="toggleSwitch('cmd-protect')"></button></div>
-            <div class="switch-row" style="margin-bottom:0;"><div><div class="sw-label">Enabled</div><div class="sw-sub">Disabled commands are hidden.</div></div><button class="switch on" id="cmd-enabled" onclick="toggleSwitch('cmd-enabled')"></button></div>
+
             <div class="err-box" id="cmd-error"></div>
         </div>
     </div>
@@ -3716,7 +4155,11 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                 <input type="hidden" id="msg-file-id">
                 <input type="hidden" id="msg-media-meta">
             </div>
-            <div class="field"><label class="field-label" id="msg-text-label">Text</label><textarea class="textarea" id="msg-text" rows="4" placeholder="Write the message…"></textarea></div>
+            <div class="field">
+                <label class="field-label" id="msg-text-label">Text</label>
+                <textarea class="textarea" id="msg-text" rows="4" placeholder="Write the message…"></textarea>
+                <details class="help" data-html-ref style="margin-top:8px;margin-bottom:0;"></details>
+            </div>
             <div class="switch-row" id="msg-protect-row"><div><div class="sw-label">Protect content</div><div class="sw-sub">Prevent recipients from forwarding or saving this message/media.</div></div><button class="switch" id="msg-protect" onclick="toggleSwitch('msg-protect')"></button></div>
             <div class="switch-row"><div><div class="sw-label">Attach buttons</div><div class="sw-sub">Inline and/or reply keyboard.</div></div><button class="switch" id="msg-kb-toggle" onclick="toggleMsgSection('kb')"></button></div>
             <div id="msg-kb-section" class="hidden">
@@ -3724,10 +4167,10 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                 <div id="msg-inline-section" class="hidden" style="margin-bottom:16px;">
                     <div class="row" style="margin-bottom:8px;gap:6px;flex-wrap:wrap;">
                         <input class="input" id="kbMe-inline-label" placeholder="Label" style="flex:1.2 1 130px;min-width:110px;">
-                        <select class="input" id="kbMe-inline-type" onchange="kbInlineTypeToggle('kbMe')" style="width:auto;">
+                        <select class="input" id="kbMe-inline-type" onchange="kbInlineTypeToggle('kbMe')" style="flex: 1.2 1 130px;">
                             <option value="command">Command</option><option value="callback">Callback</option><option value="url">URL</option><option value="alert">Popup alert</option><option value="toast">Toast</option>
                         </select>
-                        <select class="input" id="kbMe-inline-style" style="width:auto;" title="Button color">
+                        <select class="input" id="kbMe-inline-style" style="flex: 1.2 1 130px;" title="Button color">
                             <option value="">Default</option><option value="primary">Blue</option><option value="success">Green</option><option value="danger">Red</option>
                         </select>
                         <div class="cmd-ac-wrap" id="kbMe-inline-wrap">
@@ -3739,6 +4182,24 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                         <button type="button" class="btn btn-gray btn-sm" onclick="kbMe.addRow('inline')" title="Add an empty row"><i class="fa-solid fa-grip-lines"></i> + Row</button>
                     </div>
                     <div id="kbMe-inline-list"></div>
+                    <details class="help" style="margin-top:8px;margin-bottom:0;">
+                        <summary><i class="fa-solid fa-user-lock"></i> Inline buttons access restriction (optional)</summary>
+                        <div>
+                            <div class="field" style="margin-top:6px;">
+                                <label class="field-label tiny">Who can tap these inline buttons?</label>
+                                <div class="segmented segmented_mobile" id="msg-inline-access">
+                                    <button type="button" data-v="everyone" onclick="setSeg('msg-inline-access','everyone')">Everyone</button>
+                                    <button type="button" data-v="specific" onclick="setSeg('msg-inline-access','specific')">Specific users</button>
+                                    <button type="button" data-v="moderator" onclick="setSeg('msg-inline-access','moderator')">Mod+</button>
+                                    <button type="button" data-v="admin" onclick="setSeg('msg-inline-access','admin')">Admin</button>
+                                </div>
+                            </div>
+                            <div class="grid grid-2">
+                                <div class="field" style="margin-bottom:0;"><label class="field-label tiny">Allowed user IDs</label><input class="input mono" id="msg-inline-allowed" placeholder="123456, 789012"></div>
+                                <div class="field" style="margin-bottom:0;"><label class="field-label tiny">Disallowed user IDs</label><input class="input mono" id="msg-inline-disallowed" placeholder="555666"></div>
+                            </div>
+                        </div>
+                    </details>
                 </div>
                 <div class="switch-row"><div><div class="sw-label">Reply keyboard</div><div class="sw-sub">Persistent buttons below the input box.</div></div><button class="switch" id="msg-reply-toggle" onclick="toggleMsgSection('reply')"></button></div>
                 <div id="msg-reply-section" class="hidden">
@@ -3748,7 +4209,7 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                             <input class="input" id="kbMe-reply-value" data-cmd-ac="command" placeholder="Run /command (search or type custom)" autocomplete="off">
                             <button type="button" class="cmd-ac-btn" tabindex="-1" aria-label="Browse commands"><i class="fa-solid fa-chevron-down"></i></button>
                         </div>
-                        <select class="input" id="kbMe-reply-style" style="width:auto;" title="Button color">
+                        <select class="input" id="kbMe-reply-style" style="flex: 1.2 1 130px;" title="Button color">
                             <option value="">Default</option><option value="primary">Blue</option><option value="success">Green</option><option value="danger">Red</option>
                         </select>
                         <select class="input" id="kbMe-reply-row" style="width:auto;" title="Target row"><option value="auto">Auto row</option><option value="new">+ New row</option></select>
@@ -3821,6 +4282,7 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                 <textarea class="textarea" id="featured-failure" rows="2" placeholder="Shown if the action fails."></textarea>
                 <span class="field-hint">Leave empty to stay silent on failure.</span>
             </div>
+            <details class="help" data-html-ref style="margin-bottom:14px;"></details>
             <div class="field">
                 <label class="field-label">Who can run it?</label>
                 <div class="segmented" id="featured-access">
@@ -3997,6 +4459,96 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
             <a class="btn btn-gray btn-block" href="https://github.com/Mahan07dev/Nyxx" target="_blank" rel="noopener"><i class="fa-brands fa-github"></i> Source code</a>
         </div>
         <div class="sheet-foot"><button class="btn btn-primary" onclick="closeAboutModal()">Done</button></div>
+    </div>
+</div>
+
+<div class="modal hidden" id="cmd-templates-modal" role="dialog" aria-modal="true">
+    <div class="modal-bg" onclick="closeCmdTemplatesModal()"></div>
+    <div class="sheet">
+        <div class="sheet-head">
+            <button class="btn btn-plain" onclick="closeCmdTemplatesModal()">Close</button>
+            <div class="sheet-title">Command Templates</div>
+            <div style="width:48px;"></div>
+        </div>
+        <div class="sheet-body">
+            <div class="hint-banner warn">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <div>Applying a template <b>replaces all of your current commands</b>. Export a backup first if you want to keep existing commands!</div>
+            </div>
+            <div id="cmd-templates-list" class="grid"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal hidden" id="proxy-modal" role="dialog" aria-modal="true">
+    <div class="modal-bg" onclick="closeProxyModal()"></div>
+    <div class="sheet">
+        <div class="sheet-head">
+            <button class="btn btn-plain" onclick="closeProxyModal()">Cancel</button>
+            <div class="sheet-title" id="proxy-modal-title">Add proxy</div>
+            <button class="btn btn-plain" id="proxy-save-btn" onclick="saveProxy()">Save</button>
+        </div>
+        <div class="sheet-body">
+            <div class="field">
+                <label class="field-label">Quick paste link <span class="muted small">(auto-fills fields below)</span></label>
+                <input class="input mono" id="px-paste" placeholder="https://t.me/proxy?server=…&amp;port=443&amp;secret=…" oninput="parseProxyPaste(this.value)">
+            </div>
+            <div class="grid grid-2">
+                <div class="field"><label class="field-label">Label</label><input class="input" id="px-label" placeholder="e.g. Germany #1 Fast"></div>
+                <div class="field"><label class="field-label">Type</label>
+                    <select class="input" id="px-kind" onchange="show($('px-secret-wrap'),this.value==='MTProto');show($('px-socks-wrap'),this.value==='SOCKS5')">
+                        <option value="MTProto">MTProto</option>
+                        <option value="SOCKS5">SOCKS5</option>
+                    </select>
+                </div>
+                <div class="field"><label class="field-label">Server / Host</label><input class="input mono" id="px-server" placeholder="1.2.3.4 or proxy.example.com"></div>
+                <div class="field"><label class="field-label">Port</label><input type="number" class="input mono" id="px-port" min="1" max="65535" placeholder="443"></div>
+            </div>
+            <div class="field" id="px-secret-wrap"><label class="field-label">MTProto Secret</label><input class="input mono" id="px-secret" placeholder="ee… or dd… or 32-hex secret"></div>
+            <div class="grid grid-2 hidden" id="px-socks-wrap">
+                <div class="field"><label class="field-label">Username <span class="muted">(optional)</span></label><input class="input" id="px-user"></div>
+                <div class="field"><label class="field-label">Password <span class="muted">(optional)</span></label><input class="input" id="px-pass"></div>
+            </div>
+            <div class="grid grid-2">
+                <div class="field"><label class="field-label">Category / Tag <span class="muted">(optional)</span></label><input class="input" id="px-category" placeholder="VIP / Free / EU"></div>
+                <div class="field"><label class="field-label">Notes <span class="muted">(optional)</span></label><input class="input" id="px-notes" placeholder="Internal notes"></div>
+            </div>
+            <div class="err-box" id="proxy-error"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal hidden" id="proxy-cmd-modal" role="dialog" aria-modal="true">
+    <div class="modal-bg" onclick="closeAttachProxyCmdModal()"></div>
+    <div class="sheet">
+        <div class="sheet-head">
+            <button class="btn btn-plain" onclick="closeAttachProxyCmdModal()">Cancel</button>
+            <div class="sheet-title" id="pxc-title">Publish proxy to command</div>
+            <button class="btn btn-plain" id="pxc-save-btn" onclick="submitAttachProxyCmd()">Create / Update</button>
+        </div>
+        <div class="sheet-body">
+            <div class="grid grid-2">
+                <div class="field"><label class="field-label">Command name</label><input class="input mono" id="pxc-cmd" placeholder="/proxy"></div>
+                <div class="field"><label class="field-label">Parent folder <span class="muted">(optional)</span></label><input class="input mono" id="pxc-parent" placeholder="/start"></div>
+            </div>
+            <div class="field">
+                <label class="field-label">Message text (HTML)</label>
+                <textarea class="textarea" id="pxc-content" rows="4"></textarea>
+                <details class="help" data-html-ref style="margin-top:8px;margin-bottom:0;"></details>
+            </div>
+            <div class="grid grid-2">
+                <div class="switch-row"><div><div class="sw-label">Include Connect button</div><div class="sw-sub">URL button that opens the proxy in Telegram.</div></div><button type="button" class="switch on" id="pxc-inc-connect" onclick="toggleSwitch('pxc-inc-connect')"></button></div>
+                <div class="switch-row"><div><div class="sw-label">Include Test button</div><div class="sw-sub">Callback button showing live ping, country &amp; ISP.</div></div><button type="button" class="switch on" id="pxc-inc-test" onclick="toggleSwitch('pxc-inc-test')"></button></div>
+                <div class="switch-row"><div><div class="sw-label">Edit current message</div><div class="sw-sub">Edit in place when triggered via inline buttons.</div></div><button type="button" class="switch on" id="pxc-edit" onclick="toggleSwitch('pxc-edit')"></button></div>
+                <div class="switch-row"><div><div class="sw-label">Protect content</div><div class="sw-sub">Block forwarding &amp; saving in Telegram.</div></div><button type="button" class="switch" id="pxc-protect" onclick="toggleSwitch('pxc-protect')"></button></div>
+            </div>
+            <div class="grid grid-2">
+                <div class="field"><label class="field-label tiny">Connect button label</label><input class="input" id="pxc-connect-lbl" value="⚡ Connect Proxy"></div>
+                <div class="field"><label class="field-label tiny">Test button label</label><input class="input" id="pxc-test-lbl" value="🔍 Test &amp; Details"></div>
+            </div>
+            <div class="field" style="margin-bottom:0;"><label class="field-label tiny">Restrict to specific User IDs <span class="muted">(optional)</span></label><input class="input mono" id="pxc-allowed" placeholder="Leave blank for everyone, or 123456, 789012"></div>
+            <div class="err-box" id="pxc-error"></div>
+        </div>
     </div>
 </div>
 
@@ -4437,10 +4989,29 @@ function cycleTheme() {
     applyTheme(saved);
 })();
 
+function openNyxxChat(mode) {
+    window.open('/chat?mode=' + encodeURIComponent(mode || 'support'), '_blank', 'noopener');
+}
+(function hydrateHtmlRefs() {
+    var html = '<summary><i class="fa-solid fa-code"></i> Telegram HTML formatting reference</summary>' +
+        '<div class="html-ref-grid">' +
+            '<div><code>&lt;b&gt;bold&lt;/b&gt;</code> · <code>&lt;i&gt;italic&lt;/i&gt;</code></div>' +
+            '<div><code>&lt;u&gt;underline&lt;/u&gt;</code> · <code>&lt;s&gt;strike&lt;/s&gt;</code></div>' +
+            '<div><code>&lt;code&gt;inline code&lt;/code&gt;</code></div>' +
+            '<div><code>&lt;pre&gt;code block&lt;/pre&gt;</code></div>' +
+            '<div><code>&lt;a href="https://…"&gt;link&lt;/a&gt;</code></div>' +
+            '<div><code>&lt;tg-spoiler&gt;spoiler&lt;/tg-spoiler&gt;</code></div>' +
+            '<div><code>&lt;blockquote&gt;quote&lt;/blockquote&gt;</code></div>' +
+            '<div><code>&lt;blockquote expandable&gt;long quote&lt;/blockquote&gt;</code></div>' +
+        '</div>';
+    document.querySelectorAll('details[data-html-ref]').forEach(function (el) { el.innerHTML = html; });
+})();
+
 var PAGE_TITLES = {
     overview: 'Overview', commands: 'Commands', menu: 'Menu & Featured', users: 'Users',
     'user-manage': 'User', groups: 'Groups', 'group-manage': 'Group',
     channels: 'Channels', 'channel-manage': 'Channel',
+    forcejoin: 'Force Join', proxies: 'Proxies',
     broadcast: 'Broadcast', contact: 'Contact', inbox: 'Inbox', memory: 'Memory', media: 'Media Library', ai: 'AI', settings: 'Settings', botinfo: 'Bot Info',
     cron: 'Retention', backup: 'Backup', logs: 'Activity Log', update: 'Update', mcp: 'MCP',
     permissions: 'Admin & Permissions'
@@ -4467,6 +5038,8 @@ function go(page) {
     if (page === 'users') loadUsers();
     if (page === 'groups') loadGroups();
     if (page === 'channels') loadChannels();
+    if (page === 'forcejoin') loadForceJoin();
+    if (page === 'proxies') loadProxies();
     if (page === 'broadcast') loadBroadcast();
     if (page === 'contact') loadContact();
     if (page === 'inbox') loadInbox();
@@ -4493,7 +5066,7 @@ function toggleSidebar(force) {
     if (overlay) overlay.classList.toggle('show', open);
 }
 function isTopbarDesktop() {
-    return currentNavStructure === 'topbar' && window.innerWidth > 900;
+    return currentNavStructure === 'topbar' && window.innerWidth > 980;
 }
 function closeTopbarDropdowns(except) {
     document.querySelectorAll('.nav-group[data-group].tb-open').forEach(function (g) {
@@ -5436,12 +6009,37 @@ function parseStoredMediaItems(obj) {
     }
     return items;
 }
+function cmdModalSetTab(tab) {
+    document.querySelectorAll('#cmd-tabs button').forEach(function (b) { b.classList.toggle('active', b.dataset.ctab === tab); });
+    document.querySelectorAll('.cmd-tabpane').forEach(function (p) { p.classList.remove('active'); });
+    var pane = $('cmd-pane-' + tab);
+    if (pane) pane.classList.add('active');
+}
+function applyEditTriggersUi(raw) {
+    var set = {};
+    String(raw || 'inline,reply,command').split(',').forEach(function (s) {
+        var t = s.trim().toLowerCase();
+        if (t) set[t] = true;
+    });
+    if (!Object.keys(set).length) { set.inline = true; set.reply = true; set.command = true; }
+    if ($('cmd-edit-trig-inline')) $('cmd-edit-trig-inline').checked = !!set.inline;
+    if ($('cmd-edit-trig-reply')) $('cmd-edit-trig-reply').checked = !!set.reply;
+    if ($('cmd-edit-trig-command')) $('cmd-edit-trig-command').checked = !!set.command;
+}
+function collectEditTriggersUi() {
+    var out = [];
+    if ($('cmd-edit-trig-inline') && $('cmd-edit-trig-inline').checked) out.push('inline');
+    if ($('cmd-edit-trig-reply') && $('cmd-edit-trig-reply').checked) out.push('reply');
+    if ($('cmd-edit-trig-command') && $('cmd-edit-trig-command').checked) out.push('command');
+    return out.join(',');
+}
 async function openCommandModal(cmd, parent, cloneMode) {
     await loadCommands();
     editingCmd = (!cloneMode && cmd) ? cmd : null;
     var srcCmd = cmd || null;
     var parentSel = $('cmd-parent');
     $('cmd-error').classList.remove('show');
+    cmdModalSetTab('content');
     kbCmd.reset();
     cmdAttachments = [];
     toggleSwitch('cmd-inline-toggle', false);
@@ -5462,10 +6060,21 @@ async function openCommandModal(cmd, parent, cloneMode) {
         parentSel.value = srcCmd.parent || '';
         setSeg('cmd-access', commandAccessLevel(srcCmd));
         if ($('cmd-allowed-users')) $('cmd-allowed-users').value = srcCmd.allowed_users || '';
+        if ($('cmd-disallowed-users')) $('cmd-disallowed-users').value = srcCmd.disallowed_users || '';
+        if ($('cmd-fj-mode')) $('cmd-fj-mode').value = srcCmd.force_join_mode || 'inherit';
+        if ($('cmd-password')) $('cmd-password').value = srcCmd.cmd_password || '';
+        if ($('cmd-pw-prompt')) $('cmd-pw-prompt').value = srcCmd.password_prompt || '';
+        if ($('cmd-pw-dismiss')) $('cmd-pw-dismiss').value = srcCmd.password_dismiss_label || '';
+        show($('cmd-pw-opts'), !!(srcCmd.cmd_password && String(srcCmd.cmd_password).trim()));
         if ($('cmd-expires-at')) $('cmd-expires-at').value = toLocalInputFromIso(srcCmd.expires_at || '');
         toggleSwitch('cmd-edit-message', !!srcCmd.edit_message);
+        show($('cmd-edit-triggers-wrap'), !!srcCmd.edit_message);
+        applyEditTriggersUi(srcCmd.edit_triggers || 'inline,reply,command');
         toggleSwitch('cmd-protect', !!srcCmd.protect_content);
         toggleSwitch('cmd-enabled', srcCmd.enabled != 0);
+        setSeg('cmd-inline-access', srcCmd.inline_access_level || 'everyone');
+        if ($('cmd-inline-allowed')) $('cmd-inline-allowed').value = srcCmd.inline_allowed_users || '';
+        if ($('cmd-inline-disallowed')) $('cmd-inline-disallowed').value = srcCmd.inline_disallowed_users || '';
         var inAbOn = !!(srcCmd.inline_auto_back && srcCmd.inline_auto_back != 0);
         toggleSwitch('cmd-inline-auto-back', inAbOn);
         if ($('cmd-inline-back-label')) $('cmd-inline-back-label').value = srcCmd.inline_back_label || '';
@@ -5482,9 +6091,20 @@ async function openCommandModal(cmd, parent, cloneMode) {
         $('cmd-name').value = ''; $('cmd-type').value = 'text';
         $('cmd-content').value = ''; $('cmd-media').value = '';
         if ($('cmd-allowed-users')) $('cmd-allowed-users').value = '';
+        if ($('cmd-disallowed-users')) $('cmd-disallowed-users').value = '';
+        if ($('cmd-fj-mode')) $('cmd-fj-mode').value = 'inherit';
+        if ($('cmd-password')) $('cmd-password').value = '';
+        if ($('cmd-pw-prompt')) $('cmd-pw-prompt').value = '';
+        if ($('cmd-pw-dismiss')) $('cmd-pw-dismiss').value = '';
+        show($('cmd-pw-opts'), false);
         if ($('cmd-expires-at')) $('cmd-expires-at').value = '';
         toggleSwitch('cmd-edit-message', false);
+        show($('cmd-edit-triggers-wrap'), false);
+        applyEditTriggersUi('inline,reply,command');
         toggleSwitch('cmd-protect', false);
+        setSeg('cmd-inline-access', 'everyone');
+        if ($('cmd-inline-allowed')) $('cmd-inline-allowed').value = '';
+        if ($('cmd-inline-disallowed')) $('cmd-inline-disallowed').value = '';
         toggleSwitch('cmd-inline-auto-back', false);
         if ($('cmd-inline-back-label')) $('cmd-inline-back-label').value = '';
         show($('cmd-inline-back-label-wrap'), false);
@@ -5577,13 +6197,22 @@ async function saveCommand() {
         media_meta: mediaMeta,
         media_items_json: finalItems.length ? JSON.stringify(finalItems) : '',
         edit_message: sw('cmd-edit-message') ? 1 : 0,
+        edit_triggers: collectEditTriggersUi() || 'inline,reply,command',
         protect_content: sw('cmd-protect') ? 1 : 0,
         access_level: accessLevel,
         allowed_users: $('cmd-allowed-users') ? $('cmd-allowed-users').value.trim() : '',
+        disallowed_users: $('cmd-disallowed-users') ? $('cmd-disallowed-users').value.trim() : '',
+        force_join_mode: $('cmd-fj-mode') ? $('cmd-fj-mode').value : 'inherit',
+        cmd_password: $('cmd-password') ? $('cmd-password').value : '',
+        password_prompt: $('cmd-pw-prompt') ? $('cmd-pw-prompt').value.trim() : '',
+        password_dismiss_label: $('cmd-pw-dismiss') ? $('cmd-pw-dismiss').value.trim() : '',
         expires_at: $('cmd-expires-at') ? toIsoFromLocalInput($('cmd-expires-at').value) : '',
         is_admin_only: accessLevel === 'admin' ? 1 : 0,
         enabled: sw('cmd-enabled') ? 1 : 0,
         buttons_json: kbCmd.inlineJSON() ? JSON.stringify(kbCmd.inlineJSON()) : '',
+        inline_access_level: getSeg('cmd-inline-access') || 'everyone',
+        inline_allowed_users: $('cmd-inline-allowed') ? $('cmd-inline-allowed').value.trim() : '',
+        inline_disallowed_users: $('cmd-inline-disallowed') ? $('cmd-inline-disallowed').value.trim() : '',
         inline_auto_back: sw('cmd-inline-auto-back') ? 1 : 0,
         inline_back_label: $('cmd-inline-back-label') ? $('cmd-inline-back-label').value.trim() : '',
         show_reply_keyboard: sw('cmd-reply-toggle') ? 1 : 0,
@@ -5751,7 +6380,7 @@ function openFeaturedModal(kind, item) {
     var hintDesc = $('featured-hint-desc');
     show($('featured-style-wrap'), kind === 'buttons');
     if (kind === 'buttons') {
-        if (hintDesc) hintDesc.innerHTML = 'Shown when sent alone. Simple syntax: <code>/menu Hi there! | Google:https://google.com | Say hi:Hi!</code><br>Advanced: <code>/menu "Hi there!" {Google}(https://google.com){Say hi}(Hi!)</code><br><b>Per-button color:</b> prefix the label with <code>[blue]</code>, <code>[green]</code> or <code>[red]</code>: <code>/menu Hi | [blue]Google:https://google.com | [red]Say hi:Hi!</code>. Buttons without a bracket use the default color below.';
+        if (hintDesc) hintDesc.innerHTML = 'Shown when sent alone. Simple syntax: <code>/menu Hi there! | Google:https://google.com | Info:alert:Popup! | Tip:toast:Saved! | Say hi:Hi!</code><br>Advanced: <code>/menu "Hi there!" {Google}(https://google.com){Say hi}(Hi!)</code><br>Values: <code>http…</code> = URL, <code>/cmd</code> = command, <code>alert:text</code> = centered popup, <code>toast:text</code> = top banner, anything else = reply message.<br><b>Per-button color:</b> prefix the label with <code>[blue]</code>, <code>[green]</code> or <code>[red]</code>: <code>/menu Hi | [blue]Google:https://google.com | [red]Say hi:Hi!</code>.';
     } else {
         if (hintDesc) hintDesc.innerHTML = 'Shown when the command is sent alone. Example: <code>/contact hello boss</code>';
     }
@@ -8153,6 +8782,9 @@ function openMsgEditor(mode, id) {
     toggleSwitch('msg-reply-toggle', false);  show(_g('msg-reply-section'), false);
     toggleSwitch('msg-remove-reply', false);
     toggleSwitch('msg-protect', false);
+    setSeg('msg-inline-access', 'everyone');
+    if ($('msg-inline-allowed')) $('msg-inline-allowed').value = '';
+    if ($('msg-inline-disallowed')) $('msg-inline-disallowed').value = '';
     _sv('msg-photo', '');
     _sv('msg-text', '');
     _sv('msg-file-id', '');
@@ -8186,7 +8818,14 @@ function openMsgEditor(mode, id) {
             if (rec.buttons_json) {
                 try {
                     var b = typeof rec.buttons_json === 'string' ? JSON.parse(rec.buttons_json) : rec.buttons_json;
-                    if (b.inline) { kbMe.loadInline(b); toggleSwitch('msg-inline-toggle', true); show(_g('msg-inline-section'), true); toggleSwitch('msg-kb-toggle', true); show(_g('msg-kb-section'), true); }
+                    if (b.inline) {
+                        kbMe.loadInline(b); toggleSwitch('msg-inline-toggle', true); show(_g('msg-inline-section'), true); toggleSwitch('msg-kb-toggle', true); show(_g('msg-kb-section'), true);
+                        if (b.inline_acl) {
+                            setSeg('msg-inline-access', b.inline_acl.access || 'everyone');
+                            if (_g('msg-inline-allowed')) _g('msg-inline-allowed').value = b.inline_acl.allowed || '';
+                            if (_g('msg-inline-disallowed')) _g('msg-inline-disallowed').value = b.inline_acl.disallowed || '';
+                        }
+                    }
                     if (b.reply)  { kbMe.loadReply(b);  toggleSwitch('msg-reply-toggle', true);  show(_g('msg-reply-section'), true);  toggleSwitch('msg-kb-toggle', true); show(_g('msg-kb-section'), true); }
                 } catch (e) {}
             }
@@ -8228,6 +8867,12 @@ function collectButtons() {
     var rem = sw('msg-remove-reply');
     if (!inline && !reply && !rem) return null;
     var out = Object.assign({}, inline || {}, reply || {});
+    if (inline) {
+        var acc = getSeg('msg-inline-access') || 'everyone';
+        var alw = $('msg-inline-allowed') ? $('msg-inline-allowed').value.trim() : '';
+        var dis = $('msg-inline-disallowed') ? $('msg-inline-disallowed').value.trim() : '';
+        if (acc !== 'everyone' || alw || dis) out.inline_acl = { access: acc, allowed: alw, disallowed: dis };
+    }
     if (rem && !reply) out.remove_reply = true;
     return JSON.stringify(out);
 }
@@ -9317,7 +9962,7 @@ async function performUpdate(force) {
 (function initSidebar() {
     var app = document.querySelector('.app');
     if (!app) return;
-    if (window.innerWidth > 900) app.classList.add('sidebar-open');
+    if (window.innerWidth > 980) app.classList.add('sidebar-open');
 })();
 
 // Prefetch on hover — when a user hovers over a nav item, warm the data
@@ -9356,7 +10001,7 @@ window.addEventListener('resize', function () {
     __lastWinWidth = w;
     var app = document.querySelector('.app');
     if (!app) return;
-    if (w > 900) app.classList.add('sidebar-open');
+    if (w > 980) app.classList.add('sidebar-open');
     else {
         var active = document.activeElement;
         if (active && active.closest && active.closest('#sidebar')) return;
@@ -9377,6 +10022,9 @@ document.addEventListener('keydown', function (e) {
         else if (top === 'about-modal') closeAboutModal();
         else if (top === 'token-modal') closeTokenModal();
         else if (top === 'progress-modal') closeProgressModal();
+        else if (top === 'cmd-templates-modal') closeCmdTemplatesModal();
+        else if (top === 'proxy-modal') closeProxyModal();
+        else if (top === 'proxy-cmd-modal') closeAttachProxyCmdModal();
     }
     if (e.key === 'Escape') { closeAllDropdowns(); if (typeof closeTopbarDropdowns === 'function') closeTopbarDropdowns(null); }
     if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey && !/^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || '')) {
@@ -9769,6 +10417,607 @@ async function deleteChannelPost(idx) {
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
         try { navigator.serviceWorker.register('/sw.js', { scope: '/', updateViaCache: 'none' }).catch(function () {}); } catch (e) {}
+    });
+}
+
+/* ============================================================
+   COMMAND TEMPLATES
+   ============================================================ */
+var COMMAND_TEMPLATES = [
+    {
+        id: 'edit_menu',
+        icon: 'fa-regular fa-pen-to-square',
+        color: 'var(--accent)',
+        title: 'Interactive Single-Message Menu (Edit-in-Place)',
+        desc: 'Clean multi-page menu where every sub-page edits the existing message instead of spamming new bubbles, with Inline Auto-Back.',
+        commands: [
+            {
+                command: '/start', parent: null, response_type: 'text',
+                content: '👋 <b>Welcome!</b>\\nPick a section below — every page updates smoothly in this same message.',
+                buttons_json: JSON.stringify({ v: 2, inline: [[
+                    { text: '📚 Guide', type: 'command', value: '/guide', style: 'primary' },
+                    { text: '✨ Features', type: 'command', value: '/features', style: 'success' }
+                ], [
+                    { text: '🔔 Quick Alert', type: 'alert', value: 'Hello {{first_name}}! This popup did not send a new message.' }
+                ]] }),
+                edit_message: 1, edit_triggers: 'inline', inline_auto_back: 0, enabled: 1
+            },
+            {
+                command: '/guide', parent: '/start', response_type: 'text',
+                content: '📚 <b>Quick Guide</b>\\n\\n1. Use inline buttons to switch pages.\\n2. Tap <b>Back</b> below to return to the main menu in the exact same message.',
+                buttons_json: JSON.stringify({ v: 2, inline: [[{ text: '➡️ Go to Features', type: 'command', value: '/features', style: 'primary' }]] }),
+                edit_message: 1, edit_triggers: 'inline,reply,command', inline_auto_back: 1, inline_back_label: '⬅️ Back to Menu', enabled: 1
+            },
+            {
+                command: '/features', parent: '/start', response_type: 'text',
+                content: '✨ <b>Features</b>\\n• Edit current message per trigger\\n• Inline &amp; Reply Auto-Back\\n• Custom Popups &amp; Toasts',
+                buttons_json: '', edit_message: 1, edit_triggers: 'inline,reply,command', inline_auto_back: 1, inline_back_label: '⬅️ Back to Menu', enabled: 1
+            }
+        ]
+    },
+    {
+        id: 'proxy_seller',
+        icon: 'fa-solid fa-network-wired',
+        color: 'var(--green)',
+        title: 'Proxy Seller / Publisher Bot',
+        desc: 'Ready-made storefront with Connect URL buttons, live PROXY: latency/country test buttons, VIP password-gated proxies, and edit-in-place navigation.',
+        commands: [
+            {
+                command: '/start', parent: null, response_type: 'text',
+                content: '🛡️ <b>Fast Telegram Proxies</b>\\n\\nTap <b>Test &amp; Details</b> to check live ping &amp; country, or tap <b>Connect</b> to apply directly in Telegram.',
+                buttons_json: JSON.stringify({ v: 2, inline: [[
+                    { text: '🚀 Free Proxies', type: 'command', value: '/free_proxies', style: 'success' },
+                    { text: '💎 VIP Proxies', type: 'command', value: '/vip_proxies', style: 'primary' }
+                ], [
+                    { text: '❓ How to Connect', type: 'command', value: '/proxy_help' }
+                ]] }),
+                edit_message: 1, edit_triggers: 'inline', enabled: 1
+            },
+            {
+                command: '/free_proxies', parent: '/start', response_type: 'text',
+                content: '🚀 <b>Free MTProto Proxy</b>\\nReplace the example server/secret below (or publish real ones from the <b>Proxies</b> tab).',
+                buttons_json: JSON.stringify({ v: 2, inline: [[
+                    { text: '⚡ Connect Proxy', type: 'url', value: 'https://t.me/proxy?server=1.2.3.4&port=443&secret=dd00000000000000000000000000000000', style: 'success' },
+                    { text: '🔍 Test & Details', type: 'callback', value: 'PROXY:https://t.me/proxy?server=1.2.3.4&port=443&secret=dd00000000000000000000000000000000', style: 'primary' }
+                ]] }),
+                edit_message: 1, edit_triggers: 'inline,reply,command', inline_auto_back: 1, inline_back_label: '⬅️ Back', enabled: 1
+            },
+            {
+                command: '/vip_proxies', parent: '/start', response_type: 'text',
+                content: '💎 <b>VIP Proxy Unlocked!</b>\\nHere is your private high-speed proxy.',
+                buttons_json: JSON.stringify({ v: 2, inline: [[
+                    { text: '⚡ Connect VIP', type: 'url', value: 'https://t.me/proxy?server=1.2.3.4&port=443&secret=ee00000000000000000000000000000000676f6f676c652e636f6d', style: 'primary' }
+                ]] }),
+                cmd_password: 'vip', password_prompt: '🔐 Enter VIP password (demo: <code>vip</code>):', password_dismiss_label: '❌ Close',
+                protect_content: 1, edit_message: 1, edit_triggers: 'inline', inline_auto_back: 1, enabled: 1
+            },
+            {
+                command: '/proxy_help', parent: '/start', response_type: 'text',
+                content: '❓ <b>How to connect</b>\\n1. Tap <b>Connect Proxy</b>.\\n2. Confirm <b>Connect</b> in Telegram.\\n3. Use <b>Test &amp; Details</b> anytime to check ping.',
+                buttons_json: '', edit_message: 1, edit_triggers: 'inline,reply,command', inline_auto_back: 1, enabled: 1
+            }
+        ]
+    },
+    {
+        id: 'support_desk',
+        icon: 'fa-solid fa-headset',
+        color: 'var(--purple)',
+        title: 'Support & FAQ Desk (Reply Keyboard)',
+        desc: 'Classic bottom Reply Keyboard layout with nested FAQ folder, auto-back, and Contact instructions.',
+        commands: [
+            {
+                command: '/start', parent: null, response_type: 'text',
+                content: '👋 <b>Welcome to Support!</b>\\nChoose an option from the keyboard below.',
+                show_reply_keyboard: 1,
+                reply_keyboard_json: JSON.stringify({ v: 2, reply: { rows: [[{ text: '❓ FAQ' }, { text: '💳 Pricing' }], [{ text: '💬 Contact Agent' }]], actions: { '❓ FAQ': '/faq', '💳 Pricing': '/pricing', '💬 Contact Agent': '/contact_help' }, resize: true, persistent: true } }),
+                enabled: 1
+            },
+            {
+                command: '/faq', parent: '/start', response_type: 'text',
+                content: '❓ <b>Frequently Asked Questions</b>\\nPick a topic or tap <b>Back</b>.',
+                show_reply_keyboard: 1, auto_back: 1,
+                reply_keyboard_json: JSON.stringify({ v: 2, reply: { rows: [[{ text: '⏱ Delivery Time' }, { text: '🔄 Refunds' }]], actions: { '⏱ Delivery Time': '/faq_delivery', '🔄 Refunds': '/faq_refunds' }, resize: true, persistent: true } }),
+                enabled: 1
+            },
+            { command: '/faq_delivery', parent: '/faq', response_type: 'text', content: '⏱ Digital orders are delivered instantly after confirmation.', enabled: 1 },
+            { command: '/faq_refunds', parent: '/faq', response_type: 'text', content: '🔄 Contact support within 24 hours for refund requests.', enabled: 1 },
+            {
+                command: '/pricing', parent: '/start', response_type: 'text',
+                content: '💳 <b>Plans</b>\\n• Starter: Free\\n• Pro: $5/mo',
+                buttons_json: JSON.stringify({ v: 2, inline: [[{ text: 'ℹ️ Terms', type: 'alert', value: 'All plans include 24/7 uptime.' }]] }),
+                enabled: 1
+            },
+            { command: '/contact_help', parent: '/start', response_type: 'text', content: '💬 Type <code>/contact your message</code> to reach an admin directly.', enabled: 1 }
+        ]
+    },
+    {
+        id: 'digital_store',
+        icon: 'fa-solid fa-box-open',
+        color: 'var(--orange)',
+        title: 'Protected Digital Content Store',
+        desc: 'Catalog setup showcasing Protected Content (no forwarding), Specific User access, and Expiring VIP commands.',
+        commands: [
+            {
+                command: '/start', parent: null, response_type: 'text',
+                content: '📦 <b>Digital Store</b>\\nBrowse free samples or unlock VIP downloads.',
+                buttons_json: JSON.stringify({ v: 2, inline: [[
+                    { text: '🎁 Free Sample', type: 'command', value: '/sample', style: 'success' },
+                    { text: '🔒 VIP Vault', type: 'command', value: '/vault', style: 'primary' }
+                ]] }),
+                edit_message: 1, edit_triggers: 'inline', enabled: 1
+            },
+            {
+                command: '/sample', parent: '/start', response_type: 'text',
+                content: '🎁 <b>Free Sample</b>\\nAttach any PDF, ZIP, or video here in the Content tab!',
+                edit_message: 1, edit_triggers: 'inline', inline_auto_back: 1, enabled: 1
+            },
+            {
+                command: '/vault', parent: '/start', response_type: 'text',
+                content: '🔒 <b>VIP Vault</b>\\nProtected content: forwarding &amp; saving are disabled. Restrict access to buyers under <b>Access</b>.',
+                protect_content: 1, access_level: 'specific', edit_message: 1, edit_triggers: 'inline', inline_auto_back: 1, enabled: 1
+            }
+        ]
+    }
+];
+
+function openCmdTemplatesModal() {
+    var box = $('cmd-templates-list');
+    if (box) {
+        box.innerHTML = COMMAND_TEMPLATES.map(function (t) {
+            return '<div class="card compact" style="margin-bottom:0;">' +
+                '<div style="display:flex;align-items:flex-start;gap:12px;">' +
+                    '<div class="cmd-icon-box" style="color:' + t.color + ';"><i class="' + t.icon + '"></i></div>' +
+                    '<div style="flex:1;min-width:0;">' +
+                        '<div style="font-weight:700;font-size:15px;">' + esc(t.title) + ' <span class="badge">' + t.commands.length + ' cmds</span></div>' +
+                        '<div class="small muted" style="margin-top:4px;line-height:1.5;">' + esc(t.desc) + '</div>' +
+                    '</div>' +
+                    '<button class="btn btn-primary btn-sm" onclick="applyCmdTemplate(\\'' + t.id + '\\')">Use</button>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+    }
+    $('cmd-templates-modal').classList.remove('hidden');
+    trackModal('cmd-templates-modal');
+}
+function closeCmdTemplatesModal() {
+    $('cmd-templates-modal').classList.add('hidden');
+    untrackModal('cmd-templates-modal');
+}
+async function applyCmdTemplate(id) {
+    var tpl = COMMAND_TEMPLATES.find(function (t) { return t.id === id; });
+    if (!tpl) return;
+    var ok = await confirmDialog(
+        'Applying "' + tpl.title + '" will DELETE ALL your current commands and replace them with ' + tpl.commands.length + ' template commands. Continue?',
+        'Override all commands?', true
+    );
+    if (!ok) return;
+    try {
+        await api('POST', '/api/commands/import', {
+            mode: 'replace',
+            data: { app: 'nyxx-command-pack', version: '${VERSION}', commands: tpl.commands }
+        });
+        closeCmdTemplatesModal();
+        toast('Template "' + tpl.title + '" applied.');
+        commands = []; currentParent = null; crumbPath = [];
+        loadCommands(true);
+    } catch (e) { toast(e.message, 'error'); }
+}
+
+/* ============================================================
+   FORCE JOIN TAB
+   ============================================================ */
+var fjData = { enabled: false, apply_to_commands: true, apply_to_ai: true, apply_to_featured: true, apply_to_callbacks: true, exempt_admins_mods: true, enforce_in_groups: false, message: '', check_label: '', not_joined_alert: '', joined_text: '', chats: [] };
+async function loadForceJoin() {
+    try {
+        var d = await api('GET', '/api/force_join');
+        fjData = Object.assign({}, fjData, (d && d.config) || {});
+        toggleSwitch('fj-enabled', !!fjData.enabled);
+        toggleSwitch('fj-cmd', fjData.apply_to_commands !== false);
+        toggleSwitch('fj-ai', fjData.apply_to_ai !== false);
+        toggleSwitch('fj-feat', fjData.apply_to_featured !== false);
+        toggleSwitch('fj-cb', fjData.apply_to_callbacks !== false);
+        toggleSwitch('fj-exempt', fjData.exempt_admins_mods !== false);
+        toggleSwitch('fj-groups', !!fjData.enforce_in_groups);
+        $('fj-message').value = fjData.message || '';
+        $('fj-check-label').value = fjData.check_label || '';
+        $('fj-not-joined').value = fjData.not_joined_alert || '';
+        $('fj-joined-text').value = fjData.joined_text || '';
+        renderForceJoinChats();
+        populateFjQuickPick();
+    } catch (e) { toast(e.message, 'error'); }
+}
+async function populateFjQuickPick() {
+    var sel = $('fj-quick-pick');
+    if (!sel) return;
+    try {
+        var [chRes, grpRes] = await Promise.all([api('GET', '/api/channels').catch(function(){return{};}), api('GET', '/api/groups').catch(function(){return{};})]);
+        var opts = '<option value="">+ Quick pick connected channel/group…</option>';
+        ((chRes && chRes.channels) || []).forEach(function (c) {
+            if (c.is_active == 1) opts += '<option value="' + esc(c.id) + '">📢 ' + esc(c.title || c.id) + '</option>';
+        });
+        ((grpRes && grpRes.groups) || []).forEach(function (g) {
+            if (g.is_active == 1) opts += '<option value="' + esc(g.id) + '">👥 ' + esc(g.title || g.id) + '</option>';
+        });
+        sel.innerHTML = opts;
+    } catch (e) {}
+}
+function quickPickForceJoin(val) {
+    if (!val) return;
+    $('fj-add-id').value = val;
+    $('fj-quick-pick').value = '';
+    addForceJoinChat();
+}
+function renderForceJoinChats() {
+    var box = $('fj-chats-list');
+    if (!box) return;
+    var list = fjData.chats || [];
+    if (!list.length) { box.innerHTML = emptyState('fa-solid fa-user-check', 'No required channels or groups yet.', 'Add one above to start requiring membership.'); return; }
+    box.innerHTML = '<div class="list">' + list.map(function (c, i) {
+        return '<div class="list-row">' +
+            '<i class="fa-solid ' + (c.type === 'channel' ? 'fa-tower-broadcast' : 'fa-users') + '" style="color:var(--accent);width:20px;text-align:center;"></i>' +
+            '<div class="lr-main">' +
+                '<div class="lr-title">' + esc(c.title || c.id) + (c.bot_status ? ' <span class="badge ' + (c.bot_ok ? 'green' : 'red') + '">' + esc(c.bot_status) + '</span>' : '') + '</div>' +
+                '<div class="lr-sub mono">' + esc(c.id) + (c.invite_link ? ' · ' + esc(c.invite_link) : ' · ⚠️ Missing invite link') + '</div>' +
+            '</div>' +
+            '<div class="lr-actions">' +
+                '<button class="icon-btn" onclick="editFjLink(' + i + ')" title="Edit invite link"><i class="fa-regular fa-pen-to-square"></i></button>' +
+                '<button class="icon-btn danger" onclick="removeForceJoinChat(' + i + ')" title="Remove"><i class="fa-regular fa-trash-can"></i></button>' +
+            '</div>' +
+        '</div>';
+    }).join('') + '</div>';
+}
+async function addForceJoinChat() {
+    var chatId = $('fj-add-id').value.trim();
+    var link = $('fj-add-link').value.trim();
+    if (!chatId) { toast('Enter a chat ID or @username.', 'error'); return; }
+    await withBusy($('fj-add-btn'), async function () {
+        try {
+            var d = await api('POST', '/api/force_join/verify_chat', { chatId: chatId, invite_link: link });
+            if (!fjData.chats) fjData.chats = [];
+            var entry = d.chat;
+            var idx = fjData.chats.findIndex(function (x) { return String(x.id) === String(entry.id); });
+            if (idx >= 0) fjData.chats[idx] = entry; else fjData.chats.push(entry);
+            $('fj-add-id').value = ''; $('fj-add-link').value = '';
+            renderForceJoinChats();
+            toast(entry.bot_ok ? 'Verified & added!' : 'Added with warning: make sure bot is a member/admin.', entry.bot_ok ? 'success' : 'info');
+        } catch (e) { toast(e.message, 'error'); }
+    });
+}
+function editFjLink(idx) {
+    var c = fjData.chats && fjData.chats[idx];
+    if (!c) return;
+    var v = prompt('Invite link for "' + (c.title || c.id) + '":', c.invite_link || '');
+    if (v === null) return;
+    c.invite_link = v.trim();
+    renderForceJoinChats();
+}
+function removeForceJoinChat(idx) {
+    if (!fjData.chats) return;
+    fjData.chats.splice(idx, 1);
+    renderForceJoinChats();
+}
+async function verifyAllForceJoinChats() {
+    var list = fjData.chats || [];
+    if (!list.length) { toast('Add at least one chat first.', 'info'); return; }
+    await withSelfBusy(async function () {
+        for (var i = 0; i < list.length; i++) {
+            try {
+                var d = await api('POST', '/api/force_join/verify_chat', { chatId: String(list[i].id), invite_link: list[i].invite_link || '' });
+                if (d && d.chat) list[i] = d.chat;
+            } catch (e) { list[i].bot_ok = false; list[i].bot_status = 'Error'; }
+        }
+        renderForceJoinChats();
+        toast('Verification complete.');
+    });
+}
+async function saveForceJoin() {
+    await withSelfBusy(async function () {
+        var payload = {
+            enabled: sw('fj-enabled'),
+            apply_to_commands: sw('fj-cmd'),
+            apply_to_ai: sw('fj-ai'),
+            apply_to_featured: sw('fj-feat'),
+            apply_to_callbacks: sw('fj-cb'),
+            exempt_admins_mods: sw('fj-exempt'),
+            enforce_in_groups: sw('fj-groups'),
+            message: $('fj-message').value,
+            check_label: $('fj-check-label').value.trim(),
+            not_joined_alert: $('fj-not-joined').value.trim(),
+            joined_text: $('fj-joined-text').value.trim(),
+            chats: fjData.chats || []
+        };
+        try {
+            await api('POST', '/api/force_join', { config: payload });
+            toast('Force Join settings saved.');
+        } catch (e) { toast(e.message, 'error'); }
+    });
+}
+
+/* ============================================================
+   PROXIES TAB (FOR PROXY SELLERS / PUBLISHERS)
+   ============================================================ */
+var proxiesList = [];
+var proxySelected = new Set();
+var editingProxy = null;
+var attachingProxy = null;
+var attachingMultiProxies = null;
+
+async function loadProxies() {
+    var box = $('proxies-list');
+    if (box) box.innerHTML = skeletonRows(3);
+    try {
+        var d = await api('GET', '/api/proxies');
+        proxiesList = (d && d.proxies) || [];
+        var valid = new Set(proxiesList.map(function (p) { return p.id; }));
+        Array.from(proxySelected).forEach(function (id) { if (!valid.has(id)) proxySelected.delete(id); });
+        renderProxies();
+    } catch (e) { if (box) box.innerHTML = errorState(e.message, 'loadProxies()'); }
+}
+function toggleProxySelect(id) {
+    if (proxySelected.has(id)) proxySelected.delete(id); else proxySelected.add(id);
+    renderProxies();
+}
+function clearProxySelection() { proxySelected.clear(); renderProxies(); }
+function renderProxies() {
+    var bar = $('proxy-bulk-bar'), cnt = $('proxy-bulk-count');
+    if (bar) bar.classList.toggle('show', proxySelected.size > 0);
+    if (cnt) cnt.textContent = proxySelected.size + ' selected';
+    var box = $('proxies-list');
+    if (!box) return;
+    var q = ($('proxy-search') && $('proxy-search').value || '').toLowerCase().trim();
+    var f = ($('proxy-filter') && $('proxy-filter').value) || 'all';
+    var list = proxiesList.filter(function (p) {
+        if (f === 'online' && p.last_status !== 'online') return false;
+        if (f === 'offline' && p.last_status !== 'offline') return false;
+        if ((f === 'MTProto' || f === 'SOCKS5') && p.kind !== f) return false;
+        if (q) {
+            var hay = (p.label + ' ' + p.server + ' ' + p.country + ' ' + p.isp + ' ' + p.category).toLowerCase();
+            if (hay.indexOf(q) < 0) return false;
+        }
+        return true;
+    });
+    if (!list.length) { box.innerHTML = emptyState('fa-solid fa-network-wired', 'No proxies yet.', 'Click Add proxy and paste any t.me/proxy or t.me/socks link.'); return; }
+    box.innerHTML = list.map(function (p) {
+        var sel = proxySelected.has(p.id);
+        var stBadge = p.last_status === 'online'
+            ? '<span class="badge green">🟢 Online' + (p.last_ping_ms != null ? ' · ' + p.last_ping_ms + 'ms' : '') + '</span>'
+            : p.last_status === 'offline'
+                ? '<span class="badge red">🔴 Unreachable</span>'
+                : p.last_status === 'restricted'
+                    ? '<span class="badge orange">🟡 Check skipped</span>'
+                    : '<span class="badge">Untested</span>';
+        return '<div class="proxy-card">' +
+            '<div class="proxy-card-head">' +
+                '<input type="checkbox" class="media-cb" ' + (sel ? 'checked' : '') + ' onchange="toggleProxySelect(' + p.id + ')">' +
+                '<div style="flex:1;min-width:0;">' +
+                    '<div style="font-weight:700;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(p.label || (p.server + ':' + p.port)) + '</div>' +
+                    '<div class="tiny mono muted">' + esc(p.server) + ':' + esc(p.port) + '</div>' +
+                '</div>' +
+                stBadge +
+            '</div>' +
+            '<div class="proxy-card-meta">' +
+                '<span class="badge blue">' + esc(p.kind) + '</span>' +
+                (p.country ? '<span class="badge">' + esc(p.country) + (p.city ? ' · ' + esc(p.city) : '') + '</span>' : '') +
+                (p.isp ? '<span class="badge">' + esc(p.isp) + '</span>' : '') +
+                (p.category ? '<span class="badge purple">' + esc(p.category) + '</span>' : '') +
+            '</div>' +
+            '<div class="proxy-card-actions">' +
+                '<button class="btn btn-gray btn-sm" onclick="testSingleProxy(' + p.id + ',this)"><i class="fa-solid fa-gauge-high"></i> Test</button>' +
+                '<button class="btn btn-primary btn-sm" onclick="openAttachProxyCmdModal(' + p.id + ')"><i class="fa-solid fa-terminal"></i> Create Cmd</button>' +
+                '<button class="btn btn-gray btn-sm" onclick="copyProxyLink(' + p.id + ')"><i class="fa-regular fa-copy"></i> Copy Link</button>' +
+                '<button class="btn btn-gray btn-sm" onclick="openProxyModal(' + p.id + ')"><i class="fa-regular fa-pen-to-square"></i></button>' +
+                '<button class="btn btn-danger btn-sm" onclick="deleteProxy(' + p.id + ')"><i class="fa-regular fa-trash-can"></i></button>' +
+            '</div>' +
+        '</div>';
+    }).join('');
+}
+function parseProxyPaste(raw) {
+    var s = String(raw || '').trim();
+    if (!s) return;
+    try {
+        if (/^(https?:\\/\\/|tg:\\/\\/)/i.test(s) || s.indexOf('server=') >= 0) {
+            var u = new URL(s.replace(/^tg:\\/\\//i, 'https://t.me/'));
+            var srv = u.searchParams.get('server') || '';
+            var prt = u.searchParams.get('port') || '';
+            var sec = u.searchParams.get('secret') || '';
+            var usr = u.searchParams.get('user') || '';
+            var pwd = u.searchParams.get('pass') || '';
+            var isSocks = u.pathname.toLowerCase().indexOf('socks') >= 0;
+            $('px-kind').value = isSocks ? 'SOCKS5' : 'MTProto';
+            show($('px-secret-wrap'), !isSocks); show($('px-socks-wrap'), isSocks);
+            if (srv) $('px-server').value = srv;
+            if (prt) $('px-port').value = prt;
+            if (sec) $('px-secret').value = sec;
+            if (usr) $('px-user').value = usr;
+            if (pwd) $('px-pass').value = pwd;
+            if (!$('px-label').value && srv) $('px-label').value = (isSocks ? 'SOCKS5 ' : 'MTProto ') + srv;
+            return;
+        }
+        var parts = s.split(':');
+        if (parts.length >= 2) {
+            $('px-server').value = parts[0].trim();
+            $('px-port').value = parts[1].trim();
+            if (parts[2]) $('px-secret').value = parts.slice(2).join(':').trim();
+        }
+    } catch (e) {}
+}
+function openProxyModal(id) {
+    editingProxy = id ? proxiesList.find(function (p) { return p.id === id; }) : null;
+    $('proxy-error').classList.remove('show');
+    $('px-paste').value = '';
+    if (editingProxy) {
+        $('proxy-modal-title').textContent = 'Edit proxy';
+        $('px-label').value = editingProxy.label || '';
+        $('px-kind').value = editingProxy.kind || 'MTProto';
+        $('px-server').value = editingProxy.server || '';
+        $('px-port').value = editingProxy.port || '';
+        $('px-secret').value = editingProxy.secret || '';
+        $('px-user').value = editingProxy.username || '';
+        $('px-pass').value = editingProxy.password || '';
+        $('px-category').value = editingProxy.category || '';
+        $('px-notes').value = editingProxy.notes || '';
+    } else {
+        $('proxy-modal-title').textContent = 'Add proxy';
+        $('px-label').value = ''; $('px-kind').value = 'MTProto';
+        $('px-server').value = ''; $('px-port').value = '443';
+        $('px-secret').value = ''; $('px-user').value = ''; $('px-pass').value = '';
+        $('px-category').value = ''; $('px-notes').value = '';
+    }
+    var isSocks = $('px-kind').value === 'SOCKS5';
+    show($('px-secret-wrap'), !isSocks); show($('px-socks-wrap'), isSocks);
+    $('proxy-modal').classList.remove('hidden');
+    trackModal('proxy-modal');
+}
+function closeProxyModal() { $('proxy-modal').classList.add('hidden'); untrackModal('proxy-modal'); }
+async function saveProxy() {
+    var err = $('proxy-error'); err.classList.remove('show');
+    var body = {
+        id: editingProxy ? editingProxy.id : undefined,
+        label: $('px-label').value.trim(),
+        kind: $('px-kind').value,
+        server: $('px-server').value.trim(),
+        port: parseInt($('px-port').value, 10) || 0,
+        secret: $('px-secret').value.trim(),
+        username: $('px-user').value.trim(),
+        password: $('px-pass').value.trim(),
+        category: $('px-category').value.trim(),
+        notes: $('px-notes').value.trim()
+    };
+    await withBusy($('proxy-save-btn'), async function () {
+        try {
+            await api('POST', '/api/proxies', body);
+            closeProxyModal(); toast('Proxy saved.'); loadProxies();
+        } catch (e) { err.textContent = e.message; err.classList.add('show'); }
+    });
+}
+async function deleteProxy(id) {
+    if (!await confirmDialog('Delete this proxy?', 'Delete proxy')) return;
+    try { await api('DELETE', '/api/proxies/' + id); proxySelected.delete(id); toast('Deleted.'); loadProxies(); }
+    catch (e) { toast(e.message, 'error'); }
+}
+async function bulkDeleteProxies() {
+    var ids = Array.from(proxySelected);
+    if (!ids.length) return;
+    if (!await confirmDialog('Delete ' + ids.length + ' selected proxies?', 'Bulk delete')) return;
+    for (var i = 0; i < ids.length; i++) { try { await api('DELETE', '/api/proxies/' + ids[i]); } catch (e) {} }
+    proxySelected.clear(); toast('Deleted.'); loadProxies();
+}
+function copyProxyLink(id) {
+    var p = proxiesList.find(function (x) { return x.id === id; });
+    if (!p) return;
+    navigator.clipboard.writeText(p.link).then(function () { toast('Copied: ' + p.link); });
+}
+async function testSingleProxy(id, btn) {
+    await withBusy(btn, async function () {
+        try {
+            var d = await api('POST', '/api/proxies/test', { id: id });
+            toast(d.status === 'online' ? ('Online (' + d.pingMs + 'ms) · ' + (d.country || d.ip)) : ('Status: ' + d.status), d.status === 'online' ? 'success' : 'info');
+            loadProxies();
+        } catch (e) { toast(e.message, 'error'); }
+    });
+}
+async function testAllProxies() {
+    if (!proxiesList.length) { toast('No proxies to test.', 'info'); return; }
+    if (pmState.active) { toast('A bulk task is already running.', 'error'); return; }
+    openProgressModal({ title: 'Testing all proxies', total: proxiesList.length, unit: 'tested', okLabel: 'online', badLabel: 'offline/skipped' });
+    for (var i = 0; i < proxiesList.length && !pmState.cancelled; i++) {
+        var p = proxiesList[i];
+        try {
+            var r = await api('POST', '/api/proxies/test', { id: p.id });
+            var isOk = r && r.status === 'online';
+            updateProgressModal(1, isOk ? 1 : 0, isOk ? 0 : 1, (p.label || p.server) + ' → ' + (isOk ? (r.pingMs + 'ms') : r.status));
+        } catch (e) { updateProgressModal(1, 0, 1, 'Error: ' + e.message); }
+    }
+    finishProgressModal();
+    loadProxies();
+}
+function openAttachProxyCmdModal(id) {
+    attachingMultiProxies = null;
+    attachingProxy = proxiesList.find(function (p) { return p.id === id; });
+    if (!attachingProxy) return;
+    $('pxc-error').classList.remove('show');
+    $('pxc-title').textContent = 'Publish proxy to command';
+    $('pxc-cmd').value = '/proxy_' + (attachingProxy.id || '1');
+    $('pxc-parent').value = '';
+    $('pxc-content').value = '🛡️ <b>' + esc(attachingProxy.label || 'Telegram Proxy') + '</b>' +
+        (attachingProxy.country ? '\\n🌍 Location: <b>' + esc(attachingProxy.country) + '</b>' : '') +
+        (attachingProxy.last_ping_ms != null ? '\\n⚡ Last Ping: <code>' + attachingProxy.last_ping_ms + ' ms</code>' : '') +
+        '\\n\\nTap <b>Connect</b> to add it directly, or <b>Test &amp; Details</b> to check live ping.';
+    toggleSwitch('pxc-inc-connect', true);
+    toggleSwitch('pxc-inc-test', true);
+    toggleSwitch('pxc-edit', true);
+    toggleSwitch('pxc-protect', false);
+    $('pxc-allowed').value = '';
+    $('proxy-cmd-modal').classList.remove('hidden');
+    trackModal('proxy-cmd-modal');
+}
+function createMultiProxyCmd() {
+    var items = proxySelected.size
+        ? proxiesList.filter(function (p) { return proxySelected.has(p.id); })
+        : proxiesList.slice(0, 8);
+    if (!items.length) { toast('Add at least one proxy first.', 'info'); return; }
+    attachingProxy = null;
+    attachingMultiProxies = items;
+    $('pxc-error').classList.remove('show');
+    $('pxc-title').textContent = 'Build command (' + items.length + ' proxies)';
+    $('pxc-cmd').value = '/proxies';
+    $('pxc-parent').value = '';
+    $('pxc-content').value = '🛡️ <b>Available Telegram Proxies (' + items.length + ')</b>\\n\\nChoose a proxy below to connect or test its live ping &amp; details.';
+    toggleSwitch('pxc-inc-connect', true);
+    toggleSwitch('pxc-inc-test', true);
+    toggleSwitch('pxc-edit', true);
+    toggleSwitch('pxc-protect', false);
+    $('pxc-allowed').value = '';
+    $('proxy-cmd-modal').classList.remove('hidden');
+    trackModal('proxy-cmd-modal');
+}
+function closeAttachProxyCmdModal() {
+    $('proxy-cmd-modal').classList.add('hidden');
+    untrackModal('proxy-cmd-modal');
+    attachingProxy = null; attachingMultiProxies = null;
+}
+async function submitAttachProxyCmd() {
+    var err = $('pxc-error'); err.classList.remove('show');
+    var cmdName = $('pxc-cmd').value.trim();
+    if (!cmdName || !cmdName.startsWith('/')) { err.textContent = 'Command must start with "/".'; err.classList.add('show'); return; }
+    var incConnect = sw('pxc-inc-connect');
+    var incTest = sw('pxc-inc-test');
+    var cLbl = $('pxc-connect-lbl').value.trim() || '⚡ Connect Proxy';
+    var tLbl = $('pxc-test-lbl').value.trim() || '🔍 Test & Details';
+    var rows = [];
+    var items = attachingMultiProxies ? attachingMultiProxies : (attachingProxy ? [attachingProxy] : []);
+    items.forEach(function (p) {
+        var r = [];
+        var prefix = attachingMultiProxies ? ((p.label || p.server).slice(0, 18) + ' ') : '';
+        if (incConnect) r.push({ text: attachingMultiProxies ? ('⚡ ' + (p.label || p.server).slice(0, 20)) : cLbl, type: 'url', value: p.link, style: 'success' });
+        if (incTest) r.push({ text: attachingMultiProxies ? '🔍 Test' : tLbl, type: 'callback', value: 'PROXY:' + p.link, style: 'primary' });
+        if (r.length) rows.push(r);
+    });
+    var allowed = $('pxc-allowed').value.trim();
+    var payload = {
+        command: cmdName,
+        parent: $('pxc-parent').value.trim() || null,
+        response_type: 'text',
+        content: $('pxc-content').value.trim(),
+        buttons_json: rows.length ? JSON.stringify({ v: 2, inline: rows }) : '',
+        edit_message: sw('pxc-edit') ? 1 : 0,
+        edit_triggers: 'inline,reply,command',
+        protect_content: sw('pxc-protect') ? 1 : 0,
+        access_level: allowed ? 'specific' : 'everyone',
+        allowed_users: allowed,
+        enabled: 1
+    };
+    await withBusy($('pxc-save-btn'), async function () {
+        try {
+            try { await api('POST', '/api/commands', payload); }
+            catch (e) {
+                if (/already exists/i.test(e.message)) await api('PUT', '/api/commands/' + encodeURIComponent(cmdName), payload);
+                else throw e;
+            }
+            closeAttachProxyCmdModal();
+            toast('Published to ' + cmdName + '!');
+            commands = [];
+        } catch (e) { err.textContent = e.message; err.classList.add('show'); }
     });
 }
 
@@ -11231,6 +12480,13 @@ export default {
             if (request.method === 'POST' && url.pathname === '/api/settings/nav_layout') return await saveNavLayoutSetting(request, env);
             if (request.method === 'POST' && url.pathname === '/api/settings/webhook-fix') return await handleWebhookFix(env, url.origin);
             if (request.method === 'POST' && url.pathname === '/api/settings/webhook-diagnostics') return await handleWebhookDiagnostics(env);
+            if (request.method === 'GET'  && url.pathname === '/api/force_join') return await getForceJoinHandler(env);
+            if (request.method === 'POST' && url.pathname === '/api/force_join') return await saveForceJoinHandler(request, env);
+            if (request.method === 'POST' && url.pathname === '/api/force_join/verify_chat') return await verifyForceJoinChat(request, env);
+            if (request.method === 'GET'  && url.pathname === '/api/proxies') return await listProxiesHandler(env);
+            if (request.method === 'POST' && url.pathname === '/api/proxies') return await saveProxyHandler(request, env);
+            if (request.method === 'POST' && url.pathname === '/api/proxies/test') return await testProxyHandler(request, env);
+            if (request.method === 'DELETE' && /^\/api\/proxies\/[0-9]+$/.test(url.pathname)) return await deleteProxyHandler(env, url);
             if (request.method === 'GET'  && url.pathname === '/api/schema/health') return await handleSchemaHealth(env);
             if (request.method === 'POST' && url.pathname === '/api/schema/heal')   return await handleSchemaHeal(env);
             if (request.method === 'POST' && url.pathname === '/api/change_password') return await changeAdminPassword(request, env);
@@ -11623,7 +12879,7 @@ async function demoteAdminHandler(request, env) {
 // DATABASE
 // ============================================================================
 const dbInitCache = new WeakMap();
-const SCHEMA_VERSION = 24;
+const SCHEMA_VERSION = 25;
 
 const MIGRATIONS = {
     2: [
@@ -11803,6 +13059,22 @@ const MIGRATIONS = {
         `ALTER TABLE sessions ADD COLUMN last_chat_id INTEGER DEFAULT 0`,
         `ALTER TABLE sessions ADD COLUMN last_msg_kind TEXT DEFAULT 'text'`,
     ],
+    25: [
+        `ALTER TABLE commands ADD COLUMN disallowed_users TEXT DEFAULT ''`,
+        `ALTER TABLE commands ADD COLUMN edit_triggers TEXT DEFAULT 'inline,reply,command'`,
+        `ALTER TABLE commands ADD COLUMN inline_access_level TEXT DEFAULT 'everyone'`,
+        `ALTER TABLE commands ADD COLUMN inline_allowed_users TEXT DEFAULT ''`,
+        `ALTER TABLE commands ADD COLUMN inline_disallowed_users TEXT DEFAULT ''`,
+        `ALTER TABLE commands ADD COLUMN force_join_mode TEXT DEFAULT 'inherit'`,
+        `ALTER TABLE commands ADD COLUMN cmd_password TEXT DEFAULT ''`,
+        `ALTER TABLE commands ADD COLUMN password_prompt TEXT DEFAULT ''`,
+        `ALTER TABLE commands ADD COLUMN password_dismiss_label TEXT DEFAULT ''`,
+        `ALTER TABLE sessions ADD COLUMN pending_password TEXT DEFAULT ''`,
+        `ALTER TABLE mcp_sessions ADD COLUMN mode TEXT DEFAULT 'mcp'`,
+        `CREATE TABLE IF NOT EXISTS inline_acl (chat_id INTEGER NOT NULL, message_id INTEGER NOT NULL, access_level TEXT DEFAULT 'everyone', allowed_users TEXT DEFAULT '', disallowed_users TEXT DEFAULT '', created_at DATETIME DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (chat_id, message_id))`,
+        `CREATE TABLE IF NOT EXISTS proxies (id INTEGER PRIMARY KEY AUTOINCREMENT, label TEXT DEFAULT '', kind TEXT DEFAULT 'MTProto', server TEXT NOT NULL, port INTEGER NOT NULL, secret TEXT DEFAULT '', username TEXT DEFAULT '', password TEXT DEFAULT '', link TEXT DEFAULT '', category TEXT DEFAULT '', notes TEXT DEFAULT '', last_status TEXT DEFAULT '', last_ping_ms INTEGER, country TEXT DEFAULT '', country_code TEXT DEFAULT '', city TEXT DEFAULT '', isp TEXT DEFAULT '', last_checked_at DATETIME, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
+        `INSERT INTO settings (key, value) VALUES ('force_join_config', '{}') ON CONFLICT(key) DO NOTHING`,
+    ],
 };
 
 // ============================================================================
@@ -11843,6 +13115,11 @@ const DESIRED_SCHEMA = {
         is_admin_only: { type: 'BOOLEAN', default: '0' },
         access_level: { type: 'TEXT', default: "'everyone'" },
         allowed_users: { type: 'TEXT', default: "''" },
+        disallowed_users: { type: 'TEXT', default: "''" },
+        force_join_mode: { type: 'TEXT', default: "'inherit'" },
+        cmd_password: { type: 'TEXT', default: "''" },
+        password_prompt: { type: 'TEXT', default: "''" },
+        password_dismiss_label: { type: 'TEXT', default: "''" },
         expires_at: { type: 'DATETIME' },
         enabled: { type: 'BOOLEAN', default: '1' },
         show_reply_keyboard: { type: 'BOOLEAN', default: '0' },
@@ -11853,6 +13130,10 @@ const DESIRED_SCHEMA = {
         media_items_json: { type: 'TEXT', default: "''" },
         protect_content: { type: 'INTEGER', default: '0' },
         edit_message: { type: 'INTEGER', default: '0' },
+        edit_triggers: { type: 'TEXT', default: "'inline,reply,command'" },
+        inline_access_level: { type: 'TEXT', default: "'everyone'" },
+        inline_allowed_users: { type: 'TEXT', default: "''" },
+        inline_disallowed_users: { type: 'TEXT', default: "''" },
         inline_auto_back: { type: 'INTEGER', default: '0' },
         inline_back_label: { type: 'TEXT', default: "''" },
         auto_back: { type: 'INTEGER', default: '1' },
@@ -11867,6 +13148,7 @@ const DESIRED_SCHEMA = {
         last_msg_id: { type: 'INTEGER', default: '0' },
         last_chat_id: { type: 'INTEGER', default: '0' },
         last_msg_kind: { type: 'TEXT', default: "'text'" },
+        pending_password: { type: 'TEXT', default: "''" },
         created_at: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' },
         updated_at: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' },
         csrf_token: { type: 'TEXT', default: "''" },
@@ -11979,8 +13261,38 @@ const DESIRED_SCHEMA = {
         messages_json: { type: 'TEXT', default: "'[]'" },
         size_bytes: { type: 'INTEGER', default: '0' },
         title: { type: 'TEXT', default: "''" },
+        mode: { type: 'TEXT', default: "'mcp'" },
         created_at: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' },
         updated_at: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' }
+    }},
+    inline_acl: { columns: {
+        chat_id: { type: 'INTEGER', primary: true },
+        message_id: { type: 'INTEGER', primary: true },
+        access_level: { type: 'TEXT', default: "'everyone'" },
+        allowed_users: { type: 'TEXT', default: "''" },
+        disallowed_users: { type: 'TEXT', default: "''" },
+        created_at: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' }
+    }},
+    proxies: { columns: {
+        id: { type: 'INTEGER', primary: true },
+        label: { type: 'TEXT', default: "''" },
+        kind: { type: 'TEXT', default: "'MTProto'" },
+        server: { type: 'TEXT' },
+        port: { type: 'INTEGER' },
+        secret: { type: 'TEXT', default: "''" },
+        username: { type: 'TEXT', default: "''" },
+        password: { type: 'TEXT', default: "''" },
+        link: { type: 'TEXT', default: "''" },
+        category: { type: 'TEXT', default: "''" },
+        notes: { type: 'TEXT', default: "''" },
+        last_status: { type: 'TEXT', default: "''" },
+        last_ping_ms: { type: 'INTEGER' },
+        country: { type: 'TEXT', default: "''" },
+        country_code: { type: 'TEXT', default: "''" },
+        city: { type: 'TEXT', default: "''" },
+        isp: { type: 'TEXT', default: "''" },
+        last_checked_at: { type: 'DATETIME' },
+        created_at: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' }
     }},
     mcp_rate_limits: { columns: {
         session_key: { type: 'TEXT', primary: true },
@@ -12405,8 +13717,19 @@ async function initializeDatabase(db) {
 
         const SCHEMA_HEALS = [
             `ALTER TABLE commands ADD COLUMN edit_message INTEGER DEFAULT 0`,
+            `ALTER TABLE commands ADD COLUMN edit_triggers TEXT DEFAULT 'inline,reply,command'`,
+            `ALTER TABLE commands ADD COLUMN inline_access_level TEXT DEFAULT 'everyone'`,
+            `ALTER TABLE commands ADD COLUMN inline_allowed_users TEXT DEFAULT ''`,
+            `ALTER TABLE commands ADD COLUMN inline_disallowed_users TEXT DEFAULT ''`,
+            `ALTER TABLE commands ADD COLUMN disallowed_users TEXT DEFAULT ''`,
+            `ALTER TABLE commands ADD COLUMN force_join_mode TEXT DEFAULT 'inherit'`,
+            `ALTER TABLE commands ADD COLUMN cmd_password TEXT DEFAULT ''`,
+            `ALTER TABLE commands ADD COLUMN password_prompt TEXT DEFAULT ''`,
+            `ALTER TABLE commands ADD COLUMN password_dismiss_label TEXT DEFAULT ''`,
             `ALTER TABLE commands ADD COLUMN inline_auto_back INTEGER DEFAULT 0`,
             `ALTER TABLE commands ADD COLUMN inline_back_label TEXT DEFAULT ''`,
+            `ALTER TABLE sessions ADD COLUMN pending_password TEXT DEFAULT ''`,
+            `ALTER TABLE mcp_sessions ADD COLUMN mode TEXT DEFAULT 'mcp'`,
             `ALTER TABLE contact_pending_reply ADD COLUMN contact_msg_id INTEGER DEFAULT 0`,
             `ALTER TABLE commands ADD COLUMN remove_reply_keyboard INTEGER DEFAULT 0`,
             `ALTER TABLE commands ADD COLUMN auto_back INTEGER DEFAULT 1`,
@@ -13681,7 +15004,7 @@ async function getCommands(env, url) {
         await initializeDatabase(env.DB);
         const summary = url && url.searchParams.get('summary') === '1';
         const cols = summary
-            ? "command, parent, response_type, enabled, access_level, allowed_users, expires_at, is_admin_only, protect_content, edit_message, media_items_json, order_idx, CASE WHEN buttons_json != '' THEN 1 ELSE 0 END AS has_buttons, show_reply_keyboard"
+            ? "command, parent, response_type, enabled, access_level, allowed_users, disallowed_users, expires_at, is_admin_only, protect_content, edit_message, cmd_password, force_join_mode, media_items_json, order_idx, CASE WHEN buttons_json != '' THEN 1 ELSE 0 END AS has_buttons, show_reply_keyboard"
             : '*';
         const result = await env.DB.prepare(`SELECT ${cols} FROM commands ORDER BY order_idx, command`).all();
         return apiJson({ commands: result.results || [] });
@@ -13768,18 +15091,27 @@ async function createCommand(request, env) {
         if (parent && await commandIsDescendant(env.DB, command, parent)) return apiJson({ error: 'You cannot nest a command inside its own child.' }, 400);
         const accessLevel = resolveCommandAccessInput(body.access_level, is_admin_only, null);
         const allowedUsers = normalizeAllowedUsersStr(body.allowed_users);
+        const disallowedUsers = normalizeAllowedUsersStr(body.disallowed_users);
         const expiresAt = body.expires_at ? String(body.expires_at).trim() : null;
         const maxOrder = await env.DB.prepare('SELECT MAX(order_idx) as max FROM commands').first();
         const orderIdx = (maxOrder && maxOrder.max !== null) ? maxOrder.max + 1 : 0;
         try {
             const editMessage = body.edit_message ? 1 : 0;
+            const editTriggers = body.edit_triggers ? String(body.edit_triggers) : 'inline,reply,command';
+            const inlineAccessLevel = resolveCommandAccessInput(body.inline_access_level, null, null);
+            const inlineAllowed = normalizeAllowedUsersStr(body.inline_allowed_users);
+            const inlineDisallowed = normalizeAllowedUsersStr(body.inline_disallowed_users);
+            const fjMode = ['inherit', 'required', 'off'].includes(body.force_join_mode) ? body.force_join_mode : 'inherit';
+            const cmdPassword = body.cmd_password ? String(body.cmd_password).slice(0, 128) : '';
+            const pwPrompt = body.password_prompt ? String(body.password_prompt).slice(0, 500) : '';
+            const pwDismiss = body.password_dismiss_label ? String(body.password_dismiss_label).slice(0, 64) : '';
             const inlineAutoBack = body.inline_auto_back ? 1 : 0;
             const inlineBackLabel = body.inline_back_label ? String(body.inline_back_label).trim().slice(0, 64) : '';
             const autoBack = body.auto_back !== undefined ? (body.auto_back ? 1 : 0) : 1;
             const backLabel = body.back_label ? String(body.back_label).trim().slice(0, 64) : '';
             const removeReply = body.remove_reply_keyboard ? 1 : 0;
-            await env.DB.prepare(`INSERT INTO commands (command, parent, response_type, content, media_url, file_id, media_meta, media_items_json, protect_content, edit_message, inline_auto_back, inline_back_label, buttons_json, is_admin_only, access_level, allowed_users, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, auto_back, back_label, remove_reply_keyboard, order_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-                .bind(command, parent || null, rtype, content || '', finalMediaUrl, finalFileId, finalMediaMeta, finalItemsJson, protect_content ? 1 : 0, editMessage, inlineAutoBack, inlineBackLabel, buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', autoBack, backLabel, removeReply, orderIdx).run();
+            await env.DB.prepare(`INSERT INTO commands (command, parent, response_type, content, media_url, file_id, media_meta, media_items_json, protect_content, edit_message, edit_triggers, inline_access_level, inline_allowed_users, inline_disallowed_users, inline_auto_back, inline_back_label, buttons_json, is_admin_only, access_level, allowed_users, disallowed_users, force_join_mode, cmd_password, password_prompt, password_dismiss_label, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, auto_back, back_label, remove_reply_keyboard, order_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+                .bind(command, parent || null, rtype, content || '', finalMediaUrl, finalFileId, finalMediaMeta, finalItemsJson, protect_content ? 1 : 0, editMessage, editTriggers, inlineAccessLevel, inlineAllowed, inlineDisallowed, inlineAutoBack, inlineBackLabel, buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, disallowedUsers, fjMode, cmdPassword, pwPrompt, pwDismiss, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', autoBack, backLabel, removeReply, orderIdx).run();
         } catch (e) {
             const m = String(e.message || '');
             console.error('createCommand INSERT failed:', m);
@@ -13835,11 +15167,20 @@ async function updateCommand(request, env) {
         if (parent && parent === command) return apiJson({ error: 'A command cannot be its own parent.' }, 400);
         const accessLevel = resolveCommandAccessInput(body.access_level, is_admin_only, existing);
         const allowedUsers = body.allowed_users !== undefined ? normalizeAllowedUsersStr(body.allowed_users) : ((existing && existing.allowed_users) || '');
+        const disallowedUsers = body.disallowed_users !== undefined ? normalizeAllowedUsersStr(body.disallowed_users) : ((existing && existing.disallowed_users) || '');
         const expiresAt = body.expires_at !== undefined ? (body.expires_at ? String(body.expires_at).trim() : null) : (existing ? existing.expires_at : null);
+        const finalProtect = protect_content !== undefined ? (protect_content ? 1 : 0) : ((existing && existing.protect_content) ? 1 : 0);
         const finalEditMessage = body.edit_message !== undefined ? (body.edit_message ? 1 : 0) : ((existing && existing.edit_message) ? 1 : 0);
+        const finalEditTriggers = body.edit_triggers !== undefined ? String(body.edit_triggers) : ((existing && existing.edit_triggers) || 'inline,reply,command');
+        const finalInlineAccess = body.inline_access_level !== undefined ? resolveCommandAccessInput(body.inline_access_level, null, null) : ((existing && existing.inline_access_level) || 'everyone');
+        const finalInlineAllowed = body.inline_allowed_users !== undefined ? normalizeAllowedUsersStr(body.inline_allowed_users) : ((existing && existing.inline_allowed_users) || '');
+        const finalInlineDisallowed = body.inline_disallowed_users !== undefined ? normalizeAllowedUsersStr(body.inline_disallowed_users) : ((existing && existing.inline_disallowed_users) || '');
+        const finalFjMode = body.force_join_mode !== undefined ? (['inherit', 'required', 'off'].includes(body.force_join_mode) ? body.force_join_mode : 'inherit') : ((existing && existing.force_join_mode) || 'inherit');
+        const finalCmdPassword = body.cmd_password !== undefined ? String(body.cmd_password).slice(0, 128) : ((existing && existing.cmd_password) || '');
+        const finalPwPrompt = body.password_prompt !== undefined ? String(body.password_prompt).slice(0, 500) : ((existing && existing.password_prompt) || '');
+        const finalPwDismiss = body.password_dismiss_label !== undefined ? String(body.password_dismiss_label).slice(0, 64) : ((existing && existing.password_dismiss_label) || '');
         const finalInlineAutoBack = body.inline_auto_back !== undefined ? (body.inline_auto_back ? 1 : 0) : ((existing && existing.inline_auto_back) ? 1 : 0);
         const finalInlineBackLabel = body.inline_back_label !== undefined ? String(body.inline_back_label).trim().slice(0, 64) : ((existing && existing.inline_back_label) || '');
-        const finalProtect = protect_content !== undefined ? (protect_content ? 1 : 0) : ((existing && existing.protect_content) ? 1 : 0);
         const finalAutoBack = body.auto_back !== undefined ? (body.auto_back ? 1 : 0) : ((existing && existing.auto_back !== undefined && existing.auto_back !== null) ? (existing.auto_back ? 1 : 0) : 1);
         const finalBackLabel = body.back_label !== undefined ? String(body.back_label).trim().slice(0, 64) : ((existing && existing.back_label) || '');
         const finalRemoveReply = body.remove_reply_keyboard !== undefined ? (body.remove_reply_keyboard ? 1 : 0) : ((existing && existing.remove_reply_keyboard) ? 1 : 0);
@@ -13847,8 +15188,8 @@ async function updateCommand(request, env) {
             const clash = await env.DB.prepare('SELECT command FROM commands WHERE command = ?').bind(command).first();
             if (clash) return apiJson({ error: `A command named "${command}" already exists.` }, 400);
             if (parent && await commandIsDescendant(env.DB, command, parent)) return apiJson({ error: 'You cannot nest a command inside its own child.' }, 400);
-            await env.DB.prepare(`UPDATE commands SET command = ?, parent = ?, response_type = ?, content = ?, media_url = ?, file_id = ?, media_meta = ?, media_items_json = ?, protect_content = ?, edit_message = ?, inline_auto_back = ?, inline_back_label = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, allowed_users = ?, expires_at = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ?, auto_back = ?, back_label = ?, remove_reply_keyboard = ? WHERE command = ?`)
-                .bind(command, parent || null, rtype, content || '', finalMediaUrl, finalFileId, finalMediaMeta, finalItemsJson, finalProtect, finalEditMessage, finalInlineAutoBack, finalInlineBackLabel, buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', finalAutoBack, finalBackLabel, finalRemoveReply, oldCommand).run();
+            await env.DB.prepare(`UPDATE commands SET command = ?, parent = ?, response_type = ?, content = ?, media_url = ?, file_id = ?, media_meta = ?, media_items_json = ?, protect_content = ?, edit_message = ?, edit_triggers = ?, inline_access_level = ?, inline_allowed_users = ?, inline_disallowed_users = ?, inline_auto_back = ?, inline_back_label = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, allowed_users = ?, disallowed_users = ?, force_join_mode = ?, cmd_password = ?, password_prompt = ?, password_dismiss_label = ?, expires_at = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ?, auto_back = ?, back_label = ?, remove_reply_keyboard = ? WHERE command = ?`)
+                .bind(command, parent || null, rtype, content || '', finalMediaUrl, finalFileId, finalMediaMeta, finalItemsJson, finalProtect, finalEditMessage, finalEditTriggers, finalInlineAccess, finalInlineAllowed, finalInlineDisallowed, finalInlineAutoBack, finalInlineBackLabel, buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, disallowedUsers, finalFjMode, finalCmdPassword, finalPwPrompt, finalPwDismiss, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', finalAutoBack, finalBackLabel, finalRemoveReply, oldCommand).run();
             await env.DB.prepare('UPDATE commands SET parent = ? WHERE parent = ?').bind(command, oldCommand).run();
             const refRows = await env.DB.prepare('SELECT command, buttons_json, reply_keyboard_json FROM commands WHERE buttons_json LIKE ? OR reply_keyboard_json LIKE ?').bind(`%${oldCommand}%`, `%${oldCommand}%`).all();
             for (const row of refRows.results) {
@@ -13860,8 +15201,8 @@ async function updateCommand(request, env) {
             }
         } else {
             if (parent && await commandIsDescendant(env.DB, command, parent)) return apiJson({ error: 'You cannot nest a command inside its own child.' }, 400);
-            await env.DB.prepare(`UPDATE commands SET parent = ?, response_type = ?, content = ?, media_url = ?, file_id = ?, media_meta = ?, media_items_json = ?, protect_content = ?, edit_message = ?, inline_auto_back = ?, inline_back_label = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, allowed_users = ?, expires_at = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ?, auto_back = ?, back_label = ?, remove_reply_keyboard = ? WHERE command = ?`)
-                .bind(parent || null, rtype, content || '', finalMediaUrl, finalFileId, finalMediaMeta, finalItemsJson, finalProtect, finalEditMessage, finalInlineAutoBack, finalInlineBackLabel, buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', finalAutoBack, finalBackLabel, finalRemoveReply, command).run();
+            await env.DB.prepare(`UPDATE commands SET parent = ?, response_type = ?, content = ?, media_url = ?, file_id = ?, media_meta = ?, media_items_json = ?, protect_content = ?, edit_message = ?, edit_triggers = ?, inline_access_level = ?, inline_allowed_users = ?, inline_disallowed_users = ?, inline_auto_back = ?, inline_back_label = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, allowed_users = ?, disallowed_users = ?, force_join_mode = ?, cmd_password = ?, password_prompt = ?, password_dismiss_label = ?, expires_at = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ?, auto_back = ?, back_label = ?, remove_reply_keyboard = ? WHERE command = ?`)
+                .bind(parent || null, rtype, content || '', finalMediaUrl, finalFileId, finalMediaMeta, finalItemsJson, finalProtect, finalEditMessage, finalEditTriggers, finalInlineAccess, finalInlineAllowed, finalInlineDisallowed, finalInlineAutoBack, finalInlineBackLabel, buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, disallowedUsers, finalFjMode, finalCmdPassword, finalPwPrompt, finalPwDismiss, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', finalAutoBack, finalBackLabel, finalRemoveReply, command).run();
         }
         await bumpDomainEpoch(env.DB, 'reply_buttons');
         return apiJson({ success: true });
@@ -13907,7 +15248,7 @@ async function exportCommandPack(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
-        const commands = await env.DB.prepare('SELECT command, parent, response_type, content, media_url, file_id, media_meta, media_items_json, protect_content, edit_message, inline_auto_back, inline_back_label, buttons_json, is_admin_only, access_level, allowed_users, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, auto_back, back_label FROM commands ORDER BY order_idx, command').all();
+        const commands = await env.DB.prepare('SELECT command, parent, response_type, content, media_url, file_id, media_meta, media_items_json, protect_content, edit_message, edit_triggers, inline_access_level, inline_allowed_users, inline_disallowed_users, inline_auto_back, inline_back_label, buttons_json, is_admin_only, access_level, allowed_users, disallowed_users, force_join_mode, cmd_password, password_prompt, password_dismiss_label, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, auto_back, back_label FROM commands ORDER BY order_idx, command').all();
         let menu = [];
         const raw = await getSetting(env.DB, 'menu_commands');
         if (raw) { try { menu = JSON.parse(raw); } catch (e) {} }
@@ -13929,20 +15270,23 @@ async function importCommandPack(request, env) {
         const stmts = valid.map((c, i) => {
             const access = effectiveCommandAccess(c);
             return env.DB.prepare(`
-            INSERT INTO commands (command, parent, response_type, content, media_url, file_id, media_meta, media_items_json, protect_content, edit_message, inline_auto_back, inline_back_label, buttons_json, is_admin_only, access_level, allowed_users, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, auto_back, back_label, order_idx)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO commands (command, parent, response_type, content, media_url, file_id, media_meta, media_items_json, protect_content, edit_message, edit_triggers, inline_access_level, inline_allowed_users, inline_disallowed_users, inline_auto_back, inline_back_label, buttons_json, is_admin_only, access_level, allowed_users, disallowed_users, force_join_mode, cmd_password, password_prompt, password_dismiss_label, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, auto_back, back_label, order_idx)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(command) DO UPDATE SET
                 parent = excluded.parent, response_type = excluded.response_type, content = excluded.content,
                 media_url = excluded.media_url, file_id = excluded.file_id, media_meta = excluded.media_meta,
                 media_items_json = excluded.media_items_json, protect_content = excluded.protect_content,
-                edit_message = excluded.edit_message, inline_auto_back = excluded.inline_auto_back, inline_back_label = excluded.inline_back_label,
+                edit_message = excluded.edit_message, edit_triggers = excluded.edit_triggers,
+                inline_access_level = excluded.inline_access_level, inline_allowed_users = excluded.inline_allowed_users, inline_disallowed_users = excluded.inline_disallowed_users,
+                inline_auto_back = excluded.inline_auto_back, inline_back_label = excluded.inline_back_label,
                 buttons_json = excluded.buttons_json,
                 is_admin_only = excluded.is_admin_only, access_level = excluded.access_level,
-                allowed_users = excluded.allowed_users, expires_at = excluded.expires_at,
-                enabled = excluded.enabled,
+                allowed_users = excluded.allowed_users, disallowed_users = excluded.disallowed_users,
+                force_join_mode = excluded.force_join_mode, cmd_password = excluded.cmd_password, password_prompt = excluded.password_prompt, password_dismiss_label = excluded.password_dismiss_label,
+                expires_at = excluded.expires_at, enabled = excluded.enabled,
                 show_reply_keyboard = excluded.show_reply_keyboard, reply_keyboard_json = excluded.reply_keyboard_json,
                 auto_back = excluded.auto_back, back_label = excluded.back_label
-        `).bind(c.command, c.parent || null, c.response_type || 'text', c.content || '', c.media_url || '', c.file_id || '', c.media_meta || '', c.media_items_json || '', c.protect_content ? 1 : 0, c.edit_message ? 1 : 0, c.inline_auto_back ? 1 : 0, c.inline_back_label || '', c.buttons_json || '', access === 'admin' ? 1 : 0, access, normalizeAllowedUsersStr(c.allowed_users), c.expires_at || null, c.enabled != 0 ? 1 : 0, c.show_reply_keyboard ? 1 : 0, c.reply_keyboard_json || '', c.auto_back !== undefined && c.auto_back !== null ? (c.auto_back ? 1 : 0) : 1, c.back_label || '', i);
+        `).bind(c.command, c.parent || null, c.response_type || 'text', c.content || '', c.media_url || '', c.file_id || '', c.media_meta || '', c.media_items_json || '', c.protect_content ? 1 : 0, c.edit_message ? 1 : 0, c.edit_triggers || 'inline,reply,command', c.inline_access_level || 'everyone', normalizeAllowedUsersStr(c.inline_allowed_users), normalizeAllowedUsersStr(c.inline_disallowed_users), c.inline_auto_back ? 1 : 0, c.inline_back_label || '', c.buttons_json || '', access === 'admin' ? 1 : 0, access, normalizeAllowedUsersStr(c.allowed_users), normalizeAllowedUsersStr(c.disallowed_users), c.force_join_mode || 'inherit', c.cmd_password || '', c.password_prompt || '', c.password_dismiss_label || '', c.expires_at || null, c.enabled != 0 ? 1 : 0, c.show_reply_keyboard ? 1 : 0, c.reply_keyboard_json || '', c.auto_back !== undefined && c.auto_back !== null ? (c.auto_back ? 1 : 0) : 1, c.back_label || '', i);
         });
         await runBatchChunks(env.DB, stmts);
         if (Array.isArray(data.menu) && data.menu.length) {
@@ -14577,6 +15921,7 @@ async function sendUserPrivateMessage(request, env) {
             return apiJson({ error: friendly }, 500);
         }
         const messageId = resp.result && (Array.isArray(resp.result) ? (resp.result[0] && resp.result[0].message_id) : resp.result.message_id);
+        if (messageId && buttonsJson) await saveInlineAclFromButtonsJson(env.DB, userId, messageId, buttonsJson);
         if (built && built.both && (built.replyMarkup || built.removeReplyMarkup)) {
             await sendReplyKeyboardMessage(token, userId, built.replyMarkup || built.removeReplyMarkup, { protect_content: !!protectContent });
         }
@@ -14989,6 +16334,7 @@ async function sendGroupMessage(request, env, url) {
         const resp = await sendMultiMediaMessage(token, id, items, message || '', markup, { protect_content: !!protectContent });
         if (!resp || !resp.ok) return apiJson({ error: (resp && resp.description) || 'Telegram error' }, 500);
         const msgId = resp.result && (Array.isArray(resp.result) ? (resp.result[0] && resp.result[0].message_id) : resp.result.message_id);
+        if (msgId && buttonsJson) await saveInlineAclFromButtonsJson(env.DB, id, msgId, buttonsJson);
         if (built && built.both && (built.replyMarkup || built.removeReplyMarkup)) {
             await sendReplyKeyboardMessage(token, id, built.replyMarkup || built.removeReplyMarkup, { protect_content: !!protectContent });
         }
@@ -15224,6 +16570,7 @@ async function sendChannelPost(request, env, url) {
         }
         if (!resp || !resp.ok) return apiJson({ error: (resp && resp.description) || 'Telegram rejected the post. Make sure the bot has Post Messages permission.' }, 500);
         const msgId = resp.result ? (Array.isArray(resp.result) ? (resp.result[0] && resp.result[0].message_id) : resp.result.message_id) : null;
+        if (msgId && effectiveButtons) await saveInlineAclFromButtonsJson(env.DB, id, msgId, effectiveButtons);
         if (pinPost && msgId) {
             try { await tgCall(token, 'pinChatMessage', { chat_id: id, message_id: msgId, disable_notification: !!disableNotification }); } catch (e) {}
         }
@@ -15417,6 +16764,7 @@ async function broadcastToUser(token, uid, built, markup, content, timeoutMs) {
         await sendReplyKeyboardMessage(token, uid, built.replyMarkup || built.removeReplyMarkup, { protect_content: !!content.protect_content, timeoutMs });
     }
     const msgId = res.result ? (Array.isArray(res.result) ? (res.result[0] && res.result[0].message_id) : res.result.message_id) : null;
+    if (msgId && content.buttonsJson && content.db) await saveInlineAclFromButtonsJson(content.db, uid, msgId, content.buttonsJson);
     return { ok: true, blocked: false, skipped: false, messageId: msgId };
 }
 async function handleBroadcast(request, env) {
@@ -15451,7 +16799,7 @@ async function handleBroadcast(request, env) {
             const rows = await env.DB.prepare(`SELECT user_id FROM blocked_users WHERE block_type = 'full' AND user_id IN (${ph})`).bind(...slice).all();
             for (const r of (rows.results || [])) blockedSet.add(r.user_id);
         }
-        const content = { mediaType, text: message || '', mediaUrl: fileId || (items[0] && items[0].media_url) || photoUrl || '', mediaMeta, items, protect_content: !!protectContent };
+        const content = { mediaType, text: message || '', mediaUrl: fileId || (items[0] && items[0].media_url) || photoUrl || '', mediaMeta, items, protect_content: !!protectContent, buttonsJson: buttonsJson || '', db: env.DB };
         const existingBroadcastId = bcBody.broadcastId ? parseInt(bcBody.broadcastId) : null;
         const totalRecipientCount = bcBody.totalCount ? parseInt(bcBody.totalCount) : uniqueIds.length;
         let broadcastId = existingBroadcastId;
@@ -17004,6 +18352,285 @@ async function reindexMediaBatch(request, env) {
     } catch (err) { return internalError(err); }
 }
 
+const FORCE_JOIN_DEFAULTS = {
+    enabled: false,
+    apply_to_commands: true,
+    apply_to_ai: true,
+    apply_to_featured: true,
+    apply_to_callbacks: true,
+    exempt_admins_mods: true,
+    enforce_in_groups: false,
+    message: '⚠️ To use this bot, please join the required channel(s)/group(s) below first, then tap Check.',
+    check_label: "✅ I've Joined — Check",
+    not_joined_alert: "❌ You haven't joined all required chats yet. Please join and try again!",
+    joined_text: '✅ Verified! You can now use the bot.',
+    chats: []
+};
+async function getForceJoinConfig(db) {
+    try {
+        const raw = await getSetting(db, 'force_join_config');
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && typeof parsed === 'object') return Object.assign({}, FORCE_JOIN_DEFAULTS, parsed, { chats: Array.isArray(parsed.chats) ? parsed.chats : [] });
+        }
+    } catch (e) {}
+    return Object.assign({}, FORCE_JOIN_DEFAULTS);
+}
+async function getForceJoinHandler(env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        return apiJson({ success: true, config: await getForceJoinConfig(env.DB) });
+    } catch (err) { return internalError(err); }
+}
+async function saveForceJoinHandler(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const body = await request.json();
+        const cfg = body.config || {};
+        await initializeDatabase(env.DB);
+        const chats = (Array.isArray(cfg.chats) ? cfg.chats : [])
+            .filter(c => c && c.id)
+            .map(c => ({
+                id: String(c.id).trim(),
+                title: String(c.title || c.id).slice(0, 120),
+                type: String(c.type || 'channel'),
+                invite_link: String(c.invite_link || '').trim(),
+                bot_ok: !!c.bot_ok,
+                bot_status: String(c.bot_status || '')
+            }));
+        const clean = {
+            enabled: !!cfg.enabled,
+            apply_to_commands: cfg.apply_to_commands !== false,
+            apply_to_ai: cfg.apply_to_ai !== false,
+            apply_to_featured: cfg.apply_to_featured !== false,
+            apply_to_callbacks: cfg.apply_to_callbacks !== false,
+            exempt_admins_mods: cfg.exempt_admins_mods !== false,
+            enforce_in_groups: !!cfg.enforce_in_groups,
+            message: String(cfg.message || FORCE_JOIN_DEFAULTS.message).slice(0, 3000),
+            check_label: String(cfg.check_label || FORCE_JOIN_DEFAULTS.check_label).slice(0, 64),
+            not_joined_alert: String(cfg.not_joined_alert || FORCE_JOIN_DEFAULTS.not_joined_alert).slice(0, 195),
+            joined_text: String(cfg.joined_text || FORCE_JOIN_DEFAULTS.joined_text).slice(0, 500),
+            chats
+        };
+        await setSetting(env.DB, 'force_join_config', JSON.stringify(clean));
+        await logAction(env.DB, null, 'Force Join settings updated');
+        return apiJson({ success: true, config: clean });
+    } catch (err) { return internalError(err); }
+}
+async function verifyForceJoinChat(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const body = await request.json();
+        const chatId = String(body.chatId || '').trim();
+        let inviteLink = String(body.invite_link || '').trim();
+        if (!chatId) return apiJson({ error: 'chatId is required.' }, 400);
+        await initializeDatabase(env.DB);
+        const token = await getSetting(env.DB, 'bot_token');
+        if (!token) return apiJson({ error: 'Bot token is not set.' }, 400);
+
+        const info = await tgCall(token, 'getChat', { chat_id: chatId });
+        if (!info || !info.ok || !info.result) {
+            return apiJson({ error: (info && info.description) || 'Chat not found or bot is not added there.' }, 400);
+        }
+        const chat = info.result;
+        if (!inviteLink) {
+            if (chat.username) inviteLink = 'https://t.me/' + chat.username;
+            else if (chat.invite_link) inviteLink = chat.invite_link;
+            else {
+                try {
+                    const exp = await tgCall(token, 'exportChatInviteLink', { chat_id: chat.id });
+                    if (exp && exp.ok && exp.result) inviteLink = exp.result;
+                } catch (e) {}
+            }
+        }
+        let botOk = false, botStatus = 'Unknown';
+        try {
+            const me = await tgFetchJson(`https://api.telegram.org/bot${token}/getMe`);
+            if (me && me.ok && me.result && me.result.id) {
+                const mem = await tgCall(token, 'getChatMember', { chat_id: chat.id, user_id: me.result.id });
+                if (mem && mem.ok && mem.result) {
+                    const st = mem.result.status;
+                    botOk = st === 'administrator' || st === 'creator' || (chat.type !== 'channel' && st === 'member');
+                    botStatus = st;
+                }
+            }
+        } catch (e) {}
+        return apiJson({
+            success: true,
+            chat: {
+                id: String(chat.id),
+                title: chat.title || chat.username || String(chat.id),
+                type: chat.type || 'channel',
+                invite_link: inviteLink,
+                bot_ok: botOk,
+                bot_status: botStatus
+            }
+        });
+    } catch (err) { return internalError(err); }
+}
+async function checkForceJoinMembership(env, BOT_TOKEN, userId, chats) {
+    const missing = [];
+    for (const c of (chats || [])) {
+        if (!c || !c.id) continue;
+        try {
+            const res = await tgCall(BOT_TOKEN, 'getChatMember', { chat_id: c.id, user_id: userId }, { retry: false });
+            if (res && res.ok && res.result) {
+                const st = res.result.status;
+                const joined = st === 'creator' || st === 'administrator' || st === 'member' || (st === 'restricted' && res.result.is_member === true);
+                if (!joined) missing.push(c);
+            }
+        } catch (e) {}
+    }
+    return missing;
+}
+function buildForceJoinKeyboard(chats, checkLabel) {
+    const rows = [];
+    for (const c of (chats || [])) {
+        const url = c.invite_link || (String(c.id).startsWith('@') ? ('https://t.me/' + String(c.id).slice(1)) : '');
+        if (url) rows.push([{ text: '📢 ' + (c.title || 'Join'), url }]);
+    }
+    rows.push([{ text: checkLabel || "✅ I've Joined — Check", callback_data: 'FJ:CHECK' }]);
+    return { inline_keyboard: rows };
+}
+async function enforceForceJoinGate(env, BOT_TOKEN, chatId, userId, userInfo, chatType, scope, forceRequired) {
+    const fj = await getForceJoinConfig(env.DB);
+    if (!fj.chats || !fj.chats.length) return true;
+    const isGroup = chatType === 'group' || chatType === 'supergroup';
+    if (isGroup && !fj.enforce_in_groups && !forceRequired) return true;
+    if (!forceRequired) {
+        if (!fj.enabled) return true;
+        if (scope === 'commands' && !fj.apply_to_commands) return true;
+        if (scope === 'ai' && !fj.apply_to_ai) return true;
+        if (scope === 'featured' && !fj.apply_to_featured) return true;
+        if (scope === 'callbacks' && !fj.apply_to_callbacks) return true;
+    }
+    if (fj.exempt_admins_mods && await isModeratorOrAbove(env, userId)) return true;
+
+    const missing = await checkForceJoinMembership(env, BOT_TOKEN, userId, fj.chats);
+    if (!missing.length) return true;
+
+    const text = replacePlaceholders(fj.message || FORCE_JOIN_DEFAULTS.message, {
+        user_first_name: (userInfo && userInfo.first_name) || 'User',
+        user_username: (userInfo && userInfo.username) || '',
+        chat_id: String(chatId)
+    });
+    const kb = buildForceJoinKeyboard(missing, fj.check_label);
+    await sendRichText(BOT_TOKEN, chatId, escapeTelegramHTML(text), { reply_markup: kb });
+    return false;
+}
+
+function buildProxyLink(p) {
+    if (p.kind === 'SOCKS5') {
+        let u = `https://t.me/socks?server=${encodeURIComponent(p.server)}&port=${encodeURIComponent(p.port)}`;
+        if (p.username) u += `&user=${encodeURIComponent(p.username)}`;
+        if (p.password) u += `&pass=${encodeURIComponent(p.password)}`;
+        return u;
+    }
+    let u = `https://t.me/proxy?server=${encodeURIComponent(p.server)}&port=${encodeURIComponent(p.port)}`;
+    if (p.secret) u += `&secret=${encodeURIComponent(p.secret)}`;
+    return u;
+}
+async function listProxiesHandler(env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        const rows = await env.DB.prepare('SELECT * FROM proxies ORDER BY id DESC LIMIT 300').all();
+        return apiJson({ proxies: rows.results || [] });
+    } catch (err) { return internalError(err); }
+}
+async function saveProxyHandler(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const b = await request.json();
+        const server = String(b.server || '').trim();
+        const port = parseInt(b.port, 10);
+        const kind = b.kind === 'SOCKS5' ? 'SOCKS5' : 'MTProto';
+        if (!server || !port || port < 1 || port > 65535) return apiJson({ error: 'Valid server and port (1–65535) are required.' }, 400);
+        const secret = String(b.secret || '').trim();
+        const username = String(b.username || '').trim();
+        const password = String(b.password || '').trim();
+        const link = buildProxyLink({ kind, server, port, secret, username, password });
+        const label = String(b.label || `${kind} ${server}`).trim().slice(0, 120);
+        const category = String(b.category || '').trim().slice(0, 60);
+        const notes = String(b.notes || '').trim().slice(0, 500);
+        await initializeDatabase(env.DB);
+        if (b.id) {
+            await env.DB.prepare('UPDATE proxies SET label=?, kind=?, server=?, port=?, secret=?, username=?, password=?, link=?, category=?, notes=? WHERE id=?')
+                .bind(label, kind, server, port, secret, username, password, link, category, notes, parseInt(b.id, 10)).run();
+        } else {
+            await env.DB.prepare('INSERT INTO proxies (label, kind, server, port, secret, username, password, link, category, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+                .bind(label, kind, server, port, secret, username, password, link, category, notes).run();
+        }
+        return apiJson({ success: true });
+    } catch (err) { return internalError(err); }
+}
+async function deleteProxyHandler(env, url) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const id = parseInt(url.pathname.split('/').pop(), 10);
+        await initializeDatabase(env.DB);
+        await env.DB.prepare('DELETE FROM proxies WHERE id = ?').bind(id).run();
+        return apiJson({ success: true });
+    } catch (err) { return internalError(err); }
+}
+async function testProxyHandler(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const body = await request.json();
+        const id = parseInt(body.id, 10);
+        await initializeDatabase(env.DB);
+        const row = await env.DB.prepare('SELECT * FROM proxies WHERE id = ?').bind(id).first();
+        if (!row) return apiJson({ error: 'Proxy not found.' }, 404);
+        const info = await inspectProxy({ kind: row.kind, server: row.server, port: row.port, secret: row.secret });
+        await env.DB.prepare('UPDATE proxies SET last_status=?, last_ping_ms=?, country=?, country_code=?, city=?, isp=?, last_checked_at=CURRENT_TIMESTAMP WHERE id=?')
+            .bind(info.status, info.pingMs, info.country || '', info.countryCode || '', info.city || '', info.isp || '', id).run();
+        return apiJson(Object.assign({ success: true }, info));
+    } catch (err) { return internalError(err); }
+}
+
+async function saveInlineAcl(db, chatId, messageId, accessLevel, allowedUsers, disallowedUsers) {
+    if (!db || !chatId || !messageId) return;
+    const acc = resolveCommandAccessInput(accessLevel, null, null);
+    const alw = normalizeAllowedUsersStr(allowedUsers);
+    const dis = normalizeAllowedUsersStr(disallowedUsers);
+    try {
+        if (acc === 'everyone' && !alw && !dis) {
+            await db.prepare('DELETE FROM inline_acl WHERE chat_id = ? AND message_id = ?').bind(chatId, messageId).run();
+            return;
+        }
+        await db.prepare(
+            'INSERT INTO inline_acl (chat_id, message_id, access_level, allowed_users, disallowed_users) VALUES (?, ?, ?, ?, ?) ON CONFLICT(chat_id, message_id) DO UPDATE SET access_level=excluded.access_level, allowed_users=excluded.allowed_users, disallowed_users=excluded.disallowed_users'
+        ).bind(chatId, messageId, acc, alw, dis).run();
+    } catch (e) {}
+}
+async function saveInlineAclFromButtonsJson(db, chatId, messageId, buttonsJson) {
+    if (!db || !chatId || !messageId || !buttonsJson) return;
+    try {
+        const obj = typeof buttonsJson === 'string' ? JSON.parse(buttonsJson) : buttonsJson;
+        if (obj && obj.inline_acl) {
+            await saveInlineAcl(db, chatId, messageId, obj.inline_acl.access || 'everyone', obj.inline_acl.allowed || '', obj.inline_acl.disallowed || '');
+        }
+    } catch (e) {}
+}
+async function checkInlineAcl(env, chatId, messageId, userId) {
+    if (!env.DB || !chatId || !messageId || !userId) return true;
+    try {
+        const row = await env.DB.prepare('SELECT access_level, allowed_users, disallowed_users FROM inline_acl WHERE chat_id = ? AND message_id = ?').bind(chatId, messageId).first();
+        if (!row) return true;
+        if (await isAdminUser(env, userId)) return true;
+        const dis = parseAllowedUserIds(row.disallowed_users);
+        if (dis.has(Number(userId))) return false;
+        const alw = parseAllowedUserIds(row.allowed_users);
+        const acc = row.access_level || 'everyone';
+        if (acc === 'specific') return alw.has(Number(userId));
+        if (acc === 'moderator') return alw.has(Number(userId)) || await isModeratorOrAbove(env, userId);
+        if (acc === 'admin') return alw.has(Number(userId));
+        if (alw.size > 0) return alw.has(Number(userId));
+        return true;
+    } catch (e) { return true; }
+}
+
 async function getMediaStorageChatInfo(env, url) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
@@ -17989,7 +19616,14 @@ function getMcpToolDefinitions(categories) {
             media_url: { type: 'string', description: 'Photo URL when response_type is photo.' },
             is_admin_only: { type: 'boolean' },
             access_level: { type: 'string', enum: ['everyone','moderator','admin'], description: 'Who can run the command. Overrides is_admin_only when set.' },
-            edit_message: { type: 'boolean', description: 'When triggered via an inline button, edit the existing message instead of sending a new one.' },
+            edit_message: { type: 'boolean', description: 'Edit the bot message in place instead of sending a new one.' },
+            edit_triggers: { type: 'string', description: 'Comma-separated triggers allowed to edit: inline,reply,command.' },
+            disallowed_users: { type: 'string', description: 'Comma-separated Telegram user IDs blocked from running this command.' },
+            inline_access_level: { type: 'string', enum: ['everyone','specific','moderator','admin'] },
+            inline_allowed_users: { type: 'string' },
+            inline_disallowed_users: { type: 'string' },
+            force_join_mode: { type: 'string', enum: ['inherit','required','off'] },
+            cmd_password: { type: 'string', description: 'Optional password required to run this command.' },
             inline_auto_back: { type: 'boolean', description: 'Auto-append an inline Back button to parent command (default false).' },
             inline_back_label: { type: 'string', description: 'Custom inline Back button label.' },
             enabled: { type: 'boolean', description: 'Default true.' },
@@ -18020,6 +19654,13 @@ function getMcpToolDefinitions(categories) {
             is_admin_only: { type: 'boolean' },
             access_level: { type: 'string', enum: ['everyone','moderator','admin'], description: 'Who can run the command. Overrides is_admin_only when set.' },
             edit_message: { type: 'boolean' },
+            edit_triggers: { type: 'string' },
+            disallowed_users: { type: 'string' },
+            inline_access_level: { type: 'string', enum: ['everyone','specific','moderator','admin'] },
+            inline_allowed_users: { type: 'string' },
+            inline_disallowed_users: { type: 'string' },
+            force_join_mode: { type: 'string', enum: ['inherit','required','off'] },
+            cmd_password: { type: 'string' },
             inline_auto_back: { type: 'boolean' },
             inline_back_label: { type: 'string' },
             enabled: { type: 'boolean' },
@@ -18293,9 +19934,17 @@ async function executeMcpTool(name, args, env, categories) {
                 file_id: row.file_id || '', media_meta: row.media_meta || '',
                 media_items: mediaItems, protect_content: !!row.protect_content,
                 edit_message: !!row.edit_message,
+                edit_triggers: row.edit_triggers || 'inline,reply,command',
+                inline_access_level: row.inline_access_level || 'everyone',
+                inline_allowed_users: row.inline_allowed_users || '',
+                inline_disallowed_users: row.inline_disallowed_users || '',
                 inline_auto_back: !!row.inline_auto_back,
                 inline_back_label: row.inline_back_label || '',
-                allowed_users: row.allowed_users || '', expires_at: row.expires_at || null,
+                allowed_users: row.allowed_users || '',
+                disallowed_users: row.disallowed_users || '',
+                force_join_mode: row.force_join_mode || 'inherit',
+                has_password: !!(row.cmd_password),
+                expires_at: row.expires_at || null,
                 is_admin_only: !!row.is_admin_only, access_level: effectiveCommandAccess(row), enabled: row.enabled !== 0,
                 show_reply_keyboard: !!row.show_reply_keyboard,
                 buttons, reply_keyboard: replyKb,
@@ -18371,9 +20020,16 @@ async function executeMcpTool(name, args, env, categories) {
                 media_items_json: args.media_items ? JSON.stringify(args.media_items) : '',
                 protect_content: args.protect_content ? 1 : 0,
                 edit_message: args.edit_message ? 1 : 0,
+                edit_triggers: args.edit_triggers || 'inline,reply,command',
+                inline_access_level: args.inline_access_level || 'everyone',
+                inline_allowed_users: args.inline_allowed_users || '',
+                inline_disallowed_users: args.inline_disallowed_users || '',
                 inline_auto_back: args.inline_auto_back ? 1 : 0,
                 inline_back_label: args.inline_back_label || '',
                 allowed_users: args.allowed_users || '',
+                disallowed_users: args.disallowed_users || '',
+                force_join_mode: args.force_join_mode || 'inherit',
+                cmd_password: args.cmd_password || '',
                 expires_at: args.expires_at || '',
                 is_admin_only: args.is_admin_only ? 1 : 0,
                 access_level: args.access_level || (args.is_admin_only ? 'admin' : 'everyone'),
@@ -18404,9 +20060,16 @@ async function executeMcpTool(name, args, env, categories) {
                 media_items_json: args.media_items !== undefined ? JSON.stringify(args.media_items) : (existing.media_items_json || ''),
                 protect_content: args.protect_content !== undefined ? (args.protect_content ? 1 : 0) : (existing.protect_content ? 1 : 0),
                 edit_message: args.edit_message !== undefined ? (args.edit_message ? 1 : 0) : (existing.edit_message ? 1 : 0),
+                edit_triggers: args.edit_triggers !== undefined ? String(args.edit_triggers) : (existing.edit_triggers || 'inline,reply,command'),
+                inline_access_level: args.inline_access_level !== undefined ? String(args.inline_access_level) : (existing.inline_access_level || 'everyone'),
+                inline_allowed_users: args.inline_allowed_users !== undefined ? String(args.inline_allowed_users) : (existing.inline_allowed_users || ''),
+                inline_disallowed_users: args.inline_disallowed_users !== undefined ? String(args.inline_disallowed_users) : (existing.inline_disallowed_users || ''),
                 inline_auto_back: args.inline_auto_back !== undefined ? (args.inline_auto_back ? 1 : 0) : (existing.inline_auto_back ? 1 : 0),
                 inline_back_label: args.inline_back_label !== undefined ? String(args.inline_back_label) : (existing.inline_back_label || ''),
                 allowed_users: args.allowed_users !== undefined ? String(args.allowed_users) : (existing.allowed_users || ''),
+                disallowed_users: args.disallowed_users !== undefined ? String(args.disallowed_users) : (existing.disallowed_users || ''),
+                force_join_mode: args.force_join_mode !== undefined ? String(args.force_join_mode) : (existing.force_join_mode || 'inherit'),
+                cmd_password: args.cmd_password !== undefined ? String(args.cmd_password) : (existing.cmd_password || ''),
                 expires_at: args.expires_at !== undefined ? String(args.expires_at) : (existing.expires_at || ''),
                 is_admin_only: args.is_admin_only !== undefined ? (args.is_admin_only ? 1 : 0) : (existing.is_admin_only ? 1 : 0),
                 access_level: args.access_level || effectiveCommandAccess(existing),
@@ -19169,9 +20832,12 @@ html,body{margin:0;padding:0;height:100vh;height:100dvh;overflow:hidden;backgrou
 .thinking .dot:nth-child(3){animation-delay:.3s}
 @keyframes bounce{0%,80%,100%{opacity:.3;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
 .composer{padding:12px 20px;padding-bottom:calc(20px + env(safe-area-inset-bottom));max-width:900px;margin:0 auto;width:100%;flex-shrink:0}
-.composer-inner{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;display:flex;gap:10px;align-items:flex-end;transition:border-color .15s}
+.composer-inner{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;display:flex;flex-direction:column;gap:10px;transition:border-color .15s}
 .composer-inner:focus-within{border-color:#3a3a3a}
-.composer textarea{flex:1;background:none;border:none;color:var(--text);font-family:inherit;font-size:15px;resize:none;max-height:180px;min-height:24px;line-height:1.5;outline:none;padding:0;overflow-y:auto}
+.composer textarea{width:100%;background:none;border:none;color:var(--text);font-family:inherit;font-size:15px;resize:none;max-height:180px;min-height:24px;line-height:1.5;outline:none;padding:0;overflow-y:auto}
+.composer-bar{display:flex;align-items:center;gap:8px;padding-top:4px;border-top:1px solid rgba(255,255,255,0.06)}
+.mode-select{background:var(--surface-2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-family:inherit;font-size:12.5px;font-weight:600;outline:none;cursor:pointer;max-width:240px}
+.mode-select:hover{border-color:#3a3a3a}
 .composer .send{background:var(--accent);border:none;color:#fff;width:34px;height:34px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:opacity .15s}
 .composer .send:disabled{opacity:.35;cursor:not-allowed}
 .composer .send:not(:disabled):hover{background:#0d8a6a}
@@ -19217,9 +20883,17 @@ html,body{margin:0;padding:0;height:100vh;height:100dvh;overflow:hidden;backgrou
         <div class="composer">
             <div class="composer-inner">
                 <textarea id="input" rows="1" placeholder="Message Nyxx…" oninput="autoGrow(this)" onkeydown="onKey(event)"></textarea>
-                <button class="send" id="send-btn" onclick="send()" aria-label="Send"><i class="fa-solid fa-paper-plane"></i></button>
+                <div class="composer-bar">
+                    <select class="mode-select" id="chat-mode" onchange="onChatModeChange()" aria-label="Chat mode">
+                        <option value="support">✨ Nyxx built-in support</option>
+                        <option value="bot_ai">🤖 Your Bot's AI</option>
+                        <option value="mcp">🔌 MCP</option>
+                    </select>
+                    <div style="flex:1"></div>
+                    <button class="send" id="send-btn" onclick="send()" aria-label="Send"><i class="fa-solid fa-paper-plane"></i></button>
+                </div>
             </div>
-            <div class="hint">Enter to send · Shift+Enter for newline · AI can manage your bot</div>
+            <div class="hint" id="mode-hint">Enter to send · Shift+Enter for newline</div>
         </div>
     </main>
 </div>
@@ -19282,6 +20956,17 @@ var currentKey=null;
 var currentMessages=[];
 var sessions=[];
 var sending=false;
+var chatMeta={botUsername:'',aiConfigured:false,mcpEnabled:false};
+function updateModeHint(){
+    var m=$('chat-mode')?$('chat-mode').value:'support';
+    var h=$('mode-hint'); if(!h)return;
+    if(m==='support')h.textContent='Nyxx built-in support (uses your AI tab API key + built-in Nyxx knowledge)';
+    else if(m==='bot_ai')h.textContent=(chatMeta.botUsername?('@'+chatMeta.botUsername):'Bot')+' AI chat (follows your AI tab prompt, KB & settings)';
+    else h.textContent='MCP mode — AI can call tools to manage your bot (follows MCP tab settings)';
+}
+function onChatModeChange(){
+    updateModeHint();
+}
 
 function toggleSidebar(force){
     var s=$('sidebar'),o=$('overlay');
@@ -19394,6 +21079,12 @@ async function loadSessions(){
     try{
         var d=await api('GET','/api/chat/sessions');
         sessions=d.sessions||[];
+        if(d.meta){
+            chatMeta=d.meta;
+            var opt=$('chat-mode')&&$('chat-mode').querySelector('option[value="bot_ai"]');
+            if(opt)opt.textContent='🤖 '+(chatMeta.botUsername?('@'+chatMeta.botUsername+"'s AI"):"Bot's AI");
+            updateModeHint();
+        }
         renderSessions();
     }catch(e){/* silent */}
 }
@@ -19404,8 +21095,9 @@ function renderSessions(){
     for(var i=0;i<sessions.length;i++){
         var s=sessions[i];
         var active=(s.session_key===currentKey)?' active':'';
+        var icon=s.mode==='support'?'fa-solid fa-wand-magic-sparkles':(s.mode==='bot_ai'?'fa-solid fa-robot':'fa-solid fa-plug');
         html+='<div class="chat-item'+active+'" onclick="openSession(\\''+esc(s.session_key)+'\\')">'+
-            '<i class="fa-regular fa-comment ti"></i>'+
+            '<i class="'+icon+' ti"></i>'+
             '<span class="title">'+esc(s.title||'New chat')+'</span>'+
             '<button class="del" onclick="deleteSession(event,\\''+esc(s.session_key)+'\\')" aria-label="Delete"><i class="fa-solid fa-trash"></i></button>'+
         '</div>';
@@ -19420,6 +21112,7 @@ async function openSession(key){
     try{
         var d=await api('GET','/api/chat/sessions/'+encodeURIComponent(key));
         currentMessages=(d.messages||[]).filter(function(m){return m.role==='user'||m.role==='assistant';});
+        if(d.mode&&$('chat-mode')){$('chat-mode').value=d.mode;updateModeHint();}
         $('chat-title').textContent=d.title||'Chat';
         renderMessages();
         loadSessions();
@@ -19471,8 +21164,9 @@ async function send(){
     appendLive('user',text);
     appendThinking();
     try{
+        var mode=$('chat-mode')?$('chat-mode').value:'support';
         var path=wasNew?'/api/chat/sessions/new/send':'/api/chat/sessions/'+encodeURIComponent(currentKey)+'/send';
-        var d=await api('POST',path,{message:text});
+        var d=await api('POST',path,{message:text,mode:mode});
         removeThinking();
         if(d.sessionKey)currentKey=d.sessionKey;
 
@@ -19501,8 +21195,11 @@ async function send(){
 
 (async function init(){
     await loadCsrf();
-    await loadSessions();
     var q=new URLSearchParams(window.location.search);
+    var m=q.get('mode');
+    if(m&&['support','bot_ai','mcp'].indexOf(m)>=0&&$('chat-mode'))$('chat-mode').value=m;
+    updateModeHint();
+    await loadSessions();
     var k=q.get('s');
     if(k){await openSession(k);}else{renderMessages();}
     $('input').focus();
@@ -19631,40 +21328,53 @@ self.addEventListener('fetch', function(event) {
         },
     });
 }
-                    
-                    async function handleChatPage(request, env) {
-                        const session = await getSession(request, env);
-                        if (!session) {
-                            return new Response(null, { status: 302, headers: { Location: '/' } });
-                        }
-                        return new Response(CHAT_HTML, { headers: HTML_HEADERS });
-                    }
-                    
-                    async function listChatSessions(env) {
-                        if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
-                        try {
-                            await initializeDatabase(env.DB);
-                            const rows = await env.DB.prepare(
-                                "SELECT session_key, title, size_bytes, updated_at FROM mcp_sessions WHERE session_key LIKE 'chat:%' ORDER BY updated_at DESC LIMIT 100"
-                            ).all();
-                            return apiJson({ sessions: rows.results || [] });
-                        } catch (err) { return internalError(err); }
-                    }
 
-                    async function createChatSession(request, env) {
-                        if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
-                        try {
-                            await initializeDatabase(env.DB);
-                            await getSystemLanguageFromDb(env);
-                            const mcpOn = await getSetting(env.DB, 'mcp_enabled');
-                            if (mcpOn !== '1') return apiJson({ error: 'MCP is disabled. Enable it in the MCP tab first.' }, 400);
-                            const body = await request.json().catch(() => ({}));
-                            const key = 'chat:' + crypto.randomUUID().slice(0, 8);
-                            const title = String(body.title || 'New chat').slice(0, 60);
-                            await env.DB.prepare(
-                                "INSERT INTO mcp_sessions (session_key, messages_json, size_bytes, title) VALUES (?, '[]', 2, ?)"
-                            ).bind(key, title).run();
-        return apiJson({ success: true, sessionKey: key, title });
+async function handleChatPage(request, env) {
+    const session = await getSession(request, env);
+    if (!session) {
+        return new Response(null, { status: 302, headers: { Location: '/' } });
+    }
+    return new Response(CHAT_HTML, { headers: HTML_HEADERS });
+}
+                    
+async function listChatSessions(env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        const [rows, botUsername, aiKey, mcpOn] = await Promise.all([
+            env.DB.prepare("SELECT session_key, title, mode, size_bytes, updated_at FROM mcp_sessions WHERE session_key LIKE 'chat:%' ORDER BY updated_at DESC LIMIT 100").all(),
+            getSetting(env.DB, 'bot_username'),
+            getSetting(env.DB, 'ai_api_key'),
+            getSetting(env.DB, 'mcp_enabled'),
+        ]);
+        return apiJson({
+            sessions: rows.results || [],
+            meta: {
+                botUsername: botUsername || '',
+                aiConfigured: !!aiKey,
+                mcpEnabled: mcpOn === '1',
+            }
+        });
+    } catch (err) { return internalError(err); }
+}
+
+async function createChatSession(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        await getSystemLanguageFromDb(env);
+        const body = await request.json().catch(() => ({}));
+        const mode = ['support', 'bot_ai', 'mcp'].includes(body.mode) ? body.mode : 'support';
+        if (mode === 'mcp') {
+            const mcpOn = await getSetting(env.DB, 'mcp_enabled');
+            if (mcpOn !== '1') return apiJson({ error: 'MCP is disabled. Enable it in the MCP tab first.' }, 400);
+        }
+        const key = 'chat:' + crypto.randomUUID().slice(0, 8);
+        const title = String(body.title || 'New chat').slice(0, 60);
+        await env.DB.prepare(
+            "INSERT INTO mcp_sessions (session_key, messages_json, size_bytes, title, mode) VALUES (?, '[]', 2, ?, ?)"
+        ).bind(key, title, mode).run();
+        return apiJson({ success: true, sessionKey: key, title, mode });
     } catch (err) { return internalError(err); }
 }
 const CLIENT_MODULES = {
@@ -19692,12 +21402,12 @@ async function getChatSession(env, url) {
         if (!key || !key.startsWith('chat:')) return apiJson({ error: 'Invalid session key.' }, 400);
         await initializeDatabase(env.DB);
         const row = await env.DB.prepare(
-            "SELECT session_key, title, messages_json, updated_at FROM mcp_sessions WHERE session_key = ?"
+            "SELECT session_key, title, mode, messages_json, updated_at FROM mcp_sessions WHERE session_key = ?"
         ).bind(key).first();
         if (!row) return apiJson({ error: 'Session not found.' }, 404);
         let messages = [];
         try { messages = JSON.parse(row.messages_json || '[]'); } catch (e) {}
-        return apiJson({ sessionKey: key, title: row.title || 'New chat', messages, updated_at: row.updated_at });
+        return apiJson({ sessionKey: key, title: row.title || 'New chat', mode: row.mode || 'mcp', messages, updated_at: row.updated_at });
     } catch (err) { return internalError(err); }
 }
 
@@ -19737,8 +21447,7 @@ async function sendChatMessage(request, env, url) {
         if (message.length > 8000) return apiJson({ error: 'Message too long (max 8000 chars).' }, 400);
 
         await initializeDatabase(env.DB);
-        const mcpOn = await getSetting(env.DB, 'mcp_enabled');
-        if (mcpOn !== '1') return apiJson({ error: 'MCP is disabled. Enable it in the MCP tab first.' }, 400);
+        const reqMode = ['support', 'bot_ai', 'mcp'].includes(body.mode) ? body.mode : '';
 
         let key = keyIn;
         let isNew = false;
@@ -19746,43 +21455,80 @@ async function sendChatMessage(request, env, url) {
             key = 'chat:' + crypto.randomUUID().slice(0, 8);
             isNew = true;
             const firstTitle = message.replace(/\s+/g, ' ').trim().slice(0, 60) || 'New chat';
+            const initMode = reqMode || 'support';
             await env.DB.prepare(
-                "INSERT INTO mcp_sessions (session_key, messages_json, size_bytes, title) VALUES (?, '[]', 2, ?)"
-            ).bind(key, firstTitle).run();
+                "INSERT INTO mcp_sessions (session_key, messages_json, size_bytes, title, mode) VALUES (?, '[]', 2, ?, ?)"
+            ).bind(key, firstTitle, initMode).run();
         } else if (!key.startsWith('chat:')) {
             return apiJson({ error: 'Invalid session key.' }, 400);
         }
 
-        const existing = await env.DB.prepare('SELECT title FROM mcp_sessions WHERE session_key = ?').bind(key).first();
+        const existing = await env.DB.prepare('SELECT title, mode FROM mcp_sessions WHERE session_key = ?').bind(key).first();
         if (!existing) return apiJson({ error: 'Session not found.' }, 404);
+        const mode = reqMode || existing.mode || 'mcp';
+        if (reqMode && reqMode !== existing.mode) {
+            await env.DB.prepare('UPDATE mcp_sessions SET mode = ? WHERE session_key = ?').bind(reqMode, key).run();
+        }
 
-        const settings = await getMcpSettingsFromDb(env);
-        const aiSettings = await resolveMcpAiSettings(env, settings);
-        let categories = ['read', 'write'];
-        try {
-            const parsed = JSON.parse(settings.mcp_categories || '[]');
-            if (Array.isArray(parsed)) categories = parsed.filter(c => MCP_CATEGORY_KEYS.includes(c));
-        } catch (e) { /* keep default */ }
-
-        const tools = getMcpToolDefinitions(categories);
         const history = await loadMcpSession(env.DB, key);
-        const dbKeep = await getMcpMemoryLimit(env.DB);
+        const dbKeep = Math.max(await getMcpMemoryLimit(env.DB), mode === 'mcp' ? 0 : 20);
+        let result;
 
-        const result = await runAgentLoop({
-            env,
-            sessionKey: key,
-            persistSession: true,
-            forceKeep: dbKeep,
-            providerSettings: aiSettings,
-            systemPrompt: mcpSystemPrompt(),
-            history,
-            userText: message,
-            tools,
-            maxIter: 8,
-            categories,
-        });
+        if (mode === 'support' || mode === 'bot_ai') {
+            const aiCfg = await getAiSettingsFromDb(env);
+            if (!aiCfg.ai_api_key) {
+                return apiJson({ success: false, error: 'No AI API key is configured. Open Dashboard → AI Assistant to add your provider & API key.' }, 200);
+            }
+            const cleanHistory = history.filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string');
+            let replyText;
+            if (mode === 'support') {
+                const supportCfg = Object.assign({}, aiCfg, {
+                    ai_system_prompt: NYXX_SUPPORT_SYSTEM_PROMPT,
+                    ai_knowledge_bases: JSON.stringify([{ enabled: true, label: 'Nyxx Built-in Knowledge', content: NYXX_SUPPORT_KB }]),
+                    ai_strict_mode: '0',
+                });
+                replyText = await callAiCompletion(supportCfg, cleanHistory, message, { bot_name: 'Nyxx AI Support', user_first_name: 'Admin' }, 'main');
+            } else {
+                const cmds = await env.DB.prepare('SELECT command FROM commands WHERE enabled = 1').all();
+                const botName = (await getSetting(env.DB, 'bot_name')) || aiCfg.ai_display_name || 'Nyxx Bot';
+                const botCtx = {
+                    bot_name: botName,
+                    user_first_name: 'Admin',
+                    chat_id: key,
+                    available_commands: (cmds.results || []).map(r => r.command).join(', '),
+                    custom_vars: parseCustomVars(aiCfg.ai_custom_vars_text)
+                };
+                replyText = await callAiCompletion(aiCfg, cleanHistory, message, botCtx, 'main');
+            }
+            const nextMsgs = cleanHistory.concat([{ role: 'user', content: message }, { role: 'assistant', content: replyText || '(no response)' }]);
+            await saveMcpSession(env.DB, key, nextMsgs, dbKeep);
+            result = { finalMessage: replyText || '(no response)', toolCalls: [], iterations: 1 };
+        } else {
+            const mcpOn = await getSetting(env.DB, 'mcp_enabled');
+            if (mcpOn !== '1') return apiJson({ error: 'MCP is disabled. Enable it in the MCP tab first.' }, 400);
+            const settings = await getMcpSettingsFromDb(env);
+            const aiSettings = await resolveMcpAiSettings(env, settings);
+            let categories = ['read', 'write'];
+            try {
+                const parsed = JSON.parse(settings.mcp_categories || '[]');
+                if (Array.isArray(parsed)) categories = parsed.filter(c => MCP_CATEGORY_KEYS.includes(c));
+            } catch (e) {}
+            const tools = getMcpToolDefinitions(categories);
+            result = await runAgentLoop({
+                env,
+                sessionKey: key,
+                persistSession: true,
+                forceKeep: dbKeep,
+                providerSettings: aiSettings,
+                systemPrompt: mcpSystemPrompt(),
+                history,
+                userText: message,
+                tools,
+                maxIter: 8,
+                categories,
+            });
+        }
 
-        // Update title if still "New chat"
         if (!isNew && (!existing.title || existing.title === 'New chat')) {
             const newTitle = message.replace(/\s+/g, ' ').trim().slice(0, 60) || 'New chat';
             await env.DB.prepare('UPDATE mcp_sessions SET title = ? WHERE session_key = ?').bind(newTitle, key).run();
@@ -19791,6 +21537,7 @@ async function sendChatMessage(request, env, url) {
         return apiJson({
             success: true,
             sessionKey: key,
+            mode,
             response: result.finalMessage,
             toolCalls: result.toolCalls,
             iterations: result.iterations,
@@ -20693,6 +22440,41 @@ async function processTelegramUpdate(update, env, ctx) {
                     }
                 }
 
+                // Per-command password challenge verification
+                if (text) {
+                    try {
+                        const pwSess = await env.DB.prepare("SELECT pending_password FROM sessions WHERE user_id = ? AND token LIKE 'bot-%'").bind(userId).first();
+                        if (pwSess && pwSess.pending_password) {
+                            let pending = null;
+                            try { pending = JSON.parse(pwSess.pending_password); } catch (e) {}
+                            if (pending && pending.command && Number(pending.chatId) === Number(chatId)) {
+                                if (text === '/cancel' || text.startsWith('/cancel@')) {
+                                    await env.DB.prepare("UPDATE sessions SET pending_password = '' WHERE user_id = ?").bind(userId).run();
+                                    if (pending.promptMsgId) await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: pending.promptMsgId }, { retry: false });
+                                    await sendRichText(BOT_TOKEN, chatId, '✅ Cancelled.');
+                                    return;
+                                }
+                                const cmdRow = await env.DB.prepare('SELECT * FROM commands WHERE command = ? AND enabled = 1').bind(pending.command).first();
+                                if (cmdRow && cmdRow.cmd_password) {
+                                    if (text === cmdRow.cmd_password) {
+                                        await env.DB.prepare("UPDATE sessions SET pending_password = '' WHERE user_id = ?").bind(userId).run();
+                                        await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id }, { retry: false });
+                                        if (pending.promptMsgId) await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: pending.promptMsgId }, { retry: false });
+                                        await executeCommand(chatId, userId, cmdRow, BOT_TOKEN, env, msg.chat.type, pending.args || '', { passwordVerified: true, triggerKind: pending.triggerKind || 'command', fromMessage: pending.triggerKind !== 'inline' });
+                                        return;
+                                    }
+                                    await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id }, { retry: false });
+                                    const retryKb = buildPasswordPromptKeyboard(cmdRow);
+                                    await sendRichText(BOT_TOKEN, chatId, '❌ Incorrect password. Try again or tap Dismiss.', { reply_markup: retryKb });
+                                    return;
+                                } else {
+                                    await env.DB.prepare("UPDATE sessions SET pending_password = '' WHERE user_id = ?").bind(userId).run();
+                                }
+                            }
+                        }
+                    } catch (e) {}
+                }
+
                 // Featured command match — must run BEFORE the AI / DM decision,
                 // because DM commands explicitly write into dm_messages and never
                 // reach the AI, and Buttons commands never write anywhere except
@@ -20721,6 +22503,7 @@ async function processTelegramUpdate(update, env, ctx) {
                                 await sendMessage(chatId, botStrings().unauthorized, BOT_TOKEN, 'HTML');
                                 return;
                             }
+                            if (!await enforceForceJoinGate(env, BOT_TOKEN, chatId, userId, msg.from, msg.chat.type, 'featured', false)) return;
                             // Per-chat permission: /mcp featured commands
                             if (feat.kind === 'mcp' && !await checkPermissionForChat(env, userId, 'mcp_telegram', chatId, msg.chat.type)) {
                                 await sendMessage(chatId, botStrings().unauthorized, BOT_TOKEN, 'HTML');
@@ -20822,27 +22605,30 @@ async function processTelegramUpdate(update, env, ctx) {
                 // command including `/cmd args`, reply-keyboard shortcut, or "back")
                 // BEFORE the AI decision, so `no_command` AI trigger defers to it.
                 let resolvedCommand = null;
+                let resolvedTriggerKind = 'command';
                 let bareSlashCmd = '';
                 if (text.startsWith('/')) {
                     const wsIdx = text.search(/\s/);
                     bareSlashCmd = (wsIdx >= 0 ? text.slice(0, wsIdx) : text).split('@')[0].trim();
                     resolvedCommand = await resolveCommandMatch(env.DB, text);
+                    resolvedTriggerKind = 'command';
                 }
                 if (!resolvedCommand && !text.startsWith('/')) {
                     resolvedCommand = await resolveSessionReplyOrBack(env.DB, userId, text);
+                    if (resolvedCommand) resolvedTriggerKind = 'reply';
                 }
                 if (!resolvedCommand && isBackWord(text)) {
                     const session = await env.DB.prepare("SELECT command FROM sessions WHERE user_id = ? AND token LIKE 'bot-%'").bind(userId).first();
                     if (session && session.command) {
                         const parentCmd = await env.DB.prepare('SELECT parent FROM commands WHERE command = ?').bind(session.command).first();
-                        if (parentCmd && parentCmd.parent) resolvedCommand = await resolveCommandMatch(env.DB, parentCmd.parent);
+                        if (parentCmd && parentCmd.parent) { resolvedCommand = await resolveCommandMatch(env.DB, parentCmd.parent); resolvedTriggerKind = 'reply'; }
                     }
                 }
                 if (!resolvedCommand && !text.startsWith('/')) {
                     const map = await getReplyButtonMap(env.DB);
                     let actionCmd = map[text] || '';
                     if (!actionCmd) { const globalActions = await getReplyActions(env.DB); actionCmd = globalActions[text] || ''; }
-                    if (actionCmd) resolvedCommand = await resolveCommandMatch(env.DB, actionCmd);
+                    if (actionCmd) { resolvedCommand = await resolveCommandMatch(env.DB, actionCmd); resolvedTriggerKind = 'reply'; }
                 }
 
                 // AI decision.
@@ -20899,6 +22685,7 @@ async function processTelegramUpdate(update, env, ctx) {
                         await sendMessage(chatId, botStrings().unauthorized, BOT_TOKEN, 'HTML');
                         return;
                     }
+                    if (!await enforceForceJoinGate(env, BOT_TOKEN, chatId, userId, msg.from, msg.chat.type, 'ai', false)) return;
                     const effective = Object.assign({}, aiSettings);
                     if (isGroup && groupSettings) { if (groupSettings.memory !== 'inherit') effective.ai_group_memory = groupSettings.memory; }
                     await processAiReply(chatId, userId, text, effective, env, BOT_TOKEN, msg.chat.type);
@@ -20909,7 +22696,9 @@ async function processTelegramUpdate(update, env, ctx) {
                 if (resolvedCommand && resolvedCommand.record) {
                     await executeCommand(chatId, userId, resolvedCommand.record, BOT_TOKEN, env, msg.chat.type, resolvedCommand.args, {
                         fromMessage: true,
-                        userMessageId: msg.message_id
+                        userMessageId: msg.message_id,
+                        triggerKind: resolvedTriggerKind,
+                        userInfo: msg.from
                     });
                     return;
                 }
@@ -20918,6 +22707,7 @@ async function processTelegramUpdate(update, env, ctx) {
                         await sendMessage(chatId, botStrings().unauthorized, BOT_TOKEN, 'HTML');
                         return;
                     }
+                    if (!await enforceForceJoinGate(env, BOT_TOKEN, chatId, userId, msg.from, msg.chat.type, 'commands', false)) return;
                     await sendDefaultStart(chatId, env, BOT_TOKEN);
                     return;
                 }
@@ -21028,7 +22818,63 @@ async function processTelegramUpdate(update, env, ctx) {
                 }
                 return;
             }
+            if (data === 'FJ:CHECK' && cb.from) {
+                const fj = await getForceJoinConfig(env.DB);
+                const missing = await checkForceJoinMembership(env, BOT_TOKEN, cb.from.id, fj.chats);
+                if (missing.length) {
+                    await tgCall(BOT_TOKEN, 'answerCallbackQuery', {
+                        callback_query_id: cb.id,
+                        text: fj.not_joined_alert || FORCE_JOIN_DEFAULTS.not_joined_alert,
+                        show_alert: true
+                    });
+                    try {
+                        await tgCall(BOT_TOKEN, 'editMessageReplyMarkup', {
+                            chat_id: chatId,
+                            message_id: cb.message.message_id,
+                            reply_markup: buildForceJoinKeyboard(missing, fj.check_label)
+                        });
+                    } catch (e) {}
+                } else {
+                    await tgCall(BOT_TOKEN, 'answerCallbackQuery', {
+                        callback_query_id: cb.id,
+                        text: fj.joined_text || FORCE_JOIN_DEFAULTS.joined_text,
+                        show_alert: true
+                    });
+                    try {
+                        await tgCall(BOT_TOKEN, 'editMessageText', {
+                            chat_id: chatId,
+                            message_id: cb.message.message_id,
+                            text: escapeTelegramHTML(fj.joined_text || FORCE_JOIN_DEFAULTS.joined_text),
+                            parse_mode: 'HTML',
+                            reply_markup: { inline_keyboard: [] }
+                        });
+                    } catch (e) {}
+                }
+                return;
+            }
+            if (data && (data === 'PW:DISMISS' || data.startsWith('PW:BACK:')) && cb.from) {
+                await env.DB.prepare("UPDATE sessions SET pending_password = '' WHERE user_id = ?").bind(cb.from.id).run();
+                await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
+                if (data.startsWith('PW:BACK:')) {
+                    const parentCmd = data.slice(8);
+                    const pMatch = await resolveCommandMatch(env.DB, parentCmd);
+                    if (pMatch && pMatch.record) {
+                        await executeCommand(chatId, cb.from.id, pMatch.record, BOT_TOKEN, env, cb.message.chat.type, pMatch.args, { message: cb.message, triggerKind: 'inline', userInfo: cb.from });
+                        return;
+                    }
+                }
+                await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: cb.message.message_id }, { retry: false });
+                return;
+            }
+            if (cb.from && !await checkInlineAcl(env, chatId, cb.message.message_id, cb.from.id)) {
+                await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id, text: botStrings().unauthorized, show_alert: true });
+                return;
+            }
             if (cb.from && !await checkPermissionForChat(env, cb.from.id, 'callback_queries', chatId, cb.message.chat.type)) {
+                await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
+                return;
+            }
+            if (cb.from && !await enforceForceJoinGate(env, BOT_TOKEN, chatId, cb.from.id, cb.from, cb.message.chat.type, 'callbacks', false)) {
                 await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
                 return;
             }
@@ -21057,7 +22903,7 @@ async function processTelegramUpdate(update, env, ctx) {
                 const cbMatch = await resolveCommandMatch(env.DB, data);
                 if (cbMatch && cbMatch.record) {
                     const answer = tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
-                    await executeCommand(chatId, cb.from.id, cbMatch.record, BOT_TOKEN, env, cb.message.chat.type, cbMatch.args, { message: cb.message });
+                    await executeCommand(chatId, cb.from.id, cbMatch.record, BOT_TOKEN, env, cb.message.chat.type, cbMatch.args, { message: cb.message, triggerKind: 'inline', userInfo: cb.from });
                     await answer;
                     return;
                 }
@@ -21366,6 +23212,27 @@ async function saveLastBotMessage(db, userId, chatId, msgId, kind) {
         ).bind(msgId, chatId, kind || 'text', userId).run();
     } catch (e) {}
 }
+function parseEditTriggers(raw) {
+    const set = new Set();
+    for (const part of String(raw || 'inline,reply,command').split(',')) {
+        const t = part.trim().toLowerCase();
+        if (t) set.add(t);
+    }
+    if (!set.size) { set.add('inline'); set.add('reply'); set.add('command'); }
+    return set;
+}
+function buildPasswordPromptKeyboard(cmdRecord) {
+    const strings = botStrings();
+    const row = [];
+    const autoBackOn = !!(cmdRecord.inline_auto_back && cmdRecord.inline_auto_back != 0) || (cmdRecord.auto_back !== 0 && !!cmdRecord.show_reply_keyboard);
+    if (cmdRecord.parent && autoBackOn) {
+        const backLbl = (cmdRecord.inline_back_label && String(cmdRecord.inline_back_label).trim()) || (cmdRecord.back_label && String(cmdRecord.back_label).trim()) || strings.back;
+        row.push({ text: '⬅️ ' + backLbl, callback_data: 'PW:BACK:' + cmdRecord.parent });
+    }
+    const dismissLbl = (cmdRecord.password_dismiss_label && String(cmdRecord.password_dismiss_label).trim()) || '❌ Dismiss';
+    row.push({ text: dismissLbl, callback_data: 'PW:DISMISS' });
+    return { inline_keyboard: [row] };
+}
 
 async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatType, args, opts) {
     opts = opts || {};
@@ -21377,8 +23244,13 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatTyp
     const isAdmin = await isAdminUser(env, userId);
     const access = effectiveCommandAccess(cmdRecord);
     const cmdAllowed = parseAllowedUserIds(cmdRecord.allowed_users);
+    const cmdDisallowed = parseAllowedUserIds(cmdRecord.disallowed_users);
 
     if (!isAdmin) {
+        if (cmdDisallowed.has(Number(userId))) {
+            await sendMessage(chatId, strings.unauthorized, BOT_TOKEN, 'HTML');
+            return;
+        }
         if (cmdRecord.expires_at) {
             const expMs = parseDbTimestamp(cmdRecord.expires_at);
             if (expMs && Date.now() > expMs) {
@@ -21401,6 +23273,32 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatTyp
             await sendMessage(chatId, strings.unauthorized, BOT_TOKEN, 'HTML');
             return;
         }
+    }
+
+    // Force Join check (respects per-command override: inherit | required | off)
+    const fjMode = cmdRecord.force_join_mode || 'inherit';
+    if (fjMode !== 'off') {
+        if (!await enforceForceJoinGate(env, BOT_TOKEN, chatId, userId, opts.userInfo || null, chatType, 'commands', fjMode === 'required')) return;
+    }
+
+    // Per-command password challenge
+    if (cmdRecord.cmd_password && !opts.passwordVerified) {
+        const promptText = (cmdRecord.password_prompt && String(cmdRecord.password_prompt).trim()) || '🔒 This command is password-protected. Please enter the password:';
+        const kb = buildPasswordPromptKeyboard(cmdRecord);
+        const sent = await sendRichText(BOT_TOKEN, chatId, escapeTelegramHTML(promptText), { reply_markup: kb });
+        const promptMsgId = extractFirstMessageId(sent);
+        const pendingJson = JSON.stringify({
+            command: cmdRecord.command,
+            args: String(args || ''),
+            chatId: chatId,
+            promptMsgId: promptMsgId,
+            triggerKind: opts.triggerKind || 'command'
+        });
+        await env.DB.prepare(`
+            INSERT INTO sessions (token, user_id, command, pending_password, updated_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(user_id) DO UPDATE SET token = excluded.token, pending_password = excluded.pending_password, updated_at = CURRENT_TIMESTAMP
+        `).bind('bot-' + userId, userId, cmdRecord.command, pendingJson).run();
+        return;
     }
 
     const mediaItems = normalizeMediaItems(cmdRecord.media_items_json, {
@@ -21521,6 +23419,10 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatTyp
         }
     };
 
+    const allowedTriggers = parseEditTriggers(cmdRecord.edit_triggers);
+    const curTrigger = opts.triggerKind || (opts.message ? 'inline' : 'command');
+    const allowEditForThisTrigger = !!(cmdRecord.edit_message && allowedTriggers.has(curTrigger));
+
     // Edit-in-place mode: supports inline callbacks AND cross-mode reply keyboard / command triggers
     const sourceMsg = opts && opts.message ? opts.message : null;
     const editTargetId = sourceMsg && sourceMsg.message_id
@@ -21531,7 +23433,12 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatTyp
         : (prevBotMsg ? (prevBotMsg.last_msg_kind || 'text') : 'text');
     const sourceIsAlbum = sourceMsg ? !!sourceMsg.media_group_id : (sourceKind === 'album');
 
-    if (cmdRecord.edit_message && editTargetId) {
+    const persistInlineAclForMsg = async (msgId) => {
+        if (!msgId) return;
+        await saveInlineAcl(env.DB, chatId, msgId, cmdRecord.inline_access_level || 'everyone', cmdRecord.inline_allowed_users || '', cmdRecord.inline_disallowed_users || '');
+    };
+
+    if (allowEditForThisTrigger && editTargetId) {
         const editMarkup = inlineMarkup || { inline_keyboard: [] };
         let editedOk = false;
 
@@ -21587,6 +23494,7 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatTyp
         }
 
         if (editedOk) {
+            await persistInlineAclForMsg(editTargetId);
             await saveLastBotMessage(env.DB, userId, chatId, editTargetId, targetKind);
             await sendSecondaryCleanup(true);
             if (opts && opts.fromMessage && opts.userMessageId) {
@@ -21616,6 +23524,7 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatTyp
         await sendSecondaryCleanup(false);
         const newSentId = extractFirstMessageId(sentRes);
         if (newSentId) {
+            await persistInlineAclForMsg(newSentId);
             await saveLastBotMessage(env.DB, userId, chatId, newSentId, targetKind);
             await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: editTargetId }, { retry: false });
             if (opts && opts.fromMessage && opts.userMessageId) {
@@ -21639,7 +23548,7 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatTyp
             mainRes = await tgCall(BOT_TOKEN, 'sendMessage', Object.assign({ chat_id: chatId, text: '\u2800', reply_markup: markup }, protect ? { protect_content: true } : {}));
         }
         const sentId = extractFirstMessageId(mainRes);
-        if (sentId) await saveLastBotMessage(env.DB, userId, chatId, sentId, targetKind);
+        if (sentId) { await persistInlineAclForMsg(sentId); await saveLastBotMessage(env.DB, userId, chatId, sentId, targetKind); }
         await sendSecondaryCleanup(false);
         return;
     }
@@ -21650,7 +23559,7 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatTyp
     if (finalContent) mainRes = await sendRichText(BOT_TOKEN, chatId, finalContent, extra);
     else if (extra.reply_markup) mainRes = await tgCall(BOT_TOKEN, 'sendMessage', Object.assign({ chat_id: chatId, text: '\u2800', reply_markup: extra.reply_markup }, protect ? { protect_content: true } : {}));
     const sentId = extractFirstMessageId(mainRes);
-    if (sentId) await saveLastBotMessage(env.DB, userId, chatId, sentId, targetKind);
+    if (sentId) { await persistInlineAclForMsg(sentId); await saveLastBotMessage(env.DB, userId, chatId, sentId, targetKind); }
     await sendSecondaryCleanup(false);
 }
 async function getAiHistory(db, chatId, limit) {

@@ -1,7 +1,7 @@
 {
-  "version": "4.9.8",
+  "version": "4.9.9",
   "released": "2026-11-20",
-  "notes": "✨ Cross inline/reply keyboard message editing, custom Popup alert & Toast inline buttons, and dynamic viewport-aware dropdowns",
+  "notes": "✨ Force Join tab, Nyxx AI Support & multi-mode /chat, Proxies publisher tab, per-command passwords, inline button ACL, command templates & tabbed command editor",
   "worker_url": "https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/worker.js",
   "worker_urls": [""]
 }

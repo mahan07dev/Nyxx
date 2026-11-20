@@ -97,6 +97,10 @@ Manual testing is the current standard. When testing your changes, verify:
 - **Inline edit & auto-back** — commands with `edit_message` edit in place across both inline callbacks and reply keyboard buttons (with graceful fallback on incompatible media), and inline auto-back appends a working parent Back button
 - **Custom popup alert & toast buttons** — `Popup alert` (`ALERT:`) and `Toast` (`TOAST:`) inline buttons display native Telegram dialogs/banners with placeholders replaced
 - **Dynamic floating menus** — action dropdowns, command comboboxes, and Top Bar menus flip/clamp cleanly within the viewport on both mobile and desktop
+- **Force Join** — global and per-command channel/group membership gating, Check callback, and `verify_chat` work as expected
+- **Multi-mode `/chat` & Nyxx AI Support** — switching between Support, Bot AI, and MCP modes works across new and existing threads
+- **Proxies tab & Command templates** — adding/testing proxies, building single/multi-proxy commands, and applying templates work cleanly
+- **Per-command password & Inline ACL** — command passwords prompt with Dismiss/Back buttons and clean up messages; inline ACL blocks disallowed/unauthorized taps in groups
 - **Proxy sharing & testing** — `PROXY:` / `PROXY_MSG:` callbacks resolve DNS, test latency, and display proxy details cleanly
 - **Storage reindexing & bulk modals** — `Reindex storage` probes and scans messages in chunks, and bulk actions across Users, Media Library, and Broadcast display live progress and cancel cleanly
 - **Per-message Contact tracking** — Inbox "Mark read" and admin DM notification buttons (Reply / Dismiss / Mark as seen) mark only the targeted message as read and update the topbar Inbox pill

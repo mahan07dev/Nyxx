@@ -42,7 +42,9 @@
   <li>Nested commands with folders and breadcrumbs</li>
   <li><b>Session-scoped nested navigation</b> — reply keyboard buttons and Back actions resolve against the user's active command chain, so multilingual folders (<code>/en</code> vs <code>/fa</code>) no longer cross-talk</li>
   <li><b>Multi-argument commands</b> — <code>/start</code>, <code>/start fa</code> and <code>/start fa game</code> can coexist; Nyxx resolves the longest match and passes trailing text into <code>{{args}}</code> / <code>{{arg1}}</code></li>
-  <li><b>Edit current message</b> — per-command toggle to edit the bot's message in place from inline buttons, reply keyboard buttons, or commands (with cross inline/reply keyboard support and automatic fallback when media types change)</li>
+  <li><b>Edit current message</b> — per-command toggle with individual trigger checkboxes (<b>Inline button</b>, <b>Reply button</b>, <b>Typed /command</b>) to edit the bot's message in place, with automatic fallback when media types change</li>
+  <li><b>Per-command passwords</b> — lock individual commands behind a password prompt with customizable Dismiss and automatic Back buttons</li>
+  <li><b>Command Templates</b> — one-click starter packs (Edit-in-Place Menu, Proxy Seller Bot, Support FAQ Desk, Protected Digital Store)</li>
   <li><b>Custom Popup alert &amp; Toast buttons</b> — inline buttons can open native Telegram centered popup alerts or top toast banners with custom text and placeholders</li>
   <li>Custom auto-back controls — separate toggles and custom back-button labels for both reply keyboards and inline keyboards</li>
   <li><b>Proxy sharing &amp; testing</b> — share MTProto/SOCKS5 buttons and test live ping, IP, location, ISP, and TLS secret details with <code>PROXY:</code> / <code>PROXY_MSG:</code> callbacks or <code>{{proxy_info:...}}</code></li>
@@ -53,7 +55,7 @@
   <li>Inline and reply keyboards built visually with <b>full row &amp; layout control</b> — add buttons to specific rows, move them left/right/up/down, and set <b>per-button colors</b> (blue / green / red) with live preview</li>
   <li>Telegram menu commands and custom featured commands (DM / Buttons / MCP)</li>
   <li>Featured Buttons commands support <code>[blue]</code> / <code>[green]</code> / <code>[red]</code> label prefixes and a default button color</li>
-  <li>Per-command access levels: everyone, moderator+, admin only, or <b>specific users</b> with an expiry date</li>
+  <li>Granular access control: per-command access levels (everyone, specific users, moderator+, admin), <b>allowed &amp; disallowed user IDs</b>, expiry dates, plus <b>per-message inline button batch restrictions</b></li>
   <li><b>Protect content</b> — prevent forwarding and saving on commands, DMs, group announcements and broadcasts</li>
 </ul>
 
@@ -67,6 +69,12 @@
   <li><b>2 GB auto-capture</b> — post media (up to 2 GB) into the storage chat or send it to the bot as an admin and Nyxx records the <code>file_id</code>, filename, size and caption, bypassing the 45 MB Bot API upload limit</li>
   <li><b>Access control &amp; expiry</b> — restrict commands and linked media to specific users, or set <code>expires_at</code>; admins always retain access</li>
   <li><b>Modern library UI</b> — list, grid and detailed views, lazy loading, bulk actions (validate, grant / revoke access, set expiry, delete)</li>
+</ul>
+
+<h3>Force Join &amp; Proxies</h3>
+<ul>
+  <li><b>Force Join tab</b> — require users to join selected channels or groups globally (Commands, AI, Featured commands, Inline callbacks) or per command, with custom warning messages, invite buttons, and a live <b>Check</b> button</li>
+  <li><b>Proxies tab</b> — built for proxy publishers &amp; sellers: paste MTProto/SOCKS5 links, run single or bulk live ping/country/ISP tests, and generate single or multi-proxy commands with Connect + Test buttons in one click</li>
 </ul>
 
 <h3>Users &amp; groups</h3>
@@ -102,7 +110,7 @@
   <li><b>Outbound:</b> send DM, broadcast (with keyboards)</li>
   <li><b>Dangerous:</b> delete user, clear all AI memory, clear one user's memory — all require <code>confirm: true</code> and are off by default</li>
   <li>Bearer-token auth with hashed tokens, session memory, and rate limiting</li>
-  <li>Dedicated chat UI at <code>/chat</code></li>
+  <li>Multi-mode chat UI at <code>/chat</code> — switch between <b>Nyxx built-in support</b>, <b>Your Bot's AI</b>, and <b>MCP</b> right from the composer (also reachable via the <b>Nyxx AI support</b> button)</li>
   <li>Works with Claude Desktop, Cursor, Cline, and any MCP-compatible client</li>
 </ul>
 
@@ -172,6 +180,7 @@ database_id = "&lt;your-d1-database-id&gt;"
 <p><b>Upgrading to 4.9.6?</b> The schema moves to version <b>22</b> (adds the <code>channels</code> table plus <code>media_items_json</code>, <code>protect_content</code>, <code>auto_back</code> and <code>back_label</code> columns through non-destructive migrations). If you self-host <code>proxy.js</code>, redeploy it and make sure your Cloudflare OAuth client allows the <b>refresh token</b> grant so automatic token refresh works.</p>
 <p><b>Upgrading to 4.9.7?</b> The schema moves to version <b>23</b> (adds <code>edit_message</code>, <code>inline_auto_back</code>, <code>inline_back_label</code> on <code>commands</code> and <code>contact_msg_id</code> on <code>contact_pending_reply</code> via non-destructive migrations).</p>
 <p><b>Upgrading to 4.9.8?</b> The schema moves to version <b>24</b> (adds <code>last_msg_id</code>, <code>last_chat_id</code>, <code>last_msg_kind</code> on <code>sessions</code> for cross inline/reply message editing).</p>
+<p><b>Upgrading to 4.9.9?</b> The schema moves to version <b>25</b> (adds <code>proxies</code> and <code>inline_acl</code> tables plus command passwords, edit triggers, disallowed users, and Force Join overrides via non-destructive migrations).</p>
 </blockquote>
 
 <p>If the dashboard ever shows <b>"Database schema is out of date"</b> after an update, open <b>Settings → Schema health → Run auto-heal</b> — it fixes missing tables, columns, indexes and settings without touching live data.</p>
