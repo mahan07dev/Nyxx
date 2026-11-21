@@ -68,13 +68,13 @@
   <li><b>Reindex storage chat</b> — scan and import existing media from your storage channel, group, or supergroup with range selection, duplicate skipping, and live progress tracking</li>
   <li><b>2 GB auto-capture</b> — post media (up to 2 GB) into the storage chat or send it to the bot as an admin and Nyxx records the <code>file_id</code>, filename, size and caption, bypassing the 45 MB Bot API upload limit</li>
   <li><b>Access control &amp; expiry</b> — restrict commands and linked media to specific users, or set <code>expires_at</code>; admins always retain access</li>
-  <li><b>Modern library UI</b> — list, grid and detailed views, lazy loading, bulk actions (validate, grant / revoke access, set expiry, delete)</li>
+  <li><b>Modern library UI</b> — list, grid and detailed views, lazy loading, bulk actions (validate, <b>Delete invalid</b>, grant / revoke access, set expiry, delete)</li>
 </ul>
 
 <h3>Force Join &amp; Proxies</h3>
 <ul>
   <li><b>Force Join tab</b> — require users to join selected channels or groups globally (Commands, AI, Featured commands, Inline callbacks) or per command, with custom warning messages, invite buttons, and a live <b>Check</b> button</li>
-  <li><b>Proxies tab</b> — built for proxy publishers &amp; sellers: paste MTProto/SOCKS5 links, run single or bulk live ping/country/ISP tests, and generate single or multi-proxy commands with Connect + Test buttons in one click</li>
+  <li><b>Proxies tab</b> — built for proxy publishers &amp; sellers: paste MTProto/SOCKS5 links, run <b>Paste &amp; Update Cmd</b> to bulk-import, auto-test, and refresh proxy commands hourly, prune dead proxies with <b>Delete not working</b>, and copy/test selected proxies in bulk</li>
 </ul>
 
 <h3>Users &amp; groups</h3>
@@ -84,10 +84,11 @@
   <li>Per-user direct messages (send / edit / delete with full media) and AI memory (view / edit / delete)</li>
   <li><b>Contact inbox</b> — collects messages from DM featured commands, with topbar &amp; sidebar unread indicators, per-message read tracking, 3-button admin DM notifications (Reply / Dismiss / Mark as seen), search, and stats</li>
   <li><b>Contact automation</b> — admin notifications, auto-reply, away mode, and per-user rate limits</li>
+  <li><b>Group subtypes</b> — detects regular groups, supergroups, <b>Forums</b> (replies stay inside active topics via <code>message_thread_id</code>), <b>Comments / Discussion</b> (auto-comment on new channel posts &amp; exempt linked forwards), and <b>Direct Messages Groups</b> (admin alerts &amp; auto-reply)</li>
   <li>Per-group settings: AI mode, AI trigger (mention / reply / either / both / every message), memory, welcome, rules, anti-flood, link filter, service-message cleanup, member tracking</li>
-  <li><b>Anti-flood escalation</b> — first offense triggers mute / kick / ban, then escalates after configurable thresholds</li>
-  <li>Per-group permission overrides for commands, featured commands, AI, callbacks, rules, and MCP</li>
-  <li>Broadcast with audience targeting, any media type, keyboards, and delivery pacing</li>
+  <li><b>Anti-flood escalation (per-group &amp; global)</b> — group anti-flood plus <b>Global Bot Anti-Flood</b> in Settings (mute/cooldown → kick → ban escalation across private chats and groups)</li>
+  <li>Per-group &amp; global permission overrides for commands, featured commands, AI, callbacks, rules, and MCP — each with multi-line <b>Allowed &amp; Disallowed user IDs</b></li>
+  <li>Broadcast with visual <b>Audience Builder</b> (base audience pills + include/exclude IDs + custom picker), any media type, keyboards, delivery pacing, and newest-first history</li>
   <li>Automatic unreachable-user detection when Telegram reports blocked / deactivated users</li>
 </ul>
 
@@ -128,7 +129,9 @@
   <li><b>Schema health</b> — dry-run drift report and one-click auto-heal (tables, columns, indexes, settings, backfills, and safe cleanup of expired / orphaned rows)</li>
   <li><b>Webhook diagnostics</b> — Telegram API latency, registered URL, pending updates, last error</li>
   <li><b>Media storage</b> setting for upload hosting</li>
-  <li>In-dashboard updates with automatic webhook secret rotation</li>
+  <li><b>Bot Profile</b> — live avatar preview, capability badges, Default Chat Menu Button (Commands / Default / Web App), and Suggested Default Admin Rights for Groups &amp; Channels</li>
+  <li><b>Browser &amp; Recovery tools</b> — reset Service Workers, clear caches/localStorage, and test connectivity directly from Settings or the pre-login screen (no password required)</li>
+  <li>In-dashboard updates with automatic webhook secret rotation, 15s propagation lock timer, and automatic cache/SW refresh</li>
   <li>Factory reset</li>
 </ul>
 
@@ -181,6 +184,7 @@ database_id = "&lt;your-d1-database-id&gt;"
 <p><b>Upgrading to 4.9.7?</b> The schema moves to version <b>23</b> (adds <code>edit_message</code>, <code>inline_auto_back</code>, <code>inline_back_label</code> on <code>commands</code> and <code>contact_msg_id</code> on <code>contact_pending_reply</code> via non-destructive migrations).</p>
 <p><b>Upgrading to 4.9.8?</b> The schema moves to version <b>24</b> (adds <code>last_msg_id</code>, <code>last_chat_id</code>, <code>last_msg_kind</code> on <code>sessions</code> for cross inline/reply message editing).</p>
 <p><b>Upgrading to 4.9.9?</b> The schema moves to version <b>25</b> (adds <code>proxies</code> and <code>inline_acl</code> tables plus command passwords, edit triggers, disallowed users, and Force Join overrides via non-destructive migrations).</p>
+<p><b>Upgrading to 5.0.0?</b> The schema moves to version <b>26</b> (adds <code>chat_subtype</code> and <code>linked_chat_id</code> on <code>groups</code>, <code>muted_until</code> on <code>group_strikes</code>, and <code>global_antiflood_*</code> defaults via non-destructive migrations).</p>
 </blockquote>
 
 <p>If the dashboard ever shows <b>"Database schema is out of date"</b> after an update, open <b>Settings → Schema health → Run auto-heal</b> — it fixes missing tables, columns, indexes and settings without touching live data.</p>

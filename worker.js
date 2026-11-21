@@ -1,13 +1,13 @@
-// NYXX — v4.9.9
+// NYXX — v5.0.0
 // Telegram bot builder + management dashboard for Cloudflare Workers + D1.
 // ============================================================================
-const VERSION = '4.9.9';
+const VERSION = '5.0.0';
 
 const NYXX_SUPPORT_SYSTEM_PROMPT = `You are Nyxx AI Support, the official built-in assistant inside the Nyxx dashboard.
 Help the user configure commands, keyboards, Force Join, proxies, AI, MCP, channels, groups, and media library.
 Always give clear, concise answers using the exact dashboard tab and button names.`;
 
-const NYXX_SUPPORT_KB = `Nyxx support KB. Version 4.9.9
+const NYXX_SUPPORT_KB = `Nyxx support KB. Version 5.0.0
 
 RULES
 - Answer Nyxx questions ONLY from this doc. If not covered, say so and point to GitHub/channel. Never invent features, settings, prices, versions.
@@ -197,6 +197,10 @@ TROUBLESHOOTING (symptom → cause → fix)
 - Media broken after token change → file_id bot-specific → re-upload or use URL.
 - Channel features not working → bot needs admin with Post, Edit, Delete (Pin) → fix, then Sync with Telegram.
 - Contact rate limit not working → enable "Save featured command messages" (Memory tab).
+- Global Anti-Flood (Settings → Global Anti-Flood): global flood limit across all chats with Mute / Kick / Ban escalation and admin exemption.
+- Browser & Recovery (Settings → Browser & Recovery, also accessible from Connecting / Sign-in screens without a password): reset Service Worker, clear caches, clear local UI storage, and test API connectivity.
+- Bot Profile: edit Name, Description, Short Description, Menu Button (Default / Commands / Web App), and Default Admin Rights for Groups & Channels, plus view bot avatar & capabilities.
+- Group subtypes: Group, Supergroup, Forum (topic thread replies), Channel Comments / Discussion (auto-comment on new channel posts, exempt linked forwards), Direct Messages Group (admin notifications & auto-reply).
 - Cleanup never runs → needs Cron Trigger, or Retention → Run now.`;
 
 const RELAY_BASE = 'https://nyxx-proxy.nova-06272b19.workers.dev';
@@ -622,7 +626,7 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
 .chip:hover { background: var(--surface-2); }
 .chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 
-.chat { display: flex; flex-direction: column; gap: var(--s3); padding: var(--s4); background: var(--surface-2); border-radius: var(--r-lg); border: 1px solid var(--hairline); max-height: 480px; overflow-y: auto; }
+.chat { display: flex; flex-direction: column-reverse; gap: var(--s3); padding: var(--s4); background: var(--surface-2); border-radius: var(--r-lg); border: 1px solid var(--hairline); max-height: 480px; overflow-y: auto; }
 .bubble { max-width: 82%; padding: 10px 14px; border-radius: 18px; font-size: var(--fs-subhead); line-height: 1.5; word-break: break-word; white-space: pre-wrap; position: relative; unicode-bidi: plaintext; text-align: start; }
 .bubble.in { align-self: flex-start; background: var(--surface); border: 1px solid var(--hairline); border-bottom-left-radius: 6px; }
 .bubble.out { align-self: flex-end; background: #005dbb; color: #fff; border-bottom-right-radius: 6px; }
@@ -1524,6 +1528,71 @@ details.help.danger > summary { color: var(--red); }
 .cmd-ac-item .ac-cmd { font-family: var(--mono); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cmd-ac-item .ac-meta { font-size: 11px; color: var(--text-4); flex-shrink: 0; }
 .cmd-ac-note { padding: 6px 10px; font-size: 11px; color: var(--text-4); border-top: 1px solid var(--hairline); }
+
+/* ===== v5.0.0: Sub-tabbars, Compact Command Rows, Audience Builder, Update Lock & Recovery ===== */
+.sub-tabbar { position: sticky; top: 62px; z-index: 25; background: var(--bg); padding-top: 4px; margin-bottom: var(--s4); border-bottom: 1px solid var(--hairline); }
+.app.nav-struct-topbar .sub-tabbar { top: 60px; }
+@media (max-width: 980px) { .sub-tabbar { top: 50px; } }
+.sub-tabpane { display: none; }
+.sub-tabpane.active { display: block; animation: fade 0.18s ease; }
+
+.cmd-row-sub-meta { display: inline-flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.cmd-row-sub-meta .cm-tag { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; color: var(--text-3); }
+.cmd-row-sub-meta .cm-tag.warn { color: var(--orange); }
+.cmd-row-sub-meta .cm-tag.danger { color: var(--red); }
+.cmd-row-sub-meta .cm-tag.accent { color: var(--accent); }
+.cmd-row-sub-meta .cm-tag.purple { color: var(--purple); }
+
+.bc-audience-grid { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.bc-aud-pill {
+    display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px;
+    border-radius: var(--r-pill); border: 1.5px solid var(--hairline);
+    background: var(--surface-2); color: var(--text-2); font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s ease; user-select: none;
+}
+.bc-aud-pill:hover { border-color: var(--accent); color: var(--text); }
+.bc-aud-pill.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+
+.perm-acl-details { margin-top: 8px; width: 100%; border-top: 1px dashed var(--hairline); padding-top: 8px; }
+.perm-acl-details > summary { cursor: pointer; font-size: 12px; font-weight: 600; color: var(--text-3); list-style: none; display: inline-flex; align-items: center; gap: 6px; user-select: none; }
+.perm-acl-details > summary::-webkit-details-marker { display: none; }
+.perm-acl-details[open] > summary { color: var(--accent); margin-bottom: 8px; }
+
+.update-lock-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    background: rgba(0,0,0,0.72); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    display: flex; align-items: center; justify-content: center; padding: var(--s4);
+}
+.update-lock-overlay.hidden { display: none !important; }
+.update-lock-card {
+    background: var(--bg-elev); border: 1px solid var(--hairline); border-radius: var(--r-xl);
+    padding: var(--s8) var(--s6); max-width: 440px; width: 100%; text-align: center;
+    box-shadow: var(--shadow-lg);
+}
+.update-timer-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 68px; height: 68px; border-radius: 50%;
+    background: var(--accent-soft); color: var(--accent);
+    font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums;
+    margin: 0 auto var(--s4); border: 2px solid var(--accent);
+}
+.cf-connect-tile.loading .cf-logo { background: var(--fill-2); color: var(--text-3); }
+
+.bot-profile-hero { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.bot-avatar-box {
+    width: 68px; height: 68px; border-radius: 50%; background: var(--accent-soft); color: var(--accent);
+    display: flex; align-items: center; justify-content: center; font-size: 26px; overflow: hidden; flex-shrink: 0;
+    border: 2px solid var(--hairline);
+}
+.bot-avatar-box img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.recovery-tool-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    padding: 12px 14px; border: 1px solid var(--hairline); border-radius: var(--r-md);
+    background: var(--surface-2); margin-bottom: 10px;
+}
+.recovery-tool-row:last-child { margin-bottom: 0; }
+#msg-modal .sheet { max-width: 780px; width: min(94vw, 780px); }
+@media (max-width: 640px) { #msg-modal .sheet { max-width: 100%; width: 100%; } }
 </style>
 </head>
 <body>
@@ -1638,6 +1707,9 @@ details.help.danger > summary { color: var(--red); }
                     <div class="auth-msg" id="status-message">Checking your database connection.</div>
                     <div class="auth-actions" id="status-actions"></div>
                     <div class="auth-help" id="status-help"></div>
+                    <div style="text-align:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--hairline);">
+                        <button type="button" class="btn btn-gray btn-sm" onclick="openBrowserRecoveryModal()"><i class="fa-solid fa-wrench"></i> Browser &amp; Cache Tools</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1678,6 +1750,9 @@ details.help.danger > summary { color: var(--red); }
                     <button class="btn btn-primary btn-block btn-lg" id="setup-submit" onclick="submitSetup()"><i class="fa-solid fa-check"></i> Save &amp; continue<span class="btn-spinner"><span class="mini-spinner"></span></span></button>
                     <div class="err-box" id="setup-error"></div>
                     <div class="auth-help"><i class="fa-solid fa-circle-info"></i> Tip: You can also set an <code>ADMIN_PASS</code> environment variable / secret in Cloudflare Worker settings to override or bypass D1 password setup.</div>
+                    <div style="text-align:center;margin-top:12px;">
+                        <button type="button" class="btn btn-gray btn-sm" onclick="openBrowserRecoveryModal()"><i class="fa-solid fa-wrench"></i> Browser &amp; Cache Tools</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1703,6 +1778,9 @@ details.help.danger > summary { color: var(--red); }
                         <div class="err-box" id="login-error"></div>
                     </form>
                     <div class="auth-help"><i class="fa-solid fa-key"></i> Forgot your password? Set an <code>ADMIN_PASS</code> environment variable / secret in your Cloudflare Worker settings to sign in with it anytime (it works over/alongside the D1 password).</div>
+                    <div style="text-align:center;margin-top:12px;">
+                        <button type="button" class="btn btn-gray btn-sm" onclick="openBrowserRecoveryModal()"><i class="fa-solid fa-wrench"></i> Browser &amp; Cache Tools</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1833,14 +1911,20 @@ details.help.danger > summary { color: var(--red); }
                     <details class="help">
                         <summary><i class="fa-solid fa-circle-question"></i> How featured commands work</summary>
                         <div>
-                            <b>DM commands</b> quietly deliver a note from a user to you. When a user types <code>/contact hello boss</code>, the text <code>hello boss</code> lands in <b>Users → Direct messages</b> under that user. Configure whether the trigger message is deleted below.<br><br>
-                            <b>Buttons commands</b> let users build their own inline keyboards. The <b>simplest syntax</b> is:<br>
-                            <code>/menu Hi there! | Google:https://google.com | Info:alert:Popup! | Notice:toast:Done! | Say hi:Hi!</code><br>
-                            The part before the first <code>|</code> is the message. Each <code>Label:value</code> pair becomes a button (3 per row). Values starting with <b>http</b> open a link, <code>/</code> runs a command, <code>alert:text</code> opens a centered Telegram popup dialog, <code>toast:text</code> shows a top toast banner, and anything else is posted back as a new message.<br><br>
-                            The <b>advanced syntax</b> uses braces: <code>/menu "Hi there!" {Google}(https://google.com){Say hi}(Hi!)</code><br><br>
-<b>Per-button colors</b> — prefix the label with <code>[blue]</code>, <code>[green]</code> or <code>[red]</code>: <code>/menu Hi | [blue]Google:https://google.com | [red]Say hi:Hi!</code>. Works in both syntaxes (<code>{[green]Yes}(Yes!)</code>). Buttons without a bracket use the <b>Default button color</b> dropdown in the editor.<br><br>
-                            Each featured command has three separate messages: the <b>hint</b> (sent when the command is typed alone), the <b>success message</b> (after the action) and the <b>failure message</b>. Leave a field blank to stay silent in that case.<br><br>
-                            <b>Delete user message:</b> when enabled, the bot removes the user's <code>/contact hello boss</code> message from the chat right away. Turn this off if you want the command to leave a visible log in the chat.
+                            <b>1. DM commands</b> (e.g. <code>/contact hello boss</code> — multi-line supported):<br>
+                            • Triggers the <b>Contact</b> pipeline: notifies admins in Telegram (with <i>Reply</i>, <i>Dismiss</i>, and <i>Mark as seen</i> buttons), checks <b>Away mode</b> (UTC hours) and <b>Auto-reply</b> (or falls back to your Success message).<br>
+                            • To store incoming notes in <b>Inbox</b> &amp; <b>Users → Direct messages</b> (and enforce the hourly Contact rate limit), enable <b>Save featured command messages</b> in the <b>Memory</b> tab.<br><br>
+                            <b>2. Buttons commands</b> let users build inline keyboards on the fly:<br>
+                            • <b>Simple syntax:</b> <code>/menu Hi there! | Google:https://google.com | Info:alert:Popup! | Notice:toast:Done! | Say hi:Hi!</code> (part before the first <code>|</code> is the message; 3 buttons per row).<br>
+                            • <b>Advanced syntax:</b> <code>/menu "Hi there!" {Google}(https://google.com){Say hi}(Hi!)</code><br>
+                            • <b>Value types:</b> <code>http…</code> opens a URL, <code>/cmd</code> runs a command, <code>alert:text</code> opens a native popup dialog, <code>toast:text</code> shows a top toast banner, and any other text posts back as a reply message.<br>
+                            • <b>Per-button colors:</b> prefix any label with <code>[blue]</code>, <code>[green]</code>, or <code>[red]</code> (e.g. <code>[blue]Google:https://google.com</code> or <code>{[green]Yes}(Yes!)</code>). Buttons without a prefix use the <b>Default button color</b> dropdown.<br><br>
+                            <b>3. MCP commands</b> (e.g. <code>/mcp list active groups</code>):<br>
+                            • Sends the instruction to your <b>MCP AI provider</b> (configured in the <b>MCP</b> tab) and runs enabled MCP tools directly from Telegram. Requires the MCP endpoint to be enabled.<br><br>
+                            <b>Messages, Access &amp; Cleanup:</b><br>
+                            • Each featured command has a <b>Usage hint</b> (when typed alone without arguments), <b>Success message</b>, and <b>Failure message</b> (leave blank to stay silent).<br>
+                            • <b>Who can run it:</b> restrict per command to <i>Everyone</i>, <i>Moderator+</i>, or <i>Admin only</i> (subject to global/group <b>Permissions</b> and <b>Force Join</b>).<br>
+                            • <b>Delete user message:</b> ON by default — removes the user's trigger message immediately after handling it.
                         </div>
                     </details>
                     <div id="featured-list"></div>
@@ -1951,6 +2035,9 @@ details.help.danger > summary { color: var(--red); }
                 </div>
                 <div class="chips" id="group-filters">
                     <button class="chip active" data-gf="active" onclick="setGroupFilter('active')">Active</button>
+                    <button class="chip" data-gf="discussion" onclick="setGroupFilter('discussion')">Comments / Discussion</button>
+                    <button class="chip" data-gf="forum" onclick="setGroupFilter('forum')">Forums</button>
+                    <button class="chip" data-gf="direct_messages" onclick="setGroupFilter('direct_messages')">DM Groups</button>
                     <button class="chip" data-gf="inactive" onclick="setGroupFilter('inactive')">Left / removed</button>
                     <button class="chip" data-gf="all" onclick="setGroupFilter('all')">All</button>
                 </div>
@@ -2029,11 +2116,41 @@ details.help.danger > summary { color: var(--red); }
                     </div>
                 </div>
 
+                <div class="card" id="gm-subtype-card">
+                    <div class="card-head">
+                        <div class="card-title"><i class="fa-solid fa-layer-group"></i> Group type &amp; special features</div>
+                        <div style="flex:1"></div>
+                        <span class="badge blue" id="gm-subtype-badge">Group</span>
+                    </div>
+                    <div class="hint-banner">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <div id="gm-subtype-desc">Telegram distinguishes regular groups, supergroups, forum topic groups, linked channel comment groups, and direct messages groups. Sync with Telegram to refresh detection.</div>
+                    </div>
+                    <div id="gm-discussion-opts">
+                        <div class="section-title" style="margin-top:0;">Channel comments / discussion</div>
+                        <div class="switch-row"><div><div class="sw-label">Exempt linked channel forwards</div><div class="sw-sub">Never delete auto-forwarded channel posts via link filter or anti-forward.</div></div><button class="switch on" id="gm-exempt-linked-toggle" onclick="toggleSwitch('gm-exempt-linked-toggle')"></button></div>
+                        <div class="switch-row"><div><div class="sw-label">Auto-comment on new channel posts</div><div class="sw-sub">Automatically reply to newly forwarded channel posts (great for pinned rules or links).</div></div><button class="switch" id="gm-autocomment-toggle" onclick="toggleSwitch('gm-autocomment-toggle');show($('gm-autocomment-wrap'),sw('gm-autocomment-toggle'))"></button></div>
+                        <div class="field hidden" id="gm-autocomment-wrap">
+                            <label class="field-label">Auto-comment text (HTML allowed)</label>
+                            <textarea class="textarea" id="gm-autocomment-text" rows="3" placeholder="💬 Please follow the group rules when commenting!"></textarea>
+                        </div>
+                    </div>
+                    <div id="gm-dmgroup-opts" style="margin-top:12px;">
+                        <div class="section-title" style="margin-top:0;">Direct messages group</div>
+                        <div class="switch-row"><div><div class="sw-label">Notify admins of new direct messages</div><div class="sw-sub">Forwards a short alert to bot admins when someone posts in a DM group.</div></div><button class="switch" id="gm-dmnotify-toggle" onclick="toggleSwitch('gm-dmnotify-toggle')"></button></div>
+                        <div class="switch-row" style="margin-bottom:0;"><div><div class="sw-label">Auto-reply in direct messages group</div><div class="sw-sub">Sends an automatic greeting/status reply when a user messages here.</div></div><button class="switch" id="gm-dmauto-toggle" onclick="toggleSwitch('gm-dmauto-toggle');show($('gm-dmauto-wrap'),sw('gm-dmauto-toggle'))"></button></div>
+                        <div class="field hidden" id="gm-dmauto-wrap" style="margin-top:10px;margin-bottom:0;">
+                            <label class="field-label">Auto-reply text (HTML allowed)</label>
+                            <textarea class="textarea" id="gm-dmauto-text" rows="2" placeholder="👋 Thanks for reaching out! An admin will reply soon."></textarea>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="card">
                     <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-shield-halved"></i> Permissions in this group</div></div>
                     <div class="hint-banner">
                         <i class="fa-solid fa-circle-info"></i>
-                        <div>Each row overrides the global setting from the <a href="#" onclick="go('permissions');return false;">Permissions</a> tab for <b>this group only</b>. <b>Inherit</b> keeps using the global value. <b>Moderator+</b> allows moderators and admins.</div>
+                        <div>Each row overrides the global setting from the <a href="#" onclick="go('permissions');return false;">Permissions</a> tab for <b>this group only</b>. You can also specify per-permission <b>Allowed</b> and <b>Disallowed</b> user IDs (one per line or comma-separated).</div>
                     </div>
                     <div class="grid grid-2">
                         <div class="field">
@@ -2044,7 +2161,13 @@ details.help.danger > summary { color: var(--red); }
                                 <button data-v="moderator" onclick="setSeg('gm-commands-perm','moderator')">Mod+</button>
                                 <button data-v="admin" onclick="setSeg('gm-commands-perm','admin')">Admin</button>
                             </div>
-                            <span class="field-hint">Per-command "admin only" flags still apply.</span>
+                            <details class="perm-acl-details">
+                                <summary><i class="fa-solid fa-user-lock"></i> Allowed / Disallowed user IDs</summary>
+                                <div class="grid grid-2">
+                                    <div><label class="field-label tiny">Allowed IDs</label><textarea class="textarea mono" id="gm-commands-perm-allowed" rows="2" placeholder="123456&#10;789012"></textarea></div>
+                                    <div><label class="field-label tiny">Disallowed IDs</label><textarea class="textarea mono" id="gm-commands-perm-disallowed" rows="2" placeholder="555666"></textarea></div>
+                                </div>
+                            </details>
                         </div>
                         <div class="field">
                             <label class="field-label">Featured commands</label>
@@ -2054,7 +2177,13 @@ details.help.danger > summary { color: var(--red); }
                                 <button data-v="moderator" onclick="setSeg('gm-featured-perm','moderator')">Mod+</button>
                                 <button data-v="admin" onclick="setSeg('gm-featured-perm','admin')">Admin</button>
                             </div>
-                            <span class="field-hint">DM, Buttons and MCP featured commands.</span>
+                            <details class="perm-acl-details">
+                                <summary><i class="fa-solid fa-user-lock"></i> Allowed / Disallowed user IDs</summary>
+                                <div class="grid grid-2">
+                                    <div><label class="field-label tiny">Allowed IDs</label><textarea class="textarea mono" id="gm-featured-perm-allowed" rows="2" placeholder="123456"></textarea></div>
+                                    <div><label class="field-label tiny">Disallowed IDs</label><textarea class="textarea mono" id="gm-featured-perm-disallowed" rows="2" placeholder="555666"></textarea></div>
+                                </div>
+                            </details>
                         </div>
                         <div class="field">
                             <label class="field-label">AI replies</label>
@@ -2064,7 +2193,13 @@ details.help.danger > summary { color: var(--red); }
                                 <button data-v="moderator" onclick="setSeg('gm-ai-perm','moderator')">Mod+</button>
                                 <button data-v="admin" onclick="setSeg('gm-ai-perm','admin')">Admin</button>
                             </div>
-                            <span class="field-hint">Who can trigger the AI in this group.</span>
+                            <details class="perm-acl-details">
+                                <summary><i class="fa-solid fa-user-lock"></i> Allowed / Disallowed user IDs</summary>
+                                <div class="grid grid-2">
+                                    <div><label class="field-label tiny">Allowed IDs</label><textarea class="textarea mono" id="gm-ai-perm-allowed" rows="2" placeholder="123456"></textarea></div>
+                                    <div><label class="field-label tiny">Disallowed IDs</label><textarea class="textarea mono" id="gm-ai-perm-disallowed" rows="2" placeholder="555666"></textarea></div>
+                                </div>
+                            </details>
                         </div>
                         <div class="field">
                             <label class="field-label">Inline button taps</label>
@@ -2074,7 +2209,13 @@ details.help.danger > summary { color: var(--red); }
                                 <button data-v="moderator" onclick="setSeg('gm-callback-perm','moderator')">Mod+</button>
                                 <button data-v="admin" onclick="setSeg('gm-callback-perm','admin')">Admin</button>
                             </div>
-                            <span class="field-hint">Who can tap inline / reply keyboard buttons.</span>
+                            <details class="perm-acl-details">
+                                <summary><i class="fa-solid fa-user-lock"></i> Allowed / Disallowed user IDs</summary>
+                                <div class="grid grid-2">
+                                    <div><label class="field-label tiny">Allowed IDs</label><textarea class="textarea mono" id="gm-callback-perm-allowed" rows="2" placeholder="123456"></textarea></div>
+                                    <div><label class="field-label tiny">Disallowed IDs</label><textarea class="textarea mono" id="gm-callback-perm-disallowed" rows="2" placeholder="555666"></textarea></div>
+                                </div>
+                            </details>
                         </div>
                         <div class="field">
                             <label class="field-label">/mcp command</label>
@@ -2084,7 +2225,13 @@ details.help.danger > summary { color: var(--red); }
                                 <button data-v="moderator" onclick="setSeg('gm-mcp-perm','moderator')">Mod+</button>
                                 <button data-v="admin" onclick="setSeg('gm-mcp-perm','admin')">Admin</button>
                             </div>
-                            <span class="field-hint">Only affects MCP-type featured commands.</span>
+                            <details class="perm-acl-details">
+                                <summary><i class="fa-solid fa-user-lock"></i> Allowed / Disallowed user IDs</summary>
+                                <div class="grid grid-2">
+                                    <div><label class="field-label tiny">Allowed IDs</label><textarea class="textarea mono" id="gm-mcp-perm-allowed" rows="2" placeholder="123456"></textarea></div>
+                                    <div><label class="field-label tiny">Disallowed IDs</label><textarea class="textarea mono" id="gm-mcp-perm-disallowed" rows="2" placeholder="555666"></textarea></div>
+                                </div>
+                            </details>
                         </div>
                         <div class="field">
                             <label class="field-label">/rules command</label>
@@ -2094,7 +2241,13 @@ details.help.danger > summary { color: var(--red); }
                                 <button data-v="moderator" onclick="setSeg('gm-rules-perm','moderator')">Mod+</button>
                                 <button data-v="admin" onclick="setSeg('gm-rules-perm','admin')">Admin</button>
                             </div>
-                            <span class="field-hint">Who can see this group's rules via /rules.</span>
+                            <details class="perm-acl-details">
+                                <summary><i class="fa-solid fa-user-lock"></i> Allowed / Disallowed user IDs</summary>
+                                <div class="grid grid-2">
+                                    <div><label class="field-label tiny">Allowed IDs</label><textarea class="textarea mono" id="gm-rules-perm-allowed" rows="2" placeholder="123456"></textarea></div>
+                                    <div><label class="field-label tiny">Disallowed IDs</label><textarea class="textarea mono" id="gm-rules-perm-disallowed" rows="2" placeholder="555666"></textarea></div>
+                                </div>
+                            </details>
                         </div>
                     </div>
                 </div>
@@ -2357,23 +2510,23 @@ details.help.danger > summary { color: var(--red); }
                     <div><b>Important:</b> you can only message users who have started your bot. Users marked <b>Unreachable</b> — anyone who has never sent your bot a direct message — are skipped automatically.</div>
                 </div>
                 <div class="card">
-                    <div class="field">
-                        <label class="field-label">Audience</label>
-                        <select class="input" id="bc-target" onchange="onBroadcastTargetChange()">
-                            <option value="all">Everyone who started the bot</option>
-                            <option value="private">Only users who started the bot</option>
-                            <option value="only_ai_blocked">Only AI-blocked users</option>
-                            <option value="only_full_blocked">Only fully blocked users</option>
-                            <option value="except_full_blocked">Everyone except blocked</option>
-                            <option value="specific">Specific user IDs</option>
-                            <option value="custom">Pick from list</option>
-                        </select>
-                        <span class="field-hint">Most of the time you want the first option.</span>
+                    <div class="card-head">
+                        <div class="card-title"><i class="fa-solid fa-users"></i> Audience builder</div>
+                        <div style="flex:1"></div>
+                        <span class="badge blue" id="bc-count">0 recipients</span>
+                    </div>
+                    <div class="bc-audience-grid" id="bc-audience-pills">
+                        <button type="button" class="bc-aud-pill active" data-aud="started" onclick="setBcAudience('started')"><i class="fa-solid fa-user-check"></i> Started bot (reachable)</button>
+                        <button type="button" class="bc-aud-pill" data-aud="except_blocked" onclick="setBcAudience('except_blocked')"><i class="fa-solid fa-shield-heart"></i> All except blocked</button>
+                        <button type="button" class="bc-aud-pill" data-aud="ai_blocked" onclick="setBcAudience('ai_blocked')"><i class="fa-solid fa-robot"></i> AI-blocked only</button>
+                        <button type="button" class="bc-aud-pill" data-aud="full_blocked" onclick="setBcAudience('full_blocked')"><i class="fa-solid fa-ban"></i> Fully blocked only</button>
+                        <button type="button" class="bc-aud-pill" data-aud="specific" onclick="setBcAudience('specific')"><i class="fa-solid fa-list-ol"></i> Only these IDs</button>
+                        <button type="button" class="bc-aud-pill" data-aud="custom" onclick="setBcAudience('custom')"><i class="fa-regular fa-square-check"></i> Pick from list</button>
                     </div>
                     <div class="field hidden" id="bc-specific-wrap">
-                        <label class="field-label">User IDs</label>
-                        <textarea class="textarea" id="bc-specific" rows="3" placeholder="7407137804&#10;123456789" style="font-family:var(--mono);"></textarea>
-                        <span class="field-hint">One ID per line. You can find IDs in the Users tab.</span>
+                        <label class="field-label">Only send to these user IDs</label>
+                        <textarea class="textarea mono" id="bc-specific" rows="3" placeholder="7407137804&#10;123456789" oninput="updateBcCount()"></textarea>
+                        <span class="field-hint">One ID per line or comma-separated.</span>
                     </div>
                     <div class="field hidden" id="bc-custom-wrap">
                         <input class="input" id="bc-custom-search" placeholder="Search…" oninput="filterBroadcastCustom()">
@@ -2383,7 +2536,19 @@ details.help.danger > summary { color: var(--red); }
                         </div>
                         <div id="bc-custom-list" style="max-height:280px;overflow:auto;"></div>
                     </div>
-                    <div class="muted small" id="bc-count"></div>
+                    <details class="perm-acl-details" id="bc-modifiers-wrap">
+                        <summary><i class="fa-solid fa-sliders"></i> Also include or exclude specific user IDs</summary>
+                        <div class="grid grid-2">
+                            <div class="field" style="margin-bottom:0;">
+                                <label class="field-label tiny">Also include IDs (optional)</label>
+                                <textarea class="textarea mono" id="bc-include-ids" rows="2" placeholder="111222333&#10;444555666" oninput="updateBcCount()"></textarea>
+                            </div>
+                            <div class="field" style="margin-bottom:0;">
+                                <label class="field-label tiny">Exclude these IDs (optional)</label>
+                                <textarea class="textarea mono" id="bc-exclude-ids" rows="2" placeholder="999888777" oninput="updateBcCount()"></textarea>
+                            </div>
+                        </div>
+                    </details>
                 </div>
                 <div class="card">
                     <details class="help">
@@ -2705,9 +2870,9 @@ details.help.danger > summary { color: var(--red); }
                         <details class="help" data-html-ref style="margin-top:8px;margin-bottom:0;"></details>
                     </div>
                     <div class="grid grid-3">
-                        <div class="field" style="margin-bottom:0;"><label class="field-label tiny">Check button label</label><input class="input" id="fj-check-label" placeholder="✅ I've Joined — Check"></div>
-                        <div class="field" style="margin-bottom:0;"><label class="field-label tiny">Not-joined alert popup</label><input class="input" id="fj-not-joined" placeholder="❌ Please join all required chats first!"></div>
-                        <div class="field" style="margin-bottom:0;"><label class="field-label tiny">Verified message</label><input class="input" id="fj-joined-text" placeholder="✅ Verified! You can now use the bot."></div>
+                        <div class="field" style="margin-bottom:0;"><label class="field-label tiny">Check button label</label><textarea class="textarea" id="fj-check-label" rows="2" placeholder="✅ I've Joined — Check"></textarea></div>
+                        <div class="field" style="margin-bottom:0;"><label class="field-label tiny">Not-joined alert popup (max 200 chars)</label><textarea class="textarea" id="fj-not-joined" rows="2" placeholder="❌ Please join all required chats first!"></textarea></div>
+                        <div class="field" style="margin-bottom:0;"><label class="field-label tiny">Verified message</label><textarea class="textarea" id="fj-joined-text" rows="2" placeholder="✅ Verified! You can now use the bot."></textarea></div>
                     </div>
                 </div>
 
@@ -2718,29 +2883,32 @@ details.help.danger > summary { color: var(--red); }
 
             <section class="page" id="page-proxies">
                 <div class="page-head">
-                    <div class="lead"><h1>Proxies</h1><p>Manage MTProto &amp; SOCKS5 proxies, run live ping/geo tests, and publish proxy commands in one click.</p></div>
+                    <div class="lead"><h1>Proxies</h1><p>Manage MTProto &amp; SOCKS5 proxies, bulk-paste updates every hour, prune dead proxies, and publish commands in one click.</p></div>
                     <div class="page-actions">
+                        <button class="btn btn-primary btn-sm" onclick="openBulkProxyModal()"><i class="fa-solid fa-bolt"></i> Paste &amp; Update Cmd</button>
                         <button class="btn btn-gray btn-sm" onclick="testAllProxies()"><i class="fa-solid fa-gauge-high"></i> Test all</button>
-                        <button class="btn btn-gray btn-sm" onclick="createMultiProxyCmd()"><i class="fa-solid fa-layer-group"></i> Build multi-proxy cmd</button>
-                        <button class="btn btn-primary btn-sm" onclick="openProxyModal()"><i class="fa-solid fa-plus"></i> Add proxy</button>
+                        <button class="btn btn-gray btn-sm" onclick="createMultiProxyCmd()"><i class="fa-solid fa-layer-group"></i> Build / Update Cmd</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteOfflineProxies()"><i class="fa-solid fa-broom"></i> Delete not working</button>
+                        <button class="btn btn-gray btn-sm" onclick="openProxyModal()"><i class="fa-solid fa-plus"></i> Add one</button>
                     </div>
                 </div>
 
                 <details class="help">
-                    <summary><i class="fa-solid fa-circle-info"></i> Built for proxy publishers &amp; sellers</summary>
+                    <summary><i class="fa-solid fa-circle-info"></i> Hourly proxy updater &amp; tools for proxy sellers</summary>
                     <div>
-                        • Paste any <code>https://t.me/proxy?...</code>, <code>tg://proxy?...</code>, or <code>https://t.me/socks?...</code> link and Nyxx automatically extracts server, port, and secret type (Standard / <code>dd</code> / Fake TLS SNI).<br>
-                        • Click <b>Test</b> (or <b>Test all</b>) to check live TCP latency, IP, country flag, and ISP.<br>
-                        • Click <b>Create Cmd</b> on any proxy—or select multiple proxies and click <b>Build multi-proxy cmd</b>—to automatically create a command with native <b>Connect</b> + <b>Test &amp; Details</b> inline buttons!
+                        • <b>Hourly Quick Update:</b> click <b>Paste &amp; Update Cmd</b> to paste a fresh batch of proxy links (one per line), optionally wipe old dead/category proxies, auto-test them, and update your command (e.g. <code>/proxies</code>) in one step!<br>
+                        • Supports <code>https://t.me/proxy?...</code>, <code>tg://proxy?...</code>, <code>https://t.me/socks?...</code>, or <code>host:port:secret</code>.<br>
+                        • Click <b>Delete not working</b> anytime to prune all proxies marked <b>Unreachable / Offline</b>.
                     </div>
                 </details>
 
                 <div class="toolbar">
-                    <div class="search"><i class="fa-solid fa-magnifying-glass"></i><input id="proxy-search" placeholder="Search by label, server, country, or ISP…" oninput="renderProxies()"></div>
+                    <div class="search"><i class="fa-solid fa-magnifying-glass"></i><input id="proxy-search" placeholder="Search by label, server, country, category, or ISP…" oninput="renderProxies()"></div>
                     <select class="input" id="proxy-filter" onchange="renderProxies()" style="width:auto;">
                         <option value="all">All proxies</option>
                         <option value="online">Online only</option>
                         <option value="offline">Offline / unreachable</option>
+                        <option value="untested">Untested</option>
                         <option value="MTProto">MTProto</option>
                         <option value="SOCKS5">SOCKS5</option>
                     </select>
@@ -2748,9 +2916,12 @@ details.help.danger > summary { color: var(--red); }
 
                 <div class="media-bulk-bar" id="proxy-bulk-bar">
                     <span class="badge blue" id="proxy-bulk-count">0 selected</span>
+                    <button class="btn btn-gray btn-sm" onclick="selectAllVisibleProxies()">Select visible</button>
                     <button class="btn btn-gray btn-sm" onclick="clearProxySelection()">Clear</button>
                     <div style="flex:1"></div>
-                    <button class="btn btn-primary btn-sm" onclick="createMultiProxyCmd()"><i class="fa-solid fa-terminal"></i> Build command from selected</button>
+                    <button class="btn btn-gray btn-sm" onclick="testSelectedProxies()"><i class="fa-solid fa-gauge-high"></i> Test selected</button>
+                    <button class="btn btn-gray btn-sm" onclick="copySelectedProxyLinks()"><i class="fa-regular fa-copy"></i> Copy links</button>
+                    <button class="btn btn-primary btn-sm" onclick="createMultiProxyCmd()"><i class="fa-solid fa-terminal"></i> Update / Build Cmd</button>
                     <button class="btn btn-danger btn-sm" onclick="bulkDeleteProxies()"><i class="fa-regular fa-trash-can"></i> Delete</button>
                 </div>
 
@@ -2763,6 +2934,7 @@ details.help.danger > summary { color: var(--red); }
                     <div class="page-actions">
                         <button class="btn btn-gray btn-sm" onclick="openAddFileIdModal()"><i class="fa-solid fa-plus"></i> Add file_id</button>
                         <button class="btn btn-gray btn-sm" onclick="validateAllVisibleMedia()"><i class="fa-regular fa-square-check"></i> Validate</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteInvalidMedia()"><i class="fa-solid fa-broom"></i> Delete invalid</button>
                         <button class="btn btn-gray btn-sm" onclick="loadMediaLibrary(true)"><i class="fa-solid fa-rotate"></i> Refresh</button>
                         <button class="btn btn-danger btn-sm" onclick="clearMediaLibrary()"><i class="fa-solid fa-trash-can"></i> Clear</button>
                     </div>
@@ -2846,7 +3018,7 @@ details.help.danger > summary { color: var(--red); }
                                 </div>
                                 <div class="field" style="margin-bottom:0;">
                                     <label class="field-label tiny">Allowed user IDs (optional)</label>
-                                    <input class="input mono" id="media-up-allowed" placeholder="e.g. 123456, 789012">
+                                    <textarea class="textarea mono" id="media-up-allowed" rows="2" placeholder="123456&#10;789012"></textarea>
                                 </div>
                                 <div class="field" style="margin-bottom:0;">
                                     <label class="field-label tiny">Expires at (optional)</label>
@@ -2855,7 +3027,7 @@ details.help.danger > summary { color: var(--red); }
                             </div>
                             <div class="field" style="margin-top:10px;margin-bottom:0;">
                                 <label class="field-label tiny">Default caption / notes (optional)</label>
-                                <input class="input" id="media-up-caption" placeholder="Default caption used when creating commands or describing this file">
+                                <textarea class="textarea" id="media-up-caption" rows="2" placeholder="Default caption used when creating commands or describing this file"></textarea>
                             </div>
                         </div>
                     </details>
@@ -2933,6 +3105,16 @@ details.help.danger > summary { color: var(--red); }
                     </div>
                 </div>
 
+                <div class="tabbar sub-tabbar" id="ai-tabs">
+                    <button type="button" class="active" data-aitab="provider" onclick="aiSetTab('provider')"><i class="fa-solid fa-key"></i> Provider</button>
+                    <button type="button" data-aitab="prompt" onclick="aiSetTab('prompt')"><i class="fa-solid fa-brain"></i> Prompt &amp; KB</button>
+                    <button type="button" data-aitab="triggers" onclick="aiSetTab('triggers')"><i class="fa-solid fa-filter"></i> Triggers &amp; Chats</button>
+                    <button type="button" data-aitab="mcp" onclick="aiSetTab('mcp')"><i class="fa-solid fa-plug"></i> MCP Tools</button>
+                    <button type="button" data-aitab="perf" onclick="aiSetTab('perf')"><i class="fa-solid fa-gauge-high"></i> Performance</button>
+                    <button type="button" data-aitab="playground" onclick="aiSetTab('playground')"><i class="fa-solid fa-flask"></i> Playground</button>
+                </div>
+
+                <div class="sub-tabpane active" id="ai-pane-provider">
                 <div class="card">
                     <div class="card-head"><div class="card-title c-purple"><i class="fa-solid fa-key"></i> Provider &amp; connection</div></div>
                     <details class="help">
@@ -2978,6 +3160,8 @@ details.help.danger > summary { color: var(--red); }
                     <div id="ai-test-result" class="small" style="margin-top:10px;"></div>
                 </div>
 
+                </div>
+                <div class="sub-tabpane" id="ai-pane-prompt">
                 <div class="card">
                     <div class="card-head"><div class="card-title c-green"><i class="fa-solid fa-sliders"></i> Response shaping</div></div>
                     <div class="grid grid-2">
@@ -3047,6 +3231,8 @@ details.help.danger > summary { color: var(--red); }
                     </div>
                 </div>
 
+                </div>
+                <div class="sub-tabpane" id="ai-pane-triggers">
                 <div class="card">
                     <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-filter"></i> Triggers</div></div>
                     <div class="grid grid-2">
@@ -3065,6 +3251,8 @@ details.help.danger > summary { color: var(--red); }
                     </div>
                 </div>
 
+                </div>
+                <div class="sub-tabpane" id="ai-pane-mcp">
                 <div class="card">
                     <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-plug"></i> MCP tools integration</div></div>
                     <div class="hint-banner warn">
@@ -3097,7 +3285,9 @@ details.help.danger > summary { color: var(--red); }
                     </div>
                 </div>
 
-                <div class="card">
+                </div>
+                <script>/* placeholder for triggers merge */</script>
+                <div class="card" data-ai-move-to="triggers">
                     <div class="card-head"><div class="card-title c-green"><i class="fa-solid fa-user"></i> Private chats</div></div>
                     <div class="grid grid-2">
                         <div class="field"><label class="field-label">Reply in private chats</label><select class="input" id="ai-private"><option value="1">Yes</option><option value="0">No</option></select><span class="field-hint">Users who opened a DM with your bot.</span></div>
@@ -3111,7 +3301,7 @@ details.help.danger > summary { color: var(--red); }
                     </div>
                 </div>
 
-                <div class="card">
+                <div class="card" data-ai-move-to="triggers">
                     <div class="card-head"><div class="card-title c-purple"><i class="fa-solid fa-users"></i> Groups — global defaults</div></div>
                     <div class="hint-banner">
                         <i class="fa-solid fa-circle-info"></i>
@@ -3135,6 +3325,7 @@ details.help.danger > summary { color: var(--red); }
                     </div>
                 </div>
 
+                <div class="sub-tabpane" id="ai-pane-perf">
                 <div class="card">
                     <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-gauge-high"></i> Performance</div></div>
                     <div class="grid grid-2">
@@ -3164,6 +3355,8 @@ details.help.danger > summary { color: var(--red); }
                     <div id="sq-list"></div>
                 </div>
 
+                </div>
+                <div class="sub-tabpane" id="ai-pane-playground">
                 <div class="card">
                     <div class="card-head"><div class="card-title c-green"><i class="fa-solid fa-flask"></i> Playground</div><div style="flex:1"></div><button class="btn btn-gray btn-sm" onclick="clearPlayground()" aria-label="Clear playground"><i class="fa-solid fa-trash-can"></i></button></div>
                     <div class="hint-banner">
@@ -3177,7 +3370,7 @@ details.help.danger > summary { color: var(--red); }
                     </div>
                 </div>
 
-                <div class="card">
+                <div class="card" data-ai-move-to="perf">
                     <div class="row" style="justify-content:space-between;">
                         <span class="memory-pill"><i class="fa-solid fa-memory"></i> <span id="mem-count">…</span></span>
                         <div class="row">
@@ -3188,6 +3381,8 @@ details.help.danger > summary { color: var(--red); }
                             <button class="btn btn-gray btn-sm" onclick="resetAi()" title="Reset AI settings to defaults" aria-label="Reset AI settings"><i class="fa-solid fa-rotate-left"></i></button>
                         </div>
                     </div>
+                </div>
+
                 </div>
 
                 <div class="sticky-actions">
@@ -3390,7 +3585,16 @@ details.help.danger > summary { color: var(--red); }
             </section>
 
             <section class="page" id="page-settings">
-                <div class="page-head"><div class="lead"><h1>Settings</h1><p>Bot connection and admin credentials.</p></div></div>
+                <div class="page-head"><div class="lead"><h1>Settings</h1><p>Bot connection, global flood protection, credentials, and browser recovery.</p></div></div>
+                <div class="tabbar sub-tabbar" id="settings-tabs">
+                    <button type="button" class="active" data-stab="general" onclick="settingsSetTab('general')"><i class="fa-solid fa-sliders"></i> General &amp; UI</button>
+                    <button type="button" data-stab="bot" onclick="settingsSetTab('bot')"><i class="fa-solid fa-robot"></i> Bot &amp; Webhook</button>
+                    <button type="button" data-stab="flood" onclick="settingsSetTab('flood')"><i class="fa-solid fa-shield-halved"></i> Global Anti-Flood</button>
+                    <button type="button" data-stab="security" onclick="settingsSetTab('security')"><i class="fa-solid fa-lock"></i> Security &amp; DB</button>
+                    <button type="button" data-stab="browser" onclick="settingsSetTab('browser')"><i class="fa-solid fa-wrench"></i> Browser &amp; Recovery</button>
+                </div>
+
+                <div class="sub-tabpane active" id="set-pane-general">
                 <div class="card">
                     <div class="card-head"><div class="card-title c-green"><i class="fa-solid fa-language"></i> Language</div></div>
                     <details class="help">
@@ -3459,6 +3663,8 @@ details.help.danger > summary { color: var(--red); }
                     <div id="nav-layout-result" class="small" style="margin-top:10px;"></div>
                 </div>
 
+                </div>
+                <div class="sub-tabpane" id="set-pane-security">
                 <div class="card">
                     <div class="card-head"><div class="card-title c-purple"><i class="fa-solid fa-heart-pulse"></i> Schema health</div><div style="flex:1"></div>
                         <button class="btn btn-gray btn-sm" onclick="checkSchemaHealth()" aria-label="Check schema health"><i class="fa-solid fa-stethoscope"></i> Check health</button>
@@ -3470,6 +3676,8 @@ details.help.danger > summary { color: var(--red); }
                     <div id="schema-health-result" class="small" style="margin-bottom:12px;"></div>
                     <button class="btn btn-primary btn-sm" onclick="runSchemaHeal()"><i class="fa-solid fa-screwdriver-wrench"></i> Run auto-heal</button>
                 </div>
+                </div>
+                <div class="sub-tabpane" id="set-pane-bot">
                 <div class="card">
                     <div class="card-head"><div class="card-title c-green"><i class="fa-solid fa-robot"></i> Bot token</div></div>
                     <div class="input-with-btn">
@@ -3497,7 +3705,46 @@ details.help.danger > summary { color: var(--red); }
                     </div>
                     <div id="hook-result" class="small" style="margin-top:10px;"></div>
                 </div>
+                </div>
+                <div class="sub-tabpane" id="set-pane-flood">
                 <div class="card">
+                    <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-shield-halved"></i> Global bot anti-flood</div></div>
+                    <div class="hint-banner">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <div>Protects your bot globally across <b>both private chats and groups</b>. Escalates from <b>Mute</b> → <b>Kick</b> → <b>Ban</b>. In private DMs, Mute puts the user on temporary cooldown and Ban blocks them from the bot.</div>
+                    </div>
+                    <div class="switch-row"><div><div class="sw-label">Enable global anti-flood</div><div class="sw-sub">Monitor message rate per user across all chats.</div></div><button class="switch" id="set-gaf-enabled" onclick="toggleSwitch('set-gaf-enabled');show($('set-gaf-opts'),sw('set-gaf-enabled'))"></button></div>
+                    <div id="set-gaf-opts" class="hidden">
+                        <div class="grid grid-2">
+                            <div class="field">
+                                <label class="field-label">Max messages per minute</label>
+                                <input type="number" class="input" id="set-gaf-limit" min="2" max="120" value="12">
+                            </div>
+                            <div class="field">
+                                <label class="field-label">Mute / cooldown duration (minutes)</label>
+                                <input type="number" class="input" id="set-gaf-mute" min="1" max="1440" value="10">
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label class="field-label">First action on flood</label>
+                            <div class="segmented" id="set-gaf-action">
+                                <button type="button" data-v="mute" onclick="setSeg('set-gaf-action','mute')">Mute / Cooldown</button>
+                                <button type="button" data-v="kick" onclick="setSeg('set-gaf-action','kick')">Kick (groups) / Cooldown</button>
+                                <button type="button" data-v="ban" onclick="setSeg('set-gaf-action','ban')">Ban / Block</button>
+                            </div>
+                        </div>
+                        <div class="grid grid-2">
+                            <div class="field"><label class="field-label">After N mutes → Kick</label><input type="number" class="input" id="set-gaf-kick-after" min="1" max="20" value="2"></div>
+                            <div class="field"><label class="field-label">After N kicks → Ban / Block</label><input type="number" class="input" id="set-gaf-ban-after" min="1" max="20" value="2"></div>
+                        </div>
+                        <div class="switch-row"><div><div class="sw-label">Exempt Admins &amp; Moderators</div><div class="sw-sub">Recommended so admins are never throttled.</div></div><button class="switch on" id="set-gaf-exempt" onclick="toggleSwitch('set-gaf-exempt')"></button></div>
+                    </div>
+                    <button class="btn btn-primary btn-sm" style="margin-top:12px;" onclick="saveGlobalAntiFlood()"><i class="fa-solid fa-check"></i> Save anti-flood</button>
+                    <div id="set-gaf-result" class="small" style="margin-top:8px;"></div>
+                </div>
+                </div>
+
+                <div class="card" data-set-move-to="security">
                     <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-lock"></i> Admin password</div></div>
                     <details class="help">
                         <summary><i class="fa-solid fa-circle-info"></i> Password behaviour &amp; ADMIN_PASS override</summary>
@@ -3521,7 +3768,7 @@ details.help.danger > summary { color: var(--red); }
                     <button class="btn btn-primary btn-sm" onclick="changePassword()"><i class="fa-solid fa-check"></i> Update password</button>
                     <div id="pw-result" class="small" style="margin-top:8px;"></div>
                 </div>
-                <div class="card">
+                <div class="card" data-set-move-to="security">
                     <div class="card-head"><div class="card-title c-red"><i class="fa-solid fa-triangle-exclamation"></i> Danger zone</div></div>
                     <div class="hint-banner danger">
                         <i class="fa-solid fa-triangle-exclamation"></i>
@@ -3529,17 +3776,97 @@ details.help.danger > summary { color: var(--red); }
                     </div>
                     <button class="btn btn-danger" onclick="factoryReset()"><i class="fa-solid fa-rotate-left"></i> Factory reset</button>
                 </div>
+
+                <div class="sub-tabpane" id="set-pane-browser">
+                    <div class="card">
+                        <div class="card-head"><div class="card-title"><i class="fa-solid fa-wrench"></i> Browser, Service Worker &amp; Cache Recovery</div></div>
+                        <div class="hint-banner">
+                            <i class="fa-solid fa-circle-info"></i>
+                            <div>These tools run locally in your browser (no password required). Use them if the dashboard looks outdated, gets stuck loading, or has Service Worker cache issues.</div>
+                        </div>
+                        <div id="settings-browser-tools"></div>
+                    </div>
+                </div>
             </section>
 
             <section class="page" id="page-botinfo">
-                <div class="page-head"><div class="lead"><h1>Bot Info</h1><p>Name and descriptions shown in Telegram.</p></div></div>
+                <div class="page-head"><div class="lead"><h1>Bot Profile</h1><p>Live avatar, identity, menu button, and default admin permissions in Telegram.</p></div></div>
+
                 <div class="card">
+                    <div class="bot-profile-hero">
+                        <div class="bot-avatar-box" id="bi-avatar-box"><i class="fa-solid fa-robot"></i></div>
+                        <div style="flex:1;min-width:200px;">
+                            <div style="font-size:18px;font-weight:700;" id="bi-live-name">Loading bot…</div>
+                            <div class="small muted" id="bi-live-user">@—</div>
+                            <div class="row" style="margin-top:8px;gap:6px;" id="bi-live-caps"></div>
+                        </div>
+                        <a class="btn btn-gray btn-sm" href="https://t.me/BotFather" target="_blank" rel="noopener"><i class="fa-brands fa-telegram"></i> Change Photo / @username in @BotFather</a>
+                    </div>
+                    <span class="field-hint" style="margin-top:10px;"><i class="fa-solid fa-circle-info"></i> Telegram only allows changing a bot's profile picture or @username directly inside <code>@BotFather</code> (<code>/setuserpic</code>). Everything below can be updated directly from Nyxx.</span>
+                </div>
+
+                <div class="card">
+                    <div class="card-head"><div class="card-title"><i class="fa-solid fa-id-card"></i> Name &amp; Descriptions</div></div>
                     <div class="field"><label class="field-label">Name</label><input class="input" id="bi-name" placeholder="My Bot"><span class="field-hint">The public name shown in chats and search.</span></div>
-                    <div class="field"><label class="field-label">Description</label><textarea class="textarea" id="bi-desc" rows="5"></textarea><span class="field-hint">Shown on the bot's profile page before the user starts it.</span></div>
-                    <div class="field"><label class="field-label">Short description</label><textarea class="textarea" id="bi-short" rows="3"></textarea><span class="field-hint">Shown on the chat's empty state, right under the name.</span></div>
+                    <div class="field"><label class="field-label">Description</label><textarea class="textarea" id="bi-desc" rows="4"></textarea><span class="field-hint">Shown on the bot's profile page before the user starts it (max 512 chars).</span></div>
+                    <div class="field"><label class="field-label">Short description</label><textarea class="textarea" id="bi-short" rows="2"></textarea><span class="field-hint">Shown on the chat's empty state and share previews (max 120 chars).</span></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head"><div class="card-title c-purple"><i class="fa-solid fa-bars"></i> Default Chat Menu Button</div></div>
+                    <div class="grid grid-3">
+                        <div class="field" style="margin-bottom:0;">
+                            <label class="field-label tiny">Button behavior</label>
+                            <select class="input" id="bi-menu-type" onchange="show($('bi-menu-webapp-wrap'),this.value==='web_app')">
+                                <option value="commands">Commands menu (default)</option>
+                                <option value="default">Standard / Default</option>
+                                <option value="web_app">Open Mini App (Web App)</option>
+                            </select>
+                        </div>
+                        <div class="field hidden" id="bi-menu-webapp-wrap" style="grid-column:span 2;margin-bottom:0;">
+                            <div class="grid grid-2">
+                                <div><label class="field-label tiny">Web App button label</label><input class="input" id="bi-menu-text" placeholder="Open App"></div>
+                                <div><label class="field-label tiny">HTTPS Web App URL</label><input class="input" id="bi-menu-url" placeholder="https://example.com/app"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-user-shield"></i> Suggested Default Admin Rights</div></div>
+                    <span class="field-hint" style="margin-bottom:12px;">Pre-selected permissions shown when someone adds your bot as an administrator to a Group or Channel.</span>
+                    <div class="grid grid-2">
+                        <div>
+                            <div class="section-title" style="margin-top:0;">Groups &amp; Supergroups</div>
+                            <div class="grid grid-2" style="gap:8px;font-size:13px;" id="bi-rights-group">
+                                <label class="check"><input type="checkbox" data-r="can_manage_chat"> Manage chat</label>
+                                <label class="check"><input type="checkbox" data-r="can_delete_messages"> Delete messages</label>
+                                <label class="check"><input type="checkbox" data-r="can_restrict_members"> Restrict members</label>
+                                <label class="check"><input type="checkbox" data-r="can_invite_users"> Invite users</label>
+                                <label class="check"><input type="checkbox" data-r="can_pin_messages"> Pin messages</label>
+                                <label class="check"><input type="checkbox" data-r="can_promote_members"> Promote members</label>
+                                <label class="check"><input type="checkbox" data-r="can_change_info"> Change info</label>
+                                <label class="check"><input type="checkbox" data-r="can_manage_topics"> Manage topics</label>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="section-title" style="margin-top:0;">Channels</div>
+                            <div class="grid grid-2" style="gap:8px;font-size:13px;" id="bi-rights-channel">
+                                <label class="check"><input type="checkbox" data-r="can_manage_chat"> Manage chat</label>
+                                <label class="check"><input type="checkbox" data-r="can_post_messages"> Post messages</label>
+                                <label class="check"><input type="checkbox" data-r="can_edit_messages"> Edit messages</label>
+                                <label class="check"><input type="checkbox" data-r="can_delete_messages"> Delete messages</label>
+                                <label class="check"><input type="checkbox" data-r="can_invite_users"> Invite users</label>
+                                <label class="check"><input type="checkbox" data-r="can_change_info"> Change info</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
                     <div class="row">
                         <button class="btn btn-gray" onclick="loadBotInfo(true)"><i class="fa-solid fa-download"></i> Load from Telegram</button>
-                        <button class="btn btn-primary" onclick="publishBotInfo()"><i class="fa-solid fa-cloud-arrow-up"></i> Publish</button>
+                        <button class="btn btn-primary" onclick="publishBotInfo()"><i class="fa-solid fa-cloud-arrow-up"></i> Publish all changes</button>
                     </div>
                     <div id="bi-result" class="small" style="margin-top:10px;"></div>
                 </div>
@@ -3765,15 +4092,15 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
         <button data-v="oauth" onclick="cfSetMethod('oauth')"><i class="fa-solid fa-bolt"></i> OAuth</button>
         <button data-v="token" onclick="cfSetMethod('token')"><i class="fa-solid fa-key"></i> API token</button>
     </div>
-    <div id="cf-oauth-panel" class="hidden">
-        <div class="cf-connect-tile" id="cf-oauth-tile">
-            <div class="cf-logo"><i class="fa-brands fa-cloudflare"></i></div>
+    <div id="cf-oauth-panel">
+        <div class="cf-connect-tile loading" id="cf-oauth-tile">
+            <div class="cf-logo"><span class="mini-spinner"></span></div>
             <div class="cf-main">
-                <div class="cf-title" id="cf-oauth-label">Not connected</div>
-                <div class="cf-sub" id="cf-oauth-sub">Connect your Cloudflare account to update without pasting a token.</div>
+                <div class="cf-title" id="cf-oauth-label">Checking Cloudflare connection…</div>
+                <div class="cf-sub" id="cf-oauth-sub">Verifying saved OAuth credentials and token status.</div>
             </div>
             <div class="cf-actions">
-                <button class="btn btn-primary btn-sm" id="cf-oauth-connect" onclick="startCfOAuth()">
+                <button class="btn btn-primary btn-sm" id="cf-oauth-connect" onclick="startCfOAuth()" disabled>
                     <i class="fa-solid fa-cloud-arrow-up"></i> <span>Connect</span>
                 </button>
                 <button class="btn btn-danger btn-sm hidden" id="cf-oauth-disconnect" onclick="disconnectCfOAuth()">
@@ -3960,8 +4287,8 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                                 </div>
                             </div>
                             <div class="grid grid-2">
-                                <div class="field" style="margin-bottom:0;"><label class="field-label tiny">Allowed user IDs</label><input class="input mono" id="cmd-inline-allowed" placeholder="123456, 789012"></div>
-                                <div class="field" style="margin-bottom:0;"><label class="field-label tiny">Disallowed user IDs</label><input class="input mono" id="cmd-inline-disallowed" placeholder="555666"></div>
+                                <div class="field" style="margin-bottom:0;"><label class="field-label tiny">Allowed user IDs</label><textarea class="textarea mono" id="cmd-inline-allowed" rows="2" placeholder="123456&#10;789012"></textarea></div>
+                                <div class="field" style="margin-bottom:0;"><label class="field-label tiny">Disallowed user IDs</label><textarea class="textarea mono" id="cmd-inline-disallowed" rows="2" placeholder="555666"></textarea></div>
                             </div>
                         </div>
                     </details>
@@ -4080,7 +4407,7 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                     <input class="input" id="cmd-password" placeholder="Leave blank for no password" autocomplete="off" oninput="show($('cmd-pw-opts'), !!this.value.trim())">
                     <div id="cmd-pw-opts" class="hidden" style="margin-top:10px;">
                         <div class="grid grid-2">
-                            <div class="field" style="margin-bottom:0;"><label class="field-label tiny">Password prompt text</label><input class="input" id="cmd-pw-prompt" placeholder="🔒 Enter the password to continue:"></div>
+                            <div class="field" style="margin-bottom:0;"><label class="field-label tiny">Password prompt text</label><textarea class="textarea" id="cmd-pw-prompt" rows="2" placeholder="🔒 Enter the password to continue:"></textarea></div>
                             <div class="field" style="margin-bottom:0;"><label class="field-label tiny">Dismiss button label</label><input class="input" id="cmd-pw-dismiss" placeholder="❌ Dismiss"></div>
                         </div>
                         <span class="field-hint">If this command has a parent folder and auto-back is enabled, a Back button is also attached automatically.</span>
@@ -4114,6 +4441,12 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
             <button class="btn btn-plain" id="msg-save" onclick="saveMsgEditor()">Save</button>
         </div>
         <div class="sheet-body">
+            <div class="tabbar cmd-tabbar" id="msg-tabs">
+                <button type="button" class="active" data-mtab="content" onclick="msgModalSetTab('content')"><i class="fa-regular fa-file-lines"></i> Content &amp; Media</button>
+                <button type="button" data-mtab="keyboards" onclick="msgModalSetTab('keyboards')"><i class="fa-regular fa-keyboard"></i> Keyboards</button>
+                <button type="button" data-mtab="options" onclick="msgModalSetTab('options')"><i class="fa-solid fa-sliders"></i> Options</button>
+            </div>
+            <div class="cmd-tabpane active" id="msg-pane-content">
             <div class="field">
                 <label class="field-label">Response type</label>
                 <select class="input" id="msg-type" onchange="toggleMsgMedia()">
@@ -4160,7 +4493,8 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                 <textarea class="textarea" id="msg-text" rows="4" placeholder="Write the message…"></textarea>
                 <details class="help" data-html-ref style="margin-top:8px;margin-bottom:0;"></details>
             </div>
-            <div class="switch-row" id="msg-protect-row"><div><div class="sw-label">Protect content</div><div class="sw-sub">Prevent recipients from forwarding or saving this message/media.</div></div><button class="switch" id="msg-protect" onclick="toggleSwitch('msg-protect')"></button></div>
+            </div>
+            <div class="cmd-tabpane" id="msg-pane-keyboards">
             <div class="switch-row"><div><div class="sw-label">Attach buttons</div><div class="sw-sub">Inline and/or reply keyboard.</div></div><button class="switch" id="msg-kb-toggle" onclick="toggleMsgSection('kb')"></button></div>
             <div id="msg-kb-section" class="hidden">
                 <div class="switch-row"><div><div class="sw-label">Inline keyboard</div><div class="sw-sub">Buttons under the message.</div></div><button class="switch" id="msg-inline-toggle" onclick="toggleMsgSection('inline')"></button></div>
@@ -4195,8 +4529,8 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                                 </div>
                             </div>
                             <div class="grid grid-2">
-                                <div class="field" style="margin-bottom:0;"><label class="field-label tiny">Allowed user IDs</label><input class="input mono" id="msg-inline-allowed" placeholder="123456, 789012"></div>
-                                <div class="field" style="margin-bottom:0;"><label class="field-label tiny">Disallowed user IDs</label><input class="input mono" id="msg-inline-disallowed" placeholder="555666"></div>
+                                <div class="field" style="margin-bottom:0;"><label class="field-label tiny">Allowed user IDs</label><textarea class="textarea mono" id="msg-inline-allowed" rows="2" placeholder="123456&#10;789012"></textarea></div>
+                                <div class="field" style="margin-bottom:0;"><label class="field-label tiny">Disallowed user IDs</label><textarea class="textarea mono" id="msg-inline-disallowed" rows="2" placeholder="555666"></textarea></div>
                             </div>
                         </div>
                     </details>
@@ -4237,6 +4571,10 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                     </div>
                     <button type="button" class="switch" id="msg-remove-reply" onclick="toggleMsgRemoveReply()"></button>
                 </div>
+            </div>
+            </div>
+            <div class="cmd-tabpane" id="msg-pane-options">
+                <div class="switch-row" id="msg-protect-row" style="margin-bottom:0;"><div><div class="sw-label">Protect content</div><div class="sw-sub">Prevent recipients from forwarding or saving this message/media.</div></div><button class="switch" id="msg-protect" onclick="toggleSwitch('msg-protect')"></button></div>
             </div>
             <div class="err-box" id="msg-error"></div>
         </div>
@@ -4438,7 +4776,7 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                 </select>
             </div>
             <div class="field"><label class="field-label">Label</label><input class="input" id="mf-label" placeholder="e.g. Course PDF v1"></div>
-            <div class="field"><label class="field-label">Allowed user IDs (optional)</label><input class="input mono" id="mf-allowed" placeholder="123456, 789012"></div>
+            <div class="field"><label class="field-label">Allowed user IDs (optional)</label><textarea class="textarea mono" id="mf-allowed" rows="2" placeholder="123456&#10;789012"></textarea></div>
             <div class="err-box" id="mf-error"></div>
         </div>
         <div class="sheet-foot">
@@ -4546,8 +4884,67 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                 <div class="field"><label class="field-label tiny">Connect button label</label><input class="input" id="pxc-connect-lbl" value="⚡ Connect Proxy"></div>
                 <div class="field"><label class="field-label tiny">Test button label</label><input class="input" id="pxc-test-lbl" value="🔍 Test &amp; Details"></div>
             </div>
-            <div class="field" style="margin-bottom:0;"><label class="field-label tiny">Restrict to specific User IDs <span class="muted">(optional)</span></label><input class="input mono" id="pxc-allowed" placeholder="Leave blank for everyone, or 123456, 789012"></div>
+            <div class="switch-row" style="margin-top:4px;"><div class="sw-label">Skip offline proxies<div class="sw-sub">Exclude proxies whose last check failed.</div></div><button type="button" class="switch on" id="pxc-skip-offline" onclick="toggleSwitch('pxc-skip-offline')"></button></div>
+            <div class="field" style="margin-bottom:0;"><label class="field-label tiny">Restrict to specific User IDs <span class="muted">(optional)</span></label><textarea class="textarea mono" id="pxc-allowed" rows="2" placeholder="Leave blank for everyone, or enter IDs (one per line or comma-separated)"></textarea></div>
             <div class="err-box" id="pxc-error"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal hidden" id="proxy-bulk-modal" role="dialog" aria-modal="true">
+    <div class="modal-bg" onclick="closeBulkProxyModal()"></div>
+    <div class="sheet">
+        <div class="sheet-head">
+            <button class="btn btn-plain" onclick="closeBulkProxyModal()">Cancel</button>
+            <div class="sheet-title">Bulk Paste &amp; Update Proxy Cmd</div>
+            <button class="btn btn-plain" id="pxb-save-btn" onclick="submitBulkProxyImport()">Run</button>
+        </div>
+        <div class="sheet-body">
+            <div class="hint-banner">
+                <i class="fa-solid fa-bolt"></i>
+                <div>Paste all your new proxies below (one per line). Nyxx parses <code>t.me/proxy?...</code>, <code>tg://proxy?...</code>, <code>t.me/socks?...</code>, or <code>host:port:secret</code>, optionally clears old ones, tests them live, and publishes the working ones to your command!</div>
+            </div>
+            <div class="field">
+                <label class="field-label">Proxy list (one per line)</label>
+                <textarea class="textarea mono" id="pxb-lines" rows="6" placeholder="https://t.me/proxy?server=1.2.3.4&port=443&secret=dd...&#10;https://t.me/proxy?server=5.6.7.8&port=443&secret=ee..."></textarea>
+            </div>
+            <div class="grid grid-2">
+                <div class="field"><label class="field-label tiny">Category / Tag <span class="muted">(optional)</span></label><input class="input" id="pxb-category" placeholder="Hourly / Free / VIP"></div>
+                <div class="field"><label class="field-label tiny">Target command to update <span class="muted">(optional)</span></label><input class="input mono" id="pxb-cmd" value="/proxies" placeholder="/proxies or leave blank"></div>
+            </div>
+            <div class="field"><label class="field-label tiny">Command message text (HTML)</label><textarea class="textarea" id="pxb-content" rows="2">🛡️ <b>Fresh Telegram Proxies</b>&#10;Updated automatically — tap to connect or test live ping:</textarea></div>
+            <div class="switch-row"><div><div class="sw-label">Replace old proxies first</div><div class="sw-sub">Deletes existing proxies (in this category if set, or all proxies if blank) before importing.</div></div><button type="button" class="switch on" id="pxb-replace" onclick="toggleSwitch('pxb-replace')"></button></div>
+            <div class="switch-row"><div><div class="sw-label">Auto-test imported proxies &amp; drop offline ones</div><div class="sw-sub">Tests each imported proxy and only publishes working/reachable proxies to the command.</div></div><button type="button" class="switch on" id="pxb-autotest" onclick="toggleSwitch('pxb-autotest')"></button></div>
+            <div class="err-box" id="pxb-error"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal hidden" id="browser-recovery-modal" role="dialog" aria-modal="true">
+    <div class="modal-bg" onclick="closeBrowserRecoveryModal()"></div>
+    <div class="sheet">
+        <div class="sheet-head">
+            <button class="btn btn-plain" onclick="closeBrowserRecoveryModal()">Close</button>
+            <div class="sheet-title">Browser &amp; Cache Tools</div>
+            <div style="width:48px;"></div>
+        </div>
+        <div class="sheet-body">
+            <div class="hint-banner">
+                <i class="fa-solid fa-wrench"></i>
+                <div>These client-side tools work even without signing in. Resetting the Service Worker and browser caches resolves most stale-UI or stuck-connection issues.</div>
+            </div>
+            <div id="modal-browser-tools"></div>
+        </div>
+    </div>
+</div>
+
+<div class="update-lock-overlay hidden" id="update-lock-overlay" role="alertdialog" aria-modal="true">
+    <div class="update-lock-card">
+        <div class="update-timer-badge" id="update-lock-timer">15s</div>
+        <h3 id="update-lock-title" style="margin-bottom:8px;">Deploying Update…</h3>
+        <p class="small muted" id="update-lock-desc" style="margin-bottom:18px;">Please wait while Cloudflare propagates your updated Worker across the edge network. The dashboard will reload automatically.</p>
+        <div class="row" style="justify-content:center;">
+            <button type="button" class="btn btn-primary hidden" id="update-lock-reload-btn" onclick="finishUpdateReload()"><i class="fa-solid fa-rotate-right"></i> Reload now</button>
         </div>
     </div>
 </div>
@@ -5044,12 +5441,19 @@ function go(page) {
     if (page === 'contact') loadContact();
     if (page === 'inbox') loadInbox();
     if (page === 'memory') loadMemory();
-    if (page === 'ai') ensureModule('ai').then(function () {
-        window.loadAi();
-        window.refreshMemoryCount();
-    });
+    if (page === 'ai') {
+        initSubTabMoves();
+        ensureModule('ai').then(function () {
+            window.loadAi();
+            window.refreshMemoryCount();
+        });
+    }
     if (page === 'media') loadMediaLibrary();
-    if (page === 'settings') ensureModule('settings').then(function () { window.loadSettings(); });
+    if (page === 'settings') {
+        initSubTabMoves();
+        renderBrowserRecoveryTools('settings-browser-tools');
+        ensureModule('settings').then(function () { window.loadSettings(); });
+    }
     if (page === 'botinfo') ensureModule('settings').then(function () { window.loadBotInfo(); });
     if (page === 'cron') ensureModule('settings').then(function () { window.loadCron(); });
     if (page === 'logs') ensureModule('settings').then(function () { window.loadLogs(); window.loadLogClean(); });
@@ -5607,57 +6011,31 @@ function renderCommands() {
         var cmdEsc = esc(c.command).replace(/&#39;/g, "\\'");
         var mediaCnt = getCommandMediaCount(c);
         var typeLbl = (function(){ var t = c.response_type || 'text'; return t.charAt(0).toUpperCase() + t.slice(1).replace('_',' '); })();
-        var subParts = [mediaCnt > 1 ? (mediaCnt + ' attachments') : typeLbl];
+        var subParts = [mediaCnt > 1 ? (mediaCnt + ' files') : typeLbl];
         if (searchingAll && c.parent) subParts.push('in ' + c.parent);
-        if (kids) subParts.push(kids + ' sub-command' + (kids > 1 ? 's' : ''));
+        if (kids) subParts.push(kids + ' sub');
+        var lvl = commandAccessLevel(c);
+        var tags = [];
+        if (c.edit_message) tags.push('<span class="cm-tag accent" title="Edits message in place"><i class="fa-regular fa-pen-to-square"></i> Edit</span>');
+        if (c.protect_content) tags.push('<span class="cm-tag warn" title="Protected content"><i class="fa-solid fa-shield-halved"></i></span>');
+        if (c.cmd_password) tags.push('<span class="cm-tag purple" title="Password protected"><i class="fa-solid fa-key"></i></span>');
+        if (lvl !== 'everyone') tags.push('<span class="cm-tag purple" title="Restricted: ' + esc(lvl) + '"><i class="fa-solid fa-lock"></i> ' + (lvl === 'admin' ? 'Admin' : lvl === 'moderator' ? 'Mod+' : 'Specific') + '</span>');
+        if (c.allowed_users && String(c.allowed_users).trim()) {
+            var ucnt = String(c.allowed_users).trim().split(/[\s,;]+/).filter(Boolean).length;
+            if (ucnt) tags.push('<span class="cm-tag accent">' + ucnt + 'u</span>');
+        }
+        if (c.expires_at) {
+            var ms = parseIsoMs(c.expires_at);
+            if (ms && Date.now() > ms) tags.push('<span class="cm-tag danger">Expired</span>');
+            else if (ms) tags.push('<span class="cm-tag warn"><i class="fa-regular fa-clock"></i></span>');
+        }
         html += '<div class="list-row">' +
             '<i class="fa-regular ' + (kids ? 'fa-folder tag-folder' : (mediaCnt > 0 ? 'fa-file-zipper' : 'fa-file')) + '"></i>' +
             '<div class="lr-main" onclick="' + (kids ? 'enterFolder(\\'' + cmdEsc + '\\')' : 'editCommand(\\'' + cmdEsc + '\\')') + '" style="cursor:pointer;">' +
                 '<div class="lr-title mono">' + esc(c.command) + '</div>' +
-                '<div class="lr-sub">' + esc(subParts.join(' · ')) + '</div>' +
+                '<div class="lr-sub"><span class="cmd-row-sub-meta"><span>' + esc(subParts.join(' · ')) + '</span>' + (tags.length ? tags.join('') : '') + '</span></div>' +
             '</div>' +
             '<button class="badge ' + (c.enabled == 1 ? 'green' : 'red') + '" style="border:none;cursor:pointer;" onclick="toggleCmdEnabled(\\'' + cmdEsc + '\\')" title="Click to toggle">' + (c.enabled == 1 ? 'On' : 'Off') + '</button>' +
-            (function () {
-                var lvl = commandAccessLevel(c);
-                var b = '';
-            
-                // Always visible (icons only on mobile)
-                if (c.edit_message) {
-                    b += '<span class="badge mobile-icon-badge" title="Edits current message on inline tap">' +
-                        '<i class="fa-regular fa-pen-to-square"></i> <span class="hide-mobile">Edit</span>' +
-                    '</span>';
-                }
-            
-                if (c.protect_content) {
-                    b += '<span class="badge orange mobile-icon-badge" title="Forwarding/saving disabled">' +
-                        '<i class="fa-solid fa-shield-halved"></i> <span class="hide-mobile">Protected</span>' +
-                    '</span>';
-                }
-            
-                if (mediaCnt > 1) {
-                    b += '<span class="badge blue" title="Media count">' +
-                        '<i class="fa-solid fa-layer-group"></i> ' + mediaCnt +
-                    '</span>';
-                }
-            
-                // Desktop only
-                if (lvl === 'admin') b += '<span class="badge purple hide-mobile">Admin</span>';
-                else if (lvl === 'moderator') b += '<span class="badge purple hide-mobile">Mod+</span>';
-                else if (lvl === 'specific') b += '<span class="badge blue hide-mobile"> <i class="fa-solid fa-user-lock"></i> Specific</span>';
-            
-                if (c.allowed_users && String(c.allowed_users).trim()) {
-                    var cnt = String(c.allowed_users).trim().split(/[\s,;]+/).filter(Boolean).length;
-                    if (cnt) b += '<span class="badge blue hide-mobile">' + cnt + ' user' + (cnt > 1 ? 's' : '') + '</span>';
-                }
-            
-                if (c.expires_at) {
-                    var ms = parseIsoMs(c.expires_at);
-                    if (ms && Date.now() > ms) b += '<span class="badge red hide-mobile">Expired</span>';
-                    else if (ms) b += '<span class="badge orange hide-mobile">Expires</span>';
-                }
-            
-                return b;
-            })() +
             '<div class="lr-actions">' +
                 '<div class="lr-actions-desktop" style="display:flex;gap:4px;">' +
                     (!searchingAll ? '<button class="icon-btn" onclick="moveCmd(' + i + ',-1)" ' + (i === 0 ? 'disabled' : '') + ' aria-label="Move up" title="Move up"><i class="fa-solid fa-arrow-up"></i></button>' : '') +
@@ -7036,7 +7414,7 @@ function renderDm(msgs) {
             '<div class="b-meta">' + fmtTime(m.created_at) + (m.edited_at ? ' · edited' : '') + sourceTag + '</div>' +
             actions + '</div>';
     }).join('');
-    scrollBottom(box);
+    box.scrollTop = 0;
 }
 async function sendUserMessage() {
     if (!manageUser) return;
@@ -7096,7 +7474,7 @@ function renderAiMemory(msgs) {
                 '<button onclick="deleteAiMsg(' + i + ')"><i class="fa-regular fa-trash-can"></i> Delete</button>' +
             '</div></div>';
     }).join('');
-    scrollBottom(box);
+    box.scrollTop = 0;
 }
 async function editAiMsg(idx) {
     var m = window.__aiCache[idx]; if (!m) return;
@@ -7315,22 +7693,36 @@ async function loadGroups(force) {
         catch (e) { box.innerHTML = errorState(e.message, 'loadGroups(true)'); }
     } finally { _groupsLoading = false; }
 }
+function groupSubtypeLabel(g) {
+    var st = (g && g.chat_subtype) || (g && g.type) || 'group';
+    if (st === 'discussion') return 'Comments / Discussion';
+    if (st === 'forum') return 'Forum';
+    if (st === 'direct_messages') return 'DM Group';
+    if (st === 'supergroup') return 'Supergroup';
+    return 'Group';
+}
 function renderGroups() {
     var box = $('groups-list');
     var list = groups.filter(function (g) {
         if (groupFilter === 'active') return g.is_active == 1;
         if (groupFilter === 'inactive') return g.is_active != 1;
+        if (groupFilter === 'discussion' || groupFilter === 'forum' || groupFilter === 'direct_messages') {
+            return g.is_active == 1 && g.chat_subtype === groupFilter;
+        }
         return true;
     });
-    if (!list.length) { box.innerHTML = emptyState('fa-regular fa-comments', 'No groups yet.', 'Add the bot to a group and send a message.'); return; }
+    if (!list.length) { box.innerHTML = emptyState('fa-regular fa-comments', 'No groups match this filter.', 'Add the bot to a group or sync with Telegram.'); return; }
     box.innerHTML = '<div class="list">' + list.map(function (g) {
         var ai = g.ai_state === 'off' ? '<span class="badge red">AI off</span>' : (g.ai_state === 'on' ? '<span class="badge green">AI on</span>' : '<span class="badge">AI inherit</span>');
+        var subLbl = groupSubtypeLabel(g);
+        var subBadge = (g.chat_subtype && g.chat_subtype !== 'group' && g.chat_subtype !== 'supergroup')
+            ? '<span class="badge blue hide-mobile">' + esc(subLbl) + '</span>' : '';
         return '<div class="list-row">' +
-            '<i class="fa-solid ' + (g.type === 'supergroup' ? 'fa-users' : 'fa-user-group') + '" style="color:var(--accent);width:20px;text-align:center;"></i>' +
+            '<i class="fa-solid ' + (g.chat_subtype === 'discussion' ? 'fa-comments' : g.chat_subtype === 'forum' ? 'fa-table-cells-large' : g.type === 'supergroup' ? 'fa-users' : 'fa-user-group') + '" style="color:var(--accent);width:20px;text-align:center;"></i>' +
             '<div class="lr-main" onclick="openGroup(' + g.id + ')" style="cursor:pointer;">' +
                 '<div class="lr-title">' + esc(g.title || 'Group ' + g.id) + '</div>' +
-                '<div class="lr-sub">' + esc(g.type) + ' · ' + (g.member_count ? g.member_count + ' members · ' : '') + 'last active ' + fmtTime(g.last_active) + '</div>' +
-            '</div>' + ai + (g.is_active == 1 ? '' : '<span class="badge red">Removed</span>') +
+                '<div class="lr-sub">' + esc(subLbl) + ' · ' + (g.member_count ? g.member_count + ' members · ' : '') + 'last active ' + fmtTime(g.last_active) + '</div>' +
+            '</div>' + subBadge + ai + (g.is_active == 1 ? '' : '<span class="badge red">Removed</span>') +
             '<div class="lr-actions"><button class="icon-btn" onclick="openGroup(' + g.id + ')" aria-label="Open group"><i class="fa-solid fa-chevron-right"></i></button></div>' +
             '</div>';
     }).join('') + '</div>';
@@ -7374,6 +7766,31 @@ function applyGroupSettings(s) {
     setSeg('gm-callback-perm', s.callback_queries_permission || 'inherit');
     setSeg('gm-mcp-perm', s.mcp_telegram_permission || 'inherit');
     setSeg('gm-rules-perm', s.rules_command_permission || 'inherit');
+    if ($('gm-commands-perm-allowed')) $('gm-commands-perm-allowed').value = s.commands_permission_allowed || '';
+    if ($('gm-commands-perm-disallowed')) $('gm-commands-perm-disallowed').value = s.commands_permission_disallowed || '';
+    if ($('gm-featured-perm-allowed')) $('gm-featured-perm-allowed').value = s.featured_commands_permission_allowed || '';
+    if ($('gm-featured-perm-disallowed')) $('gm-featured-perm-disallowed').value = s.featured_commands_permission_disallowed || '';
+    if ($('gm-ai-perm-allowed')) $('gm-ai-perm-allowed').value = s.ai_chat_permission_allowed || '';
+    if ($('gm-ai-perm-disallowed')) $('gm-ai-perm-disallowed').value = s.ai_chat_permission_disallowed || '';
+    if ($('gm-callback-perm-allowed')) $('gm-callback-perm-allowed').value = s.callback_queries_permission_allowed || '';
+    if ($('gm-callback-perm-disallowed')) $('gm-callback-perm-disallowed').value = s.callback_queries_permission_disallowed || '';
+    if ($('gm-mcp-perm-allowed')) $('gm-mcp-perm-allowed').value = s.mcp_telegram_permission_allowed || '';
+    if ($('gm-mcp-perm-disallowed')) $('gm-mcp-perm-disallowed').value = s.mcp_telegram_permission_disallowed || '';
+    if ($('gm-rules-perm-allowed')) $('gm-rules-perm-allowed').value = s.rules_command_permission_allowed || '';
+    if ($('gm-rules-perm-disallowed')) $('gm-rules-perm-disallowed').value = s.rules_command_permission_disallowed || '';
+    if ($('gm-subtype-badge') && manageGroup) $('gm-subtype-badge').textContent = groupSubtypeLabel(manageGroup);
+    if ($('gm-exempt-linked-toggle')) toggleSwitch('gm-exempt-linked-toggle', s.exempt_linked_forwards !== false);
+    if ($('gm-autocomment-toggle')) {
+        toggleSwitch('gm-autocomment-toggle', !!s.auto_comment_enabled);
+        show($('gm-autocomment-wrap'), !!s.auto_comment_enabled);
+    }
+    if ($('gm-autocomment-text')) $('gm-autocomment-text').value = s.auto_comment_text || '';
+    if ($('gm-dmnotify-toggle')) toggleSwitch('gm-dmnotify-toggle', !!s.dm_notify_admins);
+    if ($('gm-dmauto-toggle')) {
+        toggleSwitch('gm-dmauto-toggle', !!s.dm_auto_reply_enabled);
+        show($('gm-dmauto-wrap'), !!s.dm_auto_reply_enabled);
+    }
+    if ($('gm-dmauto-text')) $('gm-dmauto-text').value = s.dm_auto_reply_text || '';
     setSeg('gm-link-level', s.link_filter_level || 'admins');
     setSeg('gm-forward-level', s.anti_forward_level || 'admins');
     setSeg('gm-blacklist-level', s.blacklist_level || 'admins');
@@ -7418,11 +7835,29 @@ async function saveGroupSettings() {
         var body = {
             ai: getSeg('gm-ai-mode') || 'inherit',
             commands_permission: getSeg('gm-commands-perm') || 'inherit',
+            commands_permission_allowed: $('gm-commands-perm-allowed') ? $('gm-commands-perm-allowed').value : '',
+            commands_permission_disallowed: $('gm-commands-perm-disallowed') ? $('gm-commands-perm-disallowed').value : '',
             featured_commands_permission: getSeg('gm-featured-perm') || 'inherit',
+            featured_commands_permission_allowed: $('gm-featured-perm-allowed') ? $('gm-featured-perm-allowed').value : '',
+            featured_commands_permission_disallowed: $('gm-featured-perm-disallowed') ? $('gm-featured-perm-disallowed').value : '',
             ai_chat_permission: getSeg('gm-ai-perm') || 'inherit',
+            ai_chat_permission_allowed: $('gm-ai-perm-allowed') ? $('gm-ai-perm-allowed').value : '',
+            ai_chat_permission_disallowed: $('gm-ai-perm-disallowed') ? $('gm-ai-perm-disallowed').value : '',
             callback_queries_permission: getSeg('gm-callback-perm') || 'inherit',
+            callback_queries_permission_allowed: $('gm-callback-perm-allowed') ? $('gm-callback-perm-allowed').value : '',
+            callback_queries_permission_disallowed: $('gm-callback-perm-disallowed') ? $('gm-callback-perm-disallowed').value : '',
             mcp_telegram_permission: getSeg('gm-mcp-perm') || 'inherit',
+            mcp_telegram_permission_allowed: $('gm-mcp-perm-allowed') ? $('gm-mcp-perm-allowed').value : '',
+            mcp_telegram_permission_disallowed: $('gm-mcp-perm-disallowed') ? $('gm-mcp-perm-disallowed').value : '',
             rules_command_permission: getSeg('gm-rules-perm') || 'inherit',
+            rules_command_permission_allowed: $('gm-rules-perm-allowed') ? $('gm-rules-perm-allowed').value : '',
+            rules_command_permission_disallowed: $('gm-rules-perm-disallowed') ? $('gm-rules-perm-disallowed').value : '',
+            exempt_linked_forwards: sw('gm-exempt-linked-toggle'),
+            auto_comment_enabled: sw('gm-autocomment-toggle'),
+            auto_comment_text: $('gm-autocomment-text') ? $('gm-autocomment-text').value : '',
+            dm_notify_admins: sw('gm-dmnotify-toggle'),
+            dm_auto_reply_enabled: sw('gm-dmauto-toggle'),
+            dm_auto_reply_text: $('gm-dmauto-text') ? $('gm-dmauto-text').value : '',
             link_filter_level: getSeg('gm-link-level') || 'admins',
             anti_forward_level: getSeg('gm-forward-level') || 'admins',
             blacklist_level: getSeg('gm-blacklist-level') || 'admins',
@@ -7525,7 +7960,7 @@ async function loadGroupMemory() {
                     '<button onclick="deleteGroupMemMsg(' + i + ')"><i class="fa-regular fa-trash-can"></i> Delete</button>' +
                 '</div></div>';
         }).join('');
-        scrollBottom(box);
+        box.scrollTop = 0;
     } catch (e) { box.innerHTML = errorState(e.message, 'loadGroupMemory()'); }
 }
 
@@ -7556,7 +7991,7 @@ async function loadGroupChatMessages() {
                     '<button onclick="deleteGroupChatMsg(' + i + ')"><i class="fa-regular fa-trash-can"></i> Delete</button>' +
                 '</div></div>';
         }).join('');
-        scrollBottom(box);
+        box.scrollTop = 0;
     } catch (e) { box.innerHTML = errorState(e.message, 'loadGroupChatMessages()'); }
 }
 function editGroupChatMsg(idx) {
@@ -8491,6 +8926,7 @@ var bcHistory = [];
 async function loadBroadcast() {
     loadBroadcastPacing(); loadBroadcastHistory();
     try { var d = await api('GET', '/api/users?filter=all&per_page=1000'); bcUsers = d.users || []; } catch (e) { bcUsers = []; }
+    updateBcCount();
 }
 async function loadBroadcastPacing() {
     try {
@@ -8510,11 +8946,15 @@ async function saveBroadcastPacing() {
         } catch (e) { toast(e.message, 'error'); }
     });
 }
-function onBroadcastTargetChange() {
-    var t = $('bc-target').value;
-    show($('bc-specific-wrap'), t === 'specific');
-    show($('bc-custom-wrap'), t === 'custom');
-    if (t === 'custom') renderBroadcastCustom();
+var bcAudienceMode = 'started';
+function setBcAudience(mode) {
+    bcAudienceMode = mode;
+    document.querySelectorAll('#bc-audience-pills .bc-aud-pill').forEach(function (b) {
+        b.classList.toggle('active', b.dataset.aud === mode);
+    });
+    show($('bc-specific-wrap'), mode === 'specific');
+    show($('bc-custom-wrap'), mode === 'custom');
+    if (mode === 'custom') renderBroadcastCustom();
     updateBcCount();
 }
 function renderBroadcastCustom() {
@@ -8530,22 +8970,39 @@ function filterBroadcastCustom() {
     document.querySelectorAll('#bc-custom-list .check').forEach(function (l) { l.style.display = l.dataset.name.toLowerCase().indexOf(q) >= 0 ? '' : 'none'; });
 }
 function bcCustomAll(on) { document.querySelectorAll('.bc-cb').forEach(function (c) { c.checked = on; }); updateBcCount(); }
+function parseIdTextarea(id) {
+    var el = $(id);
+    if (!el || !el.value) return [];
+    return el.value.split(/[^0-9]+/).map(Number).filter(function (n) { return n > 0; });
+}
 function getBroadcastIds() {
-    var t = $('bc-target').value;
-    if (t === 'specific') return $('bc-specific').value.split(/[^0-9]+/).map(Number).filter(Boolean);
-    if (t === 'custom') return Array.from(document.querySelectorAll('.bc-cb:checked')).map(function (c) { return parseInt(c.value); });
-    return bcUsers.filter(function (u) {
-        if (t === 'all' || t === 'private') return u.private_started == 1;
-        if (t === 'only_ai_blocked') return u.block_type === 'ai_only';
-        if (t === 'only_full_blocked') return u.block_type === 'full';
-        if (t === 'except_full_blocked') return u.block_type !== 'full';
-        return true;
-    }).map(function (u) { return u.id; });
+    var base = [];
+    if (bcAudienceMode === 'specific') {
+        base = parseIdTextarea('bc-specific');
+    } else if (bcAudienceMode === 'custom') {
+        base = Array.from(document.querySelectorAll('.bc-cb:checked')).map(function (c) { return parseInt(c.value); });
+    } else {
+        base = bcUsers.filter(function (u) {
+            if (bcAudienceMode === 'started') return u.private_started == 1;
+            if (bcAudienceMode === 'ai_blocked') return u.block_type === 'ai_only';
+            if (bcAudienceMode === 'full_blocked') return u.block_type === 'full';
+            if (bcAudienceMode === 'except_blocked') return u.block_type !== 'full';
+            return true;
+        }).map(function (u) { return u.id; });
+    }
+    var set = new Set(base);
+    parseIdTextarea('bc-include-ids').forEach(function (id) { set.add(id); });
+    parseIdTextarea('bc-exclude-ids').forEach(function (id) { set.delete(id); });
+    return Array.from(set);
 }
 function updateBcCount() {
     var n = getBroadcastIds().length;
-    var warn = n > 40 ? ' — WARNING: Cloudflare caps subrequests per invocation (50 free / 1000 paid). Broadcasts this large may partially fail. Use "Specific user IDs" to split into batches of 40 or fewer.' : '';
-    $('bc-count').textContent = n + ' recipient(s) will receive this message' + warn;
+    var el = $('bc-count');
+    if (el) {
+        el.textContent = n + ' recipient' + (n === 1 ? '' : 's');
+        el.className = 'badge ' + (n > 40 ? 'orange' : 'blue');
+        el.title = n > 40 ? 'Sent automatically in waves of 20' : '';
+    }
 }
 async function sendBroadcast() {
     if (pmState.active) { toast('A bulk task is already running.', 'error'); return; }
@@ -8624,7 +9081,7 @@ async function loadBroadcastHistory() {
                     '<button onclick="deleteBroadcast(' + h.id + ')"><i class="fa-regular fa-trash-can"></i> Delete</button>' +
                 '</div></div>';
         }).join('');
-        scrollBottom(box);
+        box.scrollTop = 0;
     } catch (e) { box.innerHTML = errorState(e.message, 'loadBroadcastHistory()'); }
 }
 async function deleteBroadcast(id) {
@@ -8766,7 +9223,15 @@ async function uploadMsgMedia() {
         status.innerHTML = '<span style="color:var(--red)">Upload failed.</span>';
     }
 }
+function msgModalSetTab(tab) {
+    document.querySelectorAll('#msg-tabs button').forEach(function (b) { b.classList.toggle('active', b.dataset.mtab === tab); });
+    ['content', 'keyboards', 'options'].forEach(function (t) {
+        var p = $('msg-pane-' + t);
+        if (p) p.classList.toggle('active', t === tab);
+    });
+}
 function openMsgEditor(mode, id) {
+    msgModalSetTab('content');
     msgContext = { mode: mode, id: id };
     draftMedia = null;
     msgAttachments = [];
@@ -8796,6 +9261,8 @@ function openMsgEditor(mode, id) {
 
     var isEditMode = (mode === 'dm' || mode === 'broadcast' || mode === 'group-edit');
     show(_g('msg-protect-row'), !isEditMode);
+    var optTabBtn = document.querySelector('#msg-tabs button[data-mtab="options"]');
+    if (optTabBtn) show(optTabBtn, !isEditMode);
 
     if (isEditMode) {
         var rec = mode === 'dm'
@@ -9587,10 +10054,12 @@ var PERM_LABELS = {
     media_commands: { label: 'Media replies', sub: 'Whether lower-role users can trigger photo/media responses from the bot.' }
 };
 var permState = {};
+var permAclState = {};
 async function loadPermissions(force) {
     try {
         var d = await api('GET', '/api/permissions');
         permState = d.permissions || {};
+        permAclState = d.acl || {};
         renderPermissions();
         loadAdmins();
     } catch (e) { toast(e.message, 'error'); }
@@ -9601,13 +10070,24 @@ function renderPermissions() {
     box.innerHTML = Object.keys(PERM_LABELS).map(function (k) {
         var meta = PERM_LABELS[k];
         var val = permState[k] || 'everyone';
-        return '<div class="switch-row perm-row" style="margin-bottom:10px;">' +
-            '<div class="perm-text" style="flex:1"><div class="sw-label">' + esc(meta.label) + '</div><div class="sw-sub">' + esc(meta.sub) + '</div></div>' +
-            '<div class="segmented perm-seg" data-perm="' + k + '">' +
-            '<button data-v="everyone" class="' + (val === 'everyone' ? 'active' : '') + '" onclick="setPerm(\\'' + k + '\\',\\'everyone\\',this)">Everyone</button>' +
-            '<button data-v="moderator" class="' + (val === 'moderator' ? 'active' : '') + '" onclick="setPerm(\\'' + k + '\\',\\'moderator\\',this)">Moderator+</button>' +
-            '<button data-v="admin" class="' + (val === 'admin' ? 'active' : '') + '" onclick="setPerm(\\'' + k + '\\',\\'admin\\',this)">Admin only</button>' +
+        var acl = permAclState[k] || { allowed: '', disallowed: '' };
+        var hasAcl = !!(acl.allowed || acl.disallowed);
+        return '<div class="switch-row perm-row" style="margin-bottom:10px;flex-direction:column;align-items:stretch;">' +
+            '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">' +
+                '<div class="perm-text" style="flex:1;min-width:200px;"><div class="sw-label">' + esc(meta.label) + '</div><div class="sw-sub">' + esc(meta.sub) + '</div></div>' +
+                '<div class="segmented perm-seg" data-perm="' + k + '">' +
+                '<button data-v="everyone" class="' + (val === 'everyone' ? 'active' : '') + '" onclick="setPerm(\\'' + k + '\\',\\'everyone\\',this)">Everyone</button>' +
+                '<button data-v="moderator" class="' + (val === 'moderator' ? 'active' : '') + '" onclick="setPerm(\\'' + k + '\\',\\'moderator\\',this)">Moderator+</button>' +
+                '<button data-v="admin" class="' + (val === 'admin' ? 'active' : '') + '" onclick="setPerm(\\'' + k + '\\',\\'admin\\',this)">Admin only</button>' +
+                '</div>' +
             '</div>' +
+            '<details class="perm-acl-details"' + (hasAcl ? ' open' : '') + '>' +
+                '<summary><i class="fa-solid fa-user-lock"></i> Allowed / Disallowed user IDs' + (hasAcl ? ' <span class="badge blue">Custom</span>' : '') + '</summary>' +
+                '<div class="grid grid-2">' +
+                    '<div><label class="field-label tiny">Allowed IDs</label><textarea class="textarea mono" rows="2" placeholder="123456&#10;789012" oninput="setPermAcl(\\'' + k + '\\',\\'allowed\\',this.value)">' + esc(acl.allowed || '') + '</textarea></div>' +
+                    '<div><label class="field-label tiny">Disallowed IDs</label><textarea class="textarea mono" rows="2" placeholder="555666" oninput="setPermAcl(\\'' + k + '\\',\\'disallowed\\',this.value)">' + esc(acl.disallowed || '') + '</textarea></div>' +
+                '</div>' +
+            '</details>' +
         '</div>';
     }).join('');
 }
@@ -9615,10 +10095,14 @@ function setPerm(key, val, btn) {
     permState[key] = val;
     btn.parentNode.querySelectorAll('button').forEach(function (b) { b.classList.toggle('active', b === btn); });
 }
+function setPermAcl(key, field, val) {
+    if (!permAclState[key]) permAclState[key] = { allowed: '', disallowed: '' };
+    permAclState[key][field] = val;
+}
 async function savePermissions() {
     await withSelfBusy(async function () {
         try {
-            await api('POST', '/api/permissions', { permissions: permState });
+            await api('POST', '/api/permissions', { permissions: permState, acl: permAclState });
             toast('Permissions saved.');
         } catch (e) { toast(e.message, 'error'); }
     });
@@ -9858,11 +10342,32 @@ async function disconnectCfOAuth() {
   });
 }
 
+function setCfTileLoading(on) {
+  var tile = $('cf-oauth-tile');
+  if (!tile) return;
+  tile.classList.toggle('loading', !!on);
+  var logo = tile.querySelector('.cf-logo');
+  if (logo) logo.innerHTML = on ? '<span class="mini-spinner"></span>' : '<i class="fa-brands fa-cloudflare"></i>';
+  if (on) {
+    if ($('cf-oauth-label')) $('cf-oauth-label').textContent = 'Checking Cloudflare connection…';
+    if ($('cf-oauth-sub')) $('cf-oauth-sub').textContent = 'Verifying saved OAuth credentials and token status.';
+    if ($('cf-oauth-connect')) $('cf-oauth-connect').disabled = true;
+  }
+}
+
 async function loadUpdateTab() {
+  var savedMethod = null;
+  try { savedMethod = localStorage.getItem('nyxx-cf-method'); } catch (e) {}
+  cfSetMethod(savedMethod === 'token' ? 'token' : 'oauth');
+  setCfTileLoading(true);
+
   await ensureModule('settings');
-  await window.loadSettings(true);
-  await checkUpdate(true);
-  await loadCfOAuthStatus();
+  await Promise.all([
+    window.loadSettings(true),
+    checkUpdate(true),
+    loadCfOAuthStatus()
+  ]);
+  setCfTileLoading(false);
 
   // Handle post-OAuth redirect from /oauth/callback.
   var params = new URLSearchParams(window.location.search);
@@ -9876,8 +10381,6 @@ async function loadUpdateTab() {
     await loadCfOAuthStatus();
   }
 
-  var savedMethod = null;
-  try { savedMethod = localStorage.getItem('nyxx-cf-method'); } catch (e) {}
   if (cfOAuthStatus && cfOAuthStatus.connected) cfSetMethod('oauth');
   else if (savedMethod === 'token' || (cfOAuthStatus && cfOAuthStatus.cf_token_set && !cfOAuthStatus.connected)) cfSetMethod('token');
   else cfSetMethod('oauth');
@@ -9920,6 +10423,8 @@ async function performUpdate(force) {
     return;
   }
 
+  var activeBtn = force ? $('up-reinstall-btn') : $('up-btn');
+  busy(activeBtn, true);
   updateProgress(15, 'Validating credentials…');
   $('up-result').innerHTML = '<span class="mini-spinner"></span> Validating…';
   try {
@@ -9937,22 +10442,33 @@ async function performUpdate(force) {
     });
     if (!r || !r.success) throw new Error((r && r.error) || 'Update failed.');
 
-    updateProgress(100, 'Done — Worker is now on v' + (r.version || 'latest') + '.');
-    hideProgress(3000);
+    var newVer = r.version || latestVersion || 'latest';
+    updateProgress(100, 'Done — Worker is now on v' + newVer + '.');
     $('up-result').innerHTML =
       '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Updated to ' +
-      esc(r.version || 'latest') + '.</span>';
-    toast('Update complete.');
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistration().then(function (reg) { if (reg) reg.update(); }).catch(function () {});
+      esc(newVer) + '. Waiting for edge propagation…</span>';
+
+    try {
+      localStorage.removeItem('nyxx-update-cache');
+      localStorage.removeItem('nyxx-last-update-check');
+    } catch (e) {}
+    if ($('up-current')) $('up-current').value = newVer;
+    show($('update-pill'), false);
+    if ('caches' in window) {
+      caches.keys().then(function (keys) { return Promise.all(keys.map(function (k) { return caches.delete(k); })); }).catch(function () {});
     }
-    checkUpdate(true);
-    loadCfOAuthStatus();
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (regs) { return Promise.all(regs.map(function (rg) { return rg.unregister(); })); }).catch(function () {});
+    }
+
+    startUpdateLockScreen(newVer);
   } catch (e) {
     hideProgress(1500);
     $('up-result').innerHTML =
       '<span style="color:var(--red)"><i class="fa-solid fa-circle-xmark"></i> ' +
       esc(e.message) + '</span>';
+  } finally {
+    busy(activeBtn, false);
   }
 }
 
@@ -10025,6 +10541,11 @@ document.addEventListener('keydown', function (e) {
         else if (top === 'cmd-templates-modal') closeCmdTemplatesModal();
         else if (top === 'proxy-modal') closeProxyModal();
         else if (top === 'proxy-cmd-modal') closeAttachProxyCmdModal();
+        else if (top === 'proxy-bulk-modal') closeBulkProxyModal();
+        else if (top === 'browser-recovery-modal') closeBrowserRecoveryModal();
+        else if (top === 'media-picker-modal') closeMediaPicker();
+        else if (top === 'media-edit-modal') closeMediaEditModal();
+        else if (top === 'media-fileid-modal') closeAddFileIdModal();
     }
     if (e.key === 'Escape') { closeAllDropdowns(); if (typeof closeTopbarDropdowns === 'function') closeTopbarDropdowns(null); }
     if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey && !/^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || '')) {
@@ -10273,7 +10794,7 @@ async function loadChannelPosts() {
                     '<button onclick="deleteChannelPost(' + i + ')"><i class="fa-regular fa-trash-can"></i> Delete</button>' +
                 '</div></div>';
         }).join('');
-        scrollBottom(box);
+        box.scrollTop = 0;
     } catch (e) { box.innerHTML = errorState(e.message, 'loadChannelPosts()'); }
 }
 async function sendChannelPost() {
@@ -10758,17 +11279,13 @@ function toggleProxySelect(id) {
     renderProxies();
 }
 function clearProxySelection() { proxySelected.clear(); renderProxies(); }
-function renderProxies() {
-    var bar = $('proxy-bulk-bar'), cnt = $('proxy-bulk-count');
-    if (bar) bar.classList.toggle('show', proxySelected.size > 0);
-    if (cnt) cnt.textContent = proxySelected.size + ' selected';
-    var box = $('proxies-list');
-    if (!box) return;
+function getFilteredProxies() {
     var q = ($('proxy-search') && $('proxy-search').value || '').toLowerCase().trim();
     var f = ($('proxy-filter') && $('proxy-filter').value) || 'all';
-    var list = proxiesList.filter(function (p) {
+    return proxiesList.filter(function (p) {
         if (f === 'online' && p.last_status !== 'online') return false;
         if (f === 'offline' && p.last_status !== 'offline') return false;
+        if (f === 'untested' && p.last_status) return false;
         if ((f === 'MTProto' || f === 'SOCKS5') && p.kind !== f) return false;
         if (q) {
             var hay = (p.label + ' ' + p.server + ' ' + p.country + ' ' + p.isp + ' ' + p.category).toLowerCase();
@@ -10776,6 +11293,18 @@ function renderProxies() {
         }
         return true;
     });
+}
+function selectAllVisibleProxies() {
+    getFilteredProxies().forEach(function (p) { proxySelected.add(p.id); });
+    renderProxies();
+}
+function renderProxies() {
+    var bar = $('proxy-bulk-bar'), cnt = $('proxy-bulk-count');
+    if (bar) bar.classList.toggle('show', proxySelected.size > 0);
+    if (cnt) cnt.textContent = proxySelected.size + ' selected';
+    var box = $('proxies-list');
+    if (!box) return;
+    var list = getFilteredProxies();
     if (!list.length) { box.innerHTML = emptyState('fa-solid fa-network-wired', 'No proxies yet.', 'Click Add proxy and paste any t.me/proxy or t.me/socks link.'); return; }
     box.innerHTML = list.map(function (p) {
         var sel = proxySelected.has(p.id);
@@ -10954,12 +11483,13 @@ function openAttachProxyCmdModal(id) {
 function createMultiProxyCmd() {
     var items = proxySelected.size
         ? proxiesList.filter(function (p) { return proxySelected.has(p.id); })
-        : proxiesList.slice(0, 8);
+        : proxiesList.filter(function (p) { return p.last_status !== 'offline'; }).slice(0, 20);
+    if (!items.length) items = proxiesList.slice(0, 20);
     if (!items.length) { toast('Add at least one proxy first.', 'info'); return; }
     attachingProxy = null;
     attachingMultiProxies = items;
     $('pxc-error').classList.remove('show');
-    $('pxc-title').textContent = 'Build command (' + items.length + ' proxies)';
+    $('pxc-title').textContent = 'Publish / Update command (' + items.length + ' proxies)';
     $('pxc-cmd').value = '/proxies';
     $('pxc-parent').value = '';
     $('pxc-content').value = '🛡️ <b>Available Telegram Proxies (' + items.length + ')</b>\\n\\nChoose a proxy below to connect or test its live ping &amp; details.';
@@ -10967,6 +11497,7 @@ function createMultiProxyCmd() {
     toggleSwitch('pxc-inc-test', true);
     toggleSwitch('pxc-edit', true);
     toggleSwitch('pxc-protect', false);
+    if ($('pxc-skip-offline')) toggleSwitch('pxc-skip-offline', true);
     $('pxc-allowed').value = '';
     $('proxy-cmd-modal').classList.remove('hidden');
     trackModal('proxy-cmd-modal');
@@ -10982,13 +11513,15 @@ async function submitAttachProxyCmd() {
     if (!cmdName || !cmdName.startsWith('/')) { err.textContent = 'Command must start with "/".'; err.classList.add('show'); return; }
     var incConnect = sw('pxc-inc-connect');
     var incTest = sw('pxc-inc-test');
+    var skipOffline = $('pxc-skip-offline') && sw('pxc-skip-offline');
     var cLbl = $('pxc-connect-lbl').value.trim() || '⚡ Connect Proxy';
     var tLbl = $('pxc-test-lbl').value.trim() || '🔍 Test & Details';
     var rows = [];
     var items = attachingMultiProxies ? attachingMultiProxies : (attachingProxy ? [attachingProxy] : []);
+    if (skipOffline && items.length > 1) items = items.filter(function (p) { return p.last_status !== 'offline'; });
+    if (!items.length) { err.textContent = 'No working proxies selected after filtering offline ones.'; err.classList.add('show'); return; }
     items.forEach(function (p) {
         var r = [];
-        var prefix = attachingMultiProxies ? ((p.label || p.server).slice(0, 18) + ' ') : '';
         if (incConnect) r.push({ text: attachingMultiProxies ? ('⚡ ' + (p.label || p.server).slice(0, 20)) : cLbl, type: 'url', value: p.link, style: 'success' });
         if (incTest) r.push({ text: attachingMultiProxies ? '🔍 Test' : tLbl, type: 'callback', value: 'PROXY:' + p.link, style: 'primary' });
         if (r.length) rows.push(r);
@@ -11019,6 +11552,290 @@ async function submitAttachProxyCmd() {
             commands = [];
         } catch (e) { err.textContent = e.message; err.classList.add('show'); }
     });
+}
+
+/* ============================================================
+   v5.0.0: SUB-TABS, RECOVERY TOOLS, BULK PROXY & MEDIA HELPERS, UPDATE LOCK
+   ============================================================ */
+var __subTabMoved = false;
+function initSubTabMoves() {
+    if (__subTabMoved) return;
+    __subTabMoved = true;
+    document.querySelectorAll('[data-ai-move-to]').forEach(function (el) {
+        var target = $('ai-pane-' + el.dataset.aiMoveTo);
+        if (target) target.appendChild(el);
+    });
+    document.querySelectorAll('[data-set-move-to]').forEach(function (el) {
+        var target = $('set-pane-' + el.dataset.setMoveTo);
+        if (target) target.appendChild(el);
+    });
+}
+function aiSetTab(tab) {
+    document.querySelectorAll('#ai-tabs button').forEach(function (b) { b.classList.toggle('active', b.dataset.aitab === tab); });
+    document.querySelectorAll('#page-ai .sub-tabpane').forEach(function (p) { p.classList.remove('active'); });
+    var pane = $('ai-pane-' + tab);
+    if (pane) pane.classList.add('active');
+}
+function settingsSetTab(tab) {
+    document.querySelectorAll('#settings-tabs button').forEach(function (b) { b.classList.toggle('active', b.dataset.stab === tab); });
+    document.querySelectorAll('#page-settings .sub-tabpane').forEach(function (p) { p.classList.remove('active'); });
+    var pane = $('set-pane-' + tab);
+    if (pane) pane.classList.add('active');
+    if (tab === 'browser') renderBrowserRecoveryTools('settings-browser-tools');
+}
+
+async function deleteInvalidMedia() {
+    var invalid = mediaLibrary.filter(function (m) { return m.is_valid === 0; });
+    if (!invalid.length) { toast('No invalid media items found. Run Validate first to check.', 'info'); return; }
+    if (!await confirmDialog('Delete ' + invalid.length + ' invalid media item(s) from your Media Library?', 'Delete invalid media', true)) return;
+    openProgressModal({ title: 'Deleting invalid media', total: invalid.length, unit: 'deleted', okLabel: 'deleted', badLabel: 'failed' });
+    var ids = invalid.map(function (m) { return m.id; });
+    for (var i = 0; i < ids.length && !pmState.cancelled; i += 25) {
+        var slice = ids.slice(i, i + 25);
+        try {
+            await api('POST', '/api/media/bulk', { action: 'delete', ids: slice });
+            updateProgressModal(slice.length, slice.length, 0, 'Deleted ' + Math.min(i + slice.length, ids.length) + ' of ' + ids.length);
+        } catch (e) { updateProgressModal(slice.length, 0, slice.length, e.message); }
+    }
+    finishProgressModal();
+    loadMediaLibrary(true);
+}
+
+async function deleteOfflineProxies() {
+    var off = proxiesList.filter(function (p) { return p.last_status === 'offline'; });
+    if (!off.length) { toast('No offline proxies found. Run Test all first.', 'info'); return; }
+    if (!await confirmDialog('Delete ' + off.length + ' offline / not working proxy item(s)?', 'Delete not working proxies', true)) return;
+    try {
+        var d = await api('POST', '/api/proxies/delete_offline', {});
+        toast('Deleted ' + (d.deleted || 0) + ' offline proxy(s).');
+        loadProxies();
+    } catch (e) { toast(e.message, 'error'); }
+}
+
+async function testSelectedProxies() {
+    var ids = Array.from(proxySelected);
+    if (!ids.length) return;
+    if (pmState.active) { toast('A bulk task is already running.', 'error'); return; }
+    openProgressModal({ title: 'Testing selected proxies', total: ids.length, unit: 'tested', okLabel: 'online', badLabel: 'offline/skipped' });
+    for (var i = 0; i < ids.length && !pmState.cancelled; i++) {
+        var p = proxiesList.find(function (x) { return x.id === ids[i]; }) || { id: ids[i], server: '#' + ids[i] };
+        try {
+            var r = await api('POST', '/api/proxies/test', { id: p.id });
+            var isOk = r && r.status === 'online';
+            updateProgressModal(1, isOk ? 1 : 0, isOk ? 0 : 1, (p.label || p.server) + ' → ' + (isOk ? (r.pingMs + 'ms') : r.status));
+        } catch (e) { updateProgressModal(1, 0, 1, 'Error: ' + e.message); }
+    }
+    finishProgressModal();
+    loadProxies();
+}
+function copySelectedProxyLinks() {
+    var links = proxiesList.filter(function (p) { return proxySelected.has(p.id); }).map(function (p) { return p.link; }).filter(Boolean);
+    if (!links.length) return;
+    navigator.clipboard.writeText(links.join('\\n')).then(function () { toast('Copied ' + links.length + ' proxy link(s).'); });
+}
+function openBulkProxyModal() {
+    $('pxb-error').classList.remove('show');
+    $('pxb-lines').value = '';
+    toggleSwitch('pxb-replace', true);
+    toggleSwitch('pxb-autotest', true);
+    $('proxy-bulk-modal').classList.remove('hidden');
+    trackModal('proxy-bulk-modal');
+}
+function closeBulkProxyModal() {
+    $('proxy-bulk-modal').classList.add('hidden');
+    untrackModal('proxy-bulk-modal');
+}
+async function submitBulkProxyImport() {
+    var err = $('pxb-error'); err.classList.remove('show');
+    var raw = $('pxb-lines').value.trim();
+    if (!raw) { err.textContent = 'Paste at least one proxy link or host:port line.'; err.classList.add('show'); return; }
+    var category = $('pxb-category').value.trim();
+    var cmd = $('pxb-cmd').value.trim();
+    var content = $('pxb-content').value.trim();
+    var replaceOld = sw('pxb-replace');
+    var autoTest = sw('pxb-autotest');
+    var imported = [];
+    await withBusy($('pxb-save-btn'), async function () {
+        try {
+            var d = await api('POST', '/api/proxies/bulk_import', { lines: raw, category: category, replaceOld: replaceOld });
+            imported = d.proxies || [];
+        } catch (e) { err.textContent = e.message; err.classList.add('show'); }
+    });
+    if (!imported.length) return;
+    closeBulkProxyModal();
+
+    var working = imported.slice();
+    if (autoTest) {
+        openProgressModal({ title: 'Testing imported proxies', total: imported.length, unit: 'tested', okLabel: 'working', badLabel: 'offline' });
+        working = [];
+        for (var i = 0; i < imported.length && !pmState.cancelled; i++) {
+            var p = imported[i];
+            try {
+                var tr = await api('POST', '/api/proxies/test', { id: p.id });
+                var ok = tr && (tr.status === 'online' || tr.status === 'restricted');
+                if (ok) working.push(Object.assign({}, p, { last_ping_ms: tr.pingMs, country: tr.country }));
+                updateProgressModal(1, ok ? 1 : 0, ok ? 0 : 1, (p.server + ':' + p.port) + ' → ' + (tr.status || 'done'));
+            } catch (e) { updateProgressModal(1, 0, 1, 'Error: ' + e.message); }
+        }
+        finishProgressModal('Imported ' + imported.length + ', working/usable: ' + working.length + '.');
+    }
+
+    if (cmd && cmd.startsWith('/')) {
+        var listForCmd = working.length ? working : imported;
+        var rows = listForCmd.slice(0, 30).map(function (p) {
+            var lbl = (p.country ? p.country + ' · ' : '') + (p.label || p.server);
+            return [
+                { text: '⚡ ' + lbl.slice(0, 22), type: 'url', value: p.link, style: 'success' },
+                { text: '🔍 Test', type: 'callback', value: 'PROXY:' + p.link, style: 'primary' }
+            ];
+        });
+        var payload = {
+            command: cmd,
+            response_type: 'text',
+            content: content || '🛡️ <b>Telegram Proxies</b>',
+            buttons_json: rows.length ? JSON.stringify({ v: 2, inline: rows }) : '',
+            edit_message: 1,
+            edit_triggers: 'inline,reply,command',
+            enabled: 1
+        };
+        try {
+            try { await api('POST', '/api/commands', payload); }
+            catch (e) {
+                if (/already exists/i.test(e.message)) await api('PUT', '/api/commands/' + encodeURIComponent(cmd), payload);
+                else throw e;
+            }
+            commands = [];
+            toast('Updated ' + cmd + ' with ' + rows.length + ' proxy(s)!');
+        } catch (e) { toast('Imported proxies, but command update failed: ' + e.message, 'error'); }
+    } else {
+        toast('Imported ' + imported.length + ' proxy(s).');
+    }
+    loadProxies();
+}
+
+function openBrowserRecoveryModal() {
+    $('browser-recovery-modal').classList.remove('hidden');
+    trackModal('browser-recovery-modal');
+    renderBrowserRecoveryTools('modal-browser-tools');
+}
+function closeBrowserRecoveryModal() {
+    $('browser-recovery-modal').classList.add('hidden');
+    untrackModal('browser-recovery-modal');
+}
+async function renderBrowserRecoveryTools(containerId) {
+    var box = $(containerId);
+    if (!box) return;
+    var swText = 'Checking…', cacheText = 'Checking…', lsCount = 0;
+    try { lsCount = localStorage.length; } catch (e) {}
+    if ('serviceWorker' in navigator) {
+        try {
+            var regs = await navigator.serviceWorker.getRegistrations();
+            swText = regs.length ? (regs.length + ' active registration(s)') : 'None registered';
+        } catch (e) { swText = 'Unavailable'; }
+    } else swText = 'Not supported';
+    if ('caches' in window) {
+        try {
+            var keys = await caches.keys();
+            cacheText = keys.length ? (keys.length + ' cache(s): ' + keys.join(', ')) : 'Empty (0 caches)';
+        } catch (e) { cacheText = 'Unavailable'; }
+    } else cacheText = 'Not supported';
+
+    box.innerHTML =
+        '<div class="recovery-tool-row"><div><div style="font-weight:600;font-size:14px;">Service Worker</div><div class="tiny muted">' + esc(swText) + '</div></div>' +
+            '<div class="row" style="gap:6px;"><button type="button" class="btn btn-gray btn-sm" onclick="recUpdateSw(\\'' + containerId + '\\')">Update SW</button><button type="button" class="btn btn-danger btn-sm" onclick="recUnregisterSw(\\'' + containerId + '\\')">Unregister SW</button></div></div>' +
+        '<div class="recovery-tool-row"><div><div style="font-weight:600;font-size:14px;">Browser Cache Storage</div><div class="tiny muted">' + esc(cacheText) + '</div></div>' +
+            '<button type="button" class="btn btn-danger btn-sm" onclick="recClearCaches(\\'' + containerId + '\\')">Clear caches</button></div>' +
+        '<div class="recovery-tool-row"><div><div style="font-weight:600;font-size:14px;">Local Preferences &amp; UI Cache</div><div class="tiny muted">' + lsCount + ' item(s) in localStorage</div></div>' +
+            '<button type="button" class="btn btn-gray btn-sm" onclick="recClearLocal(\\'' + containerId + '\\')">Clear localStorage</button></div>' +
+        '<div class="recovery-tool-row"><div><div style="font-weight:600;font-size:14px;">Server Connectivity Test</div><div class="tiny muted" id="' + containerId + '-ping">Ping /api/status bypassing cache</div></div>' +
+            '<button type="button" class="btn btn-gray btn-sm" onclick="recPingServer(\\'' + containerId + '\\')">Test connection</button></div>' +
+        '<div style="margin-top:14px;"><button type="button" class="btn btn-primary btn-block" onclick="recFullReset()"><i class="fa-solid fa-rotate-right"></i> Clear All Browser Caches, Reset SW &amp; Reload</button></div>';
+}
+async function recUpdateSw(cid) {
+    if ('serviceWorker' in navigator) {
+        var regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(function (r) { return r.update(); }));
+        toast('Service Worker update check complete.');
+    }
+    renderBrowserRecoveryTools(cid);
+}
+async function recUnregisterSw(cid) {
+    if ('serviceWorker' in navigator) {
+        var regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(function (r) { return r.unregister(); }));
+        toast('Service Worker(s) unregistered.');
+    }
+    renderBrowserRecoveryTools(cid);
+}
+async function recClearCaches(cid) {
+    if ('caches' in window) {
+        var keys = await caches.keys();
+        await Promise.all(keys.map(function (k) { return caches.delete(k); }));
+        toast('Browser caches cleared.');
+    }
+    renderBrowserRecoveryTools(cid);
+}
+function recClearLocal(cid) {
+    try { localStorage.clear(); sessionStorage.clear(); toast('Local preferences cleared.'); } catch (e) {}
+    renderBrowserRecoveryTools(cid);
+}
+async function recPingServer(cid) {
+    var out = $(cid + '-ping');
+    if (out) out.textContent = 'Testing…';
+    var t0 = Date.now();
+    try {
+        var res = await fetch('/api/status', { cache: 'no-store' });
+        var ms = Date.now() - t0;
+        var d = await res.json().catch(function () { return {}; });
+        if (out) out.innerHTML = '<span style="color:var(--green)">HTTP ' + res.status + ' in ' + ms + 'ms · D1=' + (d.d1_bound ? 'OK' : 'Missing') + '</span>';
+    } catch (e) {
+        if (out) out.innerHTML = '<span style="color:var(--red)">Failed: ' + esc(e.message) + '</span>';
+    }
+}
+async function recFullReset() {
+    try {
+        if ('caches' in window) {
+            var keys = await caches.keys();
+            await Promise.all(keys.map(function (k) { return caches.delete(k); }));
+        }
+        if ('serviceWorker' in navigator) {
+            var regs = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(regs.map(function (r) { return r.unregister(); }));
+        }
+        localStorage.removeItem('nyxx-update-cache');
+        localStorage.removeItem('nyxx-last-update-check');
+    } catch (e) {}
+    location.reload();
+}
+
+var __updateLockTimer = null;
+function startUpdateLockScreen(newVer) {
+    var ov = $('update-lock-overlay');
+    var timerEl = $('update-lock-timer');
+    var titleEl = $('update-lock-title');
+    var descEl = $('update-lock-desc');
+    var reloadBtn = $('update-lock-reload-btn');
+    if (!ov) { location.reload(); return; }
+    ov.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    if (titleEl) titleEl.textContent = 'Updated to v' + newVer + '!';
+    if (descEl) descEl.textContent = 'Waiting 15 seconds for Cloudflare edge propagation so the dashboard loads the new code cleanly.';
+    if (reloadBtn) reloadBtn.classList.remove('hidden');
+    var sec = 15;
+    if (timerEl) timerEl.textContent = sec + 's';
+    if (__updateLockTimer) clearInterval(__updateLockTimer);
+    __updateLockTimer = setInterval(function () {
+        sec--;
+        if (timerEl) timerEl.textContent = Math.max(0, sec) + 's';
+        if (sec <= 0) {
+            clearInterval(__updateLockTimer);
+            finishUpdateReload();
+        }
+    }, 1000);
+}
+function finishUpdateReload() {
+    if (__updateLockTimer) { clearInterval(__updateLockTimer); __updateLockTimer = null; }
+    location.reload();
 }
 
 checkStatus();
@@ -11077,7 +11894,39 @@ async function loadSettings(force) {
         if (typeof window.applyNavLayout === 'function' && (d.nav_style || d.nav_structure)) {
             window.applyNavLayout(d.nav_style || 'classic', d.nav_structure || 'topbar');
         }
+        if ($('set-gaf-enabled')) {
+            var gafOn = d.global_antiflood_enabled === '1';
+            toggleSwitch('set-gaf-enabled', gafOn);
+            show($('set-gaf-opts'), gafOn);
+            if ($('set-gaf-limit')) $('set-gaf-limit').value = d.global_antiflood_limit || '12';
+            if ($('set-gaf-mute')) $('set-gaf-mute').value = d.global_antiflood_mute_minutes || '10';
+            setSeg('set-gaf-action', d.global_antiflood_action || 'mute');
+            if ($('set-gaf-kick-after')) $('set-gaf-kick-after').value = d.global_antiflood_kick_after || '2';
+            if ($('set-gaf-ban-after')) $('set-gaf-ban-after').value = d.global_antiflood_ban_after || '2';
+            toggleSwitch('set-gaf-exempt', d.global_antiflood_exempt_admins !== '0');
+        }
     } catch (e) { /* silent */ }
+}
+
+async function saveGlobalAntiFlood() {
+    await withSelfBusy(async function () {
+        var out = $('set-gaf-result');
+        try {
+            await api('POST', '/api/settings/global_antiflood', {
+                enabled: sw('set-gaf-enabled') ? '1' : '0',
+                limit: parseInt($('set-gaf-limit').value) || 12,
+                mute_minutes: parseInt($('set-gaf-mute').value) || 10,
+                action: getSeg('set-gaf-action') || 'mute',
+                kick_after: parseInt($('set-gaf-kick-after').value) || 2,
+                ban_after: parseInt($('set-gaf-ban-after').value) || 2,
+                exempt_admins: sw('set-gaf-exempt') ? '1' : '0'
+            });
+            if (out) out.innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Global anti-flood saved.</span>';
+            toast('Global anti-flood settings saved.');
+        } catch (e) {
+            if (out) out.innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>';
+        }
+    });
 }
 
 async function setSystemLanguage(lang) {
@@ -11259,19 +12108,81 @@ async function factoryReset() {
 }
 
 // ---- Bot Info page ----
+function readRightsCheckboxes(containerId) {
+    var obj = {};
+    var box = $(containerId);
+    if (!box) return obj;
+    box.querySelectorAll('input[type="checkbox"][data-r]').forEach(function (cb) {
+        obj[cb.dataset.r] = !!cb.checked;
+    });
+    return obj;
+}
+function applyRightsCheckboxes(containerId, rights) {
+    var box = $(containerId);
+    if (!box) return;
+    rights = rights || {};
+    box.querySelectorAll('input[type="checkbox"][data-r]').forEach(function (cb) {
+        cb.checked = !!rights[cb.dataset.r];
+    });
+}
 async function loadBotInfo(force) {
     try {
         var d = await api('GET', '/api/bot_info');
-        $('bi-name').value = d.name || ''; $('bi-desc').value = d.description || ''; $('bi-short').value = d.short_description || '';
+        $('bi-name').value = d.name || '';
+        $('bi-desc').value = d.description || '';
+        $('bi-short').value = d.short_description || '';
+        if ($('bi-live-name')) $('bi-live-name').textContent = d.name || (d.me && d.me.first_name) || 'Bot';
+        if ($('bi-live-user')) $('bi-live-user').textContent = (d.me && d.me.username) ? ('@' + d.me.username + ' · ID ' + d.me.id) : 'Not connected';
+        if ($('bi-avatar-box')) {
+            $('bi-avatar-box').innerHTML = d.photo_file_id
+                ? '<img src="/api/file/' + encodeURIComponent(d.photo_file_id) + '" alt="Bot Avatar">'
+                : '<i class="fa-solid fa-robot"></i>';
+        }
+        if ($('bi-live-caps') && d.me) {
+            var caps = [];
+            if (d.me.can_join_groups) caps.push('<span class="badge green">Groups OK</span>');
+            if (d.me.can_read_all_group_messages) caps.push('<span class="badge blue">Privacy OFF</span>');
+            if (d.me.supports_inline_queries) caps.push('<span class="badge purple">Inline Mode</span>');
+            if (d.me.has_main_web_app) caps.push('<span class="badge orange">Mini App</span>');
+            $('bi-live-caps').innerHTML = caps.join('');
+        }
+        if (d.menu_button && $('bi-menu-type')) {
+            var mt = d.menu_button.type || 'commands';
+            $('bi-menu-type').value = mt;
+            show($('bi-menu-webapp-wrap'), mt === 'web_app');
+            if ($('bi-menu-text')) $('bi-menu-text').value = d.menu_button.text || '';
+            if ($('bi-menu-url')) $('bi-menu-url').value = (d.menu_button.web_app && d.menu_button.web_app.url) || '';
+        }
+        applyRightsCheckboxes('bi-rights-group', d.default_admin_rights_groups);
+        applyRightsCheckboxes('bi-rights-channel', d.default_admin_rights_channels);
         $('bi-result').innerHTML = '<span style="color:var(--green)">Loaded from Telegram.</span>';
     } catch (e) { $('bi-result').innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
 }
 
 async function publishBotInfo() {
-    try {
-        await api('POST', '/api/bot_info', { name: $('bi-name').value, description: $('bi-desc').value, short_description: $('bi-short').value });
-        $('bi-result').innerHTML = '<span style="color:var(--green)">Published.</span>';
-    } catch (e) { $('bi-result').innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
+    await withSelfBusy(async function () {
+        try {
+            var mt = $('bi-menu-type') ? $('bi-menu-type').value : 'commands';
+            var menuUrl = $('bi-menu-url') ? $('bi-menu-url').value.trim() : '';
+            if (mt === 'web_app' && !/^https:\\/\\//i.test(menuUrl)) {
+                toast('Enter a valid HTTPS Web App URL for the menu button.', 'error');
+                return;
+            }
+            var menuButton = mt === 'web_app'
+                ? { type: 'web_app', text: $('bi-menu-text').value.trim() || 'Open App', web_app: { url: menuUrl } }
+                : { type: mt };
+            await api('POST', '/api/bot_info', {
+                name: $('bi-name').value,
+                description: $('bi-desc').value,
+                short_description: $('bi-short').value,
+                menu_button: menuButton,
+                default_admin_rights_groups: readRightsCheckboxes('bi-rights-group'),
+                default_admin_rights_channels: readRightsCheckboxes('bi-rights-channel')
+            });
+            $('bi-result').innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Published to Telegram.</span>';
+            toast('Bot profile updated.');
+        } catch (e) { $('bi-result').innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
+    });
 }
 
 // ---- Cron page ----
@@ -11495,6 +12406,7 @@ async function clearLogs() {
 
 // ---- Expose to inline callers ----
 window.loadSettings          = loadSettings;
+window.saveGlobalAntiFlood   = saveGlobalAntiFlood;
 window.setSystemLanguage     = setSystemLanguage;
 window.revealToken           = revealToken;
 window.changeToken           = changeToken;
@@ -12478,6 +13390,7 @@ export default {
             if (request.method === 'POST' && url.pathname === '/api/settings/media_storage') return await saveMediaStorageChat(request, env);
             if (request.method === 'POST' && url.pathname === '/api/settings/system_language') return await saveSystemLanguage(request, env);
             if (request.method === 'POST' && url.pathname === '/api/settings/nav_layout') return await saveNavLayoutSetting(request, env);
+            if (request.method === 'POST' && url.pathname === '/api/settings/global_antiflood') return await saveGlobalAntiFlood(request, env);
             if (request.method === 'POST' && url.pathname === '/api/settings/webhook-fix') return await handleWebhookFix(env, url.origin);
             if (request.method === 'POST' && url.pathname === '/api/settings/webhook-diagnostics') return await handleWebhookDiagnostics(env);
             if (request.method === 'GET'  && url.pathname === '/api/force_join') return await getForceJoinHandler(env);
@@ -12485,6 +13398,8 @@ export default {
             if (request.method === 'POST' && url.pathname === '/api/force_join/verify_chat') return await verifyForceJoinChat(request, env);
             if (request.method === 'GET'  && url.pathname === '/api/proxies') return await listProxiesHandler(env);
             if (request.method === 'POST' && url.pathname === '/api/proxies') return await saveProxyHandler(request, env);
+            if (request.method === 'POST' && url.pathname === '/api/proxies/bulk_import') return await bulkImportProxiesHandler(request, env);
+            if (request.method === 'POST' && url.pathname === '/api/proxies/delete_offline') return await deleteOfflineProxiesHandler(env);
             if (request.method === 'POST' && url.pathname === '/api/proxies/test') return await testProxyHandler(request, env);
             if (request.method === 'DELETE' && /^\/api\/proxies\/[0-9]+$/.test(url.pathname)) return await deleteProxyHandler(env, url);
             if (request.method === 'GET'  && url.pathname === '/api/schema/health') return await handleSchemaHealth(env);
@@ -12754,6 +13669,22 @@ async function getPermissions(env) {
     }
     return out;
 }
+async function getPermissionsAcl(env) {
+    let stored = {};
+    try {
+        const raw = await getSetting(env.DB, 'permissions_acl_json');
+        if (raw) stored = JSON.parse(raw) || {};
+    } catch (e) {}
+    const out = {};
+    for (const k of PERMISSION_KEYS) {
+        const item = stored[k] || {};
+        out[k] = {
+            allowed: normalizeAllowedUsersStr(item.allowed || ''),
+            disallowed: normalizeAllowedUsersStr(item.disallowed || '')
+        };
+    }
+    return out;
+}
 // User-role cache — epoch-checked. Role changes must be visible to the
 // dashboard immediately (they affect permission gating on every page).
 const userRoleCache = new Map();
@@ -12779,35 +13710,50 @@ async function isModeratorOrAbove(env, userId) {
     const role = await getUserRole(env, userId);
     return role === 'admin' || role === 'moderator';
 }
-let _permCache = { data: null, epoch: null };
+let _permCache = { data: null, acl: null, epoch: null };
 async function getPermissionsCached(env) {
     const currentEpoch = await getDomainEpoch(env.DB, 'perms');
-    if (_permCache.data && _permCache.epoch === currentEpoch) return _permCache.data;
-    const fresh = await getPermissions(env);
-    _permCache = { data: fresh, epoch: currentEpoch };
-    return fresh;
+    if (_permCache.data && _permCache.epoch === currentEpoch) return { perms: _permCache.data, acl: _permCache.acl || {} };
+    const [fresh, acl] = await Promise.all([getPermissions(env), getPermissionsAcl(env)]);
+    _permCache = { data: fresh, acl, epoch: currentEpoch };
+    return { perms: fresh, acl };
 }
 
-async function checkPermission(env, userId, key) {
-    const perms = await getPermissionsCached(env);
-    const mode = perms[key] || 'everyone';
+async function evaluatePermissionWithAcl(env, userId, mode, allowedRaw, disallowedRaw) {
+    if (await isAdminUser(env, userId)) return true;
+    const dis = parseAllowedUserIds(disallowedRaw);
+    if (dis.has(Number(userId))) return false;
+    const alw = parseAllowedUserIds(allowedRaw);
+    if (alw.has(Number(userId))) return true;
     if (mode === 'everyone') return true;
-    if (mode === 'admin') return await isAdminUser(env, userId);
     if (mode === 'moderator') return await isModeratorOrAbove(env, userId);
     return false;
 }
 
+async function checkPermission(env, userId, key) {
+    const { perms, acl } = await getPermissionsCached(env);
+    const mode = perms[key] || 'everyone';
+    const entry = (acl && acl[key]) || {};
+    return await evaluatePermissionWithAcl(env, userId, mode, entry.allowed, entry.disallowed);
+}
+
 async function checkPermissionForChat(env, userId, key, chatId, chatType) {
-    // In groups, a per-group override wins if set to a non-inherit value.
-    // Private chats and groups with `inherit` fall back to the global setting.
     if ((chatType === 'group' || chatType === 'supergroup') && env.DB) {
         try {
             const gs = await getGroupSettings(env.DB, chatId);
             const override = gs[key + '_permission'] || 'inherit';
-            if (override === 'everyone') return true;
-            if (override === 'moderator') return await isModeratorOrAbove(env, userId);
-            if (override === 'admin') return await isAdminUser(env, userId);
-            // 'inherit' or unknown → fall through
+            const gAllowed = gs[key + '_permission_allowed'] || '';
+            const gDisallowed = gs[key + '_permission_disallowed'] || '';
+            if (override !== 'inherit' || gAllowed || gDisallowed) {
+                if (await isAdminUser(env, userId)) return true;
+                if (parseAllowedUserIds(gDisallowed).has(Number(userId))) return false;
+                if (parseAllowedUserIds(gAllowed).has(Number(userId))) return true;
+                if (override !== 'inherit') {
+                    if (override === 'everyone') return true;
+                    if (override === 'moderator') return await isModeratorOrAbove(env, userId);
+                    return false;
+                }
+            }
         } catch (e) { /* fall through */ }
     }
     return await checkPermission(env, userId, key);
@@ -12817,8 +13763,8 @@ async function getPermissionsHandler(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
-        const permissions = await getPermissions(env);
-        return apiJson({ success: true, permissions, keys: PERMISSION_KEYS });
+        const [permissions, acl] = await Promise.all([getPermissions(env), getPermissionsAcl(env)]);
+        return apiJson({ success: true, permissions, acl, keys: PERMISSION_KEYS });
     } catch (err) { return internalError(err); }
 }
 async function savePermissionsHandler(request, env) {
@@ -12830,9 +13776,23 @@ async function savePermissionsHandler(request, env) {
         for (const k of PERMISSION_KEYS) {
             if (PERMISSION_VALUES.includes(incoming[k])) merged[k] = incoming[k];
         }
-        await setSetting(env.DB, 'permissions_json', JSON.stringify(merged));
+        const incomingAcl = body.acl || {};
+        const mergedAcl = await getPermissionsAcl(env);
+        for (const k of PERMISSION_KEYS) {
+            if (incomingAcl[k] && typeof incomingAcl[k] === 'object') {
+                mergedAcl[k] = {
+                    allowed: normalizeAllowedUsersStr(incomingAcl[k].allowed || ''),
+                    disallowed: normalizeAllowedUsersStr(incomingAcl[k].disallowed || '')
+                };
+            }
+        }
+        await setSettingsBatch(env.DB, [
+            ['permissions_json', JSON.stringify(merged)],
+            ['permissions_acl_json', JSON.stringify(mergedAcl)]
+        ]);
+        await bumpDomainEpoch(env.DB, 'perms');
         await logAction(env.DB, null, 'Permissions updated');
-        return apiJson({ success: true, permissions: merged });
+        return apiJson({ success: true, permissions: merged, acl: mergedAcl });
     } catch (err) { return internalError(err); }
 }
 async function listAdminsHandler(env) {
@@ -12879,7 +13839,7 @@ async function demoteAdminHandler(request, env) {
 // DATABASE
 // ============================================================================
 const dbInitCache = new WeakMap();
-const SCHEMA_VERSION = 25;
+const SCHEMA_VERSION = 26;
 
 const MIGRATIONS = {
     2: [
@@ -13075,6 +14035,18 @@ const MIGRATIONS = {
         `CREATE TABLE IF NOT EXISTS proxies (id INTEGER PRIMARY KEY AUTOINCREMENT, label TEXT DEFAULT '', kind TEXT DEFAULT 'MTProto', server TEXT NOT NULL, port INTEGER NOT NULL, secret TEXT DEFAULT '', username TEXT DEFAULT '', password TEXT DEFAULT '', link TEXT DEFAULT '', category TEXT DEFAULT '', notes TEXT DEFAULT '', last_status TEXT DEFAULT '', last_ping_ms INTEGER, country TEXT DEFAULT '', country_code TEXT DEFAULT '', city TEXT DEFAULT '', isp TEXT DEFAULT '', last_checked_at DATETIME, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`,
         `INSERT INTO settings (key, value) VALUES ('force_join_config', '{}') ON CONFLICT(key) DO NOTHING`,
     ],
+    26: [
+        `ALTER TABLE groups ADD COLUMN chat_subtype TEXT DEFAULT ''`,
+        `ALTER TABLE groups ADD COLUMN linked_chat_id INTEGER`,
+        `ALTER TABLE group_strikes ADD COLUMN muted_until DATETIME`,
+        `INSERT INTO settings (key, value) VALUES ('global_antiflood_enabled', '0') ON CONFLICT(key) DO NOTHING`,
+        `INSERT INTO settings (key, value) VALUES ('global_antiflood_limit', '12') ON CONFLICT(key) DO NOTHING`,
+        `INSERT INTO settings (key, value) VALUES ('global_antiflood_action', 'mute') ON CONFLICT(key) DO NOTHING`,
+        `INSERT INTO settings (key, value) VALUES ('global_antiflood_mute_minutes', '10') ON CONFLICT(key) DO NOTHING`,
+        `INSERT INTO settings (key, value) VALUES ('global_antiflood_kick_after', '2') ON CONFLICT(key) DO NOTHING`,
+        `INSERT INTO settings (key, value) VALUES ('global_antiflood_ban_after', '2') ON CONFLICT(key) DO NOTHING`,
+        `INSERT INTO settings (key, value) VALUES ('global_antiflood_exempt_admins', '1') ON CONFLICT(key) DO NOTHING`,
+    ],
 };
 
 // ============================================================================
@@ -13220,6 +14192,8 @@ const DESIRED_SCHEMA = {
         id: { type: 'INTEGER', primary: true },
         title: { type: 'TEXT' },
         type: { type: 'TEXT' },
+        chat_subtype: { type: 'TEXT', default: "''" },
+        linked_chat_id: { type: 'INTEGER' },
         username: { type: 'TEXT' },
         added_at: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' },
         last_active: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' },
@@ -13305,6 +14279,7 @@ const DESIRED_SCHEMA = {
         mute_count: { type: 'INTEGER', default: '0' },
         kick_count: { type: 'INTEGER', default: '0' },
         banned: { type: 'INTEGER', default: '0' },
+        muted_until: { type: 'DATETIME' },
         updated_at: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' }
     }},
     contact_pending_reply: { columns: {
@@ -13477,7 +14452,14 @@ const REQUIRED_SETTINGS = {
     contact_away_end_hour: '8',
     contact_rate_limit: '5',
     contact_last_read_at: '',
-    media_storage_delete_after_upload: '0'
+    media_storage_delete_after_upload: '0',
+    global_antiflood_enabled: '0',
+    global_antiflood_limit: '12',
+    global_antiflood_action: 'mute',
+    global_antiflood_mute_minutes: '10',
+    global_antiflood_kick_after: '2',
+    global_antiflood_ban_after: '2',
+    global_antiflood_exempt_admins: '1'
 };
 
 function buildCreateTableSql(tableName, spec) {
@@ -13716,6 +14698,9 @@ async function initializeDatabase(db) {
         } catch (e) { /* ignore */ }
 
         const SCHEMA_HEALS = [
+            `ALTER TABLE groups ADD COLUMN chat_subtype TEXT DEFAULT ''`,
+            `ALTER TABLE groups ADD COLUMN linked_chat_id INTEGER`,
+            `ALTER TABLE group_strikes ADD COLUMN muted_until DATETIME`,
             `ALTER TABLE commands ADD COLUMN edit_message INTEGER DEFAULT 0`,
             `ALTER TABLE commands ADD COLUMN edit_triggers TEXT DEFAULT 'inline,reply,command'`,
             `ALTER TABLE commands ADD COLUMN inline_access_level TEXT DEFAULT 'everyone'`,
@@ -13783,6 +14768,7 @@ async function initializeDatabase(db) {
                 mute_count INTEGER DEFAULT 0,
                 kick_count INTEGER DEFAULT 0,
                 banned INTEGER DEFAULT 0,
+                muted_until DATETIME,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 PRIMARY KEY (chat_id, user_id)
             )`).run();
@@ -15840,7 +16826,7 @@ async function getUserDmMessages(env, url) {
         const userId = parseInt(url.pathname.split('/')[3]);
         if (isNaN(userId)) return apiJson({ error: 'Invalid user ID.' }, 400);
         await initializeDatabase(env.DB);
-        const rows = await env.DB.prepare('SELECT * FROM (SELECT * FROM dm_messages WHERE chat_id = ? ORDER BY id DESC LIMIT 300) ORDER BY id ASC').bind(userId).all();
+        const rows = await env.DB.prepare('SELECT * FROM dm_messages WHERE chat_id = ? ORDER BY id DESC LIMIT 300').bind(userId).all();
         return apiJson({ messages: rows.results || [] });
     } catch (err) { return internalError(err); }
 }
@@ -15850,7 +16836,7 @@ async function getUserChatHistory(env, url) {
         await initializeDatabase(env.DB);
         const userId = parseInt(url.pathname.split('/')[3]);
         if (isNaN(userId)) return apiJson({ error: 'Invalid user ID.' }, 400);
-        const rows = await env.DB.prepare('SELECT id, role, content, timestamp FROM (SELECT id, role, content, timestamp FROM ai_messages WHERE chat_id = ? ORDER BY id DESC LIMIT 200) ORDER BY id ASC').bind(userId).all();
+        const rows = await env.DB.prepare('SELECT id, role, content, timestamp FROM ai_messages WHERE chat_id = ? ORDER BY id DESC LIMIT 200').bind(userId).all();
         return apiJson({ messages: rows.results || [] });
     } catch (e) { return internalError(e); }
 }
@@ -16034,12 +17020,15 @@ const GROUP_DEFAULT_SETTINGS = {
     blacklist_words: '', blacklist_level: 'admins',
     anti_bot: false,
     auto_delete_service: false, track_members: false,
-    commands_permission: 'inherit',
-    featured_commands_permission: 'inherit',
-    ai_chat_permission: 'inherit',
-    callback_queries_permission: 'inherit',
-    mcp_telegram_permission: 'inherit',
-    rules_command_permission: 'inherit',
+    exempt_linked_forwards: true,
+    auto_comment_enabled: false, auto_comment_text: '',
+    dm_notify_admins: false, dm_auto_reply_enabled: false, dm_auto_reply_text: '',
+    commands_permission: 'inherit', commands_permission_allowed: '', commands_permission_disallowed: '',
+    featured_commands_permission: 'inherit', featured_commands_permission_allowed: '', featured_commands_permission_disallowed: '',
+    ai_chat_permission: 'inherit', ai_chat_permission_allowed: '', ai_chat_permission_disallowed: '',
+    callback_queries_permission: 'inherit', callback_queries_permission_allowed: '', callback_queries_permission_disallowed: '',
+    mcp_telegram_permission: 'inherit', mcp_telegram_permission_allowed: '', mcp_telegram_permission_disallowed: '',
+    rules_command_permission: 'inherit', rules_command_permission_allowed: '', rules_command_permission_disallowed: '',
 };
 function normalizeGroupSettings(raw) {
     const src = raw && typeof raw === 'object' ? raw : {};
@@ -16058,7 +17047,15 @@ function normalizeGroupSettings(raw) {
     if (!['admins', 'admins_moderators'].includes(out.blacklist_level)) out.blacklist_level = 'admins';
     for (const k of ['commands', 'featured_commands', 'ai_chat', 'callback_queries', 'mcp_telegram', 'rules_command']) {
         if (!['inherit', 'everyone', 'moderator', 'admin'].includes(out[k + '_permission'])) out[k + '_permission'] = 'inherit';
+        out[k + '_permission_allowed'] = normalizeAllowedUsersStr(out[k + '_permission_allowed'] || '');
+        out[k + '_permission_disallowed'] = normalizeAllowedUsersStr(out[k + '_permission_disallowed'] || '');
     }
+    out.exempt_linked_forwards = out.exempt_linked_forwards !== false;
+    out.auto_comment_enabled = !!out.auto_comment_enabled;
+    out.auto_comment_text = String(out.auto_comment_text || '').slice(0, 2000);
+    out.dm_notify_admins = !!out.dm_notify_admins;
+    out.dm_auto_reply_enabled = !!out.dm_auto_reply_enabled;
+    out.dm_auto_reply_text = String(out.dm_auto_reply_text || '').slice(0, 2000);
     out.welcome_enabled = !!out.welcome_enabled;
     out.anti_flood = !!out.anti_flood;
     out.link_filter = !!out.link_filter;
@@ -16121,7 +17118,7 @@ async function getGroups(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
-        const rows = await env.DB.prepare('SELECT id, title, type, username, added_at, last_active, is_active, settings_json, member_count FROM groups ORDER BY last_active DESC LIMIT 300').all();
+        const rows = await env.DB.prepare('SELECT id, title, type, chat_subtype, linked_chat_id, username, added_at, last_active, is_active, settings_json, member_count FROM groups ORDER BY last_active DESC LIMIT 300').all();
         const groups = (rows.results || []).map(g => {
             let s = {};
             try { s = JSON.parse(g.settings_json || '{}'); } catch (e) {}
@@ -16186,9 +17183,11 @@ async function syncGroupStatus(env, url) {
             const count = await tgCall(token, 'getChatMemberCount', { chat_id: id });
             if (count && count.ok) memberCount = count.result || 0;
         } catch (e) {}
+        const subtype = detectGroupSubtype(chat, null);
+        const linkedChatId = chat.linked_chat_id || null;
         await env.DB.prepare(
-            'UPDATE groups SET title = ?, type = ?, username = ?, is_active = 1, member_count = ?, last_active = CURRENT_TIMESTAMP WHERE id = ?'
-        ).bind(chat.title || '', chat.type || 'group', chat.username || '', memberCount, id).run();
+            'UPDATE groups SET title = ?, type = ?, chat_subtype = ?, linked_chat_id = COALESCE(?, linked_chat_id), username = ?, is_active = 1, member_count = ?, last_active = CURRENT_TIMESTAMP WHERE id = ?'
+        ).bind(chat.title || '', chat.type || 'group', subtype, linkedChatId, chat.username || '', memberCount, id).run();
         await bumpDomainEpoch(env.DB, 'groups');
         return apiJson({ success: true, is_active: 1, title: chat.title || '', member_count: memberCount });
     } catch (err) { return internalError(err); }
@@ -16200,7 +17199,7 @@ async function getGroupChatMessages(env, url) {
         const id = parseInt(url.pathname.split('/')[3]);
         await initializeDatabase(env.DB);
         const rows = await env.DB.prepare(
-            "SELECT id, message_id, kind, text, photo_url, file_id, media_meta, media_items_json, buttons_json, created_at, edited_at FROM dm_messages WHERE chat_id = ? AND source = 'group_announce' ORDER BY id ASC LIMIT 300"
+            "SELECT id, message_id, kind, text, photo_url, file_id, media_meta, media_items_json, buttons_json, created_at, edited_at FROM dm_messages WHERE chat_id = ? AND source = 'group_announce' ORDER BY id DESC LIMIT 300"
         ).bind(id).all();
         return apiJson({ messages: rows.results || [] });
     } catch (err) { return internalError(err); }
@@ -16287,7 +17286,7 @@ async function getGroupMemory(env, url) {
         const id = parseInt(url.pathname.split('/')[3]);
         await initializeDatabase(env.DB);
         const rows = await env.DB.prepare(
-            'SELECT id, role, content, timestamp FROM (SELECT id, role, content, timestamp FROM ai_messages WHERE chat_id = ? ORDER BY id DESC LIMIT 500) ORDER BY id ASC'
+            'SELECT id, role, content, timestamp FROM ai_messages WHERE chat_id = ? ORDER BY id DESC LIMIT 500'
         ).bind(id).all();
         return apiJson({ messages: rows.results || [] });
     } catch (err) { return internalError(err); }
@@ -16530,7 +17529,7 @@ async function getChannelPosts(env, url) {
         const id = parseInt(url.pathname.split('/')[3]);
         await initializeDatabase(env.DB);
         const rows = await env.DB.prepare(
-            "SELECT id, message_id, kind, text, photo_url, file_id, media_meta, media_items_json, buttons_json, created_at, edited_at FROM dm_messages WHERE chat_id = ? AND source = 'channel_post' ORDER BY id ASC LIMIT 300"
+            "SELECT id, message_id, kind, text, photo_url, file_id, media_meta, media_items_json, buttons_json, created_at, edited_at FROM dm_messages WHERE chat_id = ? AND source = 'channel_post' ORDER BY id DESC LIMIT 300"
         ).bind(id).all();
         return apiJson({ posts: rows.results || [] });
     } catch (err) { return internalError(err); }
@@ -16642,16 +17641,106 @@ async function pinChannelPost(request, env, url) {
     } catch (err) { return internalError(err); }
 }
 
-async function upsertGroup(db, chat, isActive) {
+function detectGroupSubtype(chat, msg) {
+    if (chat && chat.is_direct_messages) return 'direct_messages';
+    if (msg && msg.direct_messages_topic) return 'direct_messages';
+    if (chat && chat.is_forum) return 'forum';
+    if ((chat && chat.linked_chat_id) || (msg && msg.is_automatic_forward)) return 'discussion';
+    if (chat && chat.type === 'supergroup') return 'supergroup';
+    return 'group';
+}
+async function upsertGroup(db, chat, isActive, msg) {
     try {
+        const subtype = detectGroupSubtype(chat, msg);
+        const linkedId = (chat && chat.linked_chat_id) || (msg && msg.sender_chat && msg.is_automatic_forward ? msg.sender_chat.id : null) || null;
         await db.prepare(`
-            INSERT INTO groups (id, title, type, username, is_active, last_active, member_count)
-            VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, 0)
+            INSERT INTO groups (id, title, type, chat_subtype, linked_chat_id, username, is_active, last_active, member_count)
+            VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, 0)
             ON CONFLICT(id) DO UPDATE SET
-                title = excluded.title, type = excluded.type, username = excluded.username,
-                is_active = excluded.is_active, last_active = CURRENT_TIMESTAMP
-        `).bind(chat.id, chat.title || '', chat.type || 'group', chat.username || '', isActive ? 1 : 0).run();
+                title = excluded.title,
+                type = excluded.type,
+                chat_subtype = CASE
+                    WHEN excluded.chat_subtype IN ('discussion','forum','direct_messages') THEN excluded.chat_subtype
+                    WHEN groups.chat_subtype IN ('discussion','forum','direct_messages') THEN groups.chat_subtype
+                    ELSE excluded.chat_subtype
+                END,
+                linked_chat_id = COALESCE(excluded.linked_chat_id, groups.linked_chat_id),
+                username = excluded.username,
+                is_active = excluded.is_active,
+                last_active = CURRENT_TIMESTAMP
+        `).bind(chat.id, chat.title || '', chat.type || 'group', subtype, linkedId, chat.username || '', isActive ? 1 : 0).run();
     } catch (e) {}
+}
+async function checkGlobalAntiFlood(env, BOT_TOKEN, chatId, userId, msg, isGroup) {
+    try {
+        const enabled = await getSetting(env.DB, 'global_antiflood_enabled');
+        if (enabled !== '1') return true;
+        const exemptAdmins = (await getSetting(env.DB, 'global_antiflood_exempt_admins')) !== '0';
+        if (exemptAdmins && await isModeratorOrAbove(env, userId)) return true;
+
+        const strikes = await env.DB.prepare('SELECT mute_count, kick_count, banned, muted_until FROM group_strikes WHERE chat_id = 0 AND user_id = ?').bind(userId).first();
+        if (strikes && strikes.banned) return false;
+        if (strikes && strikes.muted_until) {
+            const muteMs = parseDbTimestamp(strikes.muted_until);
+            if (muteMs && Date.now() < muteMs) {
+                if (isGroup && msg && msg.message_id) {
+                    await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id }, { retry: false });
+                }
+                return false;
+            }
+        }
+
+        const limit = parseInt(await getSetting(env.DB, 'global_antiflood_limit'), 10) || 12;
+        const minute = Math.floor(Date.now() / 60000);
+        await env.DB.prepare('INSERT INTO group_flood (chat_id, user_id, minute, count) VALUES (0, ?, ?, 1) ON CONFLICT(chat_id, user_id, minute) DO UPDATE SET count = count + 1').bind(userId, minute).run();
+        const row = await env.DB.prepare('SELECT count FROM group_flood WHERE chat_id = 0 AND user_id = ? AND minute = ?').bind(userId, minute).first();
+        if (!row || row.count <= limit) return true;
+
+        if (isGroup && msg && msg.message_id) {
+            await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id }, { retry: false });
+        }
+        if (row.count === limit + 1) {
+            const firstAction = (await getSetting(env.DB, 'global_antiflood_action')) || 'mute';
+            const muteMin = parseInt(await getSetting(env.DB, 'global_antiflood_mute_minutes'), 10) || 10;
+            const kickAfter = parseInt(await getSetting(env.DB, 'global_antiflood_kick_after'), 10) || 2;
+            const banAfter = parseInt(await getSetting(env.DB, 'global_antiflood_ban_after'), 10) || 2;
+            const curMutes = (strikes && strikes.mute_count) || 0;
+            const curKicks = (strikes && strikes.kick_count) || 0;
+
+            let action = 'mute';
+            if (firstAction === 'ban') action = 'ban';
+            else if (firstAction === 'kick') action = curKicks >= banAfter ? 'ban' : 'kick';
+            else if (curMutes >= kickAfter) action = curKicks >= banAfter ? 'ban' : 'kick';
+
+            if (action === 'ban') {
+                await env.DB.prepare("INSERT INTO blocked_users (user_id, block_type) VALUES (?, 'full') ON CONFLICT(user_id) DO UPDATE SET block_type = 'full', blocked_at = CURRENT_TIMESTAMP").bind(userId).run();
+                await bumpDomainEpoch(env.DB, 'blocks');
+                await env.DB.prepare('INSERT INTO group_strikes (chat_id, user_id, banned, updated_at) VALUES (0, ?, 1, CURRENT_TIMESTAMP) ON CONFLICT(chat_id, user_id) DO UPDATE SET banned = 1, updated_at = CURRENT_TIMESTAMP').bind(userId).run();
+                if (isGroup) await tgCall(BOT_TOKEN, 'banChatMember', { chat_id: chatId, user_id: userId }, { retry: false });
+                await sendRichText(BOT_TOKEN, chatId, '🚫 You have been blocked for repeated flooding.');
+            } else if (action === 'kick') {
+                await env.DB.prepare('INSERT INTO group_strikes (chat_id, user_id, kick_count, muted_until, updated_at) VALUES (0, ?, 1, datetime("now", ?), CURRENT_TIMESTAMP) ON CONFLICT(chat_id, user_id) DO UPDATE SET kick_count = kick_count + 1, muted_until = excluded.muted_until, updated_at = CURRENT_TIMESTAMP').bind(userId, '+' + Math.max(muteMin, 5) + ' minutes').run();
+                if (isGroup) {
+                    const res = await tgCall(BOT_TOKEN, 'banChatMember', { chat_id: chatId, user_id: userId }, { retry: false });
+                    if (res && res.ok) await tgCall(BOT_TOKEN, 'unbanChatMember', { chat_id: chatId, user_id: userId, only_if_banned: true }, { retry: false });
+                    await sendRichText(BOT_TOKEN, chatId, '👢 User kicked for repeated flooding.');
+                } else {
+                    await sendRichText(BOT_TOKEN, chatId, `⚠️ Slow down! Cooldown active for ${Math.max(muteMin, 5)} minute(s).`);
+                }
+            } else {
+                await env.DB.prepare('INSERT INTO group_strikes (chat_id, user_id, mute_count, muted_until, updated_at) VALUES (0, ?, 1, datetime("now", ?), CURRENT_TIMESTAMP) ON CONFLICT(chat_id, user_id) DO UPDATE SET mute_count = mute_count + 1, muted_until = excluded.muted_until, updated_at = CURRENT_TIMESTAMP').bind(userId, '+' + muteMin + ' minutes').run();
+                if (isGroup) {
+                    await tgCall(BOT_TOKEN, 'restrictChatMember', {
+                        chat_id: chatId, user_id: userId,
+                        permissions: { can_send_messages: false },
+                        until_date: Math.floor(Date.now() / 1000) + muteMin * 60
+                    }, { retry: false });
+                }
+                await sendRichText(BOT_TOKEN, chatId, `🔇 Muted / cooldown for ${muteMin} minute(s) due to flooding.`);
+            }
+        }
+        return false;
+    } catch (e) { return true; }
 }
 async function applyFloodEscalation(env, BOT_TOKEN, chatId, userId, groupSettings) {
     // Escalation ladder — mute first (N times), then kick (M times), then ban.
@@ -16988,7 +18077,7 @@ async function getBroadcastHistory(env) {
     if (!env.DB) return apiJson({ history: [] });
     try {
         await initializeDatabase(env.DB);
-        const rows = await env.DB.prepare('SELECT * FROM broadcast_history ORDER BY sent_at DESC LIMIT 50').all();
+        const rows = await env.DB.prepare('SELECT * FROM broadcast_history ORDER BY id DESC LIMIT 50').all();
         return apiJson({ history: rows.results || [] });
     } catch (e) { return apiJson({ history: [] }); }
 }
@@ -17450,8 +18539,15 @@ async function getSettings(env, originUrl) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
-        const [token, webhook, cfToken, language, mediaStorage, mediaDeleteAfter, navStyle, navStructure] = await Promise.all([
-            getSetting(env.DB, 'bot_token'), getSetting(env.DB, 'webhook_url'), getSetting(env.DB, 'cf_api_token'), getSetting(env.DB, 'system_language'), getSetting(env.DB, 'media_storage_chat_id'), getSetting(env.DB, 'media_storage_delete_after_upload'), getSetting(env.DB, 'nav_style'), getSetting(env.DB, 'nav_structure'),
+        const [token, webhook, cfToken, language, mediaStorage, mediaDeleteAfter, navStyle, navStructure,
+            gafEnabled, gafLimit, gafAction, gafMute, gafKickAfter, gafBanAfter, gafExempt] = await Promise.all([
+            getSetting(env.DB, 'bot_token'), getSetting(env.DB, 'webhook_url'), getSetting(env.DB, 'cf_api_token'),
+            getSetting(env.DB, 'system_language'), getSetting(env.DB, 'media_storage_chat_id'),
+            getSetting(env.DB, 'media_storage_delete_after_upload'), getSetting(env.DB, 'nav_style'), getSetting(env.DB, 'nav_structure'),
+            getSetting(env.DB, 'global_antiflood_enabled'), getSetting(env.DB, 'global_antiflood_limit'),
+            getSetting(env.DB, 'global_antiflood_action'), getSetting(env.DB, 'global_antiflood_mute_minutes'),
+            getSetting(env.DB, 'global_antiflood_kick_after'), getSetting(env.DB, 'global_antiflood_ban_after'),
+            getSetting(env.DB, 'global_antiflood_exempt_admins'),
         ]);
         const systemLanguage = language || 'en';
         return apiJson({
@@ -17465,7 +18561,39 @@ async function getSettings(env, originUrl) {
             system_language: systemLanguage === 'fa' ? 'fa' : 'en',
             nav_style: ['classic', 'pills', 'glass', 'compact'].includes(navStyle) ? navStyle : 'classic',
             nav_structure: ['grouped', 'flat', 'topbar'].includes(navStructure) ? navStructure : 'topbar',
+            global_antiflood_enabled: gafEnabled === '1' ? '1' : '0',
+            global_antiflood_limit: gafLimit || '12',
+            global_antiflood_action: ['mute', 'kick', 'ban'].includes(gafAction) ? gafAction : 'mute',
+            global_antiflood_mute_minutes: gafMute || '10',
+            global_antiflood_kick_after: gafKickAfter || '2',
+            global_antiflood_ban_after: gafBanAfter || '2',
+            global_antiflood_exempt_admins: gafExempt === '0' ? '0' : '1',
         });
+    } catch (err) { return internalError(err); }
+}
+async function saveGlobalAntiFlood(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const b = await request.json();
+        await initializeDatabase(env.DB);
+        const enabled = (b.enabled === '1' || b.enabled === true || b.enabled === 1) ? '1' : '0';
+        const limit = String(Math.min(Math.max(parseInt(b.limit, 10) || 12, 2), 120));
+        const muteMin = String(Math.min(Math.max(parseInt(b.mute_minutes, 10) || 10, 1), 1440));
+        const action = ['mute', 'kick', 'ban'].includes(b.action) ? b.action : 'mute';
+        const kickAfter = String(Math.min(Math.max(parseInt(b.kick_after, 10) || 2, 1), 20));
+        const banAfter = String(Math.min(Math.max(parseInt(b.ban_after, 10) || 2, 1), 20));
+        const exempt = (b.exempt_admins === '0' || b.exempt_admins === false || b.exempt_admins === 0) ? '0' : '1';
+        await setSettingsBatch(env.DB, [
+            ['global_antiflood_enabled', enabled],
+            ['global_antiflood_limit', limit],
+            ['global_antiflood_action', action],
+            ['global_antiflood_mute_minutes', muteMin],
+            ['global_antiflood_kick_after', kickAfter],
+            ['global_antiflood_ban_after', banAfter],
+            ['global_antiflood_exempt_admins', exempt],
+        ]);
+        await logAction(env.DB, null, 'Global anti-flood settings updated');
+        return apiJson({ success: true });
     } catch (err) { return internalError(err); }
 }
 async function saveNavLayoutSetting(request, env) {
@@ -17744,18 +18872,44 @@ async function getBotInfo(env) {
         await initializeDatabase(env.DB);
         const token = await getSetting(env.DB, 'bot_token');
         if (!token) return apiJson({ error: 'Bot token is not set.' }, 400);
-        const [nameRes, descRes, shortRes] = await Promise.all([
+        const [meRes, nameRes, descRes, shortRes, menuRes, rightsGrp, rightsCh] = await Promise.all([
+            tgFetchJson(`https://api.telegram.org/bot${token}/getMe`),
             tgFetchJson(`https://api.telegram.org/bot${token}/getMyName`),
             tgFetchJson(`https://api.telegram.org/bot${token}/getMyDescription`),
             tgFetchJson(`https://api.telegram.org/bot${token}/getMyShortDescription`),
+            tgFetchJson(`https://api.telegram.org/bot${token}/getChatMenuButton`),
+            tgFetchJson(`https://api.telegram.org/bot${token}/getMyDefaultAdministratorRights`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ for_channels: false }) }),
+            tgFetchJson(`https://api.telegram.org/bot${token}/getMyDefaultAdministratorRights`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ for_channels: true }) }),
         ]);
-        return apiJson({ success: true, name: nameRes.ok ? nameRes.result.name : '', description: descRes.ok ? descRes.result.description : '', short_description: shortRes.ok ? shortRes.result.short_description : '' });
+        let photoFileId = '';
+        if (meRes && meRes.ok && meRes.result && meRes.result.id) {
+            try {
+                const photos = await tgFetchJson(`https://api.telegram.org/bot${token}/getUserProfilePhotos?user_id=${meRes.result.id}&limit=1`);
+                if (photos && photos.ok && photos.result && Array.isArray(photos.result.photos) && photos.result.photos[0]) {
+                    const sizes = photos.result.photos[0];
+                    const best = sizes[sizes.length - 1];
+                    if (best && best.file_id) photoFileId = best.file_id;
+                }
+            } catch (e) {}
+        }
+        return apiJson({
+            success: true,
+            me: (meRes && meRes.ok) ? meRes.result : null,
+            photo_file_id: photoFileId,
+            name: (nameRes && nameRes.ok) ? nameRes.result.name : '',
+            description: (descRes && descRes.ok) ? descRes.result.description : '',
+            short_description: (shortRes && shortRes.ok) ? shortRes.result.short_description : '',
+            menu_button: (menuRes && menuRes.ok) ? menuRes.result : { type: 'commands' },
+            default_admin_rights_groups: (rightsGrp && rightsGrp.ok) ? rightsGrp.result : {},
+            default_admin_rights_channels: (rightsCh && rightsCh.ok) ? rightsCh.result : {},
+        });
     } catch (err) { return internalError(err); }
 }
 async function setBotInfo(request, env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
-        const { name, description, short_description } = await request.json();
+        const body = await request.json();
+        const { name, description, short_description, menu_button, default_admin_rights_groups, default_admin_rights_channels } = body;
         await initializeDatabase(env.DB);
         const token = await getSetting(env.DB, 'bot_token');
         if (!token) return apiJson({ error: 'Bot token is not set.' }, 400);
@@ -17763,6 +18917,9 @@ async function setBotInfo(request, env) {
         if (name !== undefined) jobs.push(tgFetchJson(`https://api.telegram.org/bot${token}/setMyName`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) }));
         if (description !== undefined) jobs.push(tgFetchJson(`https://api.telegram.org/bot${token}/setMyDescription`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ description }) }));
         if (short_description !== undefined) jobs.push(tgFetchJson(`https://api.telegram.org/bot${token}/setMyShortDescription`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ short_description }) }));
+        if (menu_button !== undefined) jobs.push(tgFetchJson(`https://api.telegram.org/bot${token}/setChatMenuButton`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ menu_button }) }));
+        if (default_admin_rights_groups !== undefined) jobs.push(tgFetchJson(`https://api.telegram.org/bot${token}/setMyDefaultAdministratorRights`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rights: default_admin_rights_groups, for_channels: false }) }));
+        if (default_admin_rights_channels !== undefined) jobs.push(tgFetchJson(`https://api.telegram.org/bot${token}/setMyDefaultAdministratorRights`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rights: default_admin_rights_channels, for_channels: true }) }));
         await Promise.all(jobs);
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
@@ -18574,6 +19731,58 @@ async function deleteProxyHandler(env, url) {
         await initializeDatabase(env.DB);
         await env.DB.prepare('DELETE FROM proxies WHERE id = ?').bind(id).run();
         return apiJson({ success: true });
+    } catch (err) { return internalError(err); }
+}
+async function deleteOfflineProxiesHandler(env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        const r = await env.DB.prepare("DELETE FROM proxies WHERE last_status = 'offline'").run();
+        return apiJson({ success: true, deleted: (r && r.meta && r.meta.changes) || 0 });
+    } catch (err) { return internalError(err); }
+}
+async function bulkImportProxiesHandler(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const body = await request.json();
+        const rawLines = String(body.lines || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+        const category = String(body.category || '').trim().slice(0, 60);
+        const replaceOld = !!body.replaceOld;
+        if (!rawLines.length) return apiJson({ error: 'Paste at least one proxy line.' }, 400);
+        await initializeDatabase(env.DB);
+
+        const parsed = [];
+        for (const line of rawLines) {
+            const spec = parseProxySpec(line);
+            if (!spec) continue;
+            let username = '', password = '';
+            if (/^(https?:\/\/|tg:\/\/)/i.test(line)) {
+                try {
+                    const u = new URL(line.replace(/^tg:\/\//i, 'https://t.me/'));
+                    username = u.searchParams.get('user') || '';
+                    password = u.searchParams.get('pass') || '';
+                } catch (e) {}
+            }
+            const link = buildProxyLink({ kind: spec.kind, server: spec.server, port: spec.port, secret: spec.secret, username, password });
+            const label = `${spec.kind} ${spec.server}`.slice(0, 120);
+            parsed.push({ label, kind: spec.kind, server: spec.server, port: spec.port, secret: spec.secret || '', username, password, link, category });
+        }
+        if (!parsed.length) return apiJson({ error: 'No valid proxy URLs or host:port lines found.' }, 400);
+
+        if (replaceOld) {
+            if (category) await env.DB.prepare('DELETE FROM proxies WHERE category = ?').bind(category).run();
+            else await env.DB.prepare('DELETE FROM proxies').run();
+        }
+
+        const inserted = [];
+        for (const p of parsed) {
+            const r = await env.DB.prepare(
+                'INSERT INTO proxies (label, kind, server, port, secret, username, password, link, category) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            ).bind(p.label, p.kind, p.server, p.port, p.secret, p.username, p.password, p.link, p.category).run();
+            const id = r && r.meta ? r.meta.last_row_id : null;
+            inserted.push(Object.assign({ id }, p));
+        }
+        return apiJson({ success: true, imported: inserted.length, proxies: inserted });
     } catch (err) { return internalError(err); }
 }
 async function testProxyHandler(request, env) {
@@ -20968,6 +22177,7 @@ function updateModeHint(){
 }
 function onChatModeChange(){
     updateModeHint();
+    if (!currentMessages.length) renderMessages();
 }
 
 function toggleSidebar(force){
@@ -20983,10 +22193,38 @@ function onKey(e){
 function scrollBottom(){var m=$('messages');requestAnimationFrame(function(){m.scrollTop=m.scrollHeight;});}
 
 function emptyState(){
+    var m=$('chat-mode')?$('chat-mode').value:'support';
+    if(m==='support'){
+        return '<div class="empty-chat">'+
+            '<div class="ic"><i class="fa-solid fa-life-ring"></i></div>'+
+            '<h2>Nyxx AI Support</h2>'+
+            '<p>Ask anything about setting up commands, keyboards, Force Join, proxies, Media Library, AI, MCP, channels, groups, or troubleshooting.</p>'+
+            '<div class="suggestions">'+
+            '<div class="sugg" onclick="fillAndSend(\\'How do I set up Media Library storage and upload large files?\\')"><b>Media Library</b><span>Setup storage &amp; large files</span></div>'+
+            '<div class="sugg" onclick="fillAndSend(\\'How does Edit Current Message work with inline and reply keyboards?\\')"><b>Edit in place</b><span>Edit current message guide</span></div>'+
+            '<div class="sugg" onclick="fillAndSend(\\'How do I configure Force Join for my channels?\\')"><b>Force Join</b><span>Require channel membership</span></div>'+
+            '<div class="sugg" onclick="fillAndSend(\\'My bot is not replying in groups. How do I troubleshoot it?\\')"><b>Troubleshooting</b><span>Fix silent bot in groups</span></div>'+
+            '</div>'+
+        '</div>';
+    }
+    if(m==='bot_ai'){
+        var bName=chatMeta.botUsername?('@'+chatMeta.botUsername):'Your Bot';
+        return '<div class="empty-chat">'+
+            '<div class="ic"><i class="fa-solid fa-robot"></i></div>'+
+            '<h2>Chat with '+esc(bName)+'</h2>'+
+            '<p>Testing your bot\\'s live AI persona, system prompt, and knowledge bases from the AI Assistant tab.</p>'+
+            '<div class="suggestions">'+
+            '<div class="sugg" onclick="fillAndSend(\\'Hi! Who are you and what can you help me with?\\')"><b>Introduce yourself</b><span>Test persona &amp; greeting</span></div>'+
+            '<div class="sugg" onclick="fillAndSend(\\'What commands do you have available?\\')"><b>Available commands</b><span>Check bot awareness</span></div>'+
+            '<div class="sugg" onclick="fillAndSend(\\'Summarize the key rules or info from your knowledge base.\\')"><b>Knowledge check</b><span>Verify KB answers</span></div>'+
+            '<div class="sugg" onclick="fillAndSend(\\'Reply in a short, friendly way to test tone and formatting.\\')"><b>Style test</b><span>Test tone &amp; length</span></div>'+
+            '</div>'+
+        '</div>';
+    }
     return '<div class="empty-chat">'+
-        '<div class="ic"><i class="fa-solid fa-wand-magic-sparkles"></i></div>'+
-        '<h2>How can I help with your bot?</h2>'+
-        '<p>I can read stats, create and edit commands, manage groups, send messages, tweak AI settings — anything enabled in the MCP tab.</p>'+
+        '<div class="ic"><i class="fa-solid fa-plug"></i></div>'+
+        '<h2>MCP Bot Manager</h2>'+
+        '<p>I can read stats, create and edit commands, manage groups, send messages, and tweak AI settings — using the tools enabled in your MCP tab.</p>'+
         '<div class="suggestions">'+
         '<div class="sugg" onclick="fillAndSend(\\'Show me the bot stats\\')"><b>Bot overview</b><span>Show me the bot stats</span></div>'+
         '<div class="sugg" onclick="fillAndSend(\\'List all users who started the bot\\')"><b>Users</b><span>List all users who started the bot</span></div>'+
@@ -21889,21 +23127,22 @@ function splitEscapedHtml(html, limit = TG_MESSAGE_LIMIT) {
     if (rest) chunks.push(rest);
     return chunks;
 }
-async function sendMessage(chatId, text, BOT_TOKEN, parseMode) {
+async function sendMessage(chatId, text, BOT_TOKEN, parseMode, messageThreadId) {
     if (!text) return null;
     let last = null;
+    const threadExtra = messageThreadId ? { message_thread_id: messageThreadId } : {};
     if (parseMode === 'HTML') {
         const escaped = escapeTelegramHTML(text);
         const chunks = splitEscapedHtml(escaped);
         for (const chunk of chunks) {
-            const data = await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: chunk, parse_mode: 'HTML' });
-            if ((!data || !data.ok) && isHtmlParseError(data)) last = await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: htmlToPlain(chunk) });
+            const data = await tgCall(BOT_TOKEN, 'sendMessage', Object.assign({ chat_id: chatId, text: chunk, parse_mode: 'HTML' }, threadExtra));
+            if ((!data || !data.ok) && isHtmlParseError(data)) last = await tgCall(BOT_TOKEN, 'sendMessage', Object.assign({ chat_id: chatId, text: htmlToPlain(chunk) }, threadExtra));
             else last = data;
         }
         return last;
     }
     const chunks = splitTelegramMessage(text);
-    for (const chunk of chunks) last = await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: chunk });
+    for (const chunk of chunks) last = await tgCall(BOT_TOKEN, 'sendMessage', Object.assign({ chat_id: chatId, text: chunk }, threadExtra));
     return last;
 }
 // ============================================================================
@@ -22299,10 +23538,21 @@ async function processTelegramUpdate(update, env, ctx) {
                 }
             }
             let groupSettings = null;
+            const isChannelAutoForward = !!(msg.is_automatic_forward || (msg.sender_chat && msg.sender_chat.type === 'channel'));
             if (isGroup) {
                 await initializeDatabase(env.DB);
-                await upsertGroup(env.DB, msg.chat, true);
+                await upsertGroup(env.DB, msg.chat, true, msg);
                 groupSettings = await getGroupSettings(env.DB, chatId);
+                if (msg.is_automatic_forward && groupSettings && groupSettings.auto_comment_enabled && groupSettings.auto_comment_text) {
+                    try {
+                        await tgCall(BOT_TOKEN, 'sendMessage', {
+                            chat_id: chatId,
+                            text: escapeTelegramHTML(groupSettings.auto_comment_text),
+                            parse_mode: 'HTML',
+                            reply_to_message_id: msg.message_id
+                        });
+                    } catch (e) {}
+                }
             }
             if (msg.new_chat_members && isGroup) {
                 if (groupSettings && groupSettings.welcome_enabled && groupSettings.welcome_text) {
@@ -22331,15 +23581,16 @@ async function processTelegramUpdate(update, env, ctx) {
                 const modRole = userRowForMod ? userRowForMod.role : 'user';
                 const levelExempt = (lvl) => modRole === 'admin' || (lvl === 'admins_moderators' && modRole === 'moderator');
 
+                const skipLinkedChecks = isChannelAutoForward && groupSettings && groupSettings.exempt_linked_forwards !== false;
                 // Anti-forward: delete forwarded messages.
-                if (groupSettings && groupSettings.anti_forward && (msg.forward_date || msg.forward_from || msg.forward_from_chat)) {
+                if (!skipLinkedChecks && groupSettings && groupSettings.anti_forward && (msg.forward_date || msg.forward_from || msg.forward_from_chat)) {
                     if (!levelExempt(groupSettings.anti_forward_level || 'admins')) {
                         await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id });
                         return;
                     }
                 }
                 // Blacklist words.
-                if (groupSettings && groupSettings.blacklist_words && msg.text) {
+                if (!skipLinkedChecks && groupSettings && groupSettings.blacklist_words && msg.text) {
                     const words = groupSettings.blacklist_words.split(',').map(w => w.trim().toLowerCase()).filter(Boolean);
                     if (words.length) {
                         const lower = msg.text.toLowerCase();
@@ -22352,7 +23603,7 @@ async function processTelegramUpdate(update, env, ctx) {
                     }
                 }
                 // Link filter.
-                if (groupSettings && groupSettings.link_filter && msg.text && /https?:\/\/|t\.me\//i.test(msg.text)) {
+                if (!skipLinkedChecks && groupSettings && groupSettings.link_filter && msg.text && /https?:\/\/|t\.me\//i.test(msg.text)) {
                     if (!levelExempt(groupSettings.link_filter_level || 'admins')) {
                         await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id });
                         return;
@@ -22397,6 +23648,24 @@ async function processTelegramUpdate(update, env, ctx) {
                 }
                 const blockType = await isUserBlocked(env, userId);
                 if (blockType === 'full') return;
+                if (!await checkGlobalAntiFlood(env, BOT_TOKEN, chatId, userId, msg, isGroup)) return;
+
+                if (isGroup && groupSettings && (msg.chat.is_direct_messages || msg.direct_messages_topic)) {
+                    if (groupSettings.dm_notify_admins) {
+                        const adminIds = await getContactNotifyAdmins(env);
+                        const preview = escapeTelegramHTML(text.slice(0, 300));
+                        for (const aid of adminIds) {
+                            if (Number(aid) !== Number(userId)) {
+                                await sendRichText(BOT_TOKEN, aid, `📩 <b>DM Group (${escapeTelegramHTML(msg.chat.title || String(chatId))})</b>\nFrom: <b>${escapeTelegramHTML(msg.from.first_name || 'User')}</b>\n\n${preview}`);
+                            }
+                        }
+                    }
+                    if (groupSettings.dm_auto_reply_enabled && groupSettings.dm_auto_reply_text && !text.startsWith('/')) {
+                        const replyPayload = { chat_id: chatId, text: escapeTelegramHTML(groupSettings.dm_auto_reply_text), parse_mode: 'HTML', reply_to_message_id: msg.message_id };
+                        if (msg.message_thread_id) replyPayload.message_thread_id = msg.message_thread_id;
+                        await tgCall(BOT_TOKEN, 'sendMessage', replyPayload);
+                    }
+                }
 
                 // Contact reply mode: if an admin clicked "Reply" on a contact
                 // notification, their next private text goes to the target user.
@@ -22682,15 +23951,17 @@ async function processTelegramUpdate(update, env, ctx) {
                     else await p;
                 }
 
+                const threadId = (msg.is_topic_message && msg.message_thread_id) ? msg.message_thread_id : undefined;
+
                 if (aiWillHandle) {
                     if (!await checkPermissionForChat(env, userId, 'ai_chat', chatId, msg.chat.type)) {
-                        await sendMessage(chatId, botStrings().unauthorized, BOT_TOKEN, 'HTML');
+                        await sendMessage(chatId, botStrings().unauthorized, BOT_TOKEN, 'HTML', threadId);
                         return;
                     }
                     if (!await enforceForceJoinGate(env, BOT_TOKEN, chatId, userId, msg.from, msg.chat.type, 'ai', false)) return;
                     const effective = Object.assign({}, aiSettings);
                     if (isGroup && groupSettings) { if (groupSettings.memory !== 'inherit') effective.ai_group_memory = groupSettings.memory; }
-                    await processAiReply(chatId, userId, text, effective, env, BOT_TOKEN, msg.chat.type);
+                    await processAiReply(chatId, userId, text, effective, env, BOT_TOKEN, msg.chat.type, threadId);
                     return;
                 }
 
@@ -22700,7 +23971,8 @@ async function processTelegramUpdate(update, env, ctx) {
                         fromMessage: true,
                         userMessageId: msg.message_id,
                         triggerKind: resolvedTriggerKind,
-                        userInfo: msg.from
+                        userInfo: msg.from,
+                        messageThreadId: threadId
                     });
                     return;
                 }
@@ -23558,8 +24830,9 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatTyp
     const extra = {};
     if (markup) extra.reply_markup = markup;
     if (protect) extra.protect_content = true;
+    if (opts.messageThreadId) extra.message_thread_id = opts.messageThreadId;
     if (finalContent) mainRes = await sendRichText(BOT_TOKEN, chatId, finalContent, extra);
-    else if (extra.reply_markup) mainRes = await tgCall(BOT_TOKEN, 'sendMessage', Object.assign({ chat_id: chatId, text: '\u2800', reply_markup: extra.reply_markup }, protect ? { protect_content: true } : {}));
+    else if (extra.reply_markup) mainRes = await tgCall(BOT_TOKEN, 'sendMessage', Object.assign({ chat_id: chatId, text: '\u2800', reply_markup: extra.reply_markup }, protect ? { protect_content: true } : {}, opts.messageThreadId ? { message_thread_id: opts.messageThreadId } : {}));
     const sentId = extractFirstMessageId(mainRes);
     if (sentId) { await persistInlineAclForMsg(sentId); await saveLastBotMessage(env.DB, userId, chatId, sentId, targetKind); }
     await sendSecondaryCleanup(false);
@@ -23618,7 +24891,7 @@ async function resolveAiMcpCategories(aiSettings, env) {
     const wanted = restrict.split(',').map(s => s.trim()).filter(Boolean);
     return mcpCats.filter(c => wanted.includes(c));
 }
-async function processAiReply(chatId, userId, text, aiSettings, env, BOT_TOKEN, chatType) {
+async function processAiReply(chatId, userId, text, aiSettings, env, BOT_TOKEN, chatType, messageThreadId) {
     const strings = botStrings();
     let streamMsgId = null;
     try {
@@ -23830,9 +25103,9 @@ async function processAiReply(chatId, userId, text, aiSettings, env, BOT_TOKEN, 
             if (streamMsgId !== null) await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: streamMsgId });
             const delay = parseInt(aiSettings.ai_response_delay) || 0;
             if (delay > 0) await new Promise(r => setTimeout(r, Math.min(delay, 5000)));
-            await sendMessage(chatId, reply, BOT_TOKEN, 'HTML');
+            await sendMessage(chatId, reply, BOT_TOKEN, 'HTML', messageThreadId);
         } else if (finalChunks.length) {
-            for (const extra of finalChunks) await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: extra, parse_mode: 'HTML' });
+            for (const extra of finalChunks) await tgCall(BOT_TOKEN, 'sendMessage', Object.assign({ chat_id: chatId, text: extra, parse_mode: 'HTML' }, messageThreadId ? { message_thread_id: messageThreadId } : {}));
         }
         if (aiSettings.ai_suggested_questions_enabled === '1') {
             try {

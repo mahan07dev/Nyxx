@@ -99,7 +99,11 @@ Manual testing is the current standard. When testing your changes, verify:
 - **Dynamic floating menus** — action dropdowns, command comboboxes, and Top Bar menus flip/clamp cleanly within the viewport on both mobile and desktop
 - **Force Join** — global and per-command channel/group membership gating, Check callback, and `verify_chat` work as expected
 - **Multi-mode `/chat` & Nyxx AI Support** — switching between Support, Bot AI, and MCP modes works across new and existing threads
-- **Proxies tab & Command templates** — adding/testing proxies, building single/multi-proxy commands, and applying templates work cleanly
+- **Proxies tab & Command templates** — adding/testing proxies, `Paste & Update Cmd` bulk hourly workflow, `Delete not working`, bulk test/copy, building single/multi-proxy commands, and applying templates work cleanly
+- **Media Library invalid pruning** — `Delete invalid` removes failed-validation entries cleanly
+- **Group subtypes & Global Anti-Flood** — Forum `message_thread_id` replies, Discussion auto-comment & exempt linked forwards, DM Group alerts/auto-reply, and `Settings → Global Anti-Flood` escalation work cleanly
+- **Permissions ACL & Broadcast Audience Builder** — per-permission Allowed/Disallowed IDs (global & per-group), Broadcast audience pills + include/exclude IDs, and new-to-old chat/DM/history ordering work as expected
+- **Tabbed UI, Bot Profile & Recovery** — AI/Settings sub-tabs, tabbed Message Editor, dynamic `/chat` empty states, Bot Profile menu button & admin rights, Browser & Cache Tools (pre-login & Settings), and 15s Update lock timer work cleanly
 - **Per-command password & Inline ACL** — command passwords prompt with Dismiss/Back buttons and clean up messages; inline ACL blocks disallowed/unauthorized taps in groups
 - **Proxy sharing & testing** — `PROXY:` / `PROXY_MSG:` callbacks resolve DNS, test latency, and display proxy details cleanly
 - **Storage reindexing & bulk modals** — `Reindex storage` probes and scans messages in chunks, and bulk actions across Users, Media Library, and Broadcast display live progress and cancel cleanly

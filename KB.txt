@@ -1,4 +1,4 @@
-Nyxx support KB. Version 4.9.9
+Nyxx support KB. Version 5.0.0
 
 RULES
 - Answer Nyxx questions ONLY from this doc. If not covered, say so and point to GitHub/channel. Never invent features, settings, prices, versions.
@@ -188,4 +188,8 @@ TROUBLESHOOTING (symptom → cause → fix)
 - Media broken after token change → file_id bot-specific → re-upload or use URL.
 - Channel features not working → bot needs admin with Post, Edit, Delete (Pin) → fix, then Sync with Telegram.
 - Contact rate limit not working → enable "Save featured command messages" (Memory tab).
+- Global Anti-Flood (Settings → Global Anti-Flood): global flood limit across all chats with Mute / Kick / Ban escalation and admin exemption.
+- Browser & Recovery (Settings → Browser & Recovery, also accessible from Connecting / Sign-in screens without a password): reset Service Worker, clear caches, clear local UI storage, and test API connectivity.
+- Bot Profile: edit Name, Description, Short Description, Menu Button (Default / Commands / Web App), and Default Admin Rights for Groups & Channels, plus view bot avatar & capabilities.
+- Group subtypes: Group, Supergroup, Forum (topic thread replies), Channel Comments / Discussion (auto-comment on new channel posts, exempt linked forwards), Direct Messages Group (admin notifications & auto-reply).
 - Cleanup never runs → needs Cron Trigger, or Retention → Run now.
