@@ -1,7 +1,7 @@
 {
-  "version": "5.0.0",
+  "version": "5.0.1",
   "released": "2026-11-21",
-  "notes": "🚀 Hourly bulk Proxy updater, Global Bot Anti-Flood, Group subtypes (Forums, Discussion, DM Groups), Broadcast Audience Builder, Browser Recovery tools, Bot Profile controls & tabbed AI/Settings UI",
+  "notes": "🚀 Updated the icon urls to this = https://cdn.jsdelivr.net/gh/Mahan07dev/Nyxx@main/logo.webp",
   "worker_url": "https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/worker.js",
   "worker_urls": [""]
 }

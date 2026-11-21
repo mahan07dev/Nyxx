@@ -236,7 +236,7 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<link rel="shortcut icon" href="https://raw.githubusercontent.com/Mahan07dev/Nyxx/refs/heads/main/logo.webp" type="image/x-icon">
+<link rel="shortcut icon" href="https://cdn.jsdelivr.net/gh/Mahan07dev/Nyxx@main/logo.webp" type="image/x-icon">
 <title>Nyxx | Dashboard</title>
 <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 <link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
@@ -1599,7 +1599,7 @@ details.help.danger > summary { color: var(--red); }
 <div class="app">
     <aside class="sidebar" id="sidebar">
         <div class="brand">
-            <img src="https://raw.githubusercontent.com/Mahan07dev/Nyxx/refs/heads/main/logo.webp" alt="Nyxx">
+            <img src="https://cdn.jsdelivr.net/gh/Mahan07dev/Nyxx@main/logo.webp" alt="Nyxx">
             <div>
                 <div class="brand-name">Nyxx</div>
                 <div class="brand-ver">v${VERSION}</div>
@@ -1699,7 +1699,7 @@ details.help.danger > summary { color: var(--red); }
             <div class="auth-shell">
                 <div class="auth-card">
                     <div class="auth-brand">
-                        <img src="https://raw.githubusercontent.com/Mahan07dev/Nyxx/refs/heads/main/logo.webp" alt="Nyxx">
+                        <img src="https://cdn.jsdelivr.net/gh/Mahan07dev/Nyxx@main/logo.webp" alt="Nyxx">
                         <div class="ab-name">Nyxx</div>
                     </div>
                     <div class="auth-icon loading" id="status-icon"><i class="fa-solid fa-circle-notch fa-spin"></i></div>
@@ -1718,7 +1718,7 @@ details.help.danger > summary { color: var(--red); }
             <div class="auth-shell">
                 <div class="auth-card">
                     <div class="auth-brand">
-                        <img src="https://raw.githubusercontent.com/Mahan07dev/Nyxx/refs/heads/main/logo.webp" alt="Nyxx">
+                        <img src="https://cdn.jsdelivr.net/gh/Mahan07dev/Nyxx@main/logo.webp" alt="Nyxx">
                         <div class="ab-name">Nyxx</div>
                     </div>
                     <div class="auth-title"><i class="fa-solid fa-lock" style="color:var(--accent);margin-right:6px;"></i> Initial Setup</div>
@@ -1761,7 +1761,7 @@ details.help.danger > summary { color: var(--red); }
             <div class="auth-shell">
                 <div class="auth-card">
                     <div class="auth-brand">
-                        <img src="https://raw.githubusercontent.com/Mahan07dev/Nyxx/refs/heads/main/logo.webp" alt="Nyxx">
+                        <img src="https://cdn.jsdelivr.net/gh/Mahan07dev/Nyxx@main/logo.webp" alt="Nyxx">
                         <div class="ab-name">Nyxx</div>
                     </div>
                     <div class="auth-title"><i class="fa-solid fa-lock" style="color:var(--accent);margin-right:6px;"></i> Sign in</div>
@@ -21970,7 +21970,7 @@ async function getMcpCalls(env) {
 // ============================================================================
 const CHAT_HTML = `<!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"><meta name="theme-color" content="#0a0a0a"><title>Nyxx | Chat</title>
-<link rel="shortcut icon" href="https://raw.githubusercontent.com/Mahan07dev/Nyxx/refs/heads/main/logo.webp" type="image/x-icon">
+<link rel="shortcut icon" href="https://cdn.jsdelivr.net/gh/Mahan07dev/Nyxx@main/logo.webp" type="image/x-icon">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <style>
 :root{--bg:#0a0a0a;--surface:#161616;--surface-2:#212121;--border:#2a2a2a;--text:#ececec;--text-2:#a3a3a3;--accent:#10a37f;--danger:#ef4444;--radius:12px}
@@ -22072,7 +22072,7 @@ html,body{margin:0;padding:0;height:100vh;height:100dvh;overflow:hidden;backgrou
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-head">
             <div class="brand">
-                <img src="https://raw.githubusercontent.com/Mahan07dev/Nyxx/refs/heads/main/logo.webp" alt="Nyxx">
+                <img src="https://cdn.jsdelivr.net/gh/Mahan07dev/Nyxx@main/logo.webp" alt="Nyxx">
                 <span class="name">Nyxx Chat</span>
             </div>
             <button class="new-chat-btn" onclick="newChat()"><i class="fa-solid fa-plus"></i> New chat</button>
