@@ -1,7 +1,7 @@
-// NYXX — v5.0.0
+// NYXX — v5.0.1
 // Telegram bot builder + management dashboard for Cloudflare Workers + D1.
 // ============================================================================
-const VERSION = '5.0.0';
+const VERSION = '5.0.1';
 
 const NYXX_SUPPORT_SYSTEM_PROMPT = `You are Nyxx AI Support, the official built-in assistant inside the Nyxx dashboard.
 Help the user configure commands, keyboards, Force Join, proxies, AI, MCP, channels, groups, and media library.
