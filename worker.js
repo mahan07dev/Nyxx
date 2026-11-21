@@ -13115,7 +13115,7 @@ const HTML_HEADERS = {
     'Cache-Control': 'no-store',
     'Content-Security-Policy': [
         "default-src 'self'",
-        "img-src 'self' https://raw.githubusercontent.com https://*.githubusercontent.com data:",
+        "img-src 'self' https://cdn.jsdelivr.net https://raw.githubusercontent.com https://*.githubusercontent.com data:",
         "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com",
         "font-src 'self' https://cdnjs.cloudflare.com data:",
         "script-src 'self' 'unsafe-inline'",
