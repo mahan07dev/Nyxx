@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/logo.webp" width="120" alt="Nyxx Logo">
+<img src="https://cdn.jsdelivr.net/gh/Mahan07dev/Nyxx@main/logo.webp" width="120" alt="Nyxx Logo">
 
 <h1>Nyxx</h1>
 
