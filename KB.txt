@@ -1,4 +1,4 @@
-Nyxx support KB. Version 5.0.0
+Nyxx support KB. Version 5.0.2
 
 RULES
 - Answer Nyxx questions ONLY from this doc. If not covered, say so and point to GitHub/channel. Never invent features, settings, prices, versions.
@@ -61,11 +61,21 @@ Store MTProto/SOCKS5 (auto-parses t.me links), single/bulk ping/geo/ISP tests, o
 
 MENU & FEATURED
 - Menu commands: lowercase, no slash, /start fixed; "Publish to Telegram" applies. No bot token = saved locally only.
-- Featured kinds:
-  - DM: "/contact hello" → saved to Contact inbox (and Users → Direct messages); trigger msg deleted (toggle); bot doesn't reply to note.
-  - Buttons: /menu "Hi" {Google}(https://google.com){Say hi}(Hi!) or simple: /menu Hi there! | Google:https://google.com | Say hi:Hi! (http=url, /=command, else text). Colors via [blue]/[green]/[red] prefix or {[green]Yes}(Yes!); prefix alert:/toast: for popups (Info:alert:Msg).
-  - MCP: "/mcp instruction" runs MCP agent from chat.
-- Each has hint (when typed alone), success text, failure text, access level (Everyone/Mod+/Admin), enabled, delete_user_message. Blank text = silent.
+- Featured commands (13 kinds, chosen via "New featured command" picker modal; searchable + filterable by Messaging / Utilities & Media / Mod & Admin):
+  - DM (text): "/contact hello" → Contact pipeline (notifications, away mode, auto-reply, inbox if saved).
+  - Buttons: /menu "Hi" {Google}(https://google.com){Say hi}(Hi!) or simple: /menu Hi there! | Google:https://google.com | Say hi:Hi! (http=url, /=command, else text). Colors via [blue]/[green]/[red] prefix or {[green]Yes}(Yes!); prefix alert:/toast: for popups.
+  - Anonymous Box (anonymous): "/anon note" → strips sender identity, forwards to target chat or all admins, optional hourly rate limit.
+  - Poll / Vote (poll): "/poll Question? | Opt 1 | Opt 2" → sends native Telegram poll (anonymous/multi-answer options).
+  - Media Search (media): "/get query" or "type:document query" → searches Media Library by keyword/type, checks validity/expiry/allowed_users, auto-sends single match or shows clickable result buttons + Send all (≤10).
+  - Proxy Tester (proxy_check): "/checkproxy <url or host:port>" → live ping, country, ISP, secret type + Connect button.
+  - AI Transform (ai_prompt): "/translate text" or reply to a message → runs one-shot custom AI prompt without saving to conversation memory.
+  - Temp Message (temp): "/temp [20s] text" → protected reply with Delete button + optional auto-delete timer (≤25s).
+  - Quick Mod (mod): "/warn|/mute 10m|/unmute|/kick|/ban|/unban" (by reply or user ID in groups) or fixed default action.
+  - User Inspector (whois): "/whois <id|@user>" or reply → shows user profile/memory stats + quick Block/Promote buttons for admins.
+  - Chat Broadcast (broadcast): "/announce text" → shows recipient count preview + Send/Cancel confirmation buttons.
+  - Channel Post (post): "/post @channel | text | Btn:https://..." → publishes with channel automation rules.
+  - MCP (mcp): "/mcp instruction" runs MCP agent from chat.
+- Each has hint (when typed alone), success text, failure text, access level (Everyone/Specific users/Mod+/Admin), allowed_users, disallowed_users, enabled, delete_user_message. Blank text = silent.
 
 USERS
 - Roles user/moderator/admin (promote/demote). Add user by numeric ID (checks reachability; no DM guarantee until user starts bot).

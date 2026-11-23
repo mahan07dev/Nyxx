@@ -53,7 +53,7 @@
   <li><b>Media upload</b> through the dashboard (stored on Telegram via <code>file_id</code>) or direct URLs</li>
   <li><b>Command arguments</b> — <code>{{args}}</code>, <code>{{arg1}}</code>, <code>{{arg2}}</code>, … insert the user's input into replies (HTML-escaped)</li>
   <li>Inline and reply keyboards built visually with <b>full row &amp; layout control</b> — add buttons to specific rows, move them left/right/up/down, and set <b>per-button colors</b> (blue / green / red) with live preview</li>
-  <li>Telegram menu commands and custom featured commands (DM / Buttons / MCP)</li>
+  <li>Telegram menu commands and <b>13 featured command types</b> (DM, Buttons, Anonymous Box, Native Poll, Media Library Search, Live Proxy Tester, AI Transform, Temp Self-Destruct Message, Quick Group Moderation, User Inspector, Chat Broadcast, Channel Post, and MCP Agent) — each with per-command <b>Allowed &amp; Disallowed user IDs</b></li>
   <li>Featured Buttons commands support <code>[blue]</code> / <code>[green]</code> / <code>[red]</code> label prefixes and a default button color</li>
   <li>Granular access control: per-command access levels (everyone, specific users, moderator+, admin), <b>allowed &amp; disallowed user IDs</b>, expiry dates, plus <b>per-message inline button batch restrictions</b></li>
   <li><b>Protect content</b> — prevent forwarding and saving on commands, DMs, group announcements and broadcasts</li>
@@ -185,6 +185,7 @@ database_id = "&lt;your-d1-database-id&gt;"
 <p><b>Upgrading to 4.9.8?</b> The schema moves to version <b>24</b> (adds <code>last_msg_id</code>, <code>last_chat_id</code>, <code>last_msg_kind</code> on <code>sessions</code> for cross inline/reply message editing).</p>
 <p><b>Upgrading to 4.9.9?</b> The schema moves to version <b>25</b> (adds <code>proxies</code> and <code>inline_acl</code> tables plus command passwords, edit triggers, disallowed users, and Force Join overrides via non-destructive migrations).</p>
 <p><b>Upgrading to 5.0.0?</b> The schema moves to version <b>26</b> (adds <code>chat_subtype</code> and <code>linked_chat_id</code> on <code>groups</code>, <code>muted_until</code> on <code>group_strikes</code>, and <code>global_antiflood_*</code> defaults via non-destructive migrations).</p>
+<p><b>Upgrading to 5.0.2?</b> The schema moves to version <b>27</b> (adds <code>allowed_users</code>, <code>disallowed_users</code>, and <code>extra_config</code> on <code>featured_replies</code> via non-destructive migrations).</p>
 </blockquote>
 
 <p>If the dashboard ever shows <b>"Database schema is out of date"</b> after an update, open <b>Settings → Schema health → Run auto-heal</b> — it fixes missing tables, columns, indexes and settings without touching live data.</p>

@@ -108,6 +108,7 @@ Manual testing is the current standard. When testing your changes, verify:
 - **Proxy sharing & testing** — `PROXY:` / `PROXY_MSG:` callbacks resolve DNS, test latency, and display proxy details cleanly
 - **Storage reindexing & bulk modals** — `Reindex storage` probes and scans messages in chunks, and bulk actions across Users, Media Library, and Broadcast display live progress and cancel cleanly
 - **Per-message Contact tracking** — Inbox "Mark read" and admin DM notification buttons (Reply / Dismiss / Mark as seen) mark only the targeted message as read and update the topbar Inbox pill
+- **Featured commands suite & ACL** — choosing any of the 13 featured command types via the picker modal, filtering/searching, per-command Allowed/Disallowed user IDs, and executing Polls, Media Search (`/get`), Proxy Tester (`/checkproxy`), Quick Moderation (`/warn`/`/mute`/`/ban`), User Inspector (`/whois`), Anonymous Box (`/anon`), Chat Broadcast (`/announce`), Channel Post (`/post`), AI Transform (`/translate`/`/tldr`), and Temp Messages (`/temp`)
 - **OAuth refresh** (if touching `proxy.js` or the update flow) — `/oauth/refresh` issues a new access token when a refresh token is present, and `/api/oauth/status` reports the correct connection state
 
 ---
