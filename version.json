@@ -1,7 +1,8 @@
 {
-  "version": "5.0.2",
-  "released": "2026-11-23",
-  "notes": "🚀 New Featured Commands, UI, Caching & Mobile Fixes...",
+  "version": "5.0.3",
+  "released": "2026-11-25",
+  "notes": "🔔 Browser Notifications, Service Worker Click-Through & Contact Inbox Reliability...",
   "worker_url": "https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/worker.js",
-  "worker_urls": [""]
+  "worker_sha256": "bfbaafe862d8a42464b7dc3666ef8d284bcfe4d51ee3d0e07b85e247bcdc6be5",
+  "worker_urls": []
 }

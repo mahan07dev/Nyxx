@@ -46,10 +46,12 @@ const DEFAULT_ALLOWED_HOSTS = [
 // IPv6: loopback, unspecified, ULA, link-local, multicast, documentation.
 const IP_BLOCK_RANGES = [
   ['0.0.0.0', 8], ['10.0.0.0', 8], ['100.64.0.0', 10], ['127.0.0.0', 8],
-  ['169.254.0.0', 16], ['172.16.0.0', 12], ['192.168.0.0', 16],
-  ['198.18.0.0', 15], ['224.0.0.0', 4], ['240.0.0.0', 4],
-  ['::1', 128], ['::', 128], ['fc00::', 7], ['fe80::', 10],
-  ['ff00::', 8], ['2001:db8::', 32],
+  ['169.254.0.0', 16], ['172.16.0.0', 12], ['192.0.0.0', 24],
+  ['192.0.2.0', 24], ['192.88.99.0', 24], ['192.168.0.0', 16],
+  ['198.18.0.0', 15], ['198.51.100.0', 24], ['203.0.113.0', 24],
+  ['224.0.0.0', 4], ['240.0.0.0', 4],
+  ['::1', 128], ['::', 128], ['100::', 64], ['fc00::', 7], ['fe80::', 10],
+  ['ff00::', 8], ['2001::', 23], ['2001:db8::', 32], ['2002::', 16],
 ];
 
 const CORS_HEADERS = {
@@ -126,8 +128,9 @@ function errorResponse(message, status) {
 function ipv4ToBytes(ip) {
   const parts = ip.split('.');
   if (parts.length !== 4) return null;
-  const bytes = parts.map(n => parseInt(n, 10));
-  if (bytes.some(b => isNaN(b) || b < 0 || b > 255)) return null;
+  if (parts.some(n => !/^\d{1,3}$/.test(n))) return null;
+  const bytes = parts.map(Number);
+  if (bytes.some(b => b > 255)) return null;
   return bytes;
 }
 
@@ -135,24 +138,28 @@ function ipv6ToBytes(ip) {
   let addr = ip.toLowerCase();
   const v4mapped = addr.match(/^(.*:)(\d+\.\d+\.\d+\.\d+)$/);
   if (v4mapped) {
-    const v4 = v4mapped[2].split('.').map(n => parseInt(n, 10));
-    if (v4.some(n => isNaN(n) || n < 0 || n > 255)) return null;
+    const v4 = ipv4ToBytes(v4mapped[2]);
+    if (!v4) return null;
     const hex = ((v4[0] << 8) | v4[1]).toString(16) + ':' + ((v4[2] << 8) | v4[3]).toString(16);
     addr = v4mapped[1] + hex;
   }
 
+  if (addr.indexOf(':::') !== -1) return null;
   let head = [];
   let tail = [];
   const doubleColon = addr.indexOf('::');
+  if (doubleColon !== addr.lastIndexOf('::')) return null;
   if (doubleColon !== -1) {
     head = addr.slice(0, doubleColon).split(':').filter(Boolean);
     tail = addr.slice(doubleColon + 2).split(':').filter(Boolean);
   } else {
+    if (addr.startsWith(':') || addr.endsWith(':')) return null;
     head = addr.split(':');
   }
 
   const groups = [...head];
   if (doubleColon !== -1) {
+    if (head.length + tail.length >= 8) return null;
     while (groups.length + tail.length < 8) groups.push('0');
     groups.push(...tail);
   }
@@ -160,8 +167,8 @@ function ipv6ToBytes(ip) {
 
   const bytes = [];
   for (const g of groups) {
-    const n = parseInt(g || '0', 16);
-    if (isNaN(n)) return null;
+    if (!/^[0-9a-f]{1,4}$/.test(g)) return null;
+    const n = parseInt(g, 16);
     bytes.push((n >> 8) & 0xff, n & 0xff);
   }
   return bytes;
@@ -237,19 +244,27 @@ async function resolvesToBlockedAddress(hostname) {
     // bypass.
     const q = (type) => fetch(
       'https://cloudflare-dns.com/dns-query?name=' + encodeURIComponent(hostname) + '&type=' + type,
-      { headers: { accept: 'application/dns-json' } }
+      { headers: { accept: 'application/dns-json' }, signal: AbortSignal.timeout(5000) }
     ).catch(() => null);
     const [aResp, aaaaResp] = await Promise.all([q('A'), q('AAAA')]);
     const ips = [];
+    let responsesValid = true;
     for (const resp of [aResp, aaaaResp]) {
-      if (!resp || !resp.ok) continue;
+      if (!resp || !resp.ok) {
+        responsesValid = false;
+        continue;
+      }
       const data = await resp.json().catch(() => null);
+      if (!data || (data.Status !== 0 && data.Status !== 3)) {
+        responsesValid = false;
+        continue;
+      }
       const answers = (data && data.Answer) || [];
       for (const a of answers) {
         if ((a.type === 1 || a.type === 28) && typeof a.data === 'string') ips.push(a.data);
       }
     }
-    if (ips.length > 0) {
+    if (responsesValid && ips.length > 0) {
       // some(), not every(): any single private answer blocks. A hostname
       // with mixed public/private records could be used for a rebinding
       // race, and every() would let it through the first time.
@@ -262,6 +277,34 @@ async function resolvesToBlockedAddress(hostname) {
   // pin an allow decision for DNS_TTL_MS.
   if (result.known) dnsCache.set(hostname, { result, ts: now });
   return result;
+}
+
+async function readRequestBodyLimited(request, maxBytes) {
+  const reader = request.body && request.body.getReader();
+  if (!reader) return { body: new ArrayBuffer(0), tooLarge: false };
+  const chunks = [];
+  let totalBytes = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      totalBytes += value.byteLength;
+      if (totalBytes > maxBytes) {
+        await reader.cancel().catch(() => {});
+        return { body: null, tooLarge: true };
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const bytes = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return { body: bytes.buffer, tooLarge: false };
 }
 
 // ---- main ------------------------------------------------------------------
@@ -338,7 +381,10 @@ async function handleRequest(request, env) {
     }
   } else {
     const check = await resolvesToBlockedAddress(target.hostname);
-    if (check.known && check.blocked) {
+    if (!check.known) {
+      return errorResponse(`Could not verify the network address for '${target.hostname}'.`, 502);
+    }
+    if (check.blocked) {
       return errorResponse(`Target host '${target.hostname}' resolves to a blocked address.`, 403);
     }
   }
@@ -358,22 +404,23 @@ async function handleRequest(request, env) {
     }
   }
 
-  // Buffer the body into an ArrayBuffer. DO NOT stream request.body here:
-  // in the Workers runtime, passing a ReadableStream body together with the
-  // rebuilt headers silently drops `Authorization` on PUT/POST requests.
+  // Buffer within the limit. DO NOT forward request.body directly: in the
+  // Workers runtime, doing so with rebuilt headers silently drops Authorization.
   let bodyBuffer = null;
   if (hasBody) {
+    let result;
     try {
-      bodyBuffer = await request.arrayBuffer();
+      result = await readRequestBodyLimited(request, MAX_BODY_BYTES);
     } catch (e) {
       return errorResponse('Failed to read request body', 400);
     }
-    if (bodyBuffer.byteLength > MAX_BODY_BYTES) {
+    if (result.tooLarge) {
       return errorResponse(
-        `Request body too large (${bodyBuffer.byteLength} bytes, max ${MAX_BODY_BYTES}).`,
+        `Request body too large (max ${MAX_BODY_BYTES} bytes).`,
         413
       );
     }
+    bodyBuffer = result.body;
   }
 
   // Rebuild request headers from scratch.

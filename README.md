@@ -83,6 +83,7 @@
   <li>Block users entirely or only from the AI</li>
   <li>Per-user direct messages (send / edit / delete with full media) and AI memory (view / edit / delete)</li>
   <li><b>Contact inbox</b> — collects messages from DM featured commands, with topbar &amp; sidebar unread indicators, per-message read tracking, 3-button admin DM notifications (Reply / Dismiss / Mark as seen), search, and stats</li>
+  <li><b>Browser notifications</b> — opt-in service-worker alerts for new contact messages, with privacy-preserving previews off by default and click-through to the Inbox; polling works while the dashboard is open (not web push)</li>
   <li><b>Contact automation</b> — admin notifications, auto-reply, away mode, and per-user rate limits</li>
   <li><b>Group subtypes</b> — detects regular groups, supergroups, <b>Forums</b> (replies stay inside active topics via <code>message_thread_id</code>), <b>Comments / Discussion</b> (auto-comment on new channel posts &amp; exempt linked forwards), and <b>Direct Messages Groups</b> (admin alerts &amp; auto-reply)</li>
   <li>Per-group settings: AI mode, AI trigger (mention / reply / either / both / every message), memory, welcome, rules, anti-flood, link filter, service-message cleanup, member tracking</li>
@@ -186,6 +187,7 @@ database_id = "&lt;your-d1-database-id&gt;"
 <p><b>Upgrading to 4.9.9?</b> The schema moves to version <b>25</b> (adds <code>proxies</code> and <code>inline_acl</code> tables plus command passwords, edit triggers, disallowed users, and Force Join overrides via non-destructive migrations).</p>
 <p><b>Upgrading to 5.0.0?</b> The schema moves to version <b>26</b> (adds <code>chat_subtype</code> and <code>linked_chat_id</code> on <code>groups</code>, <code>muted_until</code> on <code>group_strikes</code>, and <code>global_antiflood_*</code> defaults via non-destructive migrations).</p>
 <p><b>Upgrading to 5.0.2?</b> The schema moves to version <b>27</b> (adds <code>allowed_users</code>, <code>disallowed_users</code>, and <code>extra_config</code> on <code>featured_replies</code> via non-destructive migrations).</p>
+<p><b>Upgrading to 5.0.3?</b> No database migration is required. Browser notifications are optional and configured per browser in the new <b>Notifications</b> tab.</p>
 </blockquote>
 
 <p>If the dashboard ever shows <b>"Database schema is out of date"</b> after an update, open <b>Settings → Schema health → Run auto-heal</b> — it fixes missing tables, columns, indexes and settings without touching live data.</p>

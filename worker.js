@@ -1,13 +1,13 @@
-// NYXX — v5.0.2
+// NYXX — v5.0.3
 // Telegram bot builder + management dashboard for Cloudflare Workers + D1.
 // ============================================================================
-const VERSION = '5.0.2';
+const VERSION = '5.0.3';
 
 const NYXX_SUPPORT_SYSTEM_PROMPT = `You are Nyxx AI Support, the official built-in assistant inside the Nyxx dashboard.
 Help the user configure commands, keyboards, Force Join, proxies, AI, MCP, channels, groups, and media library.
 Always give clear, concise answers using the exact dashboard tab and button names.`;
 
-const NYXX_SUPPORT_KB = `Nyxx support KB. Version 5.0.2
+const NYXX_SUPPORT_KB = `Nyxx support KB. Version 5.0.3
 
 RULES
 - Answer Nyxx questions ONLY from this doc. If not covered, say so and point to GitHub/channel. Never invent features, settings, prices, versions.
@@ -44,7 +44,7 @@ Method 3: wrangler. wrangler.toml: name="nyxx", main="worker.js", compatibility_
 First run: wizard = admin password (min 6), optional bot token; webhook auto-registered with secret.
 
 DASHBOARD PAGES
-Overview | Messaging: Commands, Menu & Featured, Broadcast, Contact, Inbox | People: Users, Groups, Channels, Force Join | Content: Media, Proxies, Memory | AI: AI Assistant, MCP | System: Settings, Bot Info, Permissions, Update, Backup, Activity Log, Retention.
+Overview | Messaging: Commands, Menu & Featured, Broadcast, Contact, Inbox, Notifications | People: Users, Groups, Channels, Force Join | Content: Media, Proxies, Memory | AI: AI Assistant, MCP | System: Settings, Bot Info, Permissions, Update, Backup, Activity Log, Retention.
 Sidebar page search ("/"). Top Bar default on desktop. Light/dark, mobile friendly. Gradient "Nyxx AI support" button opens /chat?mode=support.
 
 COMMANDS
@@ -108,6 +108,7 @@ CHANNELS
 
 CONTACT & INBOX
 - Contact = settings for DM featured commands (e.g. /contact); Inbox = read/filter/search/manage; "Open" jumps to user profile. Unread pill in topbar opens Inbox.
+- Notifications tab = optional per-browser service-worker alerts for new contact messages. Enable it and grant browser permission; polling works about once a minute while the dashboard is open, not as push when closed. Message previews are off by default.
 - Settings: notifications on/off, recipients (all admins or custom IDs), include sender details, Send test notification, auto-reply text, Away mode (UTC window, wraps midnight, separate text), rate limit per user/hour (0 = unlimited; over limit = warning, not stored).
 - Admin DM buttons: Reply, Dismiss, Mark as seen. Each (or Inbox "Mark read") marks only that message read.
 - Rate limit needs "Save featured command messages" ON (Memory tab).
@@ -207,6 +208,7 @@ TROUBLESHOOTING (symptom → cause → fix)
 - Media broken after token change → file_id bot-specific → re-upload or use URL.
 - Channel features not working → bot needs admin with Post, Edit, Delete (Pin) → fix, then Sync with Telegram.
 - Contact rate limit not working → enable "Save featured command messages" (Memory tab).
+- Browser contact alerts not appearing → enable them in Messaging → Notifications, grant this browser permission, keep the dashboard open, and check that it is served over HTTPS. Alerts do not work while the dashboard is closed.
 - Global Anti-Flood (Settings → Global Anti-Flood): global flood limit across all chats with Mute / Kick / Ban escalation and admin exemption.
 - Browser & Recovery (Settings → Browser & Recovery, also accessible from Connecting / Sign-in screens without a password): reset Service Worker, clear caches, clear local UI storage, and test API connectivity.
 - Bot Profile: edit Name, Description, Short Description, Menu Button (Default / Commands / Web App), and Default Admin Rights for Groups & Channels, plus view bot avatar & capabilities.
@@ -1677,6 +1679,7 @@ details.help.danger > summary { color: var(--red); }
                 <button class="nav-item" data-page="broadcast" data-label="broadcast send message users announce" onclick="go('broadcast')"><i class="fa-solid fa-bullhorn"></i><span>Broadcast</span></button>
                 <button class="nav-item" data-page="contact" data-label="contact settings notifications auto-reply away mode rate limit" onclick="go('contact')"><i class="fa-solid fa-envelope"></i><span>Contact</span></button>
                 <button class="nav-item" data-page="inbox" data-label="inbox messages replies unread contact" onclick="go('inbox')"><i class="fa-solid fa-inbox"></i><span>Inbox</span><span class="nav-badge" id="contact-nav-badge" style="display:none;"></span></button>
+                <button class="nav-item" data-page="notifications" data-label="notifications browser desktop service worker alerts" onclick="go('notifications')"><i class="fa-solid fa-bell"></i><span>Notifications</span></button>
             </div>
         </nav>
 
@@ -2919,6 +2922,41 @@ details.help.danger > summary { color: var(--red); }
                         <div class="search"><i class="fa-solid fa-magnifying-glass"></i><input id="ct-search" placeholder="Search messages…" oninput="debouncedContact()"></div>
                     </div>
                     <div id="ct-messages"></div>
+                </div>
+            </section>
+
+            <section class="page" id="page-notifications">
+                <div class="page-head">
+                    <div class="lead"><h1>Notifications</h1><p>Get browser notifications for new contact messages on this device.</p></div>
+                    <div class="page-actions">
+                        <button class="btn btn-gray btn-sm" onclick="refreshNotificationStatus()"><i class="fa-solid fa-rotate"></i> Refresh status</button>
+                        <button class="btn btn-primary btn-sm" onclick="go('inbox')"><i class="fa-solid fa-inbox"></i> Open inbox</button>
+                    </div>
+                </div>
+                <div class="hint-banner">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <div>This browser checks for new contact messages about once a minute while the Nyxx dashboard remains open. Desktop alerts appear when the dashboard is in the background; the Inbox badge updates while it is visible. The service worker displays and routes notifications. This is not web push: notifications cannot arrive while the dashboard is closed, and background polling depends on browser scheduling.</div>
+                </div>
+                <div class="card">
+                    <div class="card-head"><div class="card-title c-green"><i class="fa-solid fa-bell"></i> Browser notifications</div></div>
+                    <div class="switch-row">
+                        <div>
+                            <div class="sw-label">Notification status</div>
+                            <div class="sw-sub" id="notification-status" role="status" aria-live="polite">Checking browser support…</div>
+                        </div>
+                        <div class="row">
+                            <button class="btn btn-primary btn-sm" id="notification-enable" onclick="enableBrowserNotifications()"><i class="fa-solid fa-bell"></i> Enable</button>
+                            <button class="btn btn-gray btn-sm" id="notification-disable" onclick="disableBrowserNotifications()">Turn off</button>
+                        </div>
+                    </div>
+                    <label class="check" style="margin-top:12px;">
+                        <input type="checkbox" id="notification-preview" onchange="saveNotificationPreviewPreference()">
+                        <span>Include sender name and message preview in alerts</span>
+                    </label>
+                    <div class="field-hint" style="margin-top:6px;">Off by default to avoid exposing message contents on your lock screen. This preference is saved only in this browser.</div>
+                    <div class="row" style="margin-top:16px;">
+                        <button class="btn btn-gray btn-sm" onclick="testBrowserNotification()"><i class="fa-solid fa-paper-plane"></i> Send test notification</button>
+                    </div>
                 </div>
             </section>
 
@@ -5637,7 +5675,7 @@ var PAGE_TITLES = {
     'user-manage': 'User', groups: 'Groups', 'group-manage': 'Group',
     channels: 'Channels', 'channel-manage': 'Channel',
     forcejoin: 'Force Join', proxies: 'Proxies',
-    broadcast: 'Broadcast', contact: 'Contact', inbox: 'Inbox', memory: 'Memory', media: 'Media Library', ai: 'AI', settings: 'Settings', botinfo: 'Bot Info',
+    broadcast: 'Broadcast', contact: 'Contact', inbox: 'Inbox', notifications: 'Notifications', memory: 'Memory', media: 'Media Library', ai: 'AI', settings: 'Settings', botinfo: 'Bot Info',
     cron: 'Retention', backup: 'Backup', logs: 'Activity Log', update: 'Update', mcp: 'MCP',
     permissions: 'Admin & Permissions'
 };
@@ -5668,6 +5706,7 @@ function go(page) {
     if (page === 'broadcast') loadBroadcast();
     if (page === 'contact') loadContact();
     if (page === 'inbox') loadInbox();
+    if (page === 'notifications') refreshNotificationStatus();
     if (page === 'memory') loadMemory();
     if (page === 'ai') {
         initSubTabMoves();
@@ -6150,6 +6189,7 @@ function enterDashboard() {
   showStep('step-dashboard');
   if (typeof initNav === 'function') initNav();
   go('overview');
+  initializeBrowserNotifications();
   // Settings module loads after Overview paints — nothing on the critical
   // path blocks first meaningful paint now.
   ensureModule('settings').then(function () { window.loadSettings(true); });
@@ -6165,6 +6205,9 @@ function enterDashboard() {
   var params = new URLSearchParams(window.location.search);
   if (params.get('oauth') === 'success') {
     go('update');
+  } else if (params.get('nyxx-notification') === 'inbox') {
+    history.replaceState(null, '', window.location.pathname + window.location.hash);
+    go('inbox');
   }
 }
 async function submitSetup() {
@@ -7385,6 +7428,288 @@ async function updateContactBadge() {
         }
     } catch (e) { /* silent */ }
 }
+var notificationEnabled = false;
+var notificationPollingTimer = null;
+var notificationPolling = false;
+var notificationLastError = '';
+var notificationMemoryCursor = null;
+var notificationRegistrationPromise = null;
+var NOTIFICATION_POLL_INTERVAL_MS = 60000;
+var NOTIFICATION_CURSOR_KEY = 'nyxx-contact-notification-cursor-v1';
+var NOTIFICATION_ENABLED_KEY = 'nyxx-browser-notifications-enabled-v1';
+var NOTIFICATION_PREVIEW_KEY = 'nyxx-browser-notifications-preview-v1';
+try { notificationEnabled = localStorage.getItem(NOTIFICATION_ENABLED_KEY) === '1'; } catch (e) {}
+
+function getNotificationPreference(key) {
+    try { return localStorage.getItem(key); } catch (e) { return null; }
+}
+function setNotificationPreference(key, value) {
+    try { localStorage.setItem(key, String(value)); return true; } catch (e) { return false; }
+}
+function getNotificationCursor() {
+    var value = getNotificationPreference(NOTIFICATION_CURSOR_KEY);
+    if (value === null || !/^\d+$/.test(value)) return notificationMemoryCursor;
+    var cursor = Number(value);
+    if (!Number.isSafeInteger(cursor) || cursor < 0) return notificationMemoryCursor;
+    return Number.isSafeInteger(notificationMemoryCursor) ? Math.max(cursor, notificationMemoryCursor) : cursor;
+}
+function setNotificationCursor(cursor) {
+    notificationMemoryCursor = cursor;
+    return setNotificationPreference(NOTIFICATION_CURSOR_KEY, cursor);
+}
+function refreshNotificationStatus() {
+    var status = $('notification-status');
+    var enable = $('notification-enable');
+    var disable = $('notification-disable');
+    var supported = window.isSecureContext && 'serviceWorker' in navigator && typeof Notification !== 'undefined';
+    if (status) {
+        if (!supported) status.textContent = 'Browser notifications require a supported browser and a secure connection (HTTPS).';
+        else if (Notification.permission === 'denied') status.textContent = 'Notifications are blocked in this browser. Change this site’s notification permission in your browser settings.';
+        else if (notificationLastError) status.textContent = 'Could not check or display notifications: ' + notificationLastError;
+        else if (notificationEnabled && Notification.permission === 'granted') status.textContent = 'On. New contact messages are checked about once a minute while the dashboard is open.';
+        else if (notificationEnabled && Notification.permission === 'default') status.textContent = 'Permission is needed. Enable notifications to allow this browser to show alerts.';
+        else if (Notification.permission === 'granted') status.textContent = 'Permission is granted; turn notifications on to start checking for new contact messages.';
+        else status.textContent = 'Off. Enable notifications to let this browser show new contact-message alerts.';
+    }
+    if (enable) enable.disabled = !supported || Notification.permission === 'denied' || (notificationEnabled && Notification.permission === 'granted');
+    if (disable) disable.disabled = !notificationEnabled;
+    var preview = $('notification-preview');
+    if (preview && document.activeElement !== preview) preview.checked = getNotificationPreference(NOTIFICATION_PREVIEW_KEY) === '1';
+}
+function saveNotificationPreviewPreference() {
+    var preview = $('notification-preview');
+    if (preview && !setNotificationPreference(NOTIFICATION_PREVIEW_KEY, preview.checked ? '1' : '0')) {
+        toast('This browser blocked local storage; the preview preference may not persist.', 'info');
+    }
+}
+async function ensureNotificationServiceWorker() {
+    if (!window.isSecureContext || !('serviceWorker' in navigator) || typeof Notification === 'undefined') {
+        throw new Error('Browser notifications are not supported on this connection.');
+    }
+    if (!notificationRegistrationPromise) {
+        notificationRegistrationPromise = navigator.serviceWorker.register('/sw.js', { scope: '/', updateViaCache: 'none' }).then(function (registration) {
+            return registration.update().then(function () {
+                var updating = registration.installing || registration.waiting;
+                if (!updating || updating.state === 'activated') return;
+                return new Promise(function (resolve, reject) {
+                    var timeout = setTimeout(function () {
+                        updating.removeEventListener('statechange', onStateChange);
+                        reject(new Error('The service worker update is taking too long. Reload the dashboard and try again.'));
+                    }, 15000);
+                    function onStateChange() {
+                        if (updating.state === 'activated') {
+                            clearTimeout(timeout);
+                            updating.removeEventListener('statechange', onStateChange);
+                            resolve();
+                        } else if (updating.state === 'redundant') {
+                            clearTimeout(timeout);
+                            updating.removeEventListener('statechange', onStateChange);
+                            reject(new Error('The service worker update failed. Reload the dashboard and try again.'));
+                        }
+                    }
+                    updating.addEventListener('statechange', onStateChange);
+                    onStateChange();
+                });
+            }).then(function () {
+                return navigator.serviceWorker.ready;
+            }).then(function () {
+                if (!registration.active) throw new Error('The service worker is not active yet. Reload the dashboard and try again.');
+                return registration;
+            });
+        }).catch(function (e) {
+            notificationRegistrationPromise = null;
+            throw e;
+        });
+    }
+    return notificationRegistrationPromise;
+}
+async function sendServiceWorkerNotification(title, body, tag) {
+    var registration = await ensureNotificationServiceWorker();
+    if (Notification.permission !== 'granted') throw new Error('Notification permission has not been granted.');
+    if (typeof MessageChannel === 'undefined') throw new Error('This browser cannot communicate with the service worker.');
+    return new Promise(function (resolve, reject) {
+        var channel = new MessageChannel();
+        var timer = setTimeout(function () {
+            channel.port1.close();
+            reject(new Error('The service worker did not respond. Reload the dashboard and try again.'));
+        }, 8000);
+        channel.port1.onmessage = function (event) {
+            clearTimeout(timer);
+            channel.port1.close();
+            if (event.data && event.data.success) resolve();
+            else reject(new Error((event.data && event.data.error) || 'The browser could not display the notification.'));
+        };
+        try {
+            registration.active.postMessage({
+                type: 'SHOW_NOTIFICATION',
+                title: String(title || 'Nyxx').slice(0, 100),
+                body: String(body || '').slice(0, 240),
+                tag: String(tag || 'nyxx-notification').slice(0, 100)
+            }, [channel.port2]);
+        } catch (e) {
+            clearTimeout(timer);
+            channel.port1.close();
+            reject(e);
+        }
+    });
+}
+async function establishNotificationBaseline() {
+    var existing = getNotificationCursor();
+    if (existing !== null) return existing;
+    var data = await api('GET', '/api/contact/messages?limit=1');
+    var messages = Array.isArray(data.messages) ? data.messages : [];
+    var latest = messages.length ? Number(messages[0].id) : 0;
+    var cursor = Number.isSafeInteger(latest) && latest >= 0 ? latest : 0;
+    setNotificationCursor(cursor);
+    return cursor;
+}
+async function pollContactNotifications() {
+    if (!notificationEnabled || notificationPolling || document.visibilityState === 'prerender') return;
+    if (typeof Notification === 'undefined') return;
+    if (Notification.permission !== 'granted') {
+        if (notificationPollingTimer) { clearInterval(notificationPollingTimer); notificationPollingTimer = null; }
+        if (Notification.permission === 'denied') {
+            notificationEnabled = false;
+            setNotificationPreference(NOTIFICATION_ENABLED_KEY, '0');
+            notificationLastError = 'Permission is blocked in browser settings.';
+        } else {
+            notificationLastError = '';
+        }
+        refreshNotificationStatus();
+        return;
+    }
+    notificationPolling = true;
+    try {
+        var startCursor = await establishNotificationBaseline();
+        var cursor = startCursor;
+        var newMessages = [];
+        for (var batch = 0; batch < 5; batch++) {
+            var data = await api('GET', '/api/contact/messages?limit=100&after=' + encodeURIComponent(cursor));
+            var messages = Array.isArray(data.messages) ? data.messages : [];
+            if (!messages.length) break;
+            var previousCursor = cursor;
+            messages.forEach(function (message) {
+                var id = Number(message && message.id);
+                if (Number.isSafeInteger(id) && id > cursor) {
+                    newMessages.push(message);
+                    cursor = Math.max(cursor, id);
+                }
+            });
+            if (cursor === previousCursor || messages.length < 100) break;
+        }
+        var sharedCursor = getNotificationCursor();
+        if (sharedCursor !== null && sharedCursor > startCursor) {
+            newMessages = newMessages.filter(function (message) { return Number(message.id) > sharedCursor; });
+        }
+        if (newMessages.length && document.visibilityState !== 'visible') {
+            var latestMessage = newMessages[newMessages.length - 1];
+            var title = newMessages.length === 1 ? 'New contact message' : newMessages.length + ' new contact messages';
+            var body = 'Open Nyxx to read your inbox.';
+            var preview = $('notification-preview');
+            if (preview ? preview.checked : getNotificationPreference(NOTIFICATION_PREVIEW_KEY) === '1') {
+                var sender = String(latestMessage.first_name || 'Unknown');
+                if (latestMessage.username) sender += ' (@' + String(latestMessage.username) + ')';
+                var text = String(latestMessage.text || '').replace(/\s+/g, ' ').trim();
+                body = sender + (text ? ': ' + text : ' sent you a message.');
+            }
+            await sendServiceWorkerNotification(title, body, 'nyxx-contact-' + cursor);
+        }
+        if (cursor > startCursor) setNotificationCursor(cursor);
+        notificationLastError = '';
+        await updateContactBadge();
+    } catch (e) {
+        notificationLastError = e && e.message ? e.message : 'Unknown notification error.';
+        console.warn('[nyxx] browser notification check failed:', e);
+    } finally {
+        notificationPolling = false;
+        refreshNotificationStatus();
+    }
+}
+async function startBrowserNotificationPolling() {
+    if (!notificationEnabled || typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+    try {
+        await ensureNotificationServiceWorker();
+        await establishNotificationBaseline();
+        if (notificationPollingTimer) clearInterval(notificationPollingTimer);
+        notificationPollingTimer = setInterval(pollContactNotifications, NOTIFICATION_POLL_INTERVAL_MS);
+        pollContactNotifications();
+    } catch (e) {
+        notificationLastError = e && e.message ? e.message : 'Could not start notification checks.';
+        if (notificationEnabled && !notificationPollingTimer) {
+            notificationPollingTimer = setInterval(pollContactNotifications, NOTIFICATION_POLL_INTERVAL_MS);
+        }
+        refreshNotificationStatus();
+    }
+}
+function initializeBrowserNotifications() {
+    refreshNotificationStatus();
+    if (notificationEnabled && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        startBrowserNotificationPolling();
+    } else if (notificationEnabled && typeof Notification !== 'undefined' && Notification.permission === 'denied') {
+        notificationLastError = 'Permission is blocked in browser settings.';
+        refreshNotificationStatus();
+    }
+}
+async function enableBrowserNotifications() {
+    if (!window.isSecureContext || !('serviceWorker' in navigator) || typeof Notification === 'undefined') {
+        notificationLastError = 'Browser notifications require HTTPS and service-worker support.';
+        refreshNotificationStatus();
+        return;
+    }
+    try {
+        var permission = Notification.permission;
+        if (permission === 'default') permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+            if (permission === 'denied') {
+                notificationEnabled = false;
+                if (notificationPollingTimer) { clearInterval(notificationPollingTimer); notificationPollingTimer = null; }
+                setNotificationPreference(NOTIFICATION_ENABLED_KEY, '0');
+            }
+            notificationLastError = permission === 'denied' ? 'Permission is blocked in browser settings.' : 'Permission was not granted.';
+            refreshNotificationStatus();
+            return;
+        }
+        await ensureNotificationServiceWorker();
+        notificationEnabled = true;
+        notificationLastError = '';
+        if (!setNotificationPreference(NOTIFICATION_ENABLED_KEY, '1')) {
+            toast('Notifications are enabled for this session, but this browser could not save the preference.', 'info');
+        }
+        await establishNotificationBaseline();
+        await startBrowserNotificationPolling();
+        toast('Browser notifications enabled on this device.');
+    } catch (e) {
+        notificationEnabled = false;
+        setNotificationPreference(NOTIFICATION_ENABLED_KEY, '0');
+        notificationLastError = e && e.message ? e.message : 'Could not enable browser notifications.';
+        refreshNotificationStatus();
+        toast(notificationLastError, 'error');
+    }
+}
+function disableBrowserNotifications() {
+    notificationEnabled = false;
+    if (notificationPollingTimer) { clearInterval(notificationPollingTimer); notificationPollingTimer = null; }
+    setNotificationPreference(NOTIFICATION_ENABLED_KEY, '0');
+    notificationLastError = '';
+    refreshNotificationStatus();
+    toast('Browser notifications turned off.', 'info');
+}
+async function testBrowserNotification() {
+    try {
+        if (typeof Notification === 'undefined' || Notification.permission !== 'granted') {
+            throw new Error('Enable browser notifications and grant permission first.');
+        }
+        await sendServiceWorkerNotification('Nyxx test notification', 'Browser notifications are working.', 'nyxx-test-' + Date.now());
+        toast('Test notification sent.');
+    } catch (e) {
+        notificationLastError = e && e.message ? e.message : 'Could not send test notification.';
+        refreshNotificationStatus();
+        toast(notificationLastError, 'error');
+    }
+}
+document.addEventListener('visibilitychange', function () {
+    if (!document.hidden && notificationEnabled) pollContactNotifications();
+});
 function setUserFilter(f) {
     userFilter = f;
     usersPage = 1;
@@ -11332,7 +11657,13 @@ async function deleteChannelPost(idx) {
 // automatically when VERSION is bumped).
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
-        try { navigator.serviceWorker.register('/sw.js', { scope: '/', updateViaCache: 'none' }).catch(function () {}); } catch (e) {}
+        try {
+            navigator.serviceWorker.register('/sw.js', { scope: '/', updateViaCache: 'none' }).catch(function (e) {
+                console.warn('[nyxx] service worker registration failed:', e);
+            });
+        } catch (e) {
+            console.warn('[nyxx] service worker registration failed:', e);
+        }
     });
 }
 
@@ -13449,6 +13780,7 @@ function internalError(err) {
 const PASSWORD_PREFIX = 'sha256$';
 const PBKDF2_PREFIX = 'pbkdf2$';
 const PBKDF2_ITERATIONS = 100000;
+const MAX_PBKDF2_ITERATIONS = 1000000;
 
 function timingSafeEqual(a, b) {
     const enc = new TextEncoder();
@@ -13482,9 +13814,9 @@ async function verifyPassword(stored, candidate) {
         const parts = stored.split('$');
         if (parts.length !== 4) return false;
         const iterations = parseInt(parts[1], 10);
-        if (!iterations || iterations < 1) return false;
+        if (!/^\d+$/.test(parts[1]) || !iterations || iterations < 1 || iterations > MAX_PBKDF2_ITERATIONS) return false;
         const salt = hexToBytes(parts[2]);
-        if (!salt) return false;
+        if (!salt || salt.length !== 16 || !/^[0-9a-f]{64}$/i.test(parts[3])) return false;
         const actual = await pbkdf2Hash(candidate, salt, iterations);
         return timingSafeEqual(actual, parts[3]);
     }
@@ -13538,8 +13870,8 @@ export default {
                 const referer = request.headers.get('Referer');
                 let sameOrigin = false;
                 try {
-                    if (origin) sameOrigin = new URL(origin).host === url.host;
-                    else if (referer) sameOrigin = new URL(referer).host === url.host;
+                    if (origin) sameOrigin = new URL(origin).origin === url.origin;
+                    else if (referer) sameOrigin = new URL(referer).origin === url.origin;
                 } catch (e) { sameOrigin = false; }
                 if (!sameOrigin) return apiJson({ error: 'Request blocked for security reasons.' }, 403);
             }
@@ -15357,8 +15689,10 @@ async function handleSetup(request, env) {
     const existing = await getSetting(env.DB, 'admin_password');
     if (existing || env.ADMIN_PASS) return apiJson({ error: 'Admin password is already set. Please sign in.' }, 400);
     const body = await request.json();
-    const { botToken, adminPassword } = body;
-    if (!adminPassword || adminPassword.length < 6) return apiJson({ error: 'Password must be at least 6 characters.' }, 400);
+    const { botToken, adminPassword } = body || {};
+    if (typeof adminPassword !== 'string' || adminPassword.length < 6 || adminPassword.length > 1024) {
+        return apiJson({ error: 'Password must be between 6 and 1024 characters.' }, 400);
+    }
     // Validate the bot token BEFORE saving the password, so a typo doesn't lock setup.
     let check = null;
     if (botToken) {
@@ -15384,8 +15718,10 @@ async function handleSetup(request, env) {
 async function handleLogin(request, env) {
     if (!env.DB) return apiJson({ error: 'Database is not connected.' }, 500);
     await initializeDatabase(env.DB);
-    const { password } = await request.json();
-    if (!password) return apiJson({ error: 'Please enter your password.' }, 400);
+    const body = await request.json();
+    const password = body && body.password;
+    if (typeof password !== 'string' || !password) return apiJson({ error: 'Please enter your password.' }, 400);
+    if (password.length > 1024) return apiJson({ error: 'Password must be 1024 characters or fewer.' }, 400);
     const minute = Math.floor(Date.now() / 60000);
     const fails = await env.DB.prepare('SELECT COALESCE(SUM(count), 0) as n FROM login_attempts WHERE minute > ?').bind(minute - 5).first();
     if (fails && fails.n >= 20) return apiJson({ error: 'Too many failed attempts. Please wait a few minutes and try again.' }, 429);
@@ -15426,13 +15762,14 @@ async function getVersionInfo(env, fresh) {
     const current = VERSION;
     const now = Date.now();
     if (!fresh && versionCache.data && (now - versionCache.fetchedAt) < VERSION_CACHE_TTL_MS) return apiJson({ current, ...versionCache.data });
-    let latest = null, released = null, notes = null, workerUrl = null;
+    let latest = null, released = null, notes = null, workerUrl = null, workerSha256 = null;
     try {
         const res = await fetch('https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/version.json', { signal: AbortSignal.timeout(5000) });
         if (res.ok) {
             const data = await res.json();
             latest = data.version || null; released = data.released || null;
             notes = data.notes || null; workerUrl = data.worker_url || null;
+            workerSha256 = typeof data.worker_sha256 === 'string' && /^[a-f0-9]{64}$/i.test(data.worker_sha256) ? data.worker_sha256.toLowerCase() : null;
         } else {
             const workerRes = await fetch('https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/worker.js', { signal: AbortSignal.timeout(8000) });
             if (workerRes.ok) {
@@ -15442,9 +15779,9 @@ async function getVersionInfo(env, fresh) {
             }
         }
     } catch (e) {}
-    versionCache.data = { latest, released, notes, worker_url: workerUrl };
+    versionCache.data = { latest, released, notes, worker_url: workerUrl, worker_sha256: workerSha256 };
     versionCache.fetchedAt = now;
-    return apiJson({ current, latest, released, notes, worker_url: workerUrl });
+    return apiJson({ current, latest, released, notes, worker_url: workerUrl, worker_sha256: workerSha256 });
 }
 
 // ============================================================================
@@ -15535,12 +15872,18 @@ async function getStats(env) {
 // ============================================================================
 // AUDIT LOGS
 // ============================================================================
+function parseBoundedQueryLimit(value, fallback, maximum) {
+    if (typeof value !== 'string' || !/^\d+$/.test(value)) return fallback;
+    const parsed = Number(value);
+    return Number.isSafeInteger(parsed) && parsed > 0 ? Math.min(parsed, maximum) : fallback;
+}
+
 async function getAuditLogs(env, url) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
-        const limit = Math.min(parseInt(url.searchParams.get('limit')) || 100, 500);
-        const search = (url.searchParams.get('search') || '').trim();
+        const limit = parseBoundedQueryLimit(url.searchParams.get('limit'), 100, 500);
+        const search = (url.searchParams.get('search') || '').trim().slice(0, 200);
         let query = 'SELECT id, user_id, action, timestamp FROM logs';
         const params = [];
         if (search) { query += ' WHERE action LIKE ?'; params.push('%' + search + '%'); }
@@ -15634,13 +15977,17 @@ async function getContactMessages(env, url) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
-        const limit = Math.min(parseInt(url.searchParams.get('limit')) || 50, 200);
-        const search = (url.searchParams.get('search') || '').trim();
+        const limit = parseBoundedQueryLimit(url.searchParams.get('limit'), 50, 200);
+        const search = (url.searchParams.get('search') || '').trim().slice(0, 200);
         const unreadOnly = url.searchParams.get('unread') === '1';
+        const rawAfterId = url.searchParams.get('after');
+        const afterId = rawAfterId !== null && /^\d+$/.test(rawAfterId) ? Number(rawAfterId) : NaN;
+        const hasAfter = Number.isSafeInteger(afterId) && afterId >= 0;
         let where = "m.source = 'featured' AND m.direction = 'in'";
         const params = [];
         if (unreadOnly) where += ' AND m.read_at IS NULL';
         if (search) { where += ' AND m.text LIKE ?'; params.push('%' + search + '%'); }
+        if (hasAfter) { where += ' AND m.id > ?'; params.push(afterId); }
         // Single JOIN — one round-trip instead of messages-then-users.
         const rows = await env.DB.prepare(
             `SELECT m.id, m.chat_id, m.text, m.created_at, m.read_at,
@@ -15648,7 +15995,7 @@ async function getContactMessages(env, url) {
              FROM dm_messages m
              LEFT JOIN users u ON u.id = m.chat_id
              WHERE ${where}
-             ORDER BY m.id DESC LIMIT ?`
+             ORDER BY m.id ${hasAfter ? 'ASC' : 'DESC'} LIMIT ?`
         ).bind(...params, limit).all();
         const out = (rows.results || []).map(m => ({
             id: m.id, userId: m.chat_id, text: m.text || '', created_at: m.created_at,
@@ -16021,7 +16368,9 @@ async function runAutoRemoveMemory(env, summary) {
 
     // ----- AI memory: per-chat, respects private vs group settings -----
     const aiKeepPrivate = parseInt(await getSetting(env.DB, 'ai_memory')) || 0;
-    const aiKeepGroup = parseInt(await getSetting(env.DB, 'ai_group_memory')) || aiKeepPrivate;
+    const rawGroupMemory = await getSetting(env.DB, 'ai_group_memory');
+    const parsedGroupMemory = parseInt(rawGroupMemory, 10);
+    const aiKeepGroup = Number.isFinite(parsedGroupMemory) ? parsedGroupMemory : aiKeepPrivate;
     if (aiKeepPrivate > 0 || aiKeepGroup > 0) {
         try {
             const chats = await env.DB.prepare('SELECT DISTINCT chat_id FROM ai_messages').all();
@@ -16876,7 +17225,7 @@ async function getUsers(env, url) {
         await initializeDatabase(env.DB);
         const where = []; const params = [];
         const filter = url.searchParams.get('filter') || 'all';
-        const search = (url.searchParams.get('search') || '').trim();
+        const search = (url.searchParams.get('search') || '').trim().slice(0, 200);
         if (filter === 'private') where.push('u.private_started = 1');
         else if (filter === 'group') where.push('COALESCE(u.private_started, 0) = 0');
         else if (filter === 'admin') where.push("u.role = 'admin'");
@@ -16884,8 +17233,8 @@ async function getUsers(env, url) {
         if (search) { where.push('(u.username LIKE ? OR u.first_name LIKE ?)'); params.push('%' + search + '%', '%' + search + '%'); }
         const whereSql = where.length ? ' WHERE ' + where.join(' AND ') : '';
 
-        const page = Math.max(1, parseInt(url.searchParams.get('page')) || 1);
-        const perPage = Math.min(Math.max(parseInt(url.searchParams.get('per_page')) || 50, 1), 1000);
+        const page = parseBoundedQueryLimit(url.searchParams.get('page'), 1, 1000000);
+        const perPage = parseBoundedQueryLimit(url.searchParams.get('per_page'), 50, 1000);
         const offset = (page - 1) * perPage;
 
         // Window function returns rows and total count in one round-trip.
@@ -19160,8 +19509,11 @@ async function handleSchemaHeal(env) {
 async function changeAdminPassword(request, env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
-        const { newPassword } = await request.json();
-        if (!newPassword || newPassword.length < 6) return apiJson({ error: 'Password must be at least 6 characters.' }, 400);
+        const body = await request.json();
+        const newPassword = body && body.newPassword;
+        if (typeof newPassword !== 'string' || newPassword.length < 6 || newPassword.length > 1024) {
+            return apiJson({ error: 'Password must be between 6 and 1024 characters.' }, 400);
+        }
         await initializeDatabase(env.DB);
         await setSetting(env.DB, 'admin_password', await hashPassword(newPassword));
         // Bump password_version so every session on every worker isolate is
@@ -20230,9 +20582,49 @@ async function handleFileProxy(request, env, url) {
 // UPDATE
 // ============================================================================
 
+async function sha256Hex(text) {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(digest)).map(byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+async function readResponseTextLimited(response, maxBytes) {
+  const reader = response.body && response.body.getReader();
+  if (!reader) {
+    const text = await response.text();
+    if (new TextEncoder().encode(text).byteLength > maxBytes) throw new Error('Downloaded update file exceeds the size limit.');
+    return text;
+  }
+  const chunks = [];
+  let totalBytes = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      totalBytes += value.byteLength;
+      if (totalBytes > maxBytes) {
+        await reader.cancel();
+        throw new Error('Downloaded update file exceeds the size limit.');
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const bytes = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(bytes);
+}
+
 async function performUpdate(request, env) {
   try {
     const body = await request.json();
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return apiJson({ success: false, error: 'Invalid update request.' }, 400);
+    }
     let { token, accountId, scriptName, workerUrl } = body;
 
     // OAuth first when nothing was explicitly passed.
@@ -20257,6 +20649,14 @@ async function performUpdate(request, env) {
     if (!token || !accountId || !scriptName) {
       return apiJson({ success: false, error: 'Missing token, account or script name.' }, 400);
     }
+    if (typeof token !== 'string' || token.length > 4096 ||
+        typeof accountId !== 'string' || !/^[a-f0-9]{32}$/i.test(accountId) ||
+        typeof scriptName !== 'string' || !/^[a-z0-9](?:[a-z0-9_-]{0,62})$/i.test(scriptName)) {
+      return apiJson({ success: false, error: 'Invalid Cloudflare credentials or Worker identifier.' }, 400);
+    }
+    if (workerUrl !== undefined && (typeof workerUrl !== 'string' || workerUrl.length > 2048)) {
+      return apiJson({ success: false, error: 'Invalid update URL.' }, 400);
+    }
 
     // Read the current bindings so the deploy keeps D1 (and everything else).
     // This MUST succeed: uploading a module without `bindings` detaches D1 and
@@ -20264,7 +20664,7 @@ async function performUpdate(request, env) {
     let settingsRes;
     try {
       settingsRes = await fetch(
-        `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${scriptName}/settings`,
+        `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${encodeURIComponent(scriptName)}/settings`,
         { headers: { 'Authorization': 'Bearer ' + token } }
       );
     } catch (e) {
@@ -20283,22 +20683,45 @@ async function performUpdate(request, env) {
     let scriptUrl = workerUrl || DEFAULT_UPDATE_URL;
     try {
       const u = new URL(scriptUrl);
-      if (u.protocol !== 'https:' || u.hostname !== 'raw.githubusercontent.com') {
+      if (u.protocol !== 'https:' || u.hostname !== 'raw.githubusercontent.com' || u.username || u.password || u.port || u.search || u.hash) {
         return apiJson({ success: false, error: 'Update URL is not allowed.' }, 400);
       }
     } catch (e) {
       return apiJson({ success: false, error: 'Invalid update URL.' }, 400);
     }
 
-    const scriptRes = await fetch(scriptUrl);
+    let releaseHash = null, releaseVersion = null;
+    if (scriptUrl === DEFAULT_UPDATE_URL) {
+      try {
+        const releaseRes = await fetch('https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/version.json', { signal: AbortSignal.timeout(5000), cache: 'no-store' });
+        if (!releaseRes.ok) return apiJson({ success: false, error: 'Could not verify release integrity metadata. Update aborted; your Worker was not changed.' }, 400);
+        const release = await releaseRes.json();
+        if (!release || typeof release.version !== 'string' || typeof release.worker_sha256 !== 'string' || !/^[a-f0-9]{64}$/i.test(release.worker_sha256)) {
+          return apiJson({ success: false, error: 'Release integrity metadata is invalid. Update aborted; your Worker was not changed.' }, 400);
+        }
+        releaseHash = release.worker_sha256.toLowerCase();
+        releaseVersion = release.version;
+      } catch (e) {
+        return apiJson({ success: false, error: 'Could not verify release integrity metadata. Update aborted; your Worker was not changed.' }, 400);
+      }
+    }
+
+    let scriptRes;
+    try { scriptRes = await fetch(scriptUrl, { signal: AbortSignal.timeout(15000), cache: 'no-store' }); }
+    catch (e) { return apiJson({ success: false, error: 'Could not download the update file. Your Worker was not changed.' }, 400); }
     if (!scriptRes.ok) return apiJson({ success: false, error: 'Could not download the update file.' }, 400);
-    const scriptText = await scriptRes.text();
+    let scriptText;
+    try { scriptText = await readResponseTextLimited(scriptRes, 5 * 1024 * 1024); }
+    catch (e) { return apiJson({ success: false, error: (e && e.message) || 'Could not read the update file.' }, 400); }
 
     let newVersion = null;
     const match = scriptText.match(/const\s+VERSION\s*=\s*['"]([^'"]+)['"]/);
     if (match) newVersion = match[1];
-    if (!match || !/export\s+default/.test(scriptText) || scriptText.length < 10000) {
+    if (!match || !/export\s+default/.test(scriptText) || scriptText.length < 10000 || scriptText.length > 5 * 1024 * 1024) {
       return apiJson({ success: false, error: 'Downloaded update file looks invalid. Aborted; your Worker was not changed.' }, 400);
+    }
+    if (releaseHash && (newVersion !== releaseVersion || await sha256Hex(scriptText) !== releaseHash)) {
+      return apiJson({ success: false, error: 'Downloaded update failed release integrity verification. Aborted; your Worker was not changed.' }, 400);
     }
 
     const metadata = { main_module: 'worker.js', bindings };
@@ -20307,7 +20730,7 @@ async function performUpdate(request, env) {
     formData.append('worker.js', new Blob([scriptText], { type: 'application/javascript+module' }), 'worker.js');
 
     const uploadRes  = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${scriptName}/content`,
+      `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${encodeURIComponent(scriptName)}/content`,
       { method: 'PUT', headers: { 'Authorization': 'Bearer ' + token }, body: formData }
     );
     const uploadData = await uploadRes.json();
@@ -22816,7 +23239,42 @@ self.addEventListener('message', function(event) {
         event.waitUntil(caches.keys().then(function(keys) {
             return Promise.all(keys.map(function(k) { return caches.delete(k); }));
         }));
+    } else if (event.data.type === 'SHOW_NOTIFICATION') {
+        const reply = event.ports && event.ports[0];
+        const title = String(event.data.title || 'Nyxx').slice(0, 100);
+        const body = String(event.data.body || '').slice(0, 240);
+        const tag = String(event.data.tag || 'nyxx-notification').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 100);
+        const notification = self.registration.showNotification(title, {
+            body: body,
+            tag: tag || 'nyxx-notification',
+            renotify: false,
+            data: { url: '/?nyxx-notification=inbox' }
+        }).then(function() {
+            if (reply) reply.postMessage({ success: true });
+        }).catch(function(error) {
+            if (reply) reply.postMessage({ success: false, error: String(error && error.message || 'Notification could not be displayed.') });
+            else console.error('[nyxx] notification display failed:', error);
+        });
+        event.waitUntil(notification);
     }
+});
+
+self.addEventListener('notificationclick', function(event) {
+    event.notification.close();
+    event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(windows) {
+        const target = new URL('/?nyxx-notification=inbox', self.location.origin).href;
+        const dashboard = windows.find(function(client) {
+            try { return new URL(client.url).pathname === '/'; } catch (e) { return false; }
+        });
+        if (dashboard && typeof dashboard.navigate === 'function') {
+            return dashboard.navigate(target).then(function(navigated) {
+                return (navigated || dashboard).focus();
+            }).catch(function() {
+                return dashboard.focus();
+            });
+        }
+        return self.clients.openWindow(target);
+    }));
 });
 
 self.addEventListener('fetch', function(event) {

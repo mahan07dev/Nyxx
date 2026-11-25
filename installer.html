@@ -1383,7 +1383,7 @@ const DEFAULT_PROXY = "https://nyxx-proxy.nova-06272b19.workers.dev/";
 const PROXY_JS_URL = "https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/proxy.js";
 const WORKER_JS_URL = "https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/worker.js";
 const VERSION_JSON_URL = "https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/version.json";
-const WORKER_JS_SHA256 = null;
+const WORKER_JS_SHA256 = "bfbaafe862d8a42464b7dc3666ef8d284bcfe4d51ee3d0e07b85e247bcdc6be5";
 const API_TIMEOUT_MS = 60000;
 const WORKER_NAME_PATTERN = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
 const TOKEN_DEEPLINK = "https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22d1%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22account_settings%22%2C%22type%22%3A%22read%22%7D%5D&accountId=*&zoneId=all&name=Nyxx%20Installer";
@@ -1879,6 +1879,7 @@ async function fetchLatestVersion() {
         version: data.version,
         notes: data.notes || '',
         released: data.released || '',
+        worker_sha256: typeof data.worker_sha256 === 'string' && /^[a-f0-9]{64}$/i.test(data.worker_sha256) ? data.worker_sha256.toLowerCase() : null,
         worker_urls: Array.isArray(data.worker_urls) ? data.worker_urls : null
       };
     }
@@ -2198,17 +2199,59 @@ function cfErrCategory(res) {
   try { return classifyHttpError(res.status, res.json, '').category; } catch (e) { return 'API'; }
 }
 
+async function readWorkerTextLimited(response, maxBytes) {
+  const reader = response.body && response.body.getReader();
+  if (!reader) {
+    const text = await response.text();
+    if (new TextEncoder().encode(text).byteLength > maxBytes) throw new InstallError('worker.js exceeds the 5 MB size limit.', 'VALIDATION');
+    return text;
+  }
+  const chunks = [];
+  let totalBytes = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      totalBytes += value.byteLength;
+      if (totalBytes > maxBytes) {
+        await reader.cancel();
+        throw new InstallError('worker.js exceeds the 5 MB size limit.', 'VALIDATION');
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const bytes = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(bytes);
+}
+
 // ============================
 // WORKER CODE CACHING
 // ============================
 async function fetchWorkerCode(useCache) {
   const proxy = config.proxyUrl || DEFAULT_PROXY;
+  const expectedHash = (latestVersion && latestVersion.worker_sha256) || WORKER_JS_SHA256;
+  if (!expectedHash || !/^[a-f0-9]{64}$/i.test(expectedHash)) {
+    throw new InstallError('Release integrity metadata is missing. Update or install was stopped for safety.', 'SECURITY');
+  }
+  const expectedVersion = latestVersion && latestVersion.version;
   if (useCache) {
     try {
       const cached = localStorage.getItem(CACHE_KEY);
       if (cached) {
         const { code, timestamp } = JSON.parse(cached);
-        if (Date.now() - timestamp < 10 * 60 * 1000 && code && code.length > 1000) return code;
+        const age = Date.now() - Number(timestamp);
+        const cachedVersion = typeof code === 'string' && code.match(/const\s+VERSION\s*=\s*['"]([^'"]+)['"]/);
+        if (Number.isFinite(age) && age >= 0 && age < 10 * 60 * 1000 &&
+            typeof code === 'string' && code.length > 1000 && cachedVersion &&
+            (!expectedVersion || cachedVersion[1] === expectedVersion) &&
+            await sha256(code) === expectedHash) return code;
       }
     } catch (e) {}
   }
@@ -2223,15 +2266,18 @@ async function fetchWorkerCode(useCache) {
       const target = viaProxy ? proxy + (proxy.endsWith('/') ? '' : '/') + '?url=' + encodeURIComponent(src) : src;
       const resp = await fetchWithTimeout(target, { cache: 'no-store' }, API_TIMEOUT_MS);
       if (!resp.ok) { lastErr = new InstallError('worker.js unavailable from ' + src + ' (HTTP ' + resp.status + ')', 'NETWORK'); continue; }
-      const code = await resp.text();
-      if (!code || code.length < 1000) { lastErr = new InstallError('worker.js download invalid from ' + src, 'VALIDATION'); continue; }
-      if (WORKER_JS_SHA256) {
-        const hash = await sha256(code);
-        if (hash !== WORKER_JS_SHA256) { lastErr = new InstallError('worker.js integrity check failed from ' + src, 'SECURITY'); continue; }
+      const code = await readWorkerTextLimited(resp, 5 * 1024 * 1024);
+      const versionMatch = code && code.match(/const\s+VERSION\s*=\s*['"]([^'"]+)['"]/);
+      if (!code || code.length < 1000 || !versionMatch) { lastErr = new InstallError('worker.js download invalid from ' + src, 'VALIDATION'); continue; }
+      if (expectedVersion && versionMatch[1] !== expectedVersion) {
+        lastErr = new InstallError('worker.js version does not match the release metadata.', 'SECURITY'); continue;
       }
+      if (await sha256(code) !== expectedHash) { lastErr = new InstallError('worker.js integrity check failed from ' + src, 'SECURITY'); continue; }
       try { localStorage.setItem(CACHE_KEY, JSON.stringify({ code, timestamp: Date.now() })); } catch (e) {}
       return code;
-    } catch (e) { lastErr = new InstallError('Could not download worker.js from ' + src + ' — ' + e.message, 'NETWORK'); }
+    } catch (e) {
+      lastErr = e instanceof InstallError ? e : new InstallError('Could not download worker.js from ' + src + ' — ' + e.message, 'NETWORK');
+    }
   }
   throw lastErr || new InstallError('Could not download worker.js from any source.', 'NETWORK');
 }
