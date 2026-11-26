@@ -1,15 +1,15 @@
 // @ts-nocheck
 
-// NYXX — v5.1.0
+// NYXX — v5.3.0
 // Telegram bot builder + management dashboard for Cloudflare Workers + D1.
 // ============================================================================
-const VERSION = '5.1.0';
+const VERSION = '5.3.0';
 
 const NYXX_SUPPORT_SYSTEM_PROMPT = `You are Nyxx AI Support, the official built-in assistant inside the Nyxx dashboard.
 Help the user configure commands, keyboards, Force Join, proxies, AI, MCP, channels, groups, and media library.
 Always give clear, concise answers using the exact dashboard tab and button names.`;
 
-const NYXX_SUPPORT_KB = `Nyxx support KB. Version 5.1.0
+const NYXX_SUPPORT_KB = `Nyxx support KB. Version 5.2.0
 
 RULES
 - Answer ONLY from this doc. If uncovered, say so and point to GitHub/channel. Never invent features, settings, prices, versions.
@@ -3244,15 +3244,21 @@ details.help.danger > summary { color: var(--red); }
                     <div id="games-cards-list" class="grid grid-2"></div>
                 </div>
 
+                <div class="hint-banner" style="margin-bottom:14px;">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <div><b>Inline mode:</b> Enable the <b>Inline query (@bot)</b> switch on any game card below to let users launch it in any chat via <code>@yourbot play</code>. Make sure Inline Mode is turned on for your bot in <b>@BotFather</b> (<code>/setinline</code>).</div>
+                </div>
                 <div class="card">
                     <div class="card-head">
                         <div class="card-title c-green"><i class="fa-solid fa-trophy"></i> Chat Leaderboard</div>
                         <div style="flex:1"></div>
                         <select class="input" id="games-lb-game" onchange="loadGameLeaderboard()" style="width:auto;">
                             <option value="snake">Neon Snake</option>
-                            <option value="2048">2048</option>
+                            <option value="corsairs">Corsairs</option>
                             <option value="breaker">Brick Breaker</option>
                             <option value="flappy">Sky Dash</option>
+                            <option value="tetris">Neon Blocks</option>
+                            <option value="mines">Minesweeper</option>
                         </select>
                         <input class="input mono" id="games-lb-chat" placeholder="Chat ID (blank = all chats)" style="max-width:200px;" oninput="loadGameLeaderboard()">
                     </div>
@@ -4633,11 +4639,15 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                         <select class="input" id="kbCmd-game-pick" style="width:auto;height:32px;font-size:12px;">
                             <option value="">🎮 Quick-attach a Mini-Game button…</option>
                             <option value="snake">🐍 Neon Snake (callback)</option>
-                            <option value="2048">🔢 2048 (callback)</option>
+                            <option value="corsairs">🏴‍☠️ Corsairs (callback)</option>
                             <option value="breaker">🧱 Brick Breaker (callback)</option>
                             <option value="flappy">🚀 Sky Dash (callback)</option>
+                            <option value="tetris">🧩 Neon Blocks (callback)</option>
+                            <option value="mines">💣 Minesweeper (callback)</option>
                             <option value="url:snake">🔗 Neon Snake (direct URL)</option>
-                            <option value="url:2048">🔗 2048 (direct URL)</option>
+                            <option value="url:corsairs">🔗 Corsairs (direct URL)</option>
+                            <option value="url:tetris">🔗 Neon Blocks (direct URL)</option>
+                            <option value="url:mines">🔗 Minesweeper (direct URL)</option>
                         </select>
                         <button type="button" class="btn btn-gray btn-sm" onclick="quickAttachGameBtn('kbCmd')"><i class="fa-solid fa-gamepad"></i> Attach Game</button>
                     </div>
@@ -4744,6 +4754,7 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                     </div>
                 </div>
                 <div class="switch-row"><div><div class="sw-label">Protect content</div><div class="sw-sub">Prevent users from forwarding or saving files/messages in Telegram.</div></div><button class="switch" id="cmd-protect" onclick="toggleSwitch('cmd-protect')"></button></div>
+                <div class="switch-row"><div><div class="sw-label">Available in inline queries (@bot)</div><div class="sw-sub">Lets users search &amp; send this command in any chat via <code>@yourbot</code>. Requires <b>/setinline</b> enabled in <b>@BotFather</b>.</div></div><button type="button" class="switch" id="cmd-inline-query" onclick="toggleSwitch('cmd-inline-query')"></button></div>
                 <div class="switch-row" style="margin-bottom:0;"><div><div class="sw-label">Enabled</div><div class="sw-sub">Disabled commands are hidden.</div></div><button class="switch on" id="cmd-enabled" onclick="toggleSwitch('cmd-enabled')"></button></div>
             </div>
 
@@ -4768,6 +4779,18 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                         <textarea class="textarea mono" id="cmd-disallowed-users" rows="2" placeholder="555666777"></textarea>
                         <span class="field-hint">These users are blocked from running this command.</span>
                     </div>
+                </div>
+                <div class="field">
+                    <label class="field-label">Allowed chat types <span class="muted small">(leave all unchecked or all checked for everywhere)</span></label>
+                    <div class="row" style="gap:12px;flex-wrap:wrap;margin-bottom:8px;" id="cmd-chat-types">
+                        <label class="check"><input type="checkbox" value="private"> <span>Private DM</span></label>
+                        <label class="check"><input type="checkbox" value="group"> <span>Group</span></label>
+                        <label class="check"><input type="checkbox" value="supergroup"> <span>Supergroup</span></label>
+                        <label class="check"><input type="checkbox" value="channel"> <span>Channel</span></label>
+                    </div>
+                    <label class="field-label tiny">Exact allowed chat IDs or @usernames <span class="muted">(optional)</span></label>
+                    <textarea class="textarea mono" id="cmd-allowed-chats" rows="2" placeholder="-1001234567890, @mygroup"></textarea>
+                    <span class="field-hint">Optional. Restricts this command to specific groups, channels, or DMs.</span>
                 </div>
                 <div class="field">
                     <label class="field-label">Force Join override</label>
@@ -5026,9 +5049,24 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                     <span class="field-hint">Blocked from running this command.</span>
                 </div>
             </div>
+            <div class="field" style="margin-bottom:14px;">
+                <label class="field-label tiny">Allowed chat types <span class="muted">(optional — multi-select)</span></label>
+                <div class="row" style="gap:12px;flex-wrap:wrap;margin-bottom:8px;" id="featured-chat-types">
+                    <label class="check"><input type="checkbox" value="private"> <span>Private DM</span></label>
+                    <label class="check"><input type="checkbox" value="group"> <span>Group</span></label>
+                    <label class="check"><input type="checkbox" value="supergroup"> <span>Supergroup</span></label>
+                    <label class="check"><input type="checkbox" value="channel"> <span>Channel</span></label>
+                </div>
+                <label class="field-label tiny">Exact allowed chat IDs or @usernames <span class="muted">(optional)</span></label>
+                <textarea class="textarea mono" id="featured-allowed-chats" rows="2" placeholder="-1001234567890, @mygroup"></textarea>
+            </div>
             <div class="switch-row">
                 <div><div class="sw-label">Delete the user's message</div><div class="sw-sub">Remove the trigger message from the chat automatically.</div></div>
                 <button type="button" class="switch on" id="featured-delete-msg" onclick="toggleSwitch('featured-delete-msg')"></button>
+            </div>
+            <div class="switch-row">
+                <div><div class="sw-label">Available in inline queries (@bot)</div><div class="sw-sub">Show this featured command when users type <code>@yourbot</code>. Requires <b>/setinline</b> in <b>@BotFather</b>.</div></div>
+                <button type="button" class="switch" id="featured-inline-query" onclick="toggleSwitch('featured-inline-query')"></button>
             </div>
             <div class="switch-row" style="margin-bottom:0;">
                 <div><div class="sw-label">Enabled</div><div class="sw-sub">Disabled entries stay here but the bot won't respond to them.</div></div>
@@ -6217,7 +6255,10 @@ openFeaturedModal = function (kind, item) {
     if ($('featured-style')) $('featured-style').value = item ? (item.button_style || '') : '';
     if ($('featured-allowed-users')) $('featured-allowed-users').value = item ? (item.allowed_users || '') : '';
     if ($('featured-disallowed-users')) $('featured-disallowed-users').value = item ? (item.disallowed_users || '') : '';
+    setChatTypeCheckboxes('featured-chat-types', item ? (item.allowed_chat_types || '') : '');
+    if ($('featured-allowed-chats')) $('featured-allowed-chats').value = item ? (item.allowed_chat_ids || '') : '';
     toggleSwitch('featured-enabled', item ? !!item.enabled : true);
+    toggleSwitch('featured-inline-query', item ? !!item.inline_enabled : false);
     var delOn = item ? (item.delete_user_message === undefined || item.delete_user_message === null ? true : !!item.delete_user_message) : true;
     toggleSwitch('featured-delete-msg', delOn);
     show($('featured-style-wrap'), featuredKind === 'buttons');
@@ -6245,9 +6286,12 @@ saveFeatured = async function () {
         access_level: access,
         allowed_users: $('featured-allowed-users') ? $('featured-allowed-users').value.trim() : '',
         disallowed_users: $('featured-disallowed-users') ? $('featured-disallowed-users').value.trim() : '',
+        allowed_chat_types: getChatTypeCheckboxes('featured-chat-types'),
+        allowed_chat_ids: $('featured-allowed-chats') ? $('featured-allowed-chats').value.trim() : '',
         extra_config: collectFeaturedExtraFields(featuredKind),
         admin_only: access === 'admin' ? 1 : 0,
         delete_user_message: sw('featured-delete-msg') ? 1 : 0,
+        inline_enabled: sw('featured-inline-query') ? 1 : 0,
         enabled: sw('featured-enabled') ? 1 : 0,
         button_style: featuredKind === 'buttons' ? ($('featured-style').value || '') : ''
     };
@@ -6560,6 +6604,20 @@ function parseIsoMs(iso) {
     if (/^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}/.test(s)) s = s.replace(' ', 'T') + 'Z';
     var t = new Date(s).getTime();
     return isNaN(t) ? 0 : t;
+}
+function setChatTypeCheckboxes(containerId, raw) {
+    var box = $(containerId); if (!box) return;
+    var set = new Set(String(raw || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean));
+    box.querySelectorAll('input[type="checkbox"]').forEach(function (cb) {
+        cb.checked = set.has(cb.value);
+    });
+}
+function getChatTypeCheckboxes(containerId) {
+    var box = $(containerId); if (!box) return '';
+    var vals = [];
+    box.querySelectorAll('input[type="checkbox"]:checked').forEach(function (cb) { vals.push(cb.value); });
+    if (!vals.length || vals.length >= 4) return '';
+    return vals.join(',');
 }
 function onCmdAccessChange() {
     var lvl = getSeg('cmd-access') || 'everyone';
@@ -7064,6 +7122,8 @@ async function openCommandModal(cmd, parent, cloneMode) {
         setSeg('cmd-access', commandAccessLevel(srcCmd));
         if ($('cmd-allowed-users')) $('cmd-allowed-users').value = srcCmd.allowed_users || '';
         if ($('cmd-disallowed-users')) $('cmd-disallowed-users').value = srcCmd.disallowed_users || '';
+        setChatTypeCheckboxes('cmd-chat-types', srcCmd.allowed_chat_types || '');
+        if ($('cmd-allowed-chats')) $('cmd-allowed-chats').value = srcCmd.allowed_chat_ids || '';
         if ($('cmd-fj-mode')) $('cmd-fj-mode').value = srcCmd.force_join_mode || 'inherit';
         if ($('cmd-password')) $('cmd-password').value = srcCmd.cmd_password || '';
         if ($('cmd-pw-prompt')) $('cmd-pw-prompt').value = srcCmd.password_prompt || '';
@@ -7074,6 +7134,7 @@ async function openCommandModal(cmd, parent, cloneMode) {
         show($('cmd-edit-triggers-wrap'), !!srcCmd.edit_message);
         applyEditTriggersUi(srcCmd.edit_triggers || 'inline,reply,command');
         toggleSwitch('cmd-protect', !!srcCmd.protect_content);
+        toggleSwitch('cmd-inline-query', !!srcCmd.inline_enabled);
         toggleSwitch('cmd-enabled', srcCmd.enabled != 0);
         setSeg('cmd-inline-access', srcCmd.inline_access_level || 'everyone');
         if ($('cmd-inline-allowed')) $('cmd-inline-allowed').value = srcCmd.inline_allowed_users || '';
@@ -7095,6 +7156,8 @@ async function openCommandModal(cmd, parent, cloneMode) {
         $('cmd-content').value = ''; $('cmd-media').value = '';
         if ($('cmd-allowed-users')) $('cmd-allowed-users').value = '';
         if ($('cmd-disallowed-users')) $('cmd-disallowed-users').value = '';
+        setChatTypeCheckboxes('cmd-chat-types', '');
+        if ($('cmd-allowed-chats')) $('cmd-allowed-chats').value = '';
         if ($('cmd-fj-mode')) $('cmd-fj-mode').value = 'inherit';
         if ($('cmd-password')) $('cmd-password').value = '';
         if ($('cmd-pw-prompt')) $('cmd-pw-prompt').value = '';
@@ -7105,6 +7168,7 @@ async function openCommandModal(cmd, parent, cloneMode) {
         show($('cmd-edit-triggers-wrap'), false);
         applyEditTriggersUi('inline,reply,command');
         toggleSwitch('cmd-protect', false);
+        toggleSwitch('cmd-inline-query', false);
         setSeg('cmd-inline-access', 'everyone');
         if ($('cmd-inline-allowed')) $('cmd-inline-allowed').value = '';
         if ($('cmd-inline-disallowed')) $('cmd-inline-disallowed').value = '';
@@ -7202,9 +7266,12 @@ async function saveCommand() {
         edit_message: sw('cmd-edit-message') ? 1 : 0,
         edit_triggers: collectEditTriggersUi() || 'inline,reply,command',
         protect_content: sw('cmd-protect') ? 1 : 0,
+        inline_enabled: sw('cmd-inline-query') ? 1 : 0,
         access_level: accessLevel,
         allowed_users: $('cmd-allowed-users') ? $('cmd-allowed-users').value.trim() : '',
         disallowed_users: $('cmd-disallowed-users') ? $('cmd-disallowed-users').value.trim() : '',
+        allowed_chat_types: getChatTypeCheckboxes('cmd-chat-types'),
+        allowed_chat_ids: $('cmd-allowed-chats') ? $('cmd-allowed-chats').value.trim() : '',
         force_join_mode: $('cmd-fj-mode') ? $('cmd-fj-mode').value : 'inherit',
         cmd_password: $('cmd-password') ? $('cmd-password').value : '',
         password_prompt: $('cmd-pw-prompt') ? $('cmd-pw-prompt').value.trim() : '',
@@ -11108,6 +11175,7 @@ var PERM_LABELS = {
     start_command: { label: 'Start command', sub: 'Whether non-admins can use /start. Usually Everyone.' },
     rules_command: { label: '/rules in groups', sub: 'Whether non-admins can read a group\\'s rules via /rules.' },
     callback_queries: { label: 'Inline button taps', sub: 'Whether non-admins can tap inline or reply buttons on messages.' },
+    inline_queries: { label: 'Inline queries (@bot ...)', sub: 'Whether users can search commands & games via @yourbot in any chat (requires /setinline in @BotFather).' },
     private_chat: { label: 'Reply in private chats', sub: 'Whether lower-role users get replies in direct messages.' },
     group_chat: { label: 'Reply in groups', sub: 'Whether lower-role users get replies in groups.' },
     group_commands: { label: 'Commands in groups', sub: 'Whether lower-role users can run bot commands in groups.' },
@@ -11130,8 +11198,9 @@ function renderPermissions() {
     box.innerHTML = Object.keys(PERM_LABELS).map(function (k) {
         var meta = PERM_LABELS[k];
         var val = permState[k] || 'everyone';
-        var acl = permAclState[k] || { allowed: '', disallowed: '' };
-        var hasAcl = !!(acl.allowed || acl.disallowed);
+        var acl = permAclState[k] || { allowed: '', disallowed: '', chat_types: '', chat_ids: '' };
+        var ctSet = new Set(String(acl.chat_types || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean));
+        var hasAcl = !!(acl.allowed || acl.disallowed || acl.chat_types || acl.chat_ids);
         return '<div class="switch-row perm-row" style="margin-bottom:10px;flex-direction:column;align-items:stretch;">' +
             '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">' +
                 '<div class="perm-text" style="flex:1;min-width:200px;"><div class="sw-label">' + esc(meta.label) + '</div><div class="sw-sub">' + esc(meta.sub) + '</div></div>' +
@@ -11142,10 +11211,20 @@ function renderPermissions() {
                 '</div>' +
             '</div>' +
             '<details class="perm-acl-details"' + (hasAcl ? ' open' : '') + '>' +
-                '<summary><i class="fa-solid fa-user-lock"></i> Allowed / Disallowed user IDs' + (hasAcl ? ' <span class="badge blue">Custom</span>' : '') + '</summary>' +
+                '<summary><i class="fa-solid fa-user-lock"></i> User &amp; Chat gates' + (hasAcl ? ' <span class="badge blue">Custom</span>' : '') + '</summary>' +
                 '<div class="grid grid-2">' +
-                    '<div><label class="field-label tiny">Allowed IDs</label><textarea class="textarea mono" rows="2" placeholder="123456&#10;789012" oninput="setPermAcl(\\'' + k + '\\',\\'allowed\\',this.value)">' + esc(acl.allowed || '') + '</textarea></div>' +
-                    '<div><label class="field-label tiny">Disallowed IDs</label><textarea class="textarea mono" rows="2" placeholder="555666" oninput="setPermAcl(\\'' + k + '\\',\\'disallowed\\',this.value)">' + esc(acl.disallowed || '') + '</textarea></div>' +
+                    '<div><label class="field-label tiny">Allowed User IDs</label><textarea class="textarea mono" rows="2" placeholder="123456&#10;789012" oninput="setPermAcl(\\'' + k + '\\',\\'allowed\\',this.value)">' + esc(acl.allowed || '') + '</textarea></div>' +
+                    '<div><label class="field-label tiny">Disallowed User IDs</label><textarea class="textarea mono" rows="2" placeholder="555666" oninput="setPermAcl(\\'' + k + '\\',\\'disallowed\\',this.value)">' + esc(acl.disallowed || '') + '</textarea></div>' +
+                '</div>' +
+                '<div style="margin-top:8px;">' +
+                    '<label class="field-label tiny">Allowed chat types <span class="muted">(optional)</span></label>' +
+                    '<div class="row" style="gap:10px;flex-wrap:wrap;margin-bottom:6px;">' +
+                        [['private','Private DM'],['group','Group'],['supergroup','Supergroup'],['channel','Channel']].map(function (ct) {
+                            return '<label class="check"><input type="checkbox" value="' + ct[0] + '" ' + (ctSet.has(ct[0]) ? 'checked' : '') + ' onchange="togglePermChatType(\\'' + k + '\\',\\'' + ct[0] + '\\',this.checked)"> <span>' + ct[1] + '</span></label>';
+                        }).join('') +
+                    '</div>' +
+                    '<label class="field-label tiny">Exact allowed chat IDs / @usernames <span class="muted">(optional)</span></label>' +
+                    '<textarea class="textarea mono" rows="2" placeholder="-1001234567890, @mygroup" oninput="setPermAcl(\\'' + k + '\\',\\'chat_ids\\',this.value)">' + esc(acl.chat_ids || '') + '</textarea>' +
                 '</div>' +
             '</details>' +
         '</div>';
@@ -11156,8 +11235,14 @@ function setPerm(key, val, btn) {
     btn.parentNode.querySelectorAll('button').forEach(function (b) { b.classList.toggle('active', b === btn); });
 }
 function setPermAcl(key, field, val) {
-    if (!permAclState[key]) permAclState[key] = { allowed: '', disallowed: '' };
+    if (!permAclState[key]) permAclState[key] = { allowed: '', disallowed: '', chat_types: '', chat_ids: '' };
     permAclState[key][field] = val;
+}
+function togglePermChatType(key, ct, checked) {
+    if (!permAclState[key]) permAclState[key] = { allowed: '', disallowed: '', chat_types: '', chat_ids: '' };
+    var set = new Set(String(permAclState[key].chat_types || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean));
+    if (checked) set.add(ct); else set.delete(ct);
+    permAclState[key].chat_types = (set.size === 0 || set.size >= 4) ? '' : Array.from(set).join(',');
 }
 async function savePermissions() {
     await withSelfBusy(async function () {
@@ -12816,9 +12901,11 @@ function finishUpdateReload() {
 
 var GAME_DEFS = [
     { id: 'snake', name: 'Neon Snake', icon: 'fa-solid fa-worm', desc: 'Classic arcade snake with combo apples & speed ramp.' },
-    { id: '2048', name: '2048', icon: 'fa-solid fa-table-cells', desc: 'Addictive sliding tile puzzle — reach 2048 and beyond.' },
-    { id: 'breaker', name: 'Brick Breaker', icon: 'fa-solid fa-cubes', desc: 'Fast paddle breakout with multi-hit bricks & level clears.' },
-    { id: 'flappy', name: 'Sky Dash', icon: 'fa-solid fa-jet-fighter-up', desc: 'One-tap arcade flyer through neon gates & bonus stars.' }
+    { id: 'corsairs', name: 'Corsairs', icon: 'fa-solid fa-skull-crossbones', desc: 'Dodge the cannonballs and collect the gold to get to the next level.' },
+    { id: 'breaker', name: 'Brick Breaker', icon: 'fa-solid fa-cubes', desc: 'Fast paddle breakout with multi-row bricks & level clears.' },
+    { id: 'flappy', name: 'Sky Dash', icon: 'fa-solid fa-jet-fighter-up', desc: 'One-tap arcade flyer through neon gates.' },
+    { id: 'tetris', name: 'Neon Blocks', icon: 'fa-solid fa-shapes', desc: 'Falling block puzzle with rotation, hard drop & line combos.' },
+    { id: 'mines', name: 'Minesweeper', icon: 'fa-solid fa-bomb', desc: 'Classic 9x9 logic puzzle — clear the board without hitting a mine.' }
 ];
 var gamesCfg = { announce_mode: 'message', announce_cooldown_sec: 20, games: {} };
 function quickAttachGameBtn(prefix) {
@@ -12861,6 +12948,10 @@ function renderGamesCards() {
                 '<button type="button" class="switch ' + (c.enabled !== false ? 'on' : '') + '" onclick="toggleGameEnabled(\\'' + g.id + '\\', this)"></button>' +
             '</div>' +
             '<p class="tiny muted" style="margin-bottom:10px;">' + esc(g.desc) + '</p>' +
+            '<div class="switch-row" style="padding:8px 10px;margin-bottom:10px;">' +
+                '<div><div class="sw-label" style="font-size:13px;">Inline query (@bot)</div><div class="sw-sub">Show in @bot inline search (enable /setinline in @BotFather)</div></div>' +
+                '<button type="button" class="switch ' + (c.inline_enabled ? 'on' : '') + '" onclick="toggleGameInline(\\'' + g.id + '\\', this)"></button>' +
+            '</div>' +
             '<div class="field" style="margin-bottom:10px;">' +
                 '<label class="field-label tiny">Permission</label>' +
                 '<div class="segmented perm-seg segmented_mobile" style="width:100%;display:flex;">' +
@@ -12870,11 +12961,22 @@ function renderGamesCards() {
                     }).join('') +
                 '</div>' +
             '</div>' +
-            '<details class="perm-acl-details"' + ((c.allowed || c.disallowed) ? ' open' : '') + ' style="margin-bottom:10px;">' +
-                '<summary><i class="fa-solid fa-user-lock"></i> Allowed / Disallowed IDs</summary>' +
+            '<details class="perm-acl-details"' + ((c.allowed || c.disallowed || c.chat_types || c.chat_ids) ? ' open' : '') + ' style="margin-bottom:10px;">' +
+                '<summary><i class="fa-solid fa-user-lock"></i> User &amp; Chat gates</summary>' +
                 '<div class="grid grid-2">' +
                     '<div><label class="field-label tiny">Allowed IDs</label><textarea class="textarea mono" rows="2" placeholder="123456" oninput="setGameAcl(\\'' + g.id + '\\',\\'allowed\\',this.value)">' + esc(c.allowed || '') + '</textarea></div>' +
                     '<div><label class="field-label tiny">Disallowed IDs</label><textarea class="textarea mono" rows="2" placeholder="555666" oninput="setGameAcl(\\'' + g.id + '\\',\\'disallowed\\',this.value)">' + esc(c.disallowed || '') + '</textarea></div>' +
+                '</div>' +
+                '<div style="margin-top:8px;">' +
+                    '<label class="field-label tiny">Allowed chat types <span class="muted">(optional)</span></label>' +
+                    '<div class="row" style="gap:10px;flex-wrap:wrap;margin-bottom:6px;">' +
+                        [['private','DM'],['group','Group'],['supergroup','Supergroup'],['channel','Channel']].map(function (ct) {
+                            var ctSet = new Set(String(c.chat_types || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean));
+                            return '<label class="check"><input type="checkbox" ' + (ctSet.has(ct[0]) ? 'checked' : '') + ' onchange="toggleGameChatType(\\'' + g.id + '\\',\\'' + ct[0] + '\\',this.checked)"> <span>' + ct[1] + '</span></label>';
+                        }).join('') +
+                    '</div>' +
+                    '<label class="field-label tiny">Exact chat IDs / @usernames <span class="muted">(optional)</span></label>' +
+                    '<textarea class="textarea mono" rows="2" placeholder="-1001234567890, @mygroup" oninput="setGameAcl(\\'' + g.id + '\\',\\'chat_ids\\',this.value)">' + esc(c.chat_ids || '') + '</textarea>' +
                 '</div>' +
             '</details>' +
             '<div class="row" style="gap:6px;flex-wrap:wrap;">' +
@@ -12887,9 +12989,16 @@ function renderGamesCards() {
 }
 function toggleGameEnabled(gid, btn) {
     if (!gamesCfg.games) gamesCfg.games = {};
-    if (!gamesCfg.games[gid]) gamesCfg.games[gid] = { enabled: true, access: 'everyone', allowed: '', disallowed: '' };
+    if (!gamesCfg.games[gid]) gamesCfg.games[gid] = { enabled: true, inline_enabled: false, access: 'everyone', allowed: '', disallowed: '' };
     var next = !(gamesCfg.games[gid].enabled !== false);
     gamesCfg.games[gid].enabled = next;
+    btn.classList.toggle('on', next);
+}
+function toggleGameInline(gid, btn) {
+    if (!gamesCfg.games) gamesCfg.games = {};
+    if (!gamesCfg.games[gid]) gamesCfg.games[gid] = { enabled: true, inline_enabled: false, access: 'everyone', allowed: '', disallowed: '' };
+    var next = !gamesCfg.games[gid].inline_enabled;
+    gamesCfg.games[gid].inline_enabled = next;
     btn.classList.toggle('on', next);
 }
 function setGamePerm(gid, lvl, btn) {
@@ -12900,8 +13009,15 @@ function setGamePerm(gid, lvl, btn) {
 }
 function setGameAcl(gid, field, val) {
     if (!gamesCfg.games) gamesCfg.games = {};
-    if (!gamesCfg.games[gid]) gamesCfg.games[gid] = { enabled: true, access: 'everyone', allowed: '', disallowed: '' };
+    if (!gamesCfg.games[gid]) gamesCfg.games[gid] = { enabled: true, access: 'everyone', allowed: '', disallowed: '', chat_types: '', chat_ids: '' };
     gamesCfg.games[gid][field] = val;
+}
+function toggleGameChatType(gid, ct, checked) {
+    if (!gamesCfg.games) gamesCfg.games = {};
+    if (!gamesCfg.games[gid]) gamesCfg.games[gid] = { enabled: true, access: 'everyone', allowed: '', disallowed: '', chat_types: '', chat_ids: '' };
+    var set = new Set(String(gamesCfg.games[gid].chat_types || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean));
+    if (checked) set.add(ct); else set.delete(ct);
+    gamesCfg.games[gid].chat_types = (set.size === 0 || set.size >= 4) ? '' : Array.from(set).join(',');
 }
 async function saveGamesConfig() {
     await withSelfBusy(async function () {
@@ -14944,6 +15060,7 @@ const DEFAULT_PERMISSIONS = {
     start_command: 'everyone',
     rules_command: 'everyone',
     callback_queries: 'everyone',
+    inline_queries: 'everyone',
     private_chat: 'everyone',
     group_chat: 'everyone',
     group_commands: 'everyone',
@@ -14965,6 +15082,50 @@ async function getPermissions(env) {
     }
     return out;
 }
+const CHAT_TYPE_KEYS = ['private', 'group', 'supergroup', 'channel'];
+function normalizeAllowedChatTypes(raw) {
+    if (!raw) return '';
+    const arr = Array.isArray(raw) ? raw : String(raw).split(/[\s,;]+/);
+    const set = new Set();
+    for (const item of arr) {
+        const t = String(item || '').trim().toLowerCase();
+        if (CHAT_TYPE_KEYS.includes(t)) set.add(t);
+    }
+    if (set.size === 0 || set.size >= CHAT_TYPE_KEYS.length) return '';
+    return CHAT_TYPE_KEYS.filter(k => set.has(k)).join(',');
+}
+function normalizeAllowedChatIds(raw) {
+    if (!raw) return '';
+    const out = [];
+    const seen = new Set();
+    for (const part of String(raw).split(/[\s,;]+/)) {
+        const s = part.trim();
+        if (!s) continue;
+        if (/^-?\d+$/.test(s) || /^@[a-zA-Z0-9_]{3,}$/.test(s)) {
+            const key = s.toLowerCase();
+            if (!seen.has(key)) { seen.add(key); out.push(s); }
+        }
+    }
+    return out.join(', ');
+}
+function checkChatGate(chatType, chatId, chatUsername, allowedTypesRaw, allowedIdsRaw) {
+    const types = normalizeAllowedChatTypes(allowedTypesRaw);
+    if (types) {
+        const set = new Set(types.split(','));
+        if (!set.has(String(chatType || '').toLowerCase())) return false;
+    }
+    const ids = normalizeAllowedChatIds(allowedIdsRaw);
+    if (ids) {
+        const tokens = ids.split(/[\s,;]+/).map(s => s.trim().toLowerCase()).filter(Boolean);
+        if (tokens.length) {
+            const cidStr = String(chatId || '').toLowerCase();
+            const unStr = chatUsername ? ('@' + String(chatUsername).replace(/^@+/, '').toLowerCase()) : '';
+            const matched = tokens.some(t => t === cidStr || (unStr && t === unStr));
+            if (!matched) return false;
+        }
+    }
+    return true;
+}
 async function getPermissionsAcl(env) {
     let stored = {};
     try {
@@ -14976,7 +15137,9 @@ async function getPermissionsAcl(env) {
         const item = stored[k] || {};
         out[k] = {
             allowed: normalizeAllowedUsersStr(item.allowed || ''),
-            disallowed: normalizeAllowedUsersStr(item.disallowed || '')
+            disallowed: normalizeAllowedUsersStr(item.disallowed || ''),
+            chat_types: normalizeAllowedChatTypes(item.chat_types || ''),
+            chat_ids: normalizeAllowedChatIds(item.chat_ids || '')
         };
     }
     return out;
@@ -15033,7 +15196,10 @@ async function checkPermission(env, userId, key) {
     return await evaluatePermissionWithAcl(env, userId, mode, entry.allowed, entry.disallowed);
 }
 
-async function checkPermissionForChat(env, userId, key, chatId, chatType) {
+async function checkPermissionForChat(env, userId, key, chatId, chatType, chatUsername) {
+    const { acl } = await getPermissionsCached(env);
+    const entry = (acl && acl[key]) || {};
+    if (!checkChatGate(chatType, chatId, chatUsername || '', entry.chat_types, entry.chat_ids)) return false;
     if ((chatType === 'group' || chatType === 'supergroup') && env.DB) {
         try {
             const gs = await getGroupSettings(env.DB, chatId);
@@ -15078,7 +15244,9 @@ async function savePermissionsHandler(request, env) {
             if (incomingAcl[k] && typeof incomingAcl[k] === 'object') {
                 mergedAcl[k] = {
                     allowed: normalizeAllowedUsersStr(incomingAcl[k].allowed || ''),
-                    disallowed: normalizeAllowedUsersStr(incomingAcl[k].disallowed || '')
+                    disallowed: normalizeAllowedUsersStr(incomingAcl[k].disallowed || ''),
+                    chat_types: normalizeAllowedChatTypes(incomingAcl[k].chat_types || ''),
+                    chat_ids: normalizeAllowedChatIds(incomingAcl[k].chat_ids || '')
                 };
             }
         }
@@ -15135,7 +15303,7 @@ async function demoteAdminHandler(request, env) {
 // DATABASE
 // ============================================================================
 const dbInitCache = new WeakMap();
-const SCHEMA_VERSION = 27;
+const SCHEMA_VERSION = 29;
 
 const MIGRATIONS = {
     2: [
@@ -15348,6 +15516,16 @@ const MIGRATIONS = {
         `ALTER TABLE featured_replies ADD COLUMN disallowed_users TEXT DEFAULT ''`,
         `ALTER TABLE featured_replies ADD COLUMN extra_config TEXT DEFAULT '{}'`,
     ],
+    28: [
+        `ALTER TABLE commands ADD COLUMN allowed_chat_types TEXT DEFAULT ''`,
+        `ALTER TABLE commands ADD COLUMN allowed_chat_ids TEXT DEFAULT ''`,
+        `ALTER TABLE featured_replies ADD COLUMN allowed_chat_types TEXT DEFAULT ''`,
+        `ALTER TABLE featured_replies ADD COLUMN allowed_chat_ids TEXT DEFAULT ''`,
+    ],
+    29: [
+        `ALTER TABLE commands ADD COLUMN inline_enabled INTEGER DEFAULT 0`,
+        `ALTER TABLE featured_replies ADD COLUMN inline_enabled INTEGER DEFAULT 0`,
+    ],
 };
 
 // ============================================================================
@@ -15401,6 +15579,8 @@ const DESIRED_SCHEMA = {
         access_level: { type: 'TEXT', default: "'everyone'" },
         allowed_users: { type: 'TEXT', default: "''" },
         disallowed_users: { type: 'TEXT', default: "''" },
+        allowed_chat_types: { type: 'TEXT', default: "''" },
+        allowed_chat_ids: { type: 'TEXT', default: "''" },
         force_join_mode: { type: 'TEXT', default: "'inherit'" },
         cmd_password: { type: 'TEXT', default: "''" },
         password_prompt: { type: 'TEXT', default: "''" },
@@ -15414,6 +15594,7 @@ const DESIRED_SCHEMA = {
         media_meta: { type: 'TEXT', default: "''" },
         media_items_json: { type: 'TEXT', default: "''" },
         protect_content: { type: 'INTEGER', default: '0' },
+        inline_enabled: { type: 'INTEGER', default: '0' },
         edit_message: { type: 'INTEGER', default: '0' },
         edit_triggers: { type: 'TEXT', default: "'inline,reply,command'" },
         inline_access_level: { type: 'TEXT', default: "'everyone'" },
@@ -15536,10 +15717,13 @@ const DESIRED_SCHEMA = {
         access_level: { type: 'TEXT', default: "'everyone'" },
         allowed_users: { type: 'TEXT', default: "''" },
         disallowed_users: { type: 'TEXT', default: "''" },
+        allowed_chat_types: { type: 'TEXT', default: "''" },
+        allowed_chat_ids: { type: 'TEXT', default: "''" },
         extra_config: { type: 'TEXT', default: "'{}'" },
         created_at: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' },
         admin_only: { type: 'INTEGER', default: '0' },
         delete_user_message: { type: 'INTEGER', default: '1' },
+        inline_enabled: { type: 'INTEGER', default: '0' },
         button_style: { type: 'TEXT', default: "''" }
     }},
     mcp_tokens: { columns: {
@@ -16108,6 +16292,12 @@ async function initializeDatabase(db) {
             `ALTER TABLE featured_replies ADD COLUMN allowed_users TEXT DEFAULT ''`,
             `ALTER TABLE featured_replies ADD COLUMN disallowed_users TEXT DEFAULT ''`,
             `ALTER TABLE featured_replies ADD COLUMN extra_config TEXT DEFAULT '{}'`,
+            `ALTER TABLE commands ADD COLUMN allowed_chat_types TEXT DEFAULT ''`,
+            `ALTER TABLE commands ADD COLUMN allowed_chat_ids TEXT DEFAULT ''`,
+            `ALTER TABLE featured_replies ADD COLUMN allowed_chat_types TEXT DEFAULT ''`,
+            `ALTER TABLE featured_replies ADD COLUMN allowed_chat_ids TEXT DEFAULT ''`,
+            `ALTER TABLE commands ADD COLUMN inline_enabled INTEGER DEFAULT 0`,
+            `ALTER TABLE featured_replies ADD COLUMN inline_enabled INTEGER DEFAULT 0`,
             `ALTER TABLE users ADD COLUMN private_started BOOLEAN DEFAULT 0`,
             `ALTER TABLE users ADD COLUMN last_group_id INTEGER`,
             `ALTER TABLE mcp_sessions ADD COLUMN title TEXT DEFAULT ''`,
@@ -17836,6 +18026,8 @@ async function createCommand(request, env) {
         const accessLevel = resolveCommandAccessInput(body.access_level, is_admin_only, null);
         const allowedUsers = normalizeAllowedUsersStr(body.allowed_users);
         const disallowedUsers = normalizeAllowedUsersStr(body.disallowed_users);
+        const allowedChatTypes = normalizeAllowedChatTypes(body.allowed_chat_types);
+        const allowedChatIds = normalizeAllowedChatIds(body.allowed_chat_ids);
         const expiresAt = body.expires_at ? String(body.expires_at).trim() : null;
         const maxOrder = await env.DB.prepare('SELECT MAX(order_idx) as max FROM commands').first();
         const orderIdx = (maxOrder && maxOrder.max !== null) ? maxOrder.max + 1 : 0;
@@ -17854,8 +18046,9 @@ async function createCommand(request, env) {
             const autoBack = body.auto_back !== undefined ? (body.auto_back ? 1 : 0) : 1;
             const backLabel = body.back_label ? String(body.back_label).trim().slice(0, 64) : '';
             const removeReply = body.remove_reply_keyboard ? 1 : 0;
-            await env.DB.prepare(`INSERT INTO commands (command, parent, response_type, content, media_url, file_id, media_meta, media_items_json, protect_content, edit_message, edit_triggers, inline_access_level, inline_allowed_users, inline_disallowed_users, inline_auto_back, inline_back_label, buttons_json, is_admin_only, access_level, allowed_users, disallowed_users, force_join_mode, cmd_password, password_prompt, password_dismiss_label, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, auto_back, back_label, remove_reply_keyboard, order_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-                .bind(command, parent || null, rtype, content || '', finalMediaUrl, finalFileId, finalMediaMeta, finalItemsJson, protect_content ? 1 : 0, editMessage, editTriggers, inlineAccessLevel, inlineAllowed, inlineDisallowed, inlineAutoBack, inlineBackLabel, buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, disallowedUsers, fjMode, cmdPassword, pwPrompt, pwDismiss, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', autoBack, backLabel, removeReply, orderIdx).run();
+            const inlineEnabled = body.inline_enabled ? 1 : 0;
+            await env.DB.prepare(`INSERT INTO commands (command, parent, response_type, content, media_url, file_id, media_meta, media_items_json, protect_content, inline_enabled, edit_message, edit_triggers, inline_access_level, inline_allowed_users, inline_disallowed_users, inline_auto_back, inline_back_label, buttons_json, is_admin_only, access_level, allowed_users, disallowed_users, allowed_chat_types, allowed_chat_ids, force_join_mode, cmd_password, password_prompt, password_dismiss_label, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, auto_back, back_label, remove_reply_keyboard, order_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+                .bind(command, parent || null, rtype, content || '', finalMediaUrl, finalFileId, finalMediaMeta, finalItemsJson, protect_content ? 1 : 0, inlineEnabled, editMessage, editTriggers, inlineAccessLevel, inlineAllowed, inlineDisallowed, inlineAutoBack, inlineBackLabel, buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, disallowedUsers, allowedChatTypes, allowedChatIds, fjMode, cmdPassword, pwPrompt, pwDismiss, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', autoBack, backLabel, removeReply, orderIdx).run();
         } catch (e) {
             const m = String(e.message || '');
             console.error('createCommand INSERT failed:', m);
@@ -17915,8 +18108,11 @@ async function updateCommand(request, env) {
         const accessLevel = resolveCommandAccessInput(body.access_level, is_admin_only, existing);
         const allowedUsers = body.allowed_users !== undefined ? normalizeAllowedUsersStr(body.allowed_users) : ((existing && existing.allowed_users) || '');
         const disallowedUsers = body.disallowed_users !== undefined ? normalizeAllowedUsersStr(body.disallowed_users) : ((existing && existing.disallowed_users) || '');
+        const allowedChatTypes = body.allowed_chat_types !== undefined ? normalizeAllowedChatTypes(body.allowed_chat_types) : ((existing && existing.allowed_chat_types) || '');
+        const allowedChatIds = body.allowed_chat_ids !== undefined ? normalizeAllowedChatIds(body.allowed_chat_ids) : ((existing && existing.allowed_chat_ids) || '');
         const expiresAt = body.expires_at !== undefined ? (body.expires_at ? String(body.expires_at).trim() : null) : (existing ? existing.expires_at : null);
         const finalProtect = protect_content !== undefined ? (protect_content ? 1 : 0) : ((existing && existing.protect_content) ? 1 : 0);
+        const finalInlineEnabled = body.inline_enabled !== undefined ? (body.inline_enabled ? 1 : 0) : ((existing && existing.inline_enabled) ? 1 : 0);
         const finalEditMessage = body.edit_message !== undefined ? (body.edit_message ? 1 : 0) : ((existing && existing.edit_message) ? 1 : 0);
         const finalEditTriggers = body.edit_triggers !== undefined ? String(body.edit_triggers) : ((existing && existing.edit_triggers) || 'inline,reply,command');
         const finalInlineAccess = body.inline_access_level !== undefined ? resolveCommandAccessInput(body.inline_access_level, null, null) : ((existing && existing.inline_access_level) || 'everyone');
@@ -17935,8 +18131,8 @@ async function updateCommand(request, env) {
             const clash = await env.DB.prepare('SELECT command FROM commands WHERE command = ?').bind(command).first();
             if (clash) return apiJson({ error: `A command named "${command}" already exists.` }, 400);
             if (parent && await commandIsDescendant(env.DB, command, parent)) return apiJson({ error: 'You cannot nest a command inside its own child.' }, 400);
-            await env.DB.prepare(`UPDATE commands SET command = ?, parent = ?, response_type = ?, content = ?, media_url = ?, file_id = ?, media_meta = ?, media_items_json = ?, protect_content = ?, edit_message = ?, edit_triggers = ?, inline_access_level = ?, inline_allowed_users = ?, inline_disallowed_users = ?, inline_auto_back = ?, inline_back_label = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, allowed_users = ?, disallowed_users = ?, force_join_mode = ?, cmd_password = ?, password_prompt = ?, password_dismiss_label = ?, expires_at = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ?, auto_back = ?, back_label = ?, remove_reply_keyboard = ?, version = COALESCE(version, 1) + 1 WHERE command = ?`)
-                .bind(command, parent || null, rtype, content || '', finalMediaUrl, finalFileId, finalMediaMeta, finalItemsJson, finalProtect, finalEditMessage, finalEditTriggers, finalInlineAccess, finalInlineAllowed, finalInlineDisallowed, finalInlineAutoBack, finalInlineBackLabel, buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, disallowedUsers, finalFjMode, finalCmdPassword, finalPwPrompt, finalPwDismiss, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', finalAutoBack, finalBackLabel, finalRemoveReply, oldCommand).run();
+            await env.DB.prepare(`UPDATE commands SET command = ?, parent = ?, response_type = ?, content = ?, media_url = ?, file_id = ?, media_meta = ?, media_items_json = ?, protect_content = ?, inline_enabled = ?, edit_message = ?, edit_triggers = ?, inline_access_level = ?, inline_allowed_users = ?, inline_disallowed_users = ?, inline_auto_back = ?, inline_back_label = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, allowed_users = ?, disallowed_users = ?, allowed_chat_types = ?, allowed_chat_ids = ?, force_join_mode = ?, cmd_password = ?, password_prompt = ?, password_dismiss_label = ?, expires_at = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ?, auto_back = ?, back_label = ?, remove_reply_keyboard = ?, version = COALESCE(version, 1) + 1 WHERE command = ?`)
+                .bind(command, parent || null, rtype, content || '', finalMediaUrl, finalFileId, finalMediaMeta, finalItemsJson, finalProtect, finalInlineEnabled, finalEditMessage, finalEditTriggers, finalInlineAccess, finalInlineAllowed, finalInlineDisallowed, finalInlineAutoBack, finalInlineBackLabel, buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, disallowedUsers, allowedChatTypes, allowedChatIds, finalFjMode, finalCmdPassword, finalPwPrompt, finalPwDismiss, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', finalAutoBack, finalBackLabel, finalRemoveReply, oldCommand).run();
             await env.DB.prepare('UPDATE commands SET parent = ? WHERE parent = ?').bind(command, oldCommand).run();
             const refRows = await env.DB.prepare('SELECT command, buttons_json, reply_keyboard_json FROM commands WHERE buttons_json LIKE ? OR reply_keyboard_json LIKE ?').bind(`%${oldCommand}%`, `%${oldCommand}%`).all();
             for (const row of refRows.results) {
@@ -17948,8 +18144,8 @@ async function updateCommand(request, env) {
             }
         } else {
             if (parent && await commandIsDescendant(env.DB, command, parent)) return apiJson({ error: 'You cannot nest a command inside its own child.' }, 400);
-            await env.DB.prepare(`UPDATE commands SET parent = ?, response_type = ?, content = ?, media_url = ?, file_id = ?, media_meta = ?, media_items_json = ?, protect_content = ?, edit_message = ?, edit_triggers = ?, inline_access_level = ?, inline_allowed_users = ?, inline_disallowed_users = ?, inline_auto_back = ?, inline_back_label = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, allowed_users = ?, disallowed_users = ?, force_join_mode = ?, cmd_password = ?, password_prompt = ?, password_dismiss_label = ?, expires_at = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ?, auto_back = ?, back_label = ?, remove_reply_keyboard = ?, version = COALESCE(version, 1) + 1 WHERE command = ?`)
-                .bind(parent || null, rtype, content || '', finalMediaUrl, finalFileId, finalMediaMeta, finalItemsJson, finalProtect, finalEditMessage, finalEditTriggers, finalInlineAccess, finalInlineAllowed, finalInlineDisallowed, finalInlineAutoBack, finalInlineBackLabel, buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, disallowedUsers, finalFjMode, finalCmdPassword, finalPwPrompt, finalPwDismiss, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', finalAutoBack, finalBackLabel, finalRemoveReply, command).run();
+            await env.DB.prepare(`UPDATE commands SET parent = ?, response_type = ?, content = ?, media_url = ?, file_id = ?, media_meta = ?, media_items_json = ?, protect_content = ?, inline_enabled = ?, edit_message = ?, edit_triggers = ?, inline_access_level = ?, inline_allowed_users = ?, inline_disallowed_users = ?, inline_auto_back = ?, inline_back_label = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, allowed_users = ?, disallowed_users = ?, allowed_chat_types = ?, allowed_chat_ids = ?, force_join_mode = ?, cmd_password = ?, password_prompt = ?, password_dismiss_label = ?, expires_at = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ?, auto_back = ?, back_label = ?, remove_reply_keyboard = ?, version = COALESCE(version, 1) + 1 WHERE command = ?`)
+                .bind(parent || null, rtype, content || '', finalMediaUrl, finalFileId, finalMediaMeta, finalItemsJson, finalProtect, finalInlineEnabled, finalEditMessage, finalEditTriggers, finalInlineAccess, finalInlineAllowed, finalInlineDisallowed, finalInlineAutoBack, finalInlineBackLabel, buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, disallowedUsers, allowedChatTypes, allowedChatIds, finalFjMode, finalCmdPassword, finalPwPrompt, finalPwDismiss, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', finalAutoBack, finalBackLabel, finalRemoveReply, command).run();
         }
         await bumpDomainEpoch(env.DB, 'reply_buttons');
         return apiJson({ success: true });
@@ -18160,13 +18356,16 @@ async function createFeatured(request, env) {
         }
         const allowedUsers = normalizeAllowedUsersStr(body.allowed_users || '');
         const disallowedUsers = normalizeAllowedUsersStr(body.disallowed_users || '');
+        const allowedChatTypes = normalizeAllowedChatTypes(body.allowed_chat_types || '');
+        const allowedChatIds = normalizeAllowedChatIds(body.allowed_chat_ids || '');
         const extraConfig = normalizeFeaturedExtra(body.extra_config);
         const adminOnly = access === 'admin' ? 1 : 0;
         const deleteTrigger = body.delete_user_message !== undefined ? (body.delete_user_message ? 1 : 0) : 1;
+        const inlineEnabled = body.inline_enabled ? 1 : 0;
         await initializeDatabase(env.DB);
         try {
-            await env.DB.prepare('INSERT INTO featured_replies (command, kind, content, buttons_json, success_text, failure_text, admin_only, access_level, allowed_users, disallowed_users, extra_config, delete_user_message, enabled, button_style) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-                .bind(command, kind, content, null, successText, failureText, adminOnly, access, allowedUsers, disallowedUsers, extraConfig, deleteTrigger, enabled, buttonStyle).run();
+            await env.DB.prepare('INSERT INTO featured_replies (command, kind, content, buttons_json, success_text, failure_text, admin_only, access_level, allowed_users, disallowed_users, allowed_chat_types, allowed_chat_ids, extra_config, delete_user_message, inline_enabled, enabled, button_style) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+                .bind(command, kind, content, null, successText, failureText, adminOnly, access, allowedUsers, disallowedUsers, allowedChatTypes, allowedChatIds, extraConfig, deleteTrigger, inlineEnabled, enabled, buttonStyle).run();
         } catch (e) {
             if (String(e.message || '').includes('UNIQUE')) return apiJson({ error: `A featured command with the command "${command}" already exists.` }, 400);
             throw e;
@@ -18207,13 +18406,16 @@ async function updateFeatured(request, env, url) {
         }
         const allowedUsers = body.allowed_users !== undefined ? normalizeAllowedUsersStr(body.allowed_users) : (existing.allowed_users || '');
         const disallowedUsers = body.disallowed_users !== undefined ? normalizeAllowedUsersStr(body.disallowed_users) : (existing.disallowed_users || '');
+        const allowedChatTypes = body.allowed_chat_types !== undefined ? normalizeAllowedChatTypes(body.allowed_chat_types) : (existing.allowed_chat_types || '');
+        const allowedChatIds = body.allowed_chat_ids !== undefined ? normalizeAllowedChatIds(body.allowed_chat_ids) : (existing.allowed_chat_ids || '');
         const extraConfig = body.extra_config !== undefined ? normalizeFeaturedExtra(body.extra_config) : (existing.extra_config || '{}');
         const adminOnly = access === 'admin' ? 1 : 0;
         const deleteTrigger = body.delete_user_message !== undefined
             ? (body.delete_user_message ? 1 : 0)
             : (existing.delete_user_message !== undefined && existing.delete_user_message !== null ? (existing.delete_user_message ? 1 : 0) : 1);
-        await env.DB.prepare('UPDATE featured_replies SET command = ?, kind = ?, content = ?, buttons_json = NULL, success_text = ?, failure_text = ?, admin_only = ?, access_level = ?, allowed_users = ?, disallowed_users = ?, extra_config = ?, delete_user_message = ?, enabled = ?, button_style = ?, version = COALESCE(version, 1) + 1 WHERE id = ?')
-            .bind(command, kind, content, successText, failureText, adminOnly, access, allowedUsers, disallowedUsers, extraConfig, deleteTrigger, enabled, buttonStyle, id).run();
+        const inlineEnabled = body.inline_enabled !== undefined ? (body.inline_enabled ? 1 : 0) : (existing.inline_enabled ? 1 : 0);
+        await env.DB.prepare('UPDATE featured_replies SET command = ?, kind = ?, content = ?, buttons_json = NULL, success_text = ?, failure_text = ?, admin_only = ?, access_level = ?, allowed_users = ?, disallowed_users = ?, allowed_chat_types = ?, allowed_chat_ids = ?, extra_config = ?, delete_user_message = ?, inline_enabled = ?, enabled = ?, button_style = ?, version = COALESCE(version, 1) + 1 WHERE id = ?')
+            .bind(command, kind, content, successText, failureText, adminOnly, access, allowedUsers, disallowedUsers, allowedChatTypes, allowedChatIds, extraConfig, deleteTrigger, inlineEnabled, enabled, buttonStyle, id).run();
         await bumpEpoch(env.DB);
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
@@ -19636,11 +19838,11 @@ async function enforceFloodPolicy(env, BOT_TOKEN, chatId, userId, msg, isGroup, 
                     await env.DB.prepare("INSERT INTO blocked_users (user_id, block_type) VALUES (?, 'full') ON CONFLICT(user_id) DO UPDATE SET block_type = 'full', blocked_at = CURRENT_TIMESTAMP").bind(userId).run();
                     await bumpDomainEpoch(env.DB, 'blocks');
                     await env.DB.prepare('INSERT INTO group_strikes (chat_id, user_id, banned, updated_at) VALUES (0, ?, 1, CURRENT_TIMESTAMP) ON CONFLICT(chat_id, user_id) DO UPDATE SET banned = 1, updated_at = CURRENT_TIMESTAMP').bind(userId).run();
-                    await sendRichText(BOT_TOKEN, chatId, '🚫 You have been blocked for repeated flooding.');
+                    await sendRichText(BOT_TOKEN, chatId, sysStr().flood_blocked_dm);
                 } else {
                     const col = action === 'kick' ? 'kick_count' : 'mute_count';
                     await env.DB.prepare(`INSERT INTO group_strikes (chat_id, user_id, ${col}, muted_until, updated_at) VALUES (0, ?, 1, datetime('now', ?), CURRENT_TIMESTAMP) ON CONFLICT(chat_id, user_id) DO UPDATE SET ${col} = ${col} + 1, muted_until = excluded.muted_until, updated_at = CURRENT_TIMESTAMP`).bind(userId, '+' + muteMin + ' minutes').run();
-                    await sendRichText(BOT_TOKEN, chatId, `⏳ Slow down! Cooldown active for ${muteMin} minute(s).`);
+                    await sendRichText(BOT_TOKEN, chatId, sysStr().flood_cooldown_dm(muteMin));
                 }
             }
         }
@@ -19669,23 +19871,24 @@ async function applyFloodEscalation(env, BOT_TOKEN, chatId, userId, groupSetting
         }
     }
 
+    const L = sysStr();
     const nowSec = Math.floor(Date.now() / 1000);
     if (action === 'ban') {
         const res = await tgCall(BOT_TOKEN, 'banChatMember', { chat_id: chatId, user_id: userId });
         if (res && res.ok) {
             await env.DB.prepare('INSERT INTO group_strikes (chat_id, user_id, banned, updated_at) VALUES (?, ?, 1, CURRENT_TIMESTAMP) ON CONFLICT(chat_id, user_id) DO UPDATE SET banned = 1, updated_at = CURRENT_TIMESTAMP').bind(chatId, userId).run();
-            await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: '🚫 User banned for repeated flooding.' });
+            await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: L.flood_banned });
         } else {
-            await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: '⚠️ Please slow down. (Could not ban — the bot may lack "Ban users" permission.)' });
+            await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: L.flood_ban_fail });
         }
     } else if (action === 'kick') {
         const res = await tgCall(BOT_TOKEN, 'banChatMember', { chat_id: chatId, user_id: userId });
         if (res && res.ok) {
             await tgCall(BOT_TOKEN, 'unbanChatMember', { chat_id: chatId, user_id: userId, only_if_banned: true });
             await env.DB.prepare('INSERT INTO group_strikes (chat_id, user_id, kick_count, updated_at) VALUES (?, ?, 1, CURRENT_TIMESTAMP) ON CONFLICT(chat_id, user_id) DO UPDATE SET kick_count = kick_count + 1, updated_at = CURRENT_TIMESTAMP').bind(chatId, userId).run();
-            await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: '👢 User kicked for repeated flooding.' });
+            await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: L.flood_kicked });
         } else {
-            await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: '⚠️ Please slow down. (Could not kick — the bot may lack "Ban users" permission.)' });
+            await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: L.flood_kick_fail });
         }
     } else {
         const muteMin = parseInt(groupSettings.flood_mute_minutes) || 0;
@@ -19697,12 +19900,12 @@ async function applyFloodEscalation(env, BOT_TOKEN, chatId, userId, groupSetting
             });
             if (res && res.ok) {
                 await env.DB.prepare('INSERT INTO group_strikes (chat_id, user_id, mute_count, updated_at) VALUES (?, ?, 1, CURRENT_TIMESTAMP) ON CONFLICT(chat_id, user_id) DO UPDATE SET mute_count = mute_count + 1, updated_at = CURRENT_TIMESTAMP').bind(chatId, userId).run();
-                await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: '🔇 User muted for ' + muteMin + ' minute(s) for flooding.' });
+                await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: L.flood_muted(muteMin) });
             } else {
-                await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: '⚠️ Please slow down. (Could not mute — the bot may lack "Restrict members" permission.)' });
+                await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: L.flood_mute_fail });
             }
         } else {
-            await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: '⚠️ Please slow down.' });
+            await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: L.flood_slow_down });
         }
     }
     return { action };
@@ -21493,14 +21696,28 @@ const FORCE_JOIN_DEFAULTS = {
     chats: []
 };
 async function getForceJoinConfig(db) {
+    const L = sysStr();
+    const localizedDefaults = Object.assign({}, FORCE_JOIN_DEFAULTS, {
+        message: L.fj_msg || FORCE_JOIN_DEFAULTS.message,
+        check_label: L.fj_check || FORCE_JOIN_DEFAULTS.check_label,
+        not_joined_alert: L.fj_not_joined || FORCE_JOIN_DEFAULTS.not_joined_alert,
+        joined_text: L.fj_joined || FORCE_JOIN_DEFAULTS.joined_text,
+    });
     try {
         const raw = await getSetting(db, 'force_join_config');
         if (raw) {
             const parsed = JSON.parse(raw);
-            if (parsed && typeof parsed === 'object') return Object.assign({}, FORCE_JOIN_DEFAULTS, parsed, { chats: Array.isArray(parsed.chats) ? parsed.chats : [] });
+            if (parsed && typeof parsed === 'object') {
+                const out = Object.assign({}, localizedDefaults, parsed, { chats: Array.isArray(parsed.chats) ? parsed.chats : [] });
+                if (!parsed.message) out.message = localizedDefaults.message;
+                if (!parsed.check_label) out.check_label = localizedDefaults.check_label;
+                if (!parsed.not_joined_alert) out.not_joined_alert = localizedDefaults.not_joined_alert;
+                if (!parsed.joined_text) out.joined_text = localizedDefaults.joined_text;
+                return out;
+            }
         }
     } catch (e) {}
-    return Object.assign({}, FORCE_JOIN_DEFAULTS);
+    return localizedDefaults;
 }
 async function getForceJoinHandler(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
@@ -25328,6 +25545,82 @@ const SYSTEM_STRINGS = {
         contact_sent_err: '⚠️ Could not send reply:',
         contact_sent_err_hint: 'Send another message to try again, or /cancel to abort.',
         contact_rate_limit: '⏳ You have sent too many messages in the last hour. Please wait before sending another.',
+        // Flood & Moderation
+        flood_blocked_dm: '🚫 You have been blocked for repeated flooding.',
+        flood_cooldown_dm: (m) => `⏳ Slow down! Cooldown active for ${m} minute(s).`,
+        flood_banned: '🚫 User banned for repeated flooding.',
+        flood_ban_fail: '⚠️ Please slow down. (Could not ban — the bot may lack "Ban users" permission.)',
+        flood_kicked: '👢 User kicked for repeated flooding.',
+        flood_kick_fail: '⚠️ Please slow down. (Could not kick — the bot may lack "Ban users" permission.)',
+        flood_muted: (m) => `🔇 User muted for ${m} minute(s) for flooding.`,
+        flood_mute_fail: '⚠️ Please slow down. (Could not mute — the bot may lack "Restrict members" permission.)',
+        flood_slow_down: '⚠️ Please slow down.',
+        mod_only: 'Admins / moderators only.',
+        mod_reply_or_id: 'Reply to a user or pass their numeric ID.',
+        mod_self_or_admin: '⚠️ Cannot moderate yourself or a bot admin.',
+        mod_locked: '🔒 Group locked (read-only for members).',
+        mod_unlocked: '🔓 Group unlocked.',
+        mod_warns_status: (name, w, lim) => `⚠️ <b>${name}</b> has <b>${w}/${lim}</b> warn(s).`,
+        mod_warned: (name, w, lim, r) => `⚠️ <b>${name}</b> warned (<b>${w}/${lim}</b>).${r ? '\nReason: ' + r : ''}`,
+        mod_warn_ban: (name, w, lim) => `🚫 <b>${name}</b> reached ${w}/${lim} warns and was <b>banned</b>.`,
+        mod_warn_kick: (name, w, lim) => `👢 <b>${name}</b> reached ${w}/${lim} warns and was <b>kicked</b>.`,
+        mod_warn_mute: (name, w, lim, m) => `🔇 <b>${name}</b> reached ${w}/${lim} warns and was <b>muted for ${m}m</b>.`,
+        mod_warns_reset_btn: '♻️ Reset warns',
+        mod_unmute_btn: '🔊 Unmute',
+        mod_warns_reset_toast: 'Warns reset!',
+        mod_unmuted_toast: 'User unmuted!',
+        mod_warns_reset_msg: (name) => `✅ Warns reset for <b>${name}</b>.`,
+        mod_muted_msg: (name) => `🔇 Muted <b>${name}</b>.`,
+        mod_unmuted_msg: (name) => `🔊 Unmuted <b>${name}</b>.`,
+        mod_kicked_msg: (name) => `👢 Kicked <b>${name}</b>.`,
+        mod_banned_msg: (name) => `🚫 Banned <b>${name}</b>.`,
+        mod_unbanned_msg: (name) => `✅ Unbanned <b>${name}</b>.`,
+        // Captcha & Rules
+        capt_other_user: 'This verification is for another user.',
+        capt_expired: 'Verification expired.',
+        capt_wrong: '❌ Wrong answer. Try again!',
+        capt_ok: '✅ Verified!',
+        capt_btn: '✅ Verify I am human',
+        capt_solve: (a, b) => `\n\nSolve: <b>${a} + ${b} = ?</b>`,
+        rules_pm_prompt: '📜 Tap below to view the group rules in private:',
+        rules_pm_btn: '📜 View Rules',
+        // Passwords & Media
+        pw_cancelled: '✅ Cancelled.',
+        pw_wrong: '❌ Incorrect password. Try again or tap Dismiss.',
+        pw_prompt_default: '🔒 This command is password-protected. Please enter the password:',
+        pw_dismiss: '❌ Dismiss',
+        media_saved: '✅ <b>Saved to Media Library</b>',
+        media_exists: 'ℹ️ <b>Already in Media Library</b>',
+        // Force Join defaults
+        fj_msg: '⚠️ To use this bot, please join the required channel(s)/group(s) below first, then tap Check.',
+        fj_check: "✅ I've Joined — Check",
+        fj_not_joined: "❌ You haven't joined all required chats yet. Please join and try again!",
+        fj_joined: '✅ Verified! You can now use the bot.',
+        // Proxies
+        proxy_invalid: '⚠️ Invalid proxy format.',
+        proxy_err: '⚠️ Could not test proxy right now.',
+        proxy_online: (ms) => `🟢 Online (${ms} ms)`,
+        proxy_offline: '🔴 Unreachable',
+        proxy_skipped: '🟡 Check skipped',
+        // Games
+        games_hub_title: '🎮 <b>Nyxx Mini-Games</b>\nPick a game to launch or check this chat\'s leaderboard:',
+        games_none: '🎮 No mini-games are currently enabled.',
+        games_disabled: 'This game is currently disabled.',
+        games_unknown: 'Unknown game.',
+        games_launch: (n) => `🎮 Launch ${n}`,
+        games_my_score: '🎯 My Score',
+        games_leaderboard: '🏆 Leaderboard',
+        games_ready: (g, u) => `🎮 <b>${g}</b> is ready for <b>${u}</b>:`,
+        games_lb_title: (g) => `🏆 <b>${g} — Top 10 Leaderboard</b>`,
+        games_lb_empty: (g) => `🏆 <b>${g}</b>: No scores in this chat yet!`,
+        games_new_best: (u, s, g) => `🏆 <b>New Personal Best!</b> <b>${u}</b> scored <b>${s}</b> in <b>${g}</b>!`,
+        games_my_none: (g) => `🎯 ${g}\n\nYou haven't played this game in this chat yet!\nTap Launch to set your first score.`,
+        games_my_stats: (g, s, r, p) => `🎯 Your ${g} Stats\n\n🏆 Best Score: ${s}\n📊 Chat Rank: #${r}\n🎮 Plays: ${p}`,
+        // MCP & Featured
+        mcp_disabled_msg: '⚠️ MCP is not enabled. Turn it on in the dashboard (System → MCP).',
+        anon_sent: '✅ Sent anonymously.',
+        anon_fail: '⚠️ Could not deliver anonymous message.',
+        media_no_match: '🔍 No matching files found.',
         // MCP AI prompts
         mcp_system: `You are the admin assistant for a Telegram bot management dashboard called Nyxx.
 
@@ -25393,6 +25686,82 @@ Guidelines:
         contact_sent_err: '⚠️ ارسال پاسخ ممکن نشد:',
         contact_sent_err_hint: 'پیام دیگری بفرستید تا دوباره تلاش شود، یا /cancel را ارسال کنید تا انصراف دهید.',
         contact_rate_limit: '⏳ در یک ساعت اخیر پیام‌های بسیار زیادی فرستاده‌اید. لطفاً قبل از ارسال پیام دیگر کمی صبر کنید.',
+        // Flood & Moderation
+        flood_blocked_dm: '🚫 به دلیل ارسال پیام‌های مکرر (اسپم) مسدود شدید.',
+        flood_cooldown_dm: (m) => `⏳ لطفاً کمی صبر کنید! محدودیت ارسال برای ${m} دقیقه فعال است.`,
+        flood_banned: '🚫 کاربر به دلیل اسپم مکرر از گروه اخراج و مسدود شد.',
+        flood_ban_fail: '⚠️ لطفاً آرام‌تر پیام بفرستید. (ربات دسترسی مسدودسازی کاربران را ندارد.)',
+        flood_kicked: '👢 کاربر به دلیل اسپم مکرر از گروه اخراج شد.',
+        flood_kick_fail: '⚠️ لطفاً آرام‌تر پیام بفرستید. (ربات دسترسی اخراج کاربران را ندارد.)',
+        flood_muted: (m) => `🔇 کاربر به دلیل اسپم به مدت ${m} دقیقه سکوت شد.`,
+        flood_mute_fail: '⚠️ لطفاً آرام‌تر پیام بفرستید. (ربات دسترسی محدودسازی کاربران را ندارد.)',
+        flood_slow_down: '⚠️ لطفاً آرام‌تر پیام بفرستید.',
+        mod_only: 'فقط برای مدیران و ناظران.',
+        mod_reply_or_id: 'روی پیام کاربر ریپلای کنید یا شناسه عددی او را بنویسید.',
+        mod_self_or_admin: '⚠️ امکان اعمال محدودیت روی خودتان یا ادمین ربات وجود ندارد.',
+        mod_locked: '🔒 گروه قفل شد (فقط ادمین‌ها می‌توانند پیام بفرستند).',
+        mod_unlocked: '🔓 قفل گروه باز شد.',
+        mod_warns_status: (name, w, lim) => `⚠️ <b>${name}</b> دارای <b>${w}/${lim}</b> اخطار است.`,
+        mod_warned: (name, w, lim, r) => `⚠️ <b>${name}</b> اخطار گرفت (<b>${w}/${lim}</b>).${r ? '\nدلیل: ' + r : ''}`,
+        mod_warn_ban: (name, w, lim) => `🚫 <b>${name}</b> به ${w}/${lim} اخطار رسید و <b>بن شد</b>.`,
+        mod_warn_kick: (name, w, lim) => `👢 <b>${name}</b> به ${w}/${lim} اخطار رسید و <b>اخراج شد</b>.`,
+        mod_warn_mute: (name, w, lim, m) => `🔇 <b>${name}</b> به ${w}/${lim} اخطار رسید و به مدت <b>${m} دقیقه سکوت شد</b>.`,
+        mod_warns_reset_btn: '♻️ صفر کردن اخطارها',
+        mod_unmute_btn: '🔊 رفع سکوت',
+        mod_warns_reset_toast: 'اخطارها صفر شد!',
+        mod_unmuted_toast: 'سکوت کاربر برداشته شد!',
+        mod_warns_reset_msg: (name) => `✅ اخطارهای <b>${name}</b> صفر شد.`,
+        mod_muted_msg: (name) => `🔇 کاربر <b>${name}</b> سکوت شد.`,
+        mod_unmuted_msg: (name) => `🔊 سکوت کاربر <b>${name}</b> برداشته شد.`,
+        mod_kicked_msg: (name) => `👢 کاربر <b>${name}</b> اخراج شد.`,
+        mod_banned_msg: (name) => `🚫 کاربر <b>${name}</b> مسدود شد.`,
+        mod_unbanned_msg: (name) => `✅ مسدودیت کاربر <b>${name}</b> برداشته شد.`,
+        // Captcha & Rules
+        capt_other_user: 'این تأیید هویت برای کاربر دیگری است.',
+        capt_expired: 'زمان تأیید هویت به پایان رسیده است.',
+        capt_wrong: '❌ پاسخ اشتباه است. دوباره تلاش کنید!',
+        capt_ok: '✅ تأیید شد!',
+        capt_btn: '✅ تأیید می‌کنم ربات نیستم',
+        capt_solve: (a, b) => `\n\nحاصل را حل کنید: <b>${a} + ${b} = ?</b>`,
+        rules_pm_prompt: '📜 برای مشاهده قوانین گروه در پیام خصوصی روی دکمه زیر بزنید:',
+        rules_pm_btn: '📜 مشاهده قوانین',
+        // Passwords & Media
+        pw_cancelled: '✅ لغو شد.',
+        pw_wrong: '❌ رمز عبور اشتباه است. دوباره تلاش کنید یا «بستن» را بزنید.',
+        pw_prompt_default: '🔒 این دستور با رمز عبور محافظت شده است. لطفاً رمز را وارد کنید:',
+        pw_dismiss: '❌ بستن',
+        media_saved: '✅ <b>در کتابخانه رسانه ذخیره شد</b>',
+        media_exists: 'ℹ️ <b>از قبل در کتابخانه رسانه موجود است</b>',
+        // Force Join defaults
+        fj_msg: '⚠️ برای استفاده از ربات، ابتدا در کانال‌ها/گروه‌های زیر عضو شوید و سپس دکمه بررسی را بزنید.',
+        fj_check: '✅ عضو شدم — بررسی',
+        fj_not_joined: '❌ هنوز در همه چت‌های مورد نیاز عضو نشده‌اید. لطفاً عضو شوید و دوباره تلاش کنید!',
+        fj_joined: '✅ تأیید شد! اکنون می‌توانید از ربات استفاده کنید.',
+        // Proxies
+        proxy_invalid: '⚠️ فرمت پروکسی نامعتبر است.',
+        proxy_err: '⚠️ امکان تست پروکسی در حال حاضر وجود ندارد.',
+        proxy_online: (ms) => `🟢 آنلاین (${ms} میلی‌ثانیه)`,
+        proxy_offline: '🔴 غیرقابل دسترس',
+        proxy_skipped: '🟡 تست رد شد',
+        // Games
+        games_hub_title: '🎮 <b>مینی‌گیم‌های Nyxx</b>\nیک بازی را برای شروع انتخاب کنید یا جدول امتیازات این چت را ببینید:',
+        games_none: '🎮 در حال حاضر هیچ مینی‌گیمی فعال نیست.',
+        games_disabled: 'این بازی در حال حاضر غیرفعال است.',
+        games_unknown: 'بازی ناشناخته.',
+        games_launch: (n) => `🎮 شروع ${n}`,
+        games_my_score: '🎯 امتیاز من',
+        games_leaderboard: '🏆 جدول امتیازات',
+        games_ready: (g, u) => `🎮 بازی <b>${g}</b> برای <b>${u}</b> آماده است:`,
+        games_lb_title: (g) => `🏆 <b>جدول ۱۰ نفر برتر — ${g}</b>`,
+        games_lb_empty: (g) => `🏆 <b>${g}</b>: هنوز امتیازی در این چت ثبت نشده است!`,
+        games_new_best: (u, s, g) => `🏆 <b>رکورد شخصی جدید!</b> <b>${u}</b> امتیاز <b>${s}</b> را در بازی <b>${g}</b> ثبت کرد!`,
+        games_my_none: (g) => `🎯 ${g}\n\nشما هنوز این بازی را در این چت انجام نداده‌اید!\nبرای ثبت اولین امتیاز روی دکمه شروع بزنید.`,
+        games_my_stats: (g, s, r, p) => `🎯 آمار شما در ${g}\n\n🏆 بهترین امتیاز: ${s}\n📊 رتبه در چت: #${r}\n🎮 تعداد بازی: ${p}`,
+        // MCP & Featured
+        mcp_disabled_msg: '⚠️ MCP فعال نیست. آن را در داشبورد (System → MCP) فعال کنید.',
+        anon_sent: '✅ به صورت ناشناس ارسال شد.',
+        anon_fail: '⚠️ ارسال پیام ناشناس ممکن نشد.',
+        media_no_match: '🔍 فایل مطابقی یافت نشد.',
         // MCP AI prompts
         mcp_system: `شما دستیار مدیریت یک داشبورد مدیریت ربات تلگرام به نام Nyxx هستید.
 
@@ -25624,6 +25993,10 @@ async function processTelegramUpdate(update, env, ctx) {
         return true;
     };
     try {
+        if (update.inline_query && update.inline_query.from) {
+            await handleInlineQueryUpdate(env, BOT_TOKEN, update.inline_query);
+            return;
+        }
         if (update.channel_post && update.channel_post.chat) {
             const cp = update.channel_post;
             await upsertChannel(env.DB, cp.chat, true, 0);
@@ -25878,8 +26251,8 @@ async function processTelegramUpdate(update, env, ctx) {
                         if (botUser) {
                             await tgCall(BOT_TOKEN, 'sendMessage', {
                                 chat_id: chatId,
-                                text: '📜 Tap below to view the group rules in private:',
-                                reply_markup: { inline_keyboard: [[{ text: '📜 View Rules', url: `https://t.me/${botUser}?start=rules_${chatId}` }]] }
+                                text: sysStr().rules_pm_prompt,
+                                reply_markup: { inline_keyboard: [[{ text: sysStr().rules_pm_btn, url: `https://t.me/${botUser}?start=rules_${chatId}` }]] }
                             });
                             return;
                         }
@@ -25983,7 +26356,7 @@ async function processTelegramUpdate(update, env, ctx) {
                                 if (text === '/cancel' || text.startsWith('/cancel@')) {
                                     await env.DB.prepare("UPDATE sessions SET pending_password = '' WHERE user_id = ?").bind(userId).run();
                                     if (pending.promptMsgId) await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: pending.promptMsgId }, { retry: false });
-                                    await sendRichText(BOT_TOKEN, chatId, '✅ Cancelled.');
+                                    await sendRichText(BOT_TOKEN, chatId, sysStr().pw_cancelled);
                                     return;
                                 }
                                 const cmdRow = await env.DB.prepare('SELECT * FROM commands WHERE command = ? AND enabled = 1').bind(pending.command).first();
@@ -25997,7 +26370,7 @@ async function processTelegramUpdate(update, env, ctx) {
                                     }
                                     await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id }, { retry: false });
                                     const retryKb = buildPasswordPromptKeyboard(cmdRow);
-                                    await sendRichText(BOT_TOKEN, chatId, '❌ Incorrect password. Try again or tap Dismiss.', { reply_markup: retryKb });
+                                    await sendRichText(BOT_TOKEN, chatId, sysStr().pw_wrong, { reply_markup: retryKb });
                                     return;
                                 } else {
                                     await env.DB.prepare("UPDATE sessions SET pending_password = '' WHERE user_id = ?").bind(userId).run();
@@ -26023,12 +26396,16 @@ async function processTelegramUpdate(update, env, ctx) {
                                 await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id });
                             }
 
-                            if (!await checkPermissionForChat(env, userId, 'featured_commands', chatId, msg.chat.type)) {
+                            if (!await checkPermissionForChat(env, userId, 'featured_commands', chatId, msg.chat.type, msg.chat.username || '')) {
                                 await sendMessage(chatId, botStrings().unauthorized, BOT_TOKEN, 'HTML', threadId);
                                 return;
                             }
                             if (!await enforceForceJoinGate(env, BOT_TOKEN, chatId, userId, msg.from, msg.chat.type, 'featured', false)) return;
-                            if (feat.kind === 'mcp' && !await checkPermissionForChat(env, userId, 'mcp_telegram', chatId, msg.chat.type)) {
+                            if (feat.kind === 'mcp' && !await checkPermissionForChat(env, userId, 'mcp_telegram', chatId, msg.chat.type, msg.chat.username || '')) {
+                                await sendMessage(chatId, botStrings().unauthorized, BOT_TOKEN, 'HTML', threadId);
+                                return;
+                            }
+                            if (!checkChatGate(msg.chat.type, chatId, msg.chat.username || '', feat.allowed_chat_types, feat.allowed_chat_ids)) {
                                 await sendMessage(chatId, botStrings().unauthorized, BOT_TOKEN, 'HTML', threadId);
                                 return;
                             }
@@ -26064,7 +26441,7 @@ async function processTelegramUpdate(update, env, ctx) {
                             if (feat.kind === 'mcp') {
                                 const mcpOn = await getSetting(env.DB, 'mcp_enabled');
                                 if (mcpOn !== '1') {
-                                    await sendRichText(BOT_TOKEN, chatId, '⚠️ MCP is not enabled. Turn it on in the dashboard (System → MCP).');
+                                    await sendRichText(BOT_TOKEN, chatId, sysStr().mcp_disabled_msg);
                                     return;
                                 }
                                 if (!argsTrimmed) {
@@ -26245,6 +26622,7 @@ async function processTelegramUpdate(update, env, ctx) {
                         userMessageId: msg.message_id,
                         triggerKind: resolvedTriggerKind,
                         userInfo: msg.from,
+                        chatUsername: msg.chat.username || '',
                         messageThreadId: threadId
                     });
                     return;
@@ -26270,7 +26648,7 @@ async function processTelegramUpdate(update, env, ctx) {
                     return;
                 }
                 if (bareSlashCmd === '/games' || bareSlashCmd === '/play') {
-                    await handleGamesCommand(env, BOT_TOKEN, chatId, userId, msg.from, msg.chat.type, text.slice(bareSlashCmd.length).trim(), threadId);
+                    await handleGamesCommand(env, BOT_TOKEN, chatId, userId, msg.from, msg.chat.type, text.slice(bareSlashCmd.length).trim(), threadId, msg.chat.username || '');
                     return;
                 }
                 if (isPrivate) await sendMessage(chatId, botStrings().not_found, BOT_TOKEN, 'HTML');
@@ -26288,7 +26666,7 @@ async function processTelegramUpdate(update, env, ctx) {
                         await sendRichText(
                             BOT_TOKEN,
                             chatId,
-                            (inserted ? '✅ <b>Saved to Media Library</b>' : 'ℹ️ <b>Already in Media Library</b>') +
+                            (inserted ? sysStr().media_saved : sysStr().media_exists) +
                             '\n• Type: <code>' + escapeTelegramHTML(extracted.mediaType) + '</code>' +
                             '\n• File: <code>' + escapeTelegramHTML(extracted.fileName) + '</code> (' + mb + ')' +
                             '\n• <code>' + escapeTelegramHTML(extracted.fileId) + '</code>'
@@ -26466,20 +26844,21 @@ async function processTelegramUpdate(update, env, ctx) {
                 return;
             }
             if (data && data.startsWith('GWARN:')) {
+                const L = sysStr();
                 const parts = data.split(':');
                 const action = parts[1];
                 const targetId = parseInt(parts[2], 10);
                 if (!cb.from || !await isModeratorOrAbove(env, cb.from.id)) {
-                    await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id, text: 'Admins / moderators only.', show_alert: true });
+                    await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id, text: L.mod_only, show_alert: true });
                     return;
                 }
                 if (action === 'RESET' && targetId) {
                     await env.DB.prepare('UPDATE group_strikes SET mute_count = 0 WHERE chat_id = ? AND user_id = ?').bind(chatId, targetId).run();
-                    await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id, text: 'Warns reset!' });
+                    await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id, text: L.mod_warns_reset_toast });
                     await tgCall(BOT_TOKEN, 'editMessageReplyMarkup', { chat_id: chatId, message_id: cb.message.message_id, reply_markup: { inline_keyboard: [] } });
                 } else if (action === 'UNMUTE' && targetId) {
                     await tgCall(BOT_TOKEN, 'restrictChatMember', { chat_id: chatId, user_id: targetId, permissions: { can_send_messages: true, can_send_audios: true, can_send_documents: true, can_send_photos: true, can_send_videos: true, can_send_other_messages: true, can_add_web_page_previews: true } });
-                    await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id, text: 'User unmuted!' });
+                    await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id, text: L.mod_unmuted_toast });
                     await tgCall(BOT_TOKEN, 'editMessageReplyMarkup', { chat_id: chatId, message_id: cb.message.message_id, reply_markup: { inline_keyboard: [] } });
                 }
                 return;
@@ -26488,7 +26867,7 @@ async function processTelegramUpdate(update, env, ctx) {
                 await handleExtendedFeaturedCallback(env, BOT_TOKEN, chatId, cb, data);
                 return;
             }
-            if (data && (data.startsWith('GAME:') || data.startsWith('GAMELB:'))) {
+            if (data && (data.startsWith('GAME:') || data.startsWith('GAMELB:') || data.startsWith('GAMEMY:'))) {
                 await handleGameCallback(env, BOT_TOKEN, chatId, cb, data);
                 return;
             }
@@ -26496,7 +26875,7 @@ async function processTelegramUpdate(update, env, ctx) {
                 const cbMatch = await resolveCommandMatch(env.DB, data);
                 if (cbMatch && cbMatch.record) {
                     const answer = tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
-                    await executeCommand(chatId, cb.from.id, cbMatch.record, BOT_TOKEN, env, cb.message.chat.type, cbMatch.args, { message: cb.message, triggerKind: 'inline', userInfo: cb.from });
+                    await executeCommand(chatId, cb.from.id, cbMatch.record, BOT_TOKEN, env, cb.message.chat.type, cbMatch.args, { message: cb.message, triggerKind: 'inline', userInfo: cb.from, chatUsername: (cb.message.chat && cb.message.chat.username) || '' });
                     await answer;
                     return;
                 }
@@ -26570,10 +26949,10 @@ async function sendGroupCaptchaChallenge(env, ctx, BOT_TOKEN, chatId, chat, memb
             const wrong1 = a + b + 1 + Math.floor(Math.random() * 3);
             const wrong2 = Math.max(1, a + b - 1 - Math.floor(Math.random() * 3));
             const opts = [answer, String(wrong1), String(wrong2)].sort(() => Math.random() - 0.5);
-            prompt += `\n\nSolve: <b>${a} + ${b} = ?</b>`;
+            prompt += sysStr().capt_solve(a, b);
             rows = [opts.map(v => ({ text: v, callback_data: `CAPT:${member.id}:${v}` }))];
         } else {
-            rows = [[{ text: '✅ Verify I am human', callback_data: `CAPT:${member.id}:ok`, style: 'success' }]];
+            rows = [[{ text: sysStr().capt_btn, callback_data: `CAPT:${member.id}:ok`, style: 'success' }]];
         }
         const text = replacePlaceholders(prompt, { user_first_name: member.first_name || '', user_username: member.username || '', chat_id: String(chatId), title: chat.title || '', custom_vars: { timeout: String(timeout) } });
         const sent = await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: escapeTelegramHTML(text), parse_mode: 'HTML', reply_markup: { inline_keyboard: rows } });
@@ -26594,22 +26973,23 @@ async function sendGroupCaptchaChallenge(env, ctx, BOT_TOKEN, chatId, chat, memb
     } catch (e) {}
 }
 async function handleGroupCaptchaCallback(env, ctx, BOT_TOKEN, chatId, cb, data) {
+    const L = sysStr();
     const parts = data.split(':');
     const targetId = parseInt(parts[1], 10);
     const picked = parts[2] || '';
     if (!cb.from || Number(cb.from.id) !== targetId) {
-        await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id, text: 'This verification is for another user.', show_alert: true });
+        await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id, text: L.capt_other_user, show_alert: true });
         return;
     }
     const raw = await getSetting(env.DB, `capt_${chatId}_${targetId}`);
     if (!raw) {
-        await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id, text: 'Verification expired.' });
+        await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id, text: L.capt_expired });
         return;
     }
     let state = null;
     try { state = JSON.parse(raw); } catch (e) {}
     if (!state || picked !== state.answer) {
-        await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id, text: '❌ Wrong answer. Try again!', show_alert: true });
+        await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id, text: L.capt_wrong, show_alert: true });
         return;
     }
     await setSetting(env.DB, `capt_${chatId}_${targetId}`, '');
@@ -26617,7 +26997,7 @@ async function handleGroupCaptchaCallback(env, ctx, BOT_TOKEN, chatId, cb, data)
         chat_id: chatId, user_id: targetId,
         permissions: { can_send_messages: true, can_send_audios: true, can_send_documents: true, can_send_photos: true, can_send_videos: true, can_send_other_messages: true, can_add_web_page_previews: true }
     }, { retry: false });
-    await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id, text: '✅ Verified!' });
+    await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id, text: L.capt_ok });
     if (cb.message && cb.message.message_id) {
         await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: cb.message.message_id }, { retry: false });
     }
@@ -26633,6 +27013,7 @@ async function handleGroupCaptchaCallback(env, ctx, BOT_TOKEN, chatId, cb, data)
 }
 async function issueGroupWarn(env, BOT_TOKEN, chatId, targetUser, reason, gs) {
     if (!targetUser || !targetUser.id) return;
+    const L = sysStr();
     const row = await env.DB.prepare(
         'INSERT INTO group_strikes (chat_id, user_id, mute_count, updated_at) VALUES (?, ?, 1, CURRENT_TIMESTAMP) ON CONFLICT(chat_id, user_id) DO UPDATE SET mute_count = mute_count + 1, updated_at = CURRENT_TIMESTAMP RETURNING mute_count'
     ).bind(chatId, targetUser.id).first();
@@ -26644,31 +27025,32 @@ async function issueGroupWarn(env, BOT_TOKEN, chatId, targetUser, reason, gs) {
         const act = (gs && gs.warn_action) || 'mute';
         if (act === 'ban') {
             await tgCall(BOT_TOKEN, 'banChatMember', { chat_id: chatId, user_id: targetUser.id });
-            await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: `🚫 <b>${tName}</b> reached ${warns}/${limit} warns and was <b>banned</b>.`, parse_mode: 'HTML' });
+            await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: L.mod_warn_ban(tName, warns, limit), parse_mode: 'HTML' });
         } else if (act === 'kick') {
             await tgCall(BOT_TOKEN, 'banChatMember', { chat_id: chatId, user_id: targetUser.id });
             await tgCall(BOT_TOKEN, 'unbanChatMember', { chat_id: chatId, user_id: targetUser.id, only_if_banned: true });
-            await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: `👢 <b>${tName}</b> reached ${warns}/${limit} warns and was <b>kicked</b>.`, parse_mode: 'HTML' });
+            await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: L.mod_warn_kick(tName, warns, limit), parse_mode: 'HTML' });
         } else {
             const muteMin = (gs && gs.warn_mute_minutes) || 60;
             await tgCall(BOT_TOKEN, 'restrictChatMember', { chat_id: chatId, user_id: targetUser.id, permissions: { can_send_messages: false }, until_date: Math.floor(Date.now() / 1000) + muteMin * 60 });
             await tgCall(BOT_TOKEN, 'sendMessage', {
                 chat_id: chatId,
-                text: `🔇 <b>${tName}</b> reached ${warns}/${limit} warns and was <b>muted for ${muteMin}m</b>.`,
+                text: L.mod_warn_mute(tName, warns, limit, muteMin),
                 parse_mode: 'HTML',
-                reply_markup: { inline_keyboard: [[{ text: '🔊 Unmute', callback_data: `GWARN:UNMUTE:${targetUser.id}` }]] }
+                reply_markup: { inline_keyboard: [[{ text: L.mod_unmute_btn, callback_data: `GWARN:UNMUTE:${targetUser.id}` }]] }
             });
         }
         return;
     }
     await tgCall(BOT_TOKEN, 'sendMessage', {
         chat_id: chatId,
-        text: `⚠️ <b>${tName}</b> warned (<b>${warns}/${limit}</b>).${reason ? '\nReason: ' + escapeTelegramHTML(reason) : ''}`,
+        text: L.mod_warned(tName, warns, limit, reason ? escapeTelegramHTML(reason) : ''),
         parse_mode: 'HTML',
-        reply_markup: { inline_keyboard: [[{ text: '♻️ Reset warns', callback_data: `GWARN:RESET:${targetUser.id}` }]] }
+        reply_markup: { inline_keyboard: [[{ text: L.mod_warns_reset_btn, callback_data: `GWARN:RESET:${targetUser.id}` }]] }
     });
 }
 async function handleBuiltInGroupModCommand(env, BOT_TOKEN, msg, chatId, modRole, gs) {
+    const L = sysStr();
     const parts = msg.text.trim().split(/\s+/);
     const cmd = parts[0].split('@')[0].toLowerCase();
     const args = parts.slice(1);
@@ -26676,7 +27058,7 @@ async function handleBuiltInGroupModCommand(env, BOT_TOKEN, msg, chatId, modRole
     if (cmd === '/warns') {
         const target = (msg.reply_to_message && msg.reply_to_message.from) || msg.from;
         const row = await env.DB.prepare('SELECT mute_count FROM group_strikes WHERE chat_id = ? AND user_id = ?').bind(chatId, target.id).first();
-        await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: `⚠️ <b>${escapeTelegramHTML(target.first_name || 'User')}</b> has <b>${(row && row.mute_count) || 0}/${gs.warn_limit || 3}</b> warn(s).`, parse_mode: 'HTML' });
+        await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: L.mod_warns_status(escapeTelegramHTML(target.first_name || 'User'), (row && row.mute_count) || 0, gs.warn_limit || 3), parse_mode: 'HTML' });
         return true;
     }
     if (!['/warn','/unwarn','/resetwarns','/mute','/unmute','/kick','/ban','/unban','/lock','/unlock'].includes(cmd)) return false;
@@ -26686,7 +27068,7 @@ async function handleBuiltInGroupModCommand(env, BOT_TOKEN, msg, chatId, modRole
         const merged = Object.assign({}, gs, { lock_all_non_admins: locked });
         await env.DB.prepare('UPDATE groups SET settings_json = ? WHERE id = ?').bind(JSON.stringify(merged), chatId).run();
         await bumpDomainEpoch(env.DB, 'groups');
-        await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: locked ? '🔒 Group locked (read-only for members).' : '🔓 Group unlocked.' });
+        await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: locked ? L.mod_locked : L.mod_unlocked });
         return true;
     }
     let target = (msg.reply_to_message && msg.reply_to_message.from && !msg.reply_to_message.from.is_bot) ? msg.reply_to_message.from : null;
@@ -26696,9 +27078,10 @@ async function handleBuiltInGroupModCommand(env, BOT_TOKEN, msg, chatId, modRole
         target = { id: tid, first_name: (r && r.first_name) || ('User ' + tid) };
     }
     if (!target) {
-        await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: 'Reply to a user or pass their numeric ID.' });
+        await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: L.mod_reply_or_id });
         return true;
     }
+    const tName = escapeTelegramHTML(target.first_name || 'User');
     if (cmd === '/warn') {
         if (!gs.warn_enabled) return false;
         await issueGroupWarn(env, BOT_TOKEN, chatId, target, args.join(' '), gs);
@@ -26706,53 +27089,156 @@ async function handleBuiltInGroupModCommand(env, BOT_TOKEN, msg, chatId, modRole
     }
     if (cmd === '/unwarn' || cmd === '/resetwarns') {
         await env.DB.prepare('UPDATE group_strikes SET mute_count = 0 WHERE chat_id = ? AND user_id = ?').bind(chatId, target.id).run();
-        await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: `✅ Warns reset for <b>${escapeTelegramHTML(target.first_name || 'User')}</b>.`, parse_mode: 'HTML' });
+        await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: L.mod_warns_reset_msg(tName), parse_mode: 'HTML' });
         return true;
     }
     if (cmd === '/mute') {
         const dur = parseDurationSeconds(args[0]) || 600;
         await tgCall(BOT_TOKEN, 'restrictChatMember', { chat_id: chatId, user_id: target.id, permissions: { can_send_messages: false }, until_date: Math.floor(Date.now() / 1000) + Math.max(dur, 60) });
-        await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: `🔇 Muted <b>${escapeTelegramHTML(target.first_name || 'User')}</b>.`, parse_mode: 'HTML' });
+        await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: L.mod_muted_msg(tName), parse_mode: 'HTML' });
         return true;
     }
     if (cmd === '/unmute') {
         await tgCall(BOT_TOKEN, 'restrictChatMember', { chat_id: chatId, user_id: target.id, permissions: { can_send_messages: true, can_send_audios: true, can_send_documents: true, can_send_photos: true, can_send_videos: true, can_send_other_messages: true, can_add_web_page_previews: true } });
-        await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: `🔊 Unmuted <b>${escapeTelegramHTML(target.first_name || 'User')}</b>.`, parse_mode: 'HTML' });
+        await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: L.mod_unmuted_msg(tName), parse_mode: 'HTML' });
         return true;
     }
     if (cmd === '/kick') {
         await tgCall(BOT_TOKEN, 'banChatMember', { chat_id: chatId, user_id: target.id });
         await tgCall(BOT_TOKEN, 'unbanChatMember', { chat_id: chatId, user_id: target.id, only_if_banned: true });
-        await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: `👢 Kicked <b>${escapeTelegramHTML(target.first_name || 'User')}</b>.`, parse_mode: 'HTML' });
+        await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: L.mod_kicked_msg(tName), parse_mode: 'HTML' });
         return true;
     }
     if (cmd === '/ban') {
         await tgCall(BOT_TOKEN, 'banChatMember', { chat_id: chatId, user_id: target.id });
-        await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: `🚫 Banned <b>${escapeTelegramHTML(target.first_name || 'User')}</b>.`, parse_mode: 'HTML' });
+        await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: L.mod_banned_msg(tName), parse_mode: 'HTML' });
         return true;
     }
     if (cmd === '/unban') {
         await tgCall(BOT_TOKEN, 'unbanChatMember', { chat_id: chatId, user_id: target.id, only_if_banned: true });
-        await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: `✅ Unbanned <b>${escapeTelegramHTML(target.first_name || 'User')}</b>.`, parse_mode: 'HTML' });
+        await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: L.mod_unbanned_msg(tName), parse_mode: 'HTML' });
         return true;
     }
     return false;
 }
 
+async function handleInlineQueryUpdate(env, BOT_TOKEN, iq) {
+    const userId = iq.from && iq.from.id;
+    const q = String(iq.query || '').trim().toLowerCase();
+    const empty = () => tgCall(BOT_TOKEN, 'answerInlineQuery', { inline_query_id: iq.id, results: [], cache_time: 5, is_personal: true });
+    if (!userId) return;
+    if ((await isUserBlocked(env, userId)) === 'full') { await empty(); return; }
+    if (!await checkPermissionForChat(env, userId, 'inline_queries', userId, iq.chat_type || 'sender', '')) { await empty(); return; }
+
+    const isAdmin = await isAdminUser(env, userId);
+    const results = [];
+
+    // 1. Inline-enabled Commands
+    try {
+        const cmds = await env.DB.prepare('SELECT * FROM commands WHERE enabled = 1 AND inline_enabled = 1 ORDER BY order_idx, command LIMIT 40').all();
+        for (const c of (cmds.results || [])) {
+            if (results.length >= 25) break;
+            if (q && String(c.command + ' ' + (c.content || '')).toLowerCase().indexOf(q) < 0) continue;
+            if (!isAdmin) {
+                if (parseAllowedUserIds(c.disallowed_users).has(Number(userId))) continue;
+                if (c.expires_at && parseDbTimestamp(c.expires_at) && Date.now() > parseDbTimestamp(c.expires_at)) continue;
+                const acc = effectiveCommandAccess(c);
+                const alw = parseAllowedUserIds(c.allowed_users);
+                if (acc === 'specific' && !alw.has(Number(userId))) continue;
+                if (acc !== 'everyone' && !alw.has(Number(userId)) && !await canUseCommandAccess(env, userId, acc)) continue;
+                if (acc === 'everyone' && alw.size > 0 && !alw.has(Number(userId))) continue;
+            }
+            const item = {
+                type: 'article',
+                id: 'cmd_' + simpleHashStr(c.command),
+                title: c.command,
+                description: stripTagsForPreview(c.content || c.response_type || 'Command').slice(0, 100) || 'Run command',
+                input_message_content: {
+                    message_text: escapeTelegramHTML(c.content || c.command).slice(0, 4096),
+                    parse_mode: 'HTML'
+                }
+            };
+            if (c.buttons_json) {
+                const rows = kbNormalizeInline(c.buttons_json);
+                if (rows && rows.length) item.reply_markup = await kbInlineMarkupSafe(env.DB, rows);
+            }
+            results.push(item);
+        }
+    } catch (e) {}
+
+    // 2. Inline-enabled Featured Commands
+    try {
+        const feats = await env.DB.prepare('SELECT * FROM featured_replies WHERE enabled = 1 AND inline_enabled = 1 ORDER BY id DESC LIMIT 20').all();
+        for (const f of (feats.results || [])) {
+            if (results.length >= 25) break;
+            if (q && String(f.command + ' ' + (f.content || '')).toLowerCase().indexOf(q) < 0) continue;
+            if (!isAdmin) {
+                if (parseAllowedUserIds(f.disallowed_users).has(Number(userId))) continue;
+                const acc = f.access_level || (f.admin_only ? 'admin' : 'everyone');
+                const alw = parseAllowedUserIds(f.allowed_users);
+                if (acc === 'specific' && !alw.has(Number(userId))) continue;
+                if (acc !== 'everyone' && !alw.has(Number(userId)) && !await canUseCommandAccess(env, userId, acc)) continue;
+                if (acc === 'everyone' && alw.size > 0 && !alw.has(Number(userId))) continue;
+            }
+            results.push({
+                type: 'article',
+                id: 'feat_' + f.id,
+                title: f.command + ' (' + (f.kind || 'featured') + ')',
+                description: stripTagsForPreview(f.content || 'Featured command').slice(0, 100) || 'Featured command',
+                input_message_content: {
+                    message_text: escapeTelegramHTML(f.content || f.command).slice(0, 4096),
+                    parse_mode: 'HTML'
+                }
+            });
+        }
+    } catch (e) {}
+
+    // 3. Inline-enabled Mini-Games
+    try {
+        const gCfg = await getGamesConfig(env.DB);
+        for (const g of Object.values(GAME_CATALOG)) {
+            if (results.length >= 25) break;
+            const gc = (gCfg.games && gCfg.games[g.id]) || {};
+            if (gc.enabled === false || !gc.inline_enabled) continue;
+            if (q && q !== 'play' && q !== 'game' && q !== 'games' && g.name.toLowerCase().indexOf(q) < 0 && g.id.toLowerCase().indexOf(q) < 0) continue;
+            const perm = await canPlayGame(env, userId, g.id);
+            if (!perm.ok) continue;
+            const launchUrl = await signGameParams(env, g.id, userId, userId, (iq.from && iq.from.first_name) || 'Player', (iq.from && iq.from.username) || '');
+            results.push({
+                type: 'article',
+                id: 'game_' + g.id,
+                title: '🎮 Play ' + g.name,
+                description: 'Launch ' + g.name + ' in this chat!',
+                input_message_content: {
+                    message_text: `🎮 <b>${escapeTelegramHTML(g.name)}</b>\nTap below to play!`,
+                    parse_mode: 'HTML'
+                },
+                reply_markup: { inline_keyboard: [[{ text: '🎮 Launch ' + g.name, url: launchUrl }]] }
+            });
+        }
+    } catch (e) {}
+
+    await tgCall(BOT_TOKEN, 'answerInlineQuery', { inline_query_id: iq.id, results: results.slice(0, 25), cache_time: 5, is_personal: true });
+}
+
 const GAME_CATALOG = {
     snake: { id: 'snake', name: 'Neon Snake' },
-    '2048': { id: '2048', name: '2048' },
+    corsairs: { id: 'corsairs', name: 'Corsairs' },
     breaker: { id: 'breaker', name: 'Brick Breaker' },
     flappy: { id: 'flappy', name: 'Sky Dash' },
+    tetris: { id: 'tetris', name: 'Neon Blocks' },
+    mines: { id: 'mines', name: 'Minesweeper' },
 };
 const DEFAULT_GAMES_CONFIG = {
     announce_mode: 'message',
     announce_cooldown_sec: 20,
     games: {
-        snake:   { enabled: true, access: 'everyone', allowed: '', disallowed: '' },
-        '2048':  { enabled: true, access: 'everyone', allowed: '', disallowed: '' },
-        breaker: { enabled: true, access: 'everyone', allowed: '', disallowed: '' },
-        flappy:  { enabled: true, access: 'everyone', allowed: '', disallowed: '' },
+        snake:    { enabled: true, inline_enabled: false, access: 'everyone', allowed: '', disallowed: '' },
+        corsairs: { enabled: true, inline_enabled: false, access: 'everyone', allowed: '', disallowed: '' },
+        breaker:  { enabled: true, inline_enabled: false, access: 'everyone', allowed: '', disallowed: '' },
+        flappy:   { enabled: true, inline_enabled: false, access: 'everyone', allowed: '', disallowed: '' },
+        tetris:   { enabled: true, inline_enabled: false, access: 'everyone', allowed: '', disallowed: '' },
+        mines:    { enabled: true, inline_enabled: false, access: 'everyone', allowed: '', disallowed: '' },
     }
 };
 async function getGamesConfig(db) {
@@ -26787,9 +27273,12 @@ async function saveGamesConfigHandler(request, env) {
             const g = (cfg.games && cfg.games[gid]) || {};
             cleanGames[gid] = {
                 enabled: g.enabled !== false,
+                inline_enabled: !!g.inline_enabled,
                 access: ['everyone', 'specific', 'moderator', 'admin'].includes(g.access) ? g.access : 'everyone',
                 allowed: normalizeAllowedUsersStr(g.allowed || ''),
                 disallowed: normalizeAllowedUsersStr(g.disallowed || ''),
+                chat_types: normalizeAllowedChatTypes(g.chat_types || ''),
+                chat_ids: normalizeAllowedChatIds(g.chat_ids || ''),
             };
         }
         const clean = {
@@ -26802,10 +27291,13 @@ async function saveGamesConfigHandler(request, env) {
         return apiJson({ success: true, config: clean });
     } catch (err) { return internalError(err); }
 }
-async function canPlayGame(env, userId, gameId) {
+async function canPlayGame(env, userId, gameId, chatType, chatId, chatUsername) {
     const cfg = await getGamesConfig(env.DB);
-    const g = (cfg.games && cfg.games[gameId]) || { enabled: true, access: 'everyone', allowed: '', disallowed: '' };
-    if (g.enabled === false) return { ok: false, reason: 'This game is currently disabled.' };
+    const g = (cfg.games && cfg.games[gameId]) || { enabled: true, access: 'everyone', allowed: '', disallowed: '', chat_types: '', chat_ids: '' };
+    if (g.enabled === false) return { ok: false, reason: sysStr().games_disabled };
+    if (chatType && !checkChatGate(chatType, chatId, chatUsername || '', g.chat_types, g.chat_ids)) {
+        return { ok: false, reason: botStrings().unauthorized };
+    }
     if (await isAdminUser(env, userId)) return { ok: true };
     if (parseAllowedUserIds(g.disallowed).has(Number(userId))) return { ok: false, reason: botStrings().unauthorized };
     const alw = parseAllowedUserIds(g.allowed);
@@ -26826,7 +27318,7 @@ async function getGameLaunchSecret(env) {
 async function signGameParams(env, gameId, chatId, userId, name, username) {
     const secret = await getGameLaunchSecret(env);
     const ts = Math.floor(Date.now() / 1000);
-    const payload = `${gameId}|${chatId}|${userId}|${ts}`;
+    const payload = `hub|${chatId}|${userId}|${ts}`;
     const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
     const sig = toHex(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payload))).slice(0, 32);
     const origin = env.__requestUrl ? new URL(env.__requestUrl).origin : '';
@@ -26837,12 +27329,16 @@ async function verifyGameSig(env, gameId, chatId, userId, ts, sig) {
     const secret = await getGameLaunchSecret(env);
     const age = Math.abs(Math.floor(Date.now() / 1000) - (parseInt(ts, 10) || 0));
     if (age > 7 * 86400) return false;
-    const payload = `${gameId}|${chatId}|${userId}|${ts}`;
     const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-    const expected = toHex(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payload))).slice(0, 32);
-    return timingSafeEqual(expected, String(sig || ''));
+    const hubPayload = `hub|${chatId}|${userId}|${ts}`;
+    const hubSig = toHex(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(hubPayload))).slice(0, 32);
+    if (timingSafeEqual(hubSig, String(sig || ''))) return true;
+    const legacyPayload = `${gameId}|${chatId}|${userId}|${ts}`;
+    const legacySig = toHex(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(legacyPayload))).slice(0, 32);
+    return timingSafeEqual(legacySig, String(sig || ''));
 }
-async function handleGamesCommand(env, BOT_TOKEN, chatId, userId, userInfo, chatType, args, threadId) {
+async function handleGamesCommand(env, BOT_TOKEN, chatId, userId, userInfo, chatType, args, threadId, chatUsername) {
+    const L = sysStr();
     const cfg = await getGamesConfig(env.DB);
     const rows = [];
     const argId = String(args || '').trim().toLowerCase();
@@ -26850,48 +27346,78 @@ async function handleGamesCommand(env, BOT_TOKEN, chatId, userId, userInfo, chat
     for (const g of list) {
         const gc = (cfg.games && cfg.games[g.id]) || { enabled: true };
         if (gc.enabled === false) continue;
+        if (!checkChatGate(chatType, chatId, chatUsername || '', gc.chat_types, gc.chat_ids)) continue;
         rows.push([
             { text: '🎮 ' + g.name, callback_data: 'GAME:' + g.id, style: 'primary' },
-            { text: '🏆 Top', callback_data: 'GAMELB:' + g.id }
+            { text: L.games_leaderboard, callback_data: 'GAMELB:' + g.id }
         ]);
     }
     if (!rows.length) {
-        await sendMessage(chatId, '🎮 No mini-games are currently enabled.', BOT_TOKEN, 'HTML', threadId);
+        await sendMessage(chatId, L.games_none, BOT_TOKEN, 'HTML', threadId);
         return;
     }
-    await sendRichText(BOT_TOKEN, chatId, '🎮 <b>Nyxx Mini-Games</b>\nPick a game to launch or check this chat\'s leaderboard:', Object.assign({ reply_markup: { inline_keyboard: rows } }, threadId ? { message_thread_id: threadId } : {}));
+    await sendRichText(BOT_TOKEN, chatId, L.games_hub_title, Object.assign({ reply_markup: { inline_keyboard: rows } }, threadId ? { message_thread_id: threadId } : {}));
 }
 async function handleGameCallback(env, BOT_TOKEN, chatId, cb, data) {
+    const L = sysStr();
     const userId = cb.from && cb.from.id;
+    if (data.startsWith('GAMEMY:')) {
+        const gid = data.slice(7);
+        const g = GAME_CATALOG[gid] || { name: gid };
+        const row = await env.DB.prepare('SELECT best_score, plays FROM game_scores WHERE chat_id = ? AND game_id = ? AND user_id = ?').bind(chatId, gid, userId).first();
+        if (!row) {
+            await tgCall(BOT_TOKEN, 'answerCallbackQuery', {
+                callback_query_id: cb.id,
+                text: L.games_my_none(g.name),
+                show_alert: true
+            });
+            return;
+        }
+        const rankRow = await env.DB.prepare('SELECT COUNT(*) + 1 as rank FROM game_scores WHERE chat_id = ? AND game_id = ? AND best_score > ?').bind(chatId, gid, row.best_score || 0).first();
+        const rank = (rankRow && rankRow.rank) || 1;
+        await tgCall(BOT_TOKEN, 'answerCallbackQuery', {
+            callback_query_id: cb.id,
+            text: L.games_my_stats(g.name, Number(row.best_score || 0).toLocaleString(), rank, row.plays || 1),
+            show_alert: true
+        });
+        return;
+    }
     if (data.startsWith('GAMELB:')) {
         const gid = data.slice(7);
         const rows = await env.DB.prepare('SELECT user_name, username, best_score FROM game_scores WHERE chat_id = ? AND game_id = ? ORDER BY best_score DESC LIMIT 10').bind(chatId, gid).all();
         const list = rows.results || [];
         const g = GAME_CATALOG[gid] || { name: gid };
         await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
+        const medals = ['🥇', '🥈', '🥉'];
         const text = list.length
-            ? (`🏆 <b>${escapeTelegramHTML(g.name)} Leaderboard</b>\n\n` + list.map((r, i) => `${i + 1}. <b>${escapeTelegramHTML(r.user_name || 'Player')}</b> — <code>${r.best_score}</code>`).join('\n'))
-            : `🏆 <b>${escapeTelegramHTML(g.name)}</b>: No scores in this chat yet!`;
+            ? (L.games_lb_title(escapeTelegramHTML(g.name)) + '\n\n' + list.map((r, i) => `${medals[i] || (i + 1) + '.'} <b>${escapeTelegramHTML(r.user_name || 'Player')}</b> — <code>${Number(r.best_score || 0).toLocaleString()}</code>`).join('\n'))
+            : L.games_lb_empty(escapeTelegramHTML(g.name));
         await sendRichText(BOT_TOKEN, chatId, text);
         return;
     }
     const gid = data.slice(5);
     if (!GAME_CATALOG[gid]) {
-        await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id, text: 'Unknown game.', show_alert: true });
+        await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id, text: L.games_unknown, show_alert: true });
         return;
     }
-    const perm = await canPlayGame(env, userId, gid);
+    const perm = await canPlayGame(env, userId, gid, cb.message && cb.message.chat && cb.message.chat.type, chatId, cb.message && cb.message.chat && cb.message.chat.username);
     if (!perm.ok) {
         await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id, text: stripTagsForPreview(perm.reason), show_alert: true });
         return;
     }
     const launchUrl = await signGameParams(env, gid, chatId, userId, (cb.from && cb.from.first_name) || 'Player', (cb.from && cb.from.username) || '');
     const isPrivate = cb.message && cb.message.chat && cb.message.chat.type === 'private';
-    const btn = isPrivate ? { text: '🎮 Launch ' + GAME_CATALOG[gid].name, web_app: { url: launchUrl }, style: 'primary' }
-                          : { text: '🎮 Launch ' + GAME_CATALOG[gid].name, url: launchUrl, style: 'primary' };
+    const btn = isPrivate ? { text: L.games_launch(GAME_CATALOG[gid].name), web_app: { url: launchUrl }, style: 'primary' }
+                          : { text: L.games_launch(GAME_CATALOG[gid].name), url: launchUrl, style: 'primary' };
     await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
-    await sendRichText(BOT_TOKEN, chatId, `🎮 <b>${escapeTelegramHTML(GAME_CATALOG[gid].name)}</b> is ready for <b>${escapeTelegramHTML((cb.from && cb.from.first_name) || 'you')}</b>:`, {
-        reply_markup: { inline_keyboard: [[btn, { text: '🏆 Leaderboard', callback_data: 'GAMELB:' + gid }]] }
+    await sendRichText(BOT_TOKEN, chatId, L.games_ready(escapeTelegramHTML(GAME_CATALOG[gid].name), escapeTelegramHTML((cb.from && cb.from.first_name) || 'you')), {
+        reply_markup: {
+            inline_keyboard: [
+                [btn],
+                [{ text: L.games_my_score, callback_data: 'GAMEMY:' + gid }],
+                [{ text: L.games_leaderboard, callback_data: 'GAMELB:' + gid }]
+            ]
+        }
     });
 }
 const gameAnnounceCooldownMap = new Map();
@@ -26940,7 +27466,8 @@ async function handleGameScoreSubmit(request, env, ctx) {
                     if (gameAnnounceCooldownMap.size > 1000) gameAnnounceCooldownMap.clear();
                     const token = await getSetting(env.DB, 'bot_token');
                     if (token) {
-                        const msgText = `🏆 <b>New Personal Best!</b> <b>${escapeTelegramHTML(userName)}</b> scored <b>${score.toLocaleString()}</b> in <b>${escapeTelegramHTML(GAME_CATALOG[gameId].name)}</b>!`;
+                        await getSystemLanguageFromDb(env);
+                        const msgText = sysStr().games_new_best(escapeTelegramHTML(userName), score.toLocaleString(), escapeTelegramHTML(GAME_CATALOG[gameId].name));
                         const announceP = tgCall(token, 'sendMessage', {
                             chat_id: chatId,
                             text: msgText,
@@ -26963,13 +27490,20 @@ async function handleGameLeaderboardGet(env, url) {
         await initializeDatabase(env.DB);
         const gid = String(url.searchParams.get('game') || 'snake');
         const cid = url.searchParams.get('chat_id');
+        const uid = url.searchParams.get('uid');
         let rows;
-        if (cid !== null && cid !== '') {
-            rows = await env.DB.prepare('SELECT chat_id, game_id, user_id, user_name, username, best_score, plays FROM game_scores WHERE game_id = ? AND chat_id = ? ORDER BY best_score DESC LIMIT 30').bind(gid, parseInt(cid, 10)).all();
+        let myBest = 0;
+        if (cid !== null && cid !== '' && cid !== '0') {
+            const chatId = parseInt(cid, 10);
+            rows = await env.DB.prepare('SELECT chat_id, game_id, user_id, user_name, username, best_score, plays FROM game_scores WHERE game_id = ? AND chat_id = ? ORDER BY best_score DESC LIMIT 30').bind(gid, chatId).all();
+            if (uid && Number(uid)) {
+                const me = await env.DB.prepare('SELECT best_score FROM game_scores WHERE game_id = ? AND chat_id = ? AND user_id = ?').bind(gid, chatId, parseInt(uid, 10)).first();
+                if (me) myBest = me.best_score || 0;
+            }
         } else {
             rows = await env.DB.prepare('SELECT chat_id, game_id, user_id, user_name, username, best_score, plays FROM game_scores WHERE game_id = ? ORDER BY best_score DESC LIMIT 30').bind(gid).all();
         }
-        return apiJson({ success: true, scores: rows.results || [] });
+        return apiJson({ success: true, scores: rows.results || [], my_best: myBest });
     } catch (err) { return internalError(err); }
 }
 
@@ -26977,83 +27511,175 @@ const GAMES_HTML = `<!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Nyxx | Mini-Games</title>
 <style>
-:root{--bg:#0b0e14;--surface:#141923;--surface2:#1e2636;--border:rgba(255,255,255,.1);--text:#f3f4f6;--muted:#9ca3af;--accent:#0a84ff;--green:#30d158;--orange:#ff9f0a;--purple:#bf5af2;--red:#ff453a}
+:root{--bg:#090c12;--surface:#131824;--surface2:#1b2333;--border:rgba(255,255,255,.09);--text:#f3f4f6;--muted:#9ca3af;--accent:#0a84ff;--green:#30d158;--orange:#ff9f0a;--purple:#bf5af2;--red:#ff453a}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
-body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;min-height:100dvh;display:flex;flex-direction:column;align-items:center;padding:12px}
-.wrap{width:100%;max-width:520px;display:flex;flex-direction:column;gap:12px}
-.hdr{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:10px 12px}
-.tabs{display:flex;gap:6px;flex-wrap:wrap;flex:1}
-.tab{border:1px solid var(--border);background:var(--surface2);color:var(--muted);padding:7px 12px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer}
-.tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
-.hud{display:flex;justify-content:space-between;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:10px 14px}
+html,body{margin:0;padding:0;background:radial-gradient(circle at top,#141d30 0%,var(--bg) 55%);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;min-height:100dvh;overflow-x:hidden}
+body{display:flex;flex-direction:column;align-items:center;padding:14px 12px 28px}
+.wrap{width:100%;max-width:740px;display:flex;flex-direction:column;gap:12px}
+.hdr{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:10px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.tabs{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+@media(max-width:600px){.tabs{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.tab{border:1px solid var(--border);background:var(--surface2);color:var(--muted);padding:9px 6px;border-radius:10px;font-size:12.5px;font-weight:700;cursor:pointer;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:all .15s}
+.tab:hover{color:var(--text);border-color:rgba(255,255,255,.22)}
+.tab.active{background:linear-gradient(135deg,var(--accent),#5e5ce6);color:#fff;border-color:transparent;box-shadow:0 4px 14px rgba(10,132,255,.35)}
+.main-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.85fr);gap:12px;align-items:start}
+@media(max-width:700px){.main-grid{grid-template-columns:1fr}}
+.game-col{display:flex;flex-direction:column;gap:12px;min-width:0}
+.hud{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:10px 14px}
 .hud-box{display:flex;flex-direction:column}
-.hud-lbl{font-size:11px;text-transform:uppercase;color:var(--muted);font-weight:700}
-.hud-val{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
-.btn{border:none;border-radius:10px;padding:9px 14px;font-weight:700;font-size:13px;cursor:pointer;background:var(--accent);color:#fff}
-.stage{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:12px;display:flex;flex-direction:column;align-items:center;position:relative;touch-action:none}
-canvas{background:#090c12;border-radius:10px;border:1px solid var(--border);max-width:100%;display:block}
-.g2048-board{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:100%;max-width:340px;aspect-ratio:1;background:#090c12;padding:10px;border-radius:12px;border:1px solid var(--border)}
-.g2048-cell{display:flex;align-items:center;justify-content:center;border-radius:8px;font-weight:800;font-size:22px;background:var(--surface2);color:var(--text)}
-.dpad{display:grid;grid-template-columns:repeat(3,56px);gap:6px;margin-top:10px}
-.dpad button{height:48px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:18px;font-weight:700;cursor:pointer}
-.lb{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px}
-.lb-row{display:flex;justify-content:space-between;padding:7px 4px;border-bottom:1px solid var(--border);font-size:13px}
+.hud-lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700}
+.hud-val{font-size:21px;font-weight:800;font-variant-numeric:tabular-nums}
+.btn{border:none;border-radius:10px;padding:9px 14px;font-weight:700;font-size:13px;cursor:pointer;background:var(--accent);color:#fff;transition:transform .1s,filter .15s}
+.btn:hover{filter:brightness(1.08)}
+.btn:active{transform:scale(.96)}
+.btn-ghost{background:var(--surface2);border:1px solid var(--border);color:var(--text)}
+.stage{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;display:flex;flex-direction:column;align-items:center;position:relative;touch-action:none;min-height:360px;justify-content:center}
+.stage-box{position:relative;display:inline-flex;flex-direction:column;align-items:center;max-width:100%}
+canvas{background:#070a10;border-radius:12px;border:1px solid var(--border);max-width:100%;height:auto;display:block}
+.gate-overlay{position:absolute;inset:0;background:rgba(7,10,16,.82);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px;text-align:center;z-index:5;gap:10px}
+.gate-overlay.hidden{display:none}
+.gate-title{font-size:20px;font-weight:800}
+.gate-sub{font-size:12.5px;color:var(--muted);max-width:260px;line-height:1.45}
+.gate-btn{padding:11px 24px;font-size:15px;border-radius:12px;background:linear-gradient(135deg,var(--green),#24a848);color:#041208;font-weight:800;border:none;cursor:pointer;box-shadow:0 6px 20px rgba(48,209,88,.35)}
+.gate-btn:active{transform:scale(.96)}
+.dpad{display:grid;grid-template-columns:repeat(3,56px);gap:6px;margin-top:12px}
+.dpad button{height:46px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:17px;font-weight:700;cursor:pointer}
+.dpad button:active{background:var(--accent);color:#fff}
+.ctrl-row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;justify-content:center}
+.ctrl-row button{min-width:54px;height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;font-weight:700;cursor:pointer}
+.ctrl-row button:active{background:var(--accent);color:#fff}
+.g2048-board{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:320px;max-width:100%;aspect-ratio:1;background:#070a10;padding:10px;border-radius:12px;border:1px solid var(--border)}
+.g2048-cell{display:flex;align-items:center;justify-content:center;border-radius:8px;font-weight:800;font-size:22px;background:var(--surface2);color:#fff;transition:transform .08s}
+.mines-board{display:grid;grid-template-columns:repeat(9,1fr);gap:3px;width:320px;max-width:100%;aspect-ratio:1;background:#070a10;padding:8px;border-radius:12px;border:1px solid var(--border)}
+.m-cell{display:flex;align-items:center;justify-content:center;border-radius:5px;font-weight:800;font-size:14px;background:#222c40;color:#fff;cursor:pointer;border:1px solid rgba(255,255,255,.06)}
+.m-cell.open{background:#0e131e;border-color:rgba(255,255,255,.03);cursor:default}
+.m-cell.mine{background:var(--red)}
+.m-cell.flag{background:#2d2415;color:var(--orange)}
+.lb{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px}
+.lb-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.lb-row{display:flex;justify-content:space-between;align-items:center;padding:8px 6px;border-bottom:1px solid var(--border);font-size:13px;gap:8px}
 .lb-row:last-child{border-bottom:none}
-.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:var(--green);color:#000;font-weight:800;padding:9px 16px;border-radius:999px;font-size:13px;z-index:99;display:none}
+.lb-row.me{background:rgba(10,132,255,.14);border-radius:8px;padding:8px 8px}
+.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:var(--green);color:#041208;font-weight:800;padding:9px 18px;border-radius:999px;font-size:13px;z-index:99;display:none;box-shadow:0 8px 24px rgba(0,0,0,.4)}
 </style></head><body>
 <div class="toast" id="toast"></div>
 <div class="wrap">
   <div class="hdr">
     <div class="tabs" id="tabs">
-      <button class="tab active" data-g="snake" onclick="switchGame('snake')">🐍 Snake</button>
-      <button class="tab" data-g="2048" onclick="switchGame('2048')">🔢 2048</button>
+      <button class="tab" data-g="snake" onclick="switchGame('snake')">🐍 Snake</button>
+      <button class="tab" data-g="corsairs" onclick="switchGame('corsairs')">🏴‍☠️ Corsairs</button>
       <button class="tab" data-g="breaker" onclick="switchGame('breaker')">🧱 Breaker</button>
       <button class="tab" data-g="flappy" onclick="switchGame('flappy')">🚀 Sky Dash</button>
+      <button class="tab" data-g="tetris" onclick="switchGame('tetris')">🧩 Blocks</button>
+      <button class="tab" data-g="mines" onclick="switchGame('mines')">💣 Mines</button>
     </div>
   </div>
-  <div class="hud">
-    <div class="hud-box"><span class="hud-lbl">Score</span><span class="hud-val" id="score">0</span></div>
-    <div class="hud-box"><span class="hud-lbl">Best</span><span class="hud-val" id="best" style="color:var(--orange)">0</span></div>
-    <button class="btn" id="restart-btn" onclick="startGame()">New Game</button>
+  <div class="main-grid">
+    <div class="game-col">
+      <div class="hud">
+        <div class="hud-box"><span class="hud-lbl">Score</span><span class="hud-val" id="score">0</span></div>
+        <div class="hud-box"><span class="hud-lbl">Best</span><span class="hud-val" id="best" style="color:var(--orange)">0</span></div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <button class="btn btn-ghost" id="sfx-btn" onclick="toggleSfx()" title="Toggle sound">🔊</button>
+          <button class="btn" id="restart-btn" onclick="resetCurrentGame()">New Game</button>
+        </div>
+      </div>
+      <div class="stage" id="stage"></div>
+    </div>
+    <div class="lb">
+      <div class="lb-head">
+        <span style="font-weight:800;font-size:14px;">🏆 Top 10 Leaderboard</span>
+        <button class="btn btn-ghost" style="padding:5px 10px;font-size:11px;" onclick="loadLb()">↻ Refresh</button>
+      </div>
+      <div id="lb-rows" style="color:var(--muted);font-size:13px;">Loading…</div>
+    </div>
   </div>
-  <div class="stage" id="stage"></div>
-  <div class="lb"><div style="font-weight:800;font-size:14px;margin-bottom:8px;">🏆 Leaderboard</div><div id="lb-rows" style="color:var(--muted);font-size:13px;">Loading…</div></div>
 </div>
 <script>
 var Q = new URLSearchParams(location.search);
 var GAME = Q.get('game') || 'snake';
-if (!['snake','2048','breaker','flappy'].includes(GAME)) GAME = 'snake';
+var VALID_GAMES = ['snake','corsairs','breaker','flappy','tetris','mines'];
+if (VALID_GAMES.indexOf(GAME) < 0) GAME = 'snake';
 var CID = Q.get('cid') || '0';
 var UID = Q.get('uid') || '0';
 var UNAME = Q.get('name') || 'Player';
 var UUN = Q.get('un') || '';
 var TS = Q.get('ts') || '0';
 var SIG = Q.get('sig') || '';
-var curScore = 0, bestScore = 0, loopTimer = null, animId = null, gameOverFlag = false;
+var curScore = 0, bestScore = 0, loopTimer = null, animId = null, gameOverFlag = false, gameStarted = false;
+var sfxMuted = localStorage.getItem('nyxx_sfx_muted') === '1';
+var audioCtx = null;
 function $(id){return document.getElementById(id);}
-function setScore(s){ curScore = s; $('score').textContent = s; if (s > bestScore) { bestScore = s; $('best').textContent = s; } }
-function showToast(msg){ var t = $('toast'); t.textContent = msg; t.style.display = 'block'; setTimeout(function(){ t.style.display = 'none'; }, 2600); }
-function stopLoops(){ if (loopTimer) { clearInterval(loopTimer); loopTimer = null; } if (animId) { cancelAnimationFrame(animId); animId = null; } }
-async function submitScore(s){
-  if (s <= 0 || !Number(CID) || !Number(UID) || !SIG) { loadLb(); return; }
+function updateSfxBtn(){ var b = $('sfx-btn'); if (b) b.textContent = sfxMuted ? '🔇' : '🔊'; }
+function toggleSfx(){ sfxMuted = !sfxMuted; localStorage.setItem('nyxx_sfx_muted', sfxMuted ? '1' : '0'); updateSfxBtn(); if (!sfxMuted) playSfx('coin'); }
+function playSfx(type){
+  if (sfxMuted) return;
   try {
-    var r = await fetch('/api/games/score', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ game_id:GAME, chat_id:Number(CID), user_id:Number(UID), user_name:UNAME, username:UUN, score:s, ts:TS, sig:SIG }) });
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    if (!audioCtx) audioCtx = new AC();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    var now = audioCtx.currentTime;
+    var tone = function(freq, dur, wave, vol, delay){
+      var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = wave || 'sine'; o.frequency.setValueAtTime(freq, now + (delay || 0));
+      g.gain.setValueAtTime(vol || 0.08, now + (delay || 0));
+      g.gain.exponentialRampToValueAtTime(0.0001, now + (delay || 0) + dur);
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(now + (delay || 0)); o.stop(now + (delay || 0) + dur);
+    };
+    if (type === 'coin' || type === 'score') { tone(660, 0.08, 'triangle', 0.09, 0); tone(990, 0.12, 'triangle', 0.09, 0.06); }
+    else if (type === 'start') { tone(440, 0.08, 'sine', 0.08, 0); tone(554, 0.08, 'sine', 0.08, 0.07); tone(659, 0.14, 'sine', 0.09, 0.14); }
+    else if (type === 'move') { tone(260, 0.035, 'sine', 0.03, 0); }
+    else if (type === 'flap') { tone(360, 0.06, 'sine', 0.05, 0); }
+    else if (type === 'hit') { tone(480, 0.07, 'square', 0.05, 0); }
+    else if (type === 'level' || type === 'win') { tone(523, 0.09, 'triangle', 0.09, 0); tone(659, 0.09, 'triangle', 0.09, 0.08); tone(784, 0.09, 'triangle', 0.09, 0.16); tone(1046, 0.22, 'triangle', 0.1, 0.24); }
+    else if (type === 'gameover') { tone(320, 0.14, 'sawtooth', 0.07, 0); tone(240, 0.16, 'sawtooth', 0.07, 0.12); tone(160, 0.26, 'sawtooth', 0.08, 0.25); }
+  } catch (e) {}
+}
+updateSfxBtn();
+function setScore(s){ curScore = s; $('score').textContent = s; if (s > bestScore) { bestScore = s; $('best').textContent = s; } }
+function showToast(msg){ var t = $('toast'); t.textContent = msg; t.style.display = 'block'; clearTimeout(t._tm); t._tm = setTimeout(function(){ t.style.display = 'none'; }, 2800); }
+function stopLoops(){ if (loopTimer) { clearInterval(loopTimer); loopTimer = null; } if (animId) { cancelAnimationFrame(animId); animId = null; } document.onkeydown = null; document.onkeyup = null; }
+async function submitScore(s){
+  if (s <= 0) { loadLb(); return; }
+  var localBest = Number(localStorage.getItem('nyxx_best_' + GAME) || 0);
+  if (s > localBest) localStorage.setItem('nyxx_best_' + GAME, String(s));
+  if (!Number(CID) || !Number(UID) || !SIG) { loadLb(); return; }
+  try {
+    var r = await fetch('/api/games/score', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ game_id:GAME, chat_id:Number(CID), user_id:Number(UID), user_name:UNAME, username:UUN, score:s, ts:TS, sig:SIG })
+    });
     var d = await r.json();
-    if (d && d.new_record) showToast('🏆 New Personal Best: ' + s + '!');
+    if (d && d.new_record) showToast('🏆 New Personal Best: ' + s.toLocaleString() + '!');
+    if (d && d.best_score !== undefined) {
+      bestScore = Math.max(bestScore, Number(d.best_score || 0));
+      $('best').textContent = bestScore;
+    }
     if (d && d.scores) renderLb(d.scores); else loadLb();
   } catch (e) {}
 }
 function renderLb(rows){
   var box = $('lb-rows');
-  if (!rows || !rows.length) { box.innerHTML = 'No scores yet — play to set the record!'; return; }
+  if (!rows || !rows.length) { box.innerHTML = 'No scores yet — be the first!'; return; }
+  var medals = ['🥇','🥈','🥉'];
   box.innerHTML = rows.slice(0, 10).map(function(r, i){
-    return '<div class="lb-row"><span>#' + (i+1) + ' ' + String(r.user_name||'Player').replace(/</g,'&lt;') + '</span><b>' + Number(r.best_score||0).toLocaleString() + '</b></div>';
+    var isMe = Number(UID) && Number(r.user_id) === Number(UID);
+    return '<div class="lb-row' + (isMe ? ' me' : '') + '"><span>' + (medals[i] || ('#' + (i+1))) + ' ' + String(r.user_name||'Player').replace(/</g,'&lt;') + '</span><b>' + Number(r.best_score||0).toLocaleString() + '</b></div>';
   }).join('');
 }
 async function loadLb(){
   try {
-    var r = await fetch('/api/games/leaderboard?game=' + encodeURIComponent(GAME) + (Number(CID) ? '&chat_id=' + encodeURIComponent(CID) : ''));
-    var d = await r.json(); renderLb((d && d.scores) || []);
+    var qs = 'game=' + encodeURIComponent(GAME) + (Number(CID) ? '&chat_id=' + encodeURIComponent(CID) : '') + (Number(UID) ? '&uid=' + encodeURIComponent(UID) : '');
+    var r = await fetch('/api/games/leaderboard?' + qs);
+    var d = await r.json();
+    if (d && d.my_best) {
+      bestScore = Math.max(bestScore, Number(d.my_best || 0));
+      $('best').textContent = bestScore;
+    }
+    renderLb((d && d.scores) || []);
   } catch (e) {}
 }
 function switchGame(g){
@@ -27061,201 +27687,478 @@ function switchGame(g){
   document.querySelectorAll('#tabs .tab').forEach(function(b){ b.classList.toggle('active', b.dataset.g === g); });
   bestScore = Number(localStorage.getItem('nyxx_best_' + g) || 0);
   $('best').textContent = bestScore;
-  startGame();
+  resetCurrentGame();
   loadLb();
 }
-function endGame(){
+function endGame(titleOverride, isWin){
   if (gameOverFlag) return;
-  gameOverFlag = true; stopLoops();
-  if (curScore > Number(localStorage.getItem('nyxx_best_' + GAME) || 0)) localStorage.setItem('nyxx_best_' + GAME, String(curScore));
+  gameOverFlag = true; gameStarted = false; stopLoops();
+  playSfx(isWin ? 'win' : 'gameover');
+  var ov = $('stage-gate');
+  if (ov) {
+    ov.classList.remove('hidden');
+    ov.querySelector('.gate-title').textContent = titleOverride || 'Game Over';
+    ov.querySelector('.gate-sub').textContent = 'Final Score: ' + curScore.toLocaleString();
+    ov.querySelector('.gate-btn').textContent = '↻ Play Again';
+  }
   submitScore(curScore);
 }
-function startGame(){
-  stopLoops(); gameOverFlag = false; setScore(0);
+function resetCurrentGame(){
+  stopLoops(); gameOverFlag = false; gameStarted = false; setScore(0);
   if (GAME === 'snake') runSnake();
-  else if (GAME === '2048') run2048();
+  else if (GAME === 'corsairs') runCorsairs();
   else if (GAME === 'breaker') runBreaker();
-  else runFlappy();
+  else if (GAME === 'flappy') runFlappy();
+  else if (GAME === 'tetris') runTetris();
+  else runMines();
+}
+function makeGate(title, sub, onStart){
+  var d = document.createElement('div');
+  d.id = 'stage-gate';
+  d.className = 'gate-overlay';
+  d.innerHTML = '<div class="gate-title">' + title + '</div><div class="gate-sub">' + sub + '</div><button class="gate-btn" type="button">▶ Tap to Play</button>';
+  d.querySelector('.gate-btn').onclick = function(){
+    if (gameOverFlag) { resetCurrentGame(); return; }
+    d.classList.add('hidden');
+    gameStarted = true;
+    playSfx('start');
+    onStart();
+  };
+  return d;
 }
 
+/* 1. NEON SNAKE */
 function runSnake(){
-  $('stage').innerHTML = '<canvas id="cv" width="320" height="320"></canvas><div class="dpad"><div></div><button onclick="snkDir(0,-1)">▲</button><div></div><button onclick="snkDir(-1,0)">◀</button><button onclick="snkDir(0,1)">▼</button><button onclick="snkDir(1,0)">▶</button></div>';
+  $('stage').innerHTML = '<div class="stage-box"><canvas id="cv" width="320" height="320"></canvas></div><div class="dpad"><div></div><button onclick="snkDir(0,-1)">▲</button><div></div><button onclick="snkDir(-1,0)">◀</button><button onclick="snkDir(0,1)">▼</button><button onclick="snkDir(1,0)">▶</button></div>';
   var cv = $('cv'), ctx = cv.getContext('2d'), G = 16, S = 20;
   var snake = [{x:8,y:8},{x:7,y:8},{x:6,y:8}], dx = 1, dy = 0, ndx = 1, ndy = 0;
   var food = {x:12,y:8}, gold = null;
-  window.snkDir = function(x,y){ if (x !== -dx && y !== -dy) { ndx = x; ndy = y; } };
-  document.onkeydown = function(e){
-    if (e.key==='ArrowUp'||e.key==='w') window.snkDir(0,-1);
-    if (e.key==='ArrowDown'||e.key==='s') window.snkDir(0,1);
-    if (e.key==='ArrowLeft'||e.key==='a') window.snkDir(-1,0);
-    if (e.key==='ArrowRight'||e.key==='d') window.snkDir(1,0);
-  };
-  var sx=0, sy=0;
-  cv.ontouchstart = function(e){ sx=e.touches[0].clientX; sy=e.touches[0].clientY; };
-  cv.ontouchend = function(e){
-    var ex=e.changedTouches[0].clientX-sx, ey=e.changedTouches[0].clientY-sy;
-    if (Math.abs(ex)>Math.abs(ey)) window.snkDir(ex>0?1:-1, 0); else if (Math.abs(ey)>12) window.snkDir(0, ey>0?1:-1);
-  };
-  function placeFood(){ return {x:Math.floor(Math.random()*G), y:Math.floor(Math.random()*G)}; }
-  loopTimer = setInterval(function(){
-    dx = ndx; dy = ndy;
-    var h = {x:(snake[0].x+dx+G)%G, y:(snake[0].y+dy+G)%G};
-    if (snake.some(function(p){ return p.x===h.x && p.y===h.y; })) {
-      ctx.fillStyle='rgba(0,0,0,.65)'; ctx.fillRect(0,0,320,320);
-      ctx.fillStyle='#fff'; ctx.font='bold 22px sans-serif'; ctx.textAlign='center'; ctx.fillText('Game Over · ' + curScore, 160, 165);
-      endGame(); return;
-    }
-    snake.unshift(h);
-    if (h.x===food.x && h.y===food.y) {
-      setScore(curScore + 10); food = placeFood();
-      if (!gold && Math.random() < 0.25) gold = Object.assign(placeFood(), {ttl:45});
-    } else if (gold && h.x===gold.x && h.y===gold.y) {
-      setScore(curScore + 35); gold = null;
-    } else snake.pop();
-    if (gold) { gold.ttl--; if (gold.ttl<=0) gold=null; }
-    ctx.fillStyle='#090c12'; ctx.fillRect(0,0,320,320);
+  function drawFrame(){
+    ctx.fillStyle='#070a10'; ctx.fillRect(0,0,320,320);
+    ctx.strokeStyle='rgba(255,255,255,.03)';
+    for(var g=1;g<G;g++){ ctx.beginPath(); ctx.moveTo(g*S,0); ctx.lineTo(g*S,320); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0,g*S); ctx.lineTo(320,g*S); ctx.stroke(); }
     ctx.fillStyle='#ff453a'; ctx.beginPath(); ctx.arc(food.x*S+10, food.y*S+10, 7, 0, Math.PI*2); ctx.fill();
     if (gold) { ctx.fillStyle='#ff9f0a'; ctx.beginPath(); ctx.arc(gold.x*S+10, gold.y*S+10, 8, 0, Math.PI*2); ctx.fill(); }
     snake.forEach(function(p, i){
       ctx.fillStyle = i===0 ? '#30d158' : '#0a84ff';
       ctx.fillRect(p.x*S+2, p.y*S+2, S-4, S-4);
     });
-  }, 115);
-}
-
-function run2048(){
-  $('stage').innerHTML = '<div class="g2048-board" id="b2048"></div><div class="dpad"><div></div><button onclick="mv2048(0)">▲</button><div></div><button onclick="mv2048(3)">◀</button><button onclick="mv2048(2)">▼</button><button onclick="mv2048(1)">▶</button></div>';
-  var b = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]];
-  var colors = {0:'#1e2636',2:'#2b3a55',4:'#364c73',8:'#0a84ff',16:'#5e5ce6',32:'#bf5af2',64:'#ff375f',128:'#ff9f0a',256:'#30d158',512:'#30b0c7',1024:'#ffd60a',2048:'#ff453a'};
-  function addTile(){
-    var emp=[]; for(var r=0;r<4;r++)for(var c=0;c<4;c++)if(!b[r][c])emp.push([r,c]);
-    if (!emp.length) return;
-    var p = emp[Math.floor(Math.random()*emp.length)];
-    b[p[0]][p[1]] = Math.random()<0.9 ? 2 : 4;
   }
-  function draw(){
-    var el = $('b2048');
-    el.innerHTML = b.flat().map(function(v){
-      return '<div class="g2048-cell" style="background:' + (colors[v]||'#ff453a') + ';font-size:' + (v>=1024?17:22) + 'px;">' + (v||'') + '</div>';
-    }).join('');
+  function placeFood(){
+    var f; do { f = {x:Math.floor(Math.random()*G), y:Math.floor(Math.random()*G)}; } while (snake.some(function(p){ return p.x===f.x && p.y===f.y; }));
+    return f;
   }
-  function slide(row){
-    var arr = row.filter(Boolean), gain = 0;
-    for (var i=0;i<arr.length-1;i++){ if (arr[i]===arr[i+1]){ arr[i]*=2; gain+=arr[i]; arr[i+1]=0; } }
-    arr = arr.filter(Boolean); while(arr.length<4)arr.push(0);
-    return {arr:arr, gain:gain};
+  function startLoop(){
+    if (loopTimer) return;
+    loopTimer = setInterval(function(){
+      dx = ndx; dy = ndy;
+      var h = {x:(snake[0].x+dx+G)%G, y:(snake[0].y+dy+G)%G};
+      if (snake.some(function(p){ return p.x===h.x && p.y===h.y; })) { endGame(); return; }
+      snake.unshift(h);
+      if (h.x===food.x && h.y===food.y) {
+        playSfx('coin');
+        setScore(curScore + 10); food = placeFood();
+        if (!gold && Math.random() < 0.25) gold = Object.assign(placeFood(), {ttl:45});
+      } else if (gold && h.x===gold.x && h.y===gold.y) {
+        playSfx('level');
+        setScore(curScore + 35); gold = null;
+      } else snake.pop();
+      if (gold) { gold.ttl--; if (gold.ttl<=0) gold=null; }
+      drawFrame();
+    }, 115);
   }
-  function canMove(){
-    for(var r=0;r<4;r++)for(var c=0;c<4;c++){
-      if(!b[r][c])return true;
-      if(r<3&&b[r][c]===b[r+1][c])return true;
-      if(c<3&&b[r][c]===b[r][c+1])return true;
-    } return false;
-  }
-  window.mv2048 = function(dir){
-    if (gameOverFlag) return;
-    var old = JSON.stringify(b), add = 0;
-    for (var k=0;k<dir;k++) b = b[0].map(function(_,c){ return b.map(function(r){ return r[c]; }).reverse(); });
-    for (var r=0;r<4;r++){
-      var col = b.map(function(row){ return row[r]; });
-      var s = slide(col); add += s.gain;
-      for (var i=0;i<4;i++) b[i][r] = s.arr[i];
-    }
-    for (var k2=0;k2<(4-dir)%4;k2++) b = b[0].map(function(_,c){ return b.map(function(r){ return r[c]; }).reverse(); });
-    if (JSON.stringify(b) !== old) { setScore(curScore + add); addTile(); draw(); if (!canMove()) { showToast('No moves left!'); endGame(); } }
+  drawFrame();
+  cv.parentNode.appendChild(makeGate('🐍 Neon Snake', 'Use Arrow keys / WASD or swipe to steer. Eat apples & gold orbs!', startLoop));
+  window.snkDir = function(x,y){
+    if (!gameStarted && !gameOverFlag) { var g = $('stage-gate'); if (g) g.querySelector('.gate-btn').click(); }
+    if (x !== -dx && y !== -dy) { ndx = x; ndy = y; }
   };
   document.onkeydown = function(e){
-    if(e.key==='ArrowUp')window.mv2048(0); if(e.key==='ArrowRight')window.mv2048(1);
-    if(e.key==='ArrowDown')window.mv2048(2); if(e.key==='ArrowLeft')window.mv2048(3);
+    if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].indexOf(e.key) >= 0) e.preventDefault();
+    if (e.key==='ArrowUp'||e.key==='w'||e.key==='W') window.snkDir(0,-1);
+    if (e.key==='ArrowDown'||e.key==='s'||e.key==='S') window.snkDir(0,1);
+    if (e.key==='ArrowLeft'||e.key==='a'||e.key==='A') window.snkDir(-1,0);
+    if (e.key==='ArrowRight'||e.key==='d'||e.key==='D') window.snkDir(1,0);
   };
-  var sx=0, sy=0, el=$('b2048');
-  el.ontouchstart = function(e){ sx=e.touches[0].clientX; sy=e.touches[0].clientY; };
-  el.ontouchend = function(e){
-    var dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
-    if (Math.abs(dx)>Math.abs(dy)) { if(Math.abs(dx)>18) window.mv2048(dx>0?1:3); }
-    else if (Math.abs(dy)>18) window.mv2048(dy>0?2:0);
+  var sx=0, sy=0;
+  cv.ontouchstart = function(e){ sx=e.touches[0].clientX; sy=e.touches[0].clientY; };
+  cv.ontouchend = function(e){
+    var ex=e.changedTouches[0].clientX-sx, ey=e.changedTouches[0].clientY-sy;
+    if (Math.abs(ex)>Math.abs(ey)) { if (Math.abs(ex)>14) window.snkDir(ex>0?1:-1, 0); }
+    else if (Math.abs(ey)>14) window.snkDir(0, ey>0?1:-1);
   };
-  addTile(); addTile(); draw();
 }
 
-function runBreaker(){
-  $('stage').innerHTML = '<canvas id="cv" width="320" height="360"></canvas><div style="font-size:12px;color:var(--muted);margin-top:6px;">Drag or move mouse to steer paddle</div>';
+/* 2. CORSAIRS — Dodge cannonballs & collect gold to advance levels */
+function runCorsairs(){
+  $('stage').innerHTML = '<div style="display:flex;gap:14px;font-size:12.5px;font-weight:700;margin-bottom:8px;color:var(--muted);"><span>⚓ Level <b id="cr-lvl" style="color:var(--text)">1</b></span><span>🪙 Gold <b id="cr-gold" style="color:var(--orange)">0/6</b></span></div><div class="stage-box"><canvas id="cv" width="320" height="350"></canvas></div><div style="font-size:12px;color:var(--muted);margin-top:8px;">Drag ship or use Arrow keys / WASD to steer</div>';
   var cv = $('cv'), ctx = cv.getContext('2d');
-  var pad = {x:120, w:80}, ball = {x:160, y:260, vx:3.2, vy:-3.4}, bricks = [];
+  var level = 1, goldGot = 0, goldGoal = 6;
+  var ship = { x: 160, y: 280, r: 14 };
+  var balls = [], coins = [], keys = {}, tickN = 0;
+  function spawnCoin(){
+    coins.push({ x: 24 + Math.random() * 272, y: 28 + Math.random() * 290, r: 9 });
+  }
+  function spawnBall(){
+    var side = Math.random();
+    var speed = 1.6 + level * 0.35 + Math.random() * 1.1;
+    if (side < 0.65) {
+      balls.push({ x: 16 + Math.random() * 288, y: -12, vx: (Math.random() - 0.5) * 1.4, vy: speed, r: 8 });
+    } else if (side < 0.82) {
+      balls.push({ x: -12, y: 20 + Math.random() * 260, vx: speed, vy: (Math.random() - 0.5) * 1.2, r: 8 });
+    } else {
+      balls.push({ x: 332, y: 20 + Math.random() * 260, vx: -speed, vy: (Math.random() - 0.5) * 1.2, r: 8 });
+    }
+  }
+  function setupLevel(){
+    coins = []; balls = [];
+    goldGot = 0; goldGoal = 4 + level * 2;
+    for (var i = 0; i < 3; i++) spawnCoin();
+    if ($('cr-lvl')) $('cr-lvl').textContent = level;
+    if ($('cr-gold')) $('cr-gold').textContent = goldGot + '/' + goldGoal;
+  }
+  setupLevel();
+  function draw(){
+    ctx.fillStyle = '#071422'; ctx.fillRect(0,0,320,350);
+    ctx.strokeStyle = 'rgba(10,132,255,.12)';
+    for (var w = 30; w < 350; w += 45) { ctx.beginPath(); ctx.moveTo(0, w); ctx.lineTo(320, w); ctx.stroke(); }
+    coins.forEach(function(c){
+      ctx.fillStyle = '#ffd60a'; ctx.beginPath(); ctx.arc(c.x, c.y, c.r, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle = '#ff9f0a'; ctx.lineWidth = 2; ctx.stroke();
+    });
+    balls.forEach(function(b){
+      ctx.fillStyle = '#ff453a'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#1f2937'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r - 2.5, 0, Math.PI*2); ctx.fill();
+    });
+    ctx.save(); ctx.translate(ship.x, ship.y);
+    ctx.fillStyle = '#8b5a2b';
+    ctx.beginPath(); ctx.moveTo(0, -16); ctx.lineTo(13, 10); ctx.lineTo(0, 15); ctx.lineTo(-13, 10); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#f3f4f6';
+    ctx.beginPath(); ctx.moveTo(0, -10); ctx.lineTo(9, 4); ctx.lineTo(-9, 4); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+  function steerTo(cx, cy){
+    var rect = cv.getBoundingClientRect();
+    ship.x = Math.max(16, Math.min(304, (cx - rect.left) * (320 / rect.width)));
+    ship.y = Math.max(20, Math.min(330, (cy - rect.top) * (350 / rect.height)));
+  }
+  cv.onmousemove = function(e){ if (gameStarted && e.buttons) steerTo(e.clientX, e.clientY); };
+  cv.ontouchstart = function(e){ if (gameStarted) { e.preventDefault(); steerTo(e.touches[0].clientX, e.touches[0].clientY); } };
+  cv.ontouchmove = function(e){ if (gameStarted) { e.preventDefault(); steerTo(e.touches[0].clientX, e.touches[0].clientY); } };
+  document.onkeydown = function(e){
+    if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].indexOf(e.key) >= 0) e.preventDefault();
+    keys[e.key.toLowerCase()] = true;
+  };
+  document.onkeyup = function(e){ keys[e.key.toLowerCase()] = false; };
+  function tick(){
+    tickN++;
+    var spd = 3.8;
+    if (keys['arrowleft'] || keys['a']) ship.x = Math.max(16, ship.x - spd);
+    if (keys['arrowright'] || keys['d']) ship.x = Math.min(304, ship.x + spd);
+    if (keys['arrowup'] || keys['w']) ship.y = Math.max(20, ship.y - spd);
+    if (keys['arrowdown'] || keys['s']) ship.y = Math.min(330, ship.y + spd);
+    var spawnEvery = Math.max(16, 46 - level * 5);
+    if (tickN % spawnEvery === 0) spawnBall();
+    for (var i = balls.length - 1; i >= 0; i--) {
+      var b = balls[i]; b.x += b.vx; b.y += b.vy;
+      if (Math.hypot(b.x - ship.x, b.y - ship.y) < b.r + ship.r - 3) {
+        draw(); endGame('💥 Sunk on Level ' + level + '!'); return;
+      }
+      if (b.x < -30 || b.x > 350 || b.y > 380) balls.splice(i, 1);
+    }
+    for (var j = coins.length - 1; j >= 0; j--) {
+      var c = coins[j];
+      if (Math.hypot(c.x - ship.x, c.y - ship.y) < c.r + ship.r) {
+        coins.splice(j, 1);
+        goldGot++;
+        setScore(curScore + 25 * level);
+        playSfx('coin');
+        if ($('cr-gold')) $('cr-gold').textContent = goldGot + '/' + goldGoal;
+        if (goldGot >= goldGoal) {
+          level++;
+          setScore(curScore + 100 * level);
+          playSfx('level');
+          showToast('⚓ Level ' + level + '!');
+          setupLevel();
+          break;
+        } else {
+          spawnCoin();
+        }
+      }
+    }
+    draw();
+    animId = requestAnimationFrame(tick);
+  }
+  draw();
+  cv.parentNode.appendChild(makeGate('🏴‍☠️ Corsairs', 'Dodge cannonballs and collect gold to reach the next level!', function(){ animId = requestAnimationFrame(tick); }));
+}
+
+/* 3. BRICK BREAKER */
+function runBreaker(){
+  $('stage').innerHTML = '<div class="stage-box"><canvas id="cv" width="320" height="350"></canvas></div><div style="font-size:12px;color:var(--muted);margin-top:8px;">Drag on screen or use ◀ ▶ keys to move paddle</div>';
+  var cv = $('cv'), ctx = cv.getContext('2d');
+  var pad = {x:120, w:80}, ball = {x:160, y:260, vx:3.1, vy:-3.4}, bricks = [], keys = {l:false, r:false};
   function resetBricks(){
     bricks = [];
     var cols = ['#ff453a','#ff9f0a','#30d158','#0a84ff','#bf5af2'];
-    for(var r=0;r<5;r++) for(var c=0;c<6;c++) bricks.push({x:10+c*51, y:30+r*22, w:46, h:15, c:cols[r], alive:true});
+    for(var r=0;r<5;r++) for(var c=0;c<6;c++) bricks.push({x:10+c*51, y:26+r*22, w:46, h:15, c:cols[r], alive:true});
   }
   resetBricks();
+  function drawScene(){
+    ctx.fillStyle='#070a10'; ctx.fillRect(0,0,320,350);
+    bricks.forEach(function(br){ if(br.alive){ ctx.fillStyle=br.c; ctx.fillRect(br.x,br.y,br.w,br.h); }});
+    ctx.fillStyle='#0a84ff'; ctx.fillRect(pad.x, 326, pad.w, 10);
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(ball.x, ball.y, 6, 0, Math.PI*2); ctx.fill();
+  }
   function moveTo(clientX){
     var rect = cv.getBoundingClientRect();
     pad.x = Math.max(0, Math.min(320 - pad.w, (clientX - rect.left) * (320 / rect.width) - pad.w / 2));
   }
-  cv.onmousemove = function(e){ moveTo(e.clientX); };
-  cv.ontouchmove = function(e){ e.preventDefault(); moveTo(e.touches[0].clientX); };
+  cv.onmousemove = function(e){ if (gameStarted) moveTo(e.clientX); };
+  cv.ontouchmove = function(e){ e.preventDefault(); if (gameStarted) moveTo(e.touches[0].clientX); };
+  document.onkeydown = function(e){
+    if (e.key==='ArrowLeft'||e.key==='a'){ e.preventDefault(); keys.l=true; }
+    if (e.key==='ArrowRight'||e.key==='d'){ e.preventDefault(); keys.r=true; }
+  };
+  document.onkeyup = function(e){
+    if (e.key==='ArrowLeft'||e.key==='a') keys.l=false;
+    if (e.key==='ArrowRight'||e.key==='d') keys.r=false;
+  };
   function tick(){
+    if (keys.l) pad.x = Math.max(0, pad.x - 5.5);
+    if (keys.r) pad.x = Math.min(320 - pad.w, pad.x + 5.5);
     ball.x += ball.vx; ball.y += ball.vy;
-    if (ball.x<6 || ball.x>314) ball.vx *= -1;
-    if (ball.y<6) ball.vy *= -1;
-    if (ball.y>=332 && ball.y<=346 && ball.x>=pad.x && ball.x<=pad.x+pad.w && ball.vy>0) {
+    if (ball.x<6) { ball.x = 6; ball.vx = Math.abs(ball.vx); }
+    if (ball.x>314) { ball.x = 314; ball.vx = -Math.abs(ball.vx); }
+    if (ball.y<6) { ball.y = 6; ball.vy = Math.abs(ball.vy); }
+    if (ball.y>=320 && ball.y<=336 && ball.x>=pad.x-4 && ball.x<=pad.x+pad.w+4 && ball.vy>0) {
       ball.vy = -Math.abs(ball.vy);
-      ball.vx = ((ball.x - (pad.x + pad.w/2)) / (pad.w/2)) * 4.5;
+      ball.vx = ((ball.x - (pad.x + pad.w/2)) / (pad.w/2)) * 4.4;
+      playSfx('move');
     }
-    if (ball.y > 365) {
-      ctx.fillStyle='rgba(0,0,0,.65)'; ctx.fillRect(0,0,320,360);
-      ctx.fillStyle='#fff'; ctx.font='bold 22px sans-serif'; ctx.textAlign='center'; ctx.fillText('Game Over · ' + curScore, 160, 185);
-      endGame(); return;
-    }
+    if (ball.y > 356) { endGame(); return; }
     var rem = 0;
     bricks.forEach(function(br){
       if (!br.alive) return;
       rem++;
-      if (ball.x>br.x && ball.x<br.x+br.w && ball.y>br.y && ball.y<br.y+br.h) {
-        br.alive = false; ball.vy *= -1; setScore(curScore + 20);
+      if (ball.x>br.x-4 && ball.x<br.x+br.w+4 && ball.y>br.y-4 && ball.y<br.y+br.h+4) {
+        br.alive = false; ball.vy *= -1; setScore(curScore + 20); playSfx('hit');
       }
     });
-    if (rem === 0) { setScore(curScore + 100); resetBricks(); ball.vy *= 1.08; }
-    ctx.fillStyle='#090c12'; ctx.fillRect(0,0,320,360);
-    bricks.forEach(function(br){ if(br.alive){ ctx.fillStyle=br.c; ctx.fillRect(br.x,br.y,br.w,br.h); }});
-    ctx.fillStyle='#0a84ff'; ctx.fillRect(pad.x, 336, pad.w, 10);
-    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(ball.x, ball.y, 6, 0, Math.PI*2); ctx.fill();
+    if (rem === 0) { playSfx('level'); setScore(curScore + 100); resetBricks(); ball.vy = -Math.min(Math.abs(ball.vy) * 1.08, 6.2); }
+    drawScene();
     animId = requestAnimationFrame(tick);
   }
-  animId = requestAnimationFrame(tick);
+  drawScene();
+  cv.parentNode.appendChild(makeGate('🧱 Brick Breaker', 'Bounce the ball to clear all bricks! Drag or use ◀ ▶ keys.', function(){ animId = requestAnimationFrame(tick); }));
 }
 
+/* 4. SKY DASH */
 function runFlappy(){
-  $('stage').innerHTML = '<canvas id="cv" width="320" height="360"></canvas><div style="font-size:12px;color:var(--muted);margin-top:6px;">Tap canvas or press Space to boost</div>';
+  $('stage').innerHTML = '<div class="stage-box"><canvas id="cv" width="320" height="350"></canvas></div><div style="font-size:12px;color:var(--muted);margin-top:8px;">Tap anywhere on canvas or press Space / ▲ to boost</div>';
   var cv = $('cv'), ctx = cv.getContext('2d');
-  var y = 160, vy = 0, pipes = [{x:320, gap:130}], tickN = 0;
-  function flap(){ if (!gameOverFlag) vy = -5.6; }
-  cv.onmousedown = flap;
-  cv.ontouchstart = function(e){ e.preventDefault(); flap(); };
-  document.onkeydown = function(e){ if (e.code === 'Space' || e.key === 'ArrowUp') { e.preventDefault(); flap(); } };
-  function tick(){
-    tickN++; vy += 0.28; y += vy;
-    if (tickN % 95 === 0) pipes.push({x:320, gap:65 + Math.random()*150, passed:false});
-    ctx.fillStyle='#090c12'; ctx.fillRect(0,0,320,360);
-    var hit = (y < 6 || y > 354);
-    for (var i=pipes.length-1;i>=0;i--){
-      var p = pipes[i]; p.x -= 2.4;
+  var y = 160, vy = 0, pipes = [{x:320, gap:120, passed:false}], tickN = 0;
+  function drawScene(){
+    ctx.fillStyle='#070a10'; ctx.fillRect(0,0,320,350);
+    pipes.forEach(function(p){
       ctx.fillStyle='#30d158';
       ctx.fillRect(p.x, 0, 42, p.gap);
-      ctx.fillRect(p.x, p.gap+105, 42, 360-(p.gap+105));
-      if (!p.passed && p.x + 42 < 70) { p.passed = true; setScore(curScore + 15); }
-      if (70+10 > p.x && 70-10 < p.x+42 && (y-10 < p.gap || y+10 > p.gap+105)) hit = true;
+      ctx.fillRect(p.x, p.gap+108, 42, 350-(p.gap+108));
+    });
+    ctx.fillStyle='#ff9f0a'; ctx.beginPath(); ctx.arc(70, y, 11, 0, Math.PI*2); ctx.fill();
+  }
+  function flap(){ if (gameStarted && !gameOverFlag) { vy = -5.4; playSfx('flap'); } }
+  cv.onmousedown = flap;
+  cv.ontouchstart = function(e){ e.preventDefault(); flap(); };
+  document.onkeydown = function(e){
+    if (e.code === 'Space' || e.key === 'ArrowUp' || e.key === 'w') {
+      e.preventDefault();
+      if (!gameStarted && !gameOverFlag) { var g = $('stage-gate'); if (g) g.querySelector('.gate-btn').click(); }
+      flap();
+    }
+  };
+  function tick(){
+    tickN++; vy += 0.27; y += vy;
+    if (tickN % 95 === 0) pipes.push({x:320, gap:55 + Math.random()*145, passed:false});
+    var hit = (y < 8 || y > 342);
+    for (var i=pipes.length-1;i>=0;i--){
+      var p = pipes[i]; p.x -= 2.35;
+      if (!p.passed && p.x + 42 < 70) { p.passed = true; setScore(curScore + 15); playSfx('score'); }
+      if (70+10 > p.x && 70-10 < p.x+42 && (y-10 < p.gap || y+10 > p.gap+108)) hit = true;
       if (p.x < -50) pipes.splice(i, 1);
     }
-    ctx.fillStyle='#ff9f0a'; ctx.beginPath(); ctx.arc(70, y, 11, 0, Math.PI*2); ctx.fill();
-    if (hit) {
-      ctx.fillStyle='rgba(0,0,0,.65)'; ctx.fillRect(0,0,320,360);
-      ctx.fillStyle='#fff'; ctx.font='bold 22px sans-serif'; ctx.textAlign='center'; ctx.fillText('Game Over · ' + curScore, 160, 185);
-      endGame(); return;
-    }
+    drawScene();
+    if (hit) { endGame(); return; }
     animId = requestAnimationFrame(tick);
   }
-  animId = requestAnimationFrame(tick);
+  drawScene();
+  cv.parentNode.appendChild(makeGate('🚀 Sky Dash', 'Fly through neon gates! Tap or press Space / ▲ to boost.', function(){ flap(); animId = requestAnimationFrame(tick); }));
+}
+
+/* 5. NEON BLOCKS (TETRIS) */
+function runTetris(){
+  $('stage').innerHTML = '<div class="stage-box"><canvas id="cv" width="220" height="360"></canvas></div><div class="ctrl-row"><button onclick="tAct(\\'left\\')">◀</button><button onclick="tAct(\\'rot\\')">↻</button><button onclick="tAct(\\'down\\')">▼</button><button onclick="tAct(\\'drop\\')">⤓</button><button onclick="tAct(\\'right\\')">▶</button></div>';
+  var cv = $('cv'), ctx = cv.getContext('2d'), C = 10, R = 18, S = 20;
+  var grid = Array.from({length:R}, function(){ return Array(C).fill(0); });
+  var shapes = [
+    [[1,1,1,1]],
+    [[1,1],[1,1]],
+    [[0,1,0],[1,1,1]],
+    [[1,0,0],[1,1,1]],
+    [[0,0,1],[1,1,1]],
+    [[0,1,1],[1,1,0]],
+    [[1,1,0],[0,1,1]]
+  ];
+  var cols = ['','#0a84ff','#ffd60a','#bf5af2','#ff9f0a','#30b0c7','#30d158','#ff453a'];
+  var piece = null;
+  function spawn(){
+    var idx = Math.floor(Math.random()*shapes.length);
+    piece = { m: shapes[idx].map(function(r){ return r.slice(); }), x: 3, y: 0, c: idx + 1 };
+    if (collides(piece.m, piece.x, piece.y)) return false;
+    return true;
+  }
+  function collides(m, ox, oy){
+    for(var r=0;r<m.length;r++)for(var c=0;c<m[r].length;c++){
+      if(!m[r][c]) continue;
+      var nx = ox+c, ny = oy+r;
+      if (nx<0 || nx>=C || ny>=R) return true;
+      if (ny>=0 && grid[ny][nx]) return true;
+    }
+    return false;
+  }
+  function merge(){
+    for(var r=0;r<piece.m.length;r++)for(var c=0;c<piece.m[r].length;c++){
+      if(piece.m[r][c] && piece.y+r>=0) grid[piece.y+r][piece.x+c] = piece.c;
+    }
+    var cleared = 0;
+    for(var r=R-1;r>=0;r--){
+      if (grid[r].every(Boolean)){ grid.splice(r,1); grid.unshift(Array(C).fill(0)); cleared++; r++; }
+    }
+    if (cleared) { setScore(curScore + ([0,100,300,500,800][cleared] || 1000)); playSfx('level'); }
+  }
+  function draw(){
+    ctx.fillStyle='#070a10'; ctx.fillRect(0,0,220,360);
+    for(var r=0;r<R;r++)for(var c=0;c<C;c++){
+      ctx.strokeStyle='rgba(255,255,255,.04)'; ctx.strokeRect(10+c*S, r*S, S, S);
+      if(grid[r][c]){ ctx.fillStyle=cols[grid[r][c]]; ctx.fillRect(11+c*S, r*S+1, S-2, S-2); }
+    }
+    if(piece){
+      for(var r=0;r<piece.m.length;r++)for(var c=0;c<piece.m[r].length;c++){
+        if(piece.m[r][c]){ ctx.fillStyle=cols[piece.c]; ctx.fillRect(11+(piece.x+c)*S, (piece.y+r)*S+1, S-2, S-2); }
+      }
+    }
+  }
+  function step(){
+    if (!collides(piece.m, piece.x, piece.y+1)) piece.y++;
+    else { merge(); if (!spawn()) { draw(); endGame(); return; } }
+    draw();
+  }
+  window.tAct = function(a){
+    if (!gameStarted || gameOverFlag || !piece) return;
+    if (a==='left' && !collides(piece.m, piece.x-1, piece.y)) piece.x--;
+    if (a==='right' && !collides(piece.m, piece.x+1, piece.y)) piece.x++;
+    if (a==='down') step();
+    if (a==='drop') { while(!collides(piece.m, piece.x, piece.y+1)) piece.y++; step(); return; }
+    if (a==='rot') {
+      var rot = piece.m[0].map(function(_,i){ return piece.m.map(function(row){ return row[i]; }).reverse(); });
+      if (!collides(rot, piece.x, piece.y)) piece.m = rot;
+      else if (!collides(rot, piece.x-1, piece.y)) { piece.m = rot; piece.x--; }
+      else if (!collides(rot, piece.x+1, piece.y)) { piece.m = rot; piece.x++; }
+    }
+    draw();
+  };
+  document.onkeydown = function(e){
+    if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].indexOf(e.key) >= 0) e.preventDefault();
+    if (e.key==='ArrowLeft'||e.key==='a') window.tAct('left');
+    if (e.key==='ArrowRight'||e.key==='d') window.tAct('right');
+    if (e.key==='ArrowDown'||e.key==='s') window.tAct('down');
+    if (e.key==='ArrowUp'||e.key==='w') window.tAct('rot');
+    if (e.code==='Space') window.tAct('drop');
+  };
+  spawn(); draw();
+  cv.parentNode.appendChild(makeGate('🧩 Neon Blocks', 'Clear horizontal lines! Use ◀ ▶ ▲ (rotate) & Space (drop).', function(){
+    loopTimer = setInterval(step, 460);
+  }));
+}
+
+/* 6. MINESWEEPER */
+function runMines(){
+  $('stage').innerHTML = '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;"><button class="btn btn-ghost" id="m-mode-btn" onclick="toggleMineFlag()">👆 Reveal Mode</button><span id="m-left" style="font-size:12.5px;color:var(--muted);font-weight:700;">10 Mines</span></div><div class="stage-box"><div class="mines-board" id="mboard"></div></div><div style="font-size:12px;color:var(--muted);margin-top:8px;">Right-click or toggle Flag Mode to mark mines</div>';
+  var N = 9, MINES = 10, flagMode = false, placed = false, startTs = 0;
+  var grid = Array.from({length:N}, function(){ return Array.from({length:N}, function(){ return {m:false, o:false, f:false, n:0}; }); });
+  var numCols = ['','#0a84ff','#30d158','#ff453a','#bf5af2','#ff9f0a','#30b0c7','#fff','#9ca3af'];
+  window.toggleMineFlag = function(){
+    flagMode = !flagMode;
+    $('m-mode-btn').textContent = flagMode ? '🚩 Flag Mode' : '👆 Reveal Mode';
+    $('m-mode-btn').style.borderColor = flagMode ? 'var(--orange)' : 'var(--border)';
+  };
+  function placeMines(sr, sc){
+    var count = 0;
+    while (count < MINES) {
+      var r = Math.floor(Math.random()*N), c = Math.floor(Math.random()*N);
+      if ((Math.abs(r-sr)<=1 && Math.abs(c-sc)<=1) || grid[r][c].m) continue;
+      grid[r][c].m = true; count++;
+    }
+    for(var r=0;r<N;r++)for(var c=0;c<N;c++){
+      if (grid[r][c].m) continue;
+      var cnt = 0;
+      for(var dr=-1;dr<=1;dr++)for(var dc=-1;dc<=1;dc++){
+        var nr=r+dr, nc=c+dc;
+        if(nr>=0&&nr<N&&nc>=0&&nc<N&&grid[nr][nc].m) cnt++;
+      }
+      grid[r][c].n = cnt;
+    }
+    placed = true; startTs = Date.now();
+  }
+  function reveal(r, c){
+    var cell = grid[r][c];
+    if (cell.o || cell.f) return;
+    cell.o = true;
+    if (cell.m) {
+      for(var i=0;i<N;i++)for(var j=0;j<N;j++) if(grid[i][j].m) grid[i][j].o=true;
+      draw(); endGame('💥 Boom! Hit a Mine'); return;
+    }
+    setScore(curScore + 10);
+    if (cell.n === 0) {
+      for(var dr=-1;dr<=1;dr++)for(var dc=-1;dc<=1;dc++){
+        var nr=r+dr, nc=c+dc;
+        if(nr>=0&&nr<N&&nc>=0&&nc<N&&!grid[nr][nc].o) reveal(nr, nc);
+      }
+    }
+    var opened = 0;
+    for(var i=0;i<N;i++)for(var j=0;j<N;j++) if(grid[i][j].o && !grid[i][j].m) opened++;
+    if (opened === N*N - MINES) {
+      var sec = Math.max(1, Math.round((Date.now() - startTs)/1000));
+      setScore(curScore + Math.max(50, 500 - sec * 3));
+      draw(); endGame('🎉 Board Cleared in ' + sec + 's!', true);
+    }
+  }
+  function draw(){
+    var flags = 0;
+    grid.forEach(function(row){ row.forEach(function(cell){ if(cell.f) flags++; }); });
+    $('m-left').textContent = (MINES - flags) + ' Mines Left';
+    var html = '';
+    for(var r=0;r<N;r++)for(var c=0;c<N;c++){
+      var cell = grid[r][c];
+      var cls = 'm-cell' + (cell.o ? (cell.m ? ' open mine' : ' open') : (cell.f ? ' flag' : ''));
+      var txt = cell.o ? (cell.m ? '💣' : (cell.n || '')) : (cell.f ? '🚩' : '');
+      var col = (cell.o && !cell.m && cell.n) ? ('color:' + numCols[cell.n]) : '';
+      html += '<button type="button" class="' + cls + '" style="' + col + '" onclick="mClick(' + r + ',' + c + ')" oncontextmenu="event.preventDefault();mRight(' + r + ',' + c + ')">' + txt + '</button>';
+    }
+    $('mboard').innerHTML = html;
+  }
+  window.mRight = function(r, c){
+    if (gameOverFlag || grid[r][c].o) return;
+    grid[r][c].f = !grid[r][c].f; draw();
+  };
+  window.mClick = function(r, c){
+    if (gameOverFlag) return;
+    if (flagMode) { window.mRight(r, c); return; }
+    if (!placed) placeMines(r, c);
+    reveal(r, c); draw();
+  };
+  draw();
+  $('mboard').parentNode.appendChild(document.createElement('div')).outerHTML = '<div id="stage-gate" class="gate-overlay hidden"><div class="gate-title"></div><div class="gate-sub"></div><button class="gate-btn" onclick="resetCurrentGame()">↻ Play Again</button></div>';
 }
 switchGame(GAME);
 </script></body></html>`;
@@ -27472,17 +28375,18 @@ function formatProxyHtmlText(info) {
     return parts.join('\n');
 }
 async function handleProxyCallback(BOT_TOKEN, chatId, cb, data) {
+    const L = sysStr();
     const asMessage = data.startsWith('PROXY_MSG:');
     const spec = parseProxySpec(data);
     if (!spec) {
-        await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id, text: '⚠️ Invalid proxy format.', show_alert: true });
+        await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id, text: L.proxy_invalid, show_alert: true });
         return;
     }
     try {
         const info = await inspectProxy(spec);
         if (asMessage) {
             await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
-            await sendRichText(BOT_TOKEN, chatId, '<b>Proxy Details</b>\n\n' + formatProxyHtmlText(info));
+            await sendRichText(BOT_TOKEN, chatId, formatProxyHtmlText(info));
         } else {
             await tgCall(BOT_TOKEN, 'answerCallbackQuery', {
                 callback_query_id: cb.id,
@@ -27491,7 +28395,7 @@ async function handleProxyCallback(BOT_TOKEN, chatId, cb, data) {
             });
         }
     } catch (e) {
-        await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id, text: '⚠️ Could not test proxy right now.', show_alert: true });
+        await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id, text: L.proxy_err, show_alert: true });
     }
 }
 
@@ -28118,7 +29022,7 @@ function buildPasswordPromptKeyboard(cmdRecord) {
         const backLbl = (cmdRecord.inline_back_label && String(cmdRecord.inline_back_label).trim()) || (cmdRecord.back_label && String(cmdRecord.back_label).trim()) || strings.back;
         row.push({ text: '⬅️ ' + backLbl, callback_data: 'PW:BACK:' + cmdRecord.parent });
     }
-    const dismissLbl = (cmdRecord.password_dismiss_label && String(cmdRecord.password_dismiss_label).trim()) || '❌ Dismiss';
+    const dismissLbl = (cmdRecord.password_dismiss_label && String(cmdRecord.password_dismiss_label).trim()) || botStrings().pw_dismiss;
     row.push({ text: dismissLbl, callback_data: 'PW:DISMISS' });
     return { inline_keyboard: [row] };
 }
@@ -28126,7 +29030,11 @@ function buildPasswordPromptKeyboard(cmdRecord) {
 async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatType, args, opts) {
     opts = opts || {};
     const strings = botStrings();
-    if (!await checkPermissionForChat(env, userId, 'commands', chatId, chatType)) {
+    if (!await checkPermissionForChat(env, userId, 'commands', chatId, chatType, opts.chatUsername || '')) {
+        await sendMessage(chatId, strings.unauthorized, BOT_TOKEN, 'HTML');
+        return;
+    }
+    if (!checkChatGate(chatType, chatId, opts.chatUsername || '', cmdRecord.allowed_chat_types, cmdRecord.allowed_chat_ids)) {
         await sendMessage(chatId, strings.unauthorized, BOT_TOKEN, 'HTML');
         return;
     }
@@ -28172,7 +29080,7 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatTyp
 
     // Per-command password challenge
     if (cmdRecord.cmd_password && !opts.passwordVerified) {
-        const promptText = (cmdRecord.password_prompt && String(cmdRecord.password_prompt).trim()) || '🔒 This command is password-protected. Please enter the password:';
+        const promptText = (cmdRecord.password_prompt && String(cmdRecord.password_prompt).trim()) || strings.pw_prompt_default;
         const kb = buildPasswordPromptKeyboard(cmdRecord);
         const sent = await sendRichText(BOT_TOKEN, chatId, escapeTelegramHTML(promptText), { reply_markup: kb });
         const promptMsgId = extractFirstMessageId(sent);
