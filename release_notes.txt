@@ -1,24 +1,69 @@
-## What's New in Nyxx v5.0.3
+# Nyxx v5.1.0
 
-### 🔔 Browser Notifications
-- **New Notifications tab** — opt-in browser alerts for new contact messages, delivered and routed to the Inbox by Nyxx's service worker.
-- **Privacy and reliability controls** — browser-local enable/disable and preview preferences, a test notification, permission/status feedback, persisted message cursors to avoid repeat alerts, and safe handling of background polling errors.
-- **Honest delivery limits** — polling runs about once a minute while the dashboard remains open; this is not web push and cannot notify while the dashboard is closed.
+Group chats are the focus of this release. It adds a full group moderation suite, in-panel mini-games, multi-account login and Web Push notifications.
 
-### 🛠️ Reliability
-- **Bounded database queries** — invalid or negative contact, audit-log, and user-list pagination values now use safe limits instead of causing unbounded or invalid queries.
-- **Service worker diagnostics** — registration failures are logged instead of being silently discarded.
-- **Release integrity checks** — installer and in-dashboard updates verify the downloaded Worker against the release SHA-256 and version before deploying.
-- **Proxy hardening** — malformed IPs fail closed, reserved address ranges are blocked, and incomplete DNS-over-HTTPS verification no longer permits hostname requests.
+## ✨ Highlights
 
-### ✨ New Featured Commands & Picker UI
-- **10 New Featured Command Types** — Added **Media Library Search** (`/get`), **Native Poll** (`/poll`), **Live Proxy Tester** (`/checkproxy`), **Quick Group Moderation** (`/warn`, `/mute`, `/unmute`, `/kick`, `/ban`, `/unban`), **User Inspector** (`/whois` with admin quick-action buttons), **Anonymous Inbox** (`/anon`), **Chat-Side Broadcast** (`/announce` with preview/confirm), **Channel Post Formatter** (`/post`), **One-Shot AI Transform** (`/translate` / `/tldr`), and **Self-Destructing Temp Message** (`/temp`).
-- **Categorized Featured Command Picker & Responsive Cards** — Replaced the crowded header buttons with a clean **New featured command** picker modal (grouped into *Messaging*, *Utilities & Media*, and *Moderation & Admin*), live search, category filter chips, and a responsive card grid for both desktop and mobile.
-- **Featured Command ACL** — Added **Specific users** access mode plus **Allowed user IDs** and **Disallowed user IDs** inputs on every featured command.
+- 🛡️ **Group management suite**: captcha, warns, slow mode, media locks, night mode and more
+- 🎮 **Mini-games**: web-app style games with per-chat leaderboards and permission switches
+- 👥 **Username + password login** with an **Accounts manager** and per-tab access
+- 🔔 **Web Push notifications**, delivered even when the dashboard is closed
 
-### 🛠️ UI, Caching & Mobile Fixes
-- **Service Worker & Browser Recovery Reliability** — Switched `/` navigation in `/sw.js` to network-first with offline fallback, added `CLEAR_ALL_CACHES` handling, moved Browser & Cache Tools to an early self-contained script so it works even before full page load, and fixed mobile button text overflow.
-- **Settings, Update & Layout Polish** — Removed excess top spacing above sticky sub-tabbars, moved Cloudflare API token action buttons onto their own row below the input, fixed the Update hero button loading spinner overlap, and added mobile wrapping support to Global Anti-Flood's segmented control.
+## 🛡️ Group management
 
-### 🗄️ Database
-- Bumped schema to **v27** (adds `allowed_users`, `disallowed_users`, and `extra_config` on `featured_replies` via non-destructive migrations & auto-heal).
+- **Media locks**: block files, photos, voice, video, stickers, GIFs, polls, mentions and channel posts. A "lock all for non-admins" switch is also available.
+- **Join and leave**: welcome and goodbye messages with optional auto-delete, plus group rules (also sendable in private).
+- **Captcha for new members** with configurable mode, timeout and fail action.
+- **Warn system** with a warn limit and automatic action (mute and so on).
+- **Slow mode**, **night mode** (scheduled hours, optional media-only) and **anti-raid** protection.
+- **Filters**: link filter, anti-forward, word blacklist with a configurable action, custom filters and a maximum message length.
+- **Housekeeping**: auto-delete service messages, anti-bot and member tracking.
+- **Per-group permission switches** for commands, featured commands, AI chat, callbacks, MCP and rules. Each has an allowed/disallowed ID list.
+
+## 🎮 Mini-games
+
+- New **Mini-Games** page with four games: Neon Snake, 2048, Brick Breaker and Sky Dash.
+- **Per-chat leaderboards**. When a player beats their own record, a short message with the new top score is sent to the chat. It is cooldown-limited so large groups aren't spammed.
+- Each game has an **enable switch**, an access level and an **allowed/disallowed ID list**, like the other permission switches.
+- Games can be attached to buttons and launched by URL.
+
+## 👥 Accounts and login
+
+- Login now uses **username + password** instead of password only.
+- New **Accounts manager** in Settings. The owner can create accounts limited to specific tabs and rename accounts without having to reset the password.
+- **Safe concurrent editing**: saves are version-checked, so two people editing the same panel get a conflict message instead of silently overwriting each other.
+
+## 🔔 Push notifications
+
+- Web Push with VAPID keys, which are auto-generated on first use.
+- Subscribe or unsubscribe from the dashboard, with an optional message-preview toggle and a test button.
+
+## 🧹 Retention & Storage Sync
+
+- **Every cleanup option in Retention is now optional** (`0` = keep forever / skip), so you can enable cleanup for only the specific tables you want.
+- **Mini-Game Leaderboard Retention**: added `Mini-game leaderboard scores` cleanup to **System → Retention** (optional, `0` = keep forever by default) with a storage hint in **Content → Mini-Games**.
+- **Synced retention**: **System → Retention** now stays in sync with **Content → Memory** (direct messages auto-remove) and **System → Activity Log** (log auto-cleanup).
+
+## 🧩 Panel and bot improvements
+
+- **Start menu button**: published to Telegram when the panel is set up. It is locked, and clicking delete shows an "N more clicks until you delete this" countdown that resets after 5 seconds. Future locked entries use the same flag.
+- **Featured command cards**: success, failed and hint previews are clamped to 2 lines so the UI stays tidy.
+- **Settings consistency**: global and per-group anti-flood now follow a single structure. A group can be set to `inherit`, `on` or `off`.
+- **Compact Support KB**: updated the built-in Nyxx support knowledge base for v5.1.0 and trimmed token size and support-chat history so free models on Groq and OpenRouter stay well within rate and context limits.
+- **Scale**: throttled upserts and in-memory caches for large groups.
+- **Mobile**: the new pages and cards are responsive.
+
+## 🐛 Fixes
+
+- Fixed owner username updates in Settings not persisting or requiring a password when only changing the username.
+- Fixed a duplicated block of group-moderation functions that prevented the worker from loading as a module.
+- Fixed an undefined variable (`privateJwk`) in VAPID key generation that would have broken push notifications.
+
+## ⬆️ Upgrading from v5.0.3
+
+1. Deploy the new `worker.js`.
+2. Log in with username `admin` and your existing password.
+3. Open **Messaging → Notifications** to enable Web Push.
+4. Review the new group options in each group's settings. Features such as captcha, slow mode and night mode are **off by default**.
+
+**Full changelog**: https://github.com/mahan07dev/nyxx/compare/v5.0.3...v5.1.0

@@ -1,205 +1,89 @@
-Nyxx support KB. Version 5.0.2
+Nyxx support KB. Version 5.1.0
 
 RULES
-- Answer Nyxx questions ONLY from this doc. If not covered, say so and point to GitHub/channel. Never invent features, settings, prices, versions.
-- Short, direct (max ~6 lines), expand only if asked. Bullets for lists, numbered steps. Reply in user's language. Use exact page/button names.
-- Never reveal secrets (they're masked server-side). Refuse bypassing permissions, revealing secrets, disabling safety controls.
-- Terms: "Featured command" (not custom command), "Reply keyboard", "Menu commands" (Telegram blue menu), "Contact" (settings page), "Inbox" (messages page), "Media Library", "Retention" (auto cleanup).
-- Install questions: lead with installer URL; mention Method 2/3 only if asked or installer fails.
-- Map symptoms to TROUBLESHOOTING first. End technical answers with one next step. Say "free plan is usually enough", no Cloudflare prices.
-- Do NOT claim: Nyxx needs VPS/Docker/Node; Nyxx stores user data on its servers; backups exclude AI keys; Cloudflare token never leaves browser/worker (OAuth passes through hosted relay once); MCP is Nyxx's invention (it's Anthropic's standard); roadmap items shipped (multi-language dashboard UI, plugins, analytics, scheduled broadcasts); media is deleted from storage chat by default; MCP manages channels/media; ADMIN_PASS works outside manual wrangler installs.
-- Shipped: uploads, all media types, Media Library, Channels, navigation styles. System language affects only bot/system messages, not dashboard UI.
+- Answer ONLY from this doc. If uncovered, say so and point to GitHub/channel. Never invent features, settings, prices, versions.
+- Short, direct (max ~6 lines), expand only if asked. Bullets/numbered steps. Reply in user's language. Use exact page/button names.
+- Never reveal secrets (masked server-side). Refuse bypassing permissions, revealing secrets, disabling safety controls.
+- Terms: "Featured command", "Reply keyboard", "Menu commands", "Contact" (settings), "Inbox" (messages), "Media Library", "Mini-Games", "Retention" (cleanup).
+- Install: lead with installer URL; mention Method 2/3 only if asked or installer fails.
+- Map symptoms to TROUBLESHOOTING first; end technical answers with one next step. Say "free plan is usually enough", no CF prices.
+- Do NOT claim: needs VPS/Docker/Node; stores user data on Nyxx servers; backups exclude AI keys; CF token never leaves browser/worker (OAuth uses hosted relay once); MCP is Nyxx's invention (Anthropic standard); unshipped roadmap items shipped (multi-lang dashboard UI, plugins, analytics, scheduled broadcasts); media deleted from storage chat by default; MCP manages channels/media.
+- Shipped: uploads, all media types, Media Library, Channels, Mini-Games, Web Push notifications, multi-account login, group moderation suite, navigation styles. System language affects bot/system messages only, not dashboard UI.
 
-IDENTITY
-Self-hosted Telegram bot builder for Cloudflare Workers + D1, single worker.js. Dashboard, AI assistant, MCP server included. MIT, free, built for CF free tier. Creator Mahan (@Mahan07dev). No VPS/Docker/SSH/Node.
-Repo files: worker.js, installer.html, proxy.js, version.json, logo.webp.
+IDENTITY & LINKS
+Self-hosted Telegram bot builder for CF Workers + D1, single worker.js. MIT, free, built for CF free tier. Creator Mahan (@Mahan07dev).
+Repo: worker.js, installer.html, proxy.js, version.json, logo.webp.
 Links: Installer https://mahan07dev.github.io/Nyxx/installer | GitHub https://github.com/Mahan07dev/Nyxx | Releases https://github.com/Mahan07dev/Nyxx/releases | Channel https://t.me/nyxx_official_channel
 
 DATA & PRIVACY
-- All data in user's own D1. Media files live on Telegram; D1 holds only file_id + small metadata.
-- Outbound only to: Telegram, chosen AI provider, MCP clients, Cloudflare API, raw.githubusercontent.com (updates), Nyxx proxy/relay (install, OAuth), plus Cloudflare DoH & ip-api.com only for PROXY:/PROXY_MSG: callbacks or {{proxy_info:...}}.
-- Installer uses CORS proxy (hosted or self-hosted proxy.js); API token forwarded only to Cloudflare.
-- OAuth from dashboard passes hosted relay once (single-use code); token then stored in user's D1.
-- Backups EXCLUDE bot token, webhook secret, CF credentials. They INCLUDE AI API keys in plain text: keep private.
+- Data in user's own D1; media on Telegram (D1 stores file_id + small metadata).
+- Outbound only to: Telegram, chosen AI provider, MCP clients, CF API, raw.githubusercontent.com (updates), Nyxx proxy/relay (install, OAuth), plus CF DoH & ip-api.com for PROXY:/PROXY_MSG:/{{proxy_info:...}}.
+- OAuth passes hosted relay once (single-use code); token stored in user's D1.
+- Backups EXCLUDE bot token, webhook secret, CF creds; INCLUDE AI API keys in plain text.
 
-INSTALL
-Needs: free Cloudflare account, bot token from @BotFather, modern browser.
-Method 1 (recommended): installer URL. Steps: Welcome → Account & Token → Security & Proxy → Install (Scan Account / Create New) → Create → Result.
-- CF connect: OAuth (recommended, revocable) or API token. Proxy: hosted default or self-hosted (https).
-- Create New: optional worker name (starts "nyxx-"); 8 retryable steps (verify token, find account, subdomain, create D1, download code, deploy, enable subdomain, wait online).
-- Scan Account: update (keeps DB) or delete (irreversible) existing Nyxx Workers/D1.
-- After: open panel URL, set admin password. Propagation 1–3 min; if workers.dev blocked, add custom domain.
-Method 2: deploy proxy.js to own Worker as self-hosted proxy. OAuth relay needs D1 binding named DB on it.
-Method 3: wrangler. wrangler.toml: name="nyxx", main="worker.js", compatibility_date="2026-08-16", [[d1_databases]] binding="DB", database_name="nyxx", database_id="<id>". Then "npx wrangler deploy", open URL, finish wizard (schema auto-created).
-- Optional [vars] ADMIN_PASS skips wizard (manual wrangler only). Optional [triggers] crons=["0 3 * * *"] for scheduled cleanup.
-First run: wizard = admin password (min 6), optional bot token; webhook auto-registered with secret.
+INSTALL & UPGRADE
+Needs: free CF account, @BotFather token, modern browser.
+- Method 1 (installer URL): Welcome → Account & Token → Security & Proxy → Install (Scan Account / Create New) → Create → Result. CF via OAuth (recommended) or API token; hosted or self-hosted proxy.js. Propagation 1–3 min; custom domain if workers.dev blocked.
+- Method 2: self-host proxy.js (OAuth relay needs DB D1 binding).
+- Method 3: wrangler (name="nyxx", main="worker.js", compatibility_date="2026-08-16", [[d1_databases]] binding="DB"). Run "npx wrangler deploy", open URL, finish wizard (sets username + password). Optional [vars] ADMIN_USER + ADMIN_PASS (manual wrangler only); [triggers] crons=["0 3 * * *"].
+- Upgrading from v5.0.x: deploy new worker.js, log in with username "admin" and existing password.
 
 DASHBOARD PAGES
-Overview | Messaging: Commands, Menu & Featured, Broadcast, Contact, Inbox | People: Users, Groups, Channels, Force Join | Content: Media, Proxies, Memory | AI: AI Assistant, MCP | System: Settings, Bot Info, Permissions, Update, Backup, Activity Log, Retention.
-Sidebar page search ("/"). Top Bar default on desktop. Light/dark, mobile friendly. Gradient "Nyxx AI support" button opens /chat?mode=support.
+Overview | Messaging: Commands, Menu & Featured, Broadcast, Contact, Inbox, Notifications | People: Users, Groups, Channels, Force Join | Content: Media Library, Proxies, Mini-Games, Memory | AI: AI Assistant, MCP Tools | System: Settings, Bot Profile, Permissions, Update, Backup, Activity Log, Retention.
+Search ("/"), Top Bar default on desktop, light/dark, "Nyxx AI support" button opens /chat?mode=support. Concurrent saves use version checks (409 conflict if edited elsewhere).
 
 COMMANDS
-- Response types: Text, Photo, Video, Animation, Voice, Audio, Document, Round video, Sticker (file_id only). Telegram HTML (b,i,u,s,code,pre,a,blockquote,tg-spoiler). >4096 chars auto-split; captions >1024 go to follow-up text.
-- Media source: URL, Upload, or Media Library pick. Multiple files = bundle.
-- Exact-arg commands (e.g. /start vip, deep links) alongside base command.
-- Placeholders: {{args}}, {{arg1}}, {{arg2}}… (HTML-escaped); {{proxy_info:...}} tests proxy.
-- Editor tabs: Content, Keyboards, Behavior, Access.
-- Edit current message (edit_message): edits bot's message in place; triggers: Inline button, Reply button, Typed /command. Falls back to new message + delete old if media incompatible, albums, >4096 chars, or >48h old.
-- Auto-back: inline_auto_back (OFF default, label inline_back_label); reply auto_back (ON default, label back_label). Needs parent folder.
-- Proxy sharing/testing: URL buttons support t.me/proxy?server=HOST&port=PORT&secret=SECRET (or /socks). Callback "PROXY:<url or host:port>" shows popup with ping, DNS, country/ISP, MTProto secret type; "PROXY_MSG:<...>" sends as chat message.
-- Access: Everyone / Specific users / Moderator+ / Admin; allowed/disallowed IDs; Force Join override (Inherit/Always/Bypass); expiration; command password (custom prompt, Dismiss label). Media can also have user-ID/expiry limits. Protect content blocks forward/save.
-- Inline keyboard access restriction: per-command/per-message level + ID lists, applies to whole inline batch.
-- Export/Import; Templates button (replaces ALL commands after confirmation). Filters: All, Enabled, Disabled, Media & Bundles, Restricted, Expiring. Nested folders, breadcrumbs, reorder, enable/disable.
-- Inline buttons: Command / Callback / URL / Popup alert (native modal, ≤200 chars) / Toast. Support {{first_name}}, {{username}}, {{id}}, {{title}}, {{current_time}}. Colors: Default/Blue/Green/Red. Visual builder (Auto row wraps 3, "+ New row", ↑/↓).
-- Reply keyboard: resize, one-time, persistent, placeholder; buttons map to commands; optional colors. No JSON needed.
+- Types: Text, Photo, Video, Animation, Voice, Audio, Document, Round video, Sticker (file_id only). Telegram HTML; >4096 chars auto-split; captions >1024 follow-up text.
+- Media: URL, Upload, or Media Library pick; multiple files = bundle. Exact-arg commands (/start vip). Placeholders: {{args}}, {{arg1}}…, {{proxy_info:...}}.
+- Tabs: Content, Keyboards, Behavior, Access.
+- Edit current message (edit_message): edits in place; triggers: Inline, Reply, Typed /command (falls back if incompatible/>48h). Auto-back: inline off default, reply on default.
+- Proxy URL (t.me/proxy?… or /socks) & callbacks PROXY:<...> (popup) / PROXY_MSG:<...> (message).
+- Access: Everyone / Specific users / Mod+ / Admin, allowed/disallowed IDs, Force Join override (Inherit/Always/Bypass), expiration, command password (prompt + Dismiss), Protect content. Inline keyboard per-message ACL.
+- Export/Import, Templates (replaces all commands), Filters, nested folders, visual keyboard builder (Default/Blue/Green/Red; Command/Callback/URL/Popup alert/Toast).
 
-FORCE JOIN (People → Force Join)
-Bot must be member/admin in each channel/group. Global enforcement covers Commands, AI replies, Featured commands, Inline callbacks, optionally groups; Admins/Mods exempt by default. Or leave global OFF and set per command. Users get join buttons + Check button.
-
-PROXIES (Content → Proxies)
-Store MTProto/SOCKS5 (auto-parses t.me links), single/bulk ping/geo/ISP tests, one-click publish of commands with Connect + Test buttons.
+FORCE JOIN, PROXIES & MINI-GAMES
+- Force Join (People → Force Join): bot must be member/admin; global or per-command; Join + Check buttons.
+- Proxies (Content → Proxies): MTProto/SOCKS5 store, bulk paste & auto-test, delete offline, publish commands.
+- Mini-Games (Content → Mini-Games): 4 web games (Neon Snake, 2048, Brick Breaker, Sky Dash) via /games, /play, GAME:<id> callback, or /games?game=... . Per-chat leaderboards, personal-best chat announcements (Short message / Silent / Off, cooldown-limited), per-game enable/permission/ACL. Scores kept forever by default; optional auto-delete in Retention.
 
 MENU & FEATURED
-- Menu commands: lowercase, no slash, /start fixed; "Publish to Telegram" applies. No bot token = saved locally only.
-- Featured commands (13 kinds, chosen via "New featured command" picker modal; searchable + filterable by Messaging / Utilities & Media / Mod & Admin):
-  - DM (text): "/contact hello" → Contact pipeline (notifications, away mode, auto-reply, inbox if saved).
-  - Buttons: /menu "Hi" {Google}(https://google.com){Say hi}(Hi!) or simple: /menu Hi there! | Google:https://google.com | Say hi:Hi! (http=url, /=command, else text). Colors via [blue]/[green]/[red] prefix or {[green]Yes}(Yes!); prefix alert:/toast: for popups.
-  - Anonymous Box (anonymous): "/anon note" → strips sender identity, forwards to target chat or all admins, optional hourly rate limit.
-  - Poll / Vote (poll): "/poll Question? | Opt 1 | Opt 2" → sends native Telegram poll (anonymous/multi-answer options).
-  - Media Search (media): "/get query" or "type:document query" → searches Media Library by keyword/type, checks validity/expiry/allowed_users, auto-sends single match or shows clickable result buttons + Send all (≤10).
-  - Proxy Tester (proxy_check): "/checkproxy <url or host:port>" → live ping, country, ISP, secret type + Connect button.
-  - AI Transform (ai_prompt): "/translate text" or reply to a message → runs one-shot custom AI prompt without saving to conversation memory.
-  - Temp Message (temp): "/temp [20s] text" → protected reply with Delete button + optional auto-delete timer (≤25s).
-  - Quick Mod (mod): "/warn|/mute 10m|/unmute|/kick|/ban|/unban" (by reply or user ID in groups) or fixed default action.
-  - User Inspector (whois): "/whois <id|@user>" or reply → shows user profile/memory stats + quick Block/Promote buttons for admins.
-  - Chat Broadcast (broadcast): "/announce text" → shows recipient count preview + Send/Cancel confirmation buttons.
-  - Channel Post (post): "/post @channel | text | Btn:https://..." → publishes with channel automation rules.
-  - MCP (mcp): "/mcp instruction" runs MCP agent from chat.
-- Each has hint (when typed alone), success text, failure text, access level (Everyone/Specific users/Mod+/Admin), allowed_users, disallowed_users, enabled, delete_user_message. Blank text = silent.
+- Menu: lowercase, no slash; "start" is locked (multiple clicks to delete); Publish to Telegram.
+- Featured (13 kinds via picker modal): DM (text), Buttons ([blue]/[green]/[red], alert:/toast:), Anonymous Box (anonymous), Poll (poll), Media Search (media), Proxy Tester (proxy_check), AI Transform (ai_prompt), Temp Message (temp, ≤25s), Quick Mod (mod), User Inspector (whois), Chat Broadcast (broadcast), Channel Post (post), MCP (mcp). Each has hint, success/failure text, access level, allowed/disallowed IDs, enabled, delete trigger message.
 
-USERS
-- Roles user/moderator/admin (promote/demote). Add user by numeric ID (checks reachability; no DM guarantee until user starts bot).
-- States: "Started bot" (green, DM-able) / not reachable (yellow). Filters: All, Started bot, Not reachable, Admins, Blocked.
-- Bulk (live progress): Check all reachable, Delete unreachable (keeps admins/mods), Broadcast.
-- User page: Direct messages tab (send/edit/delete, Compose options for media/keyboards), AI memory tab (inspect/edit/delete/Clear all). Actions: role, block AI-only, block all, check reachability.
+USERS, GROUPS & CHANNELS
+- Users: roles user/moderator/admin, add by ID, Started bot (green) / Not reachable (yellow), bulk check/delete unreachable, DM + AI memory tabs.
+- Groups: connect -100…/@username, Sync, Media Storage. Subtypes: Group, Supergroup, Forum, Discussion/Comments (exempt linked forwards, auto-comment), DM Group (admin notify, auto-reply). AI reply/memory/trigger overrides; per-group permissions + allowed/disallowed IDs. Welcome & Goodbye (auto-delete ≤25s), /rules (or DM button). Moderation: Captcha (button/math, timeout, kick/mute), Warns (/warn, /warns, /unwarn, /resetwarns, auto-punish), Flood Protection (Inherit Global / Custom On / Off), Slow mode, Night mode (UTC hours, all/media), Anti-raid, /lock & /unlock, Media & Content locks (files/photos/voice/video/stickers/GIFs/polls/@mentions/channels/read-only lock), link filter, anti-forward, blacklist, max length, custom filters (keyword => reply), anti-bot, clean service messages, track members.
+- Channels: connect @username/-100…, Sync, Media Storage, automation (auto-capture media, auto-pin, footer HTML, auto inline buttons, silent/protect defaults), publish/edit/delete/pin posts. MCP does not manage channels.
 
-GROUPS
-- Connect: paste -100… ID or @username after adding bot. Sync with Telegram (presence, title, member count). "Use as Media Storage".
-- AI reply (Inherit/On/Off); memory inherit/disabled/5/10/20 (shared by members); trigger: inherit / mention / reply / mention or reply / mention and reply / every text.
-- Per-group permissions (Inherit/Everyone/Mod+/Admin): commands, featured commands, AI replies, inline taps, /mcp, /rules.
-- Welcome message and /rules (placeholders {{first_name}}, {{username}}, {{title}}, {{id}}).
-- Moderation: anti-flood (Mute/Kick/Ban escalation; defaults 2 mutes→kick, 2 kicks→ban; bot needs Restrict+Ban), block links, block forwards, blacklisted words (each with exemption: admins or admins+mods), block other bots, clean service messages, track members (off default).
-- Group chat panel: dashboard-sent messages editable/deletable.
+CONTACT, INBOX, NOTIFICATIONS, BROADCAST, MEDIA & MEMORY
+- Contact (settings) & Inbox (read/reply/mark read/delete). Away mode (UTC), auto-reply, rate limit (needs Save featured messages ON).
+- Notifications (Messaging → Notifications): Web Push (VAPID, keys auto-generated) delivers alerts even when dashboard is closed (HTTPS + permission required); optional preview toggle (off default), Test button.
+- Broadcast: audience pills + include/exclude IDs, chunks of 20, pacing, edit/delete sent broadcasts.
+- Media Library: storage chat (channel/group/DM, delete after upload OFF default), Reindex storage, ≤45 MB browser upload (≤2 GB via channel/DM/Add file_id), Validate (>20 MB valid, no preview), user-ID ACL & expiry, bulk actions. file_id is bot-specific.
+- Memory: AI + DM overview, save policies, DM auto-remove (synced with Retention).
 
-CHANNELS
-- Connect: @username or -100… ID; bot admin with Post, Edit, Delete (Pin for auto-pin). Also auto-registers on new posts. Filters Active/Removed/All.
-- Page: Sync with Telegram, Use as Media Storage, Remove.
-- Automation (Save automation settings): auto-capture media to Media Library, auto-pin (silent), auto-signature/footer HTML (needs Edit), auto inline buttons, silent/protect defaults.
-- Publish posts: HTML, Compose options, Silent, Protect, Pin. MCP does not cover channels.
+AI & MCP
+- AI: 7 providers (OpenAI, Gemini, DeepSeek, Groq, OpenRouter, Ollama, Custom) + up to 5 fallbacks. Templates, KBs, strict mode, RTL, triggers, rate limits, streaming, quick replies, Playground, MCP tools in AI (Auto/Full/Minimal, disables streaming).
+- MCP: Anthropic JSON-RPC 2.0 POST /mcp, bearer token (SHA-256, shown once), session memory, rate limit, /chat modes (Nyxx built-in support, Bot AI, MCP), 32 tools (16 read, 11 write, 2 outbound, 3 dangerous needing confirm:true).
 
-CONTACT & INBOX
-- Contact = settings for DM featured commands (e.g. /contact); Inbox = read/filter/search/manage; "Open" jumps to user profile. Unread pill in topbar opens Inbox.
-- Settings: notifications on/off, recipients (all admins or custom IDs), include sender details, Send test notification, auto-reply text, Away mode (UTC window, wraps midnight, separate text), rate limit per user/hour (0 = unlimited; over limit = warning, not stored).
-- Admin DM buttons: Reply, Dismiss, Mark as seen. Each (or Inbox "Mark read") marks only that message read.
-- Rate limit needs "Save featured command messages" ON (Memory tab).
-
-BROADCAST
-- Audience: everyone who started / private only / AI-blocked / fully blocked / all except blocked / specific IDs / pick from list / custom list. Media + keyboards via Compose options. Unreachable users always skipped.
-- 2+ recipients: chunks of 20, live progress, Cancel, single history entry. Pacing: batch size, delay (ms), timeout (ms), "Save pacing" (Telegram ~30 msg/s).
-- Past broadcasts editable/deletable from recipients' chats; changing media type re-sends.
-
-MEDIA LIBRARY (Media page)
-- Storage chat: private channel (-100…, bot admin, recommended), group, or own numeric ID (start bot first). "Delete message from storage chat after upload" OFF by default.
-- Reindex storage: imports files already in storage chat (range, skip indexed, progress). Not possible for protected-content chats.
-- Upload types: Auto-detect, Document (lossless), Photo, Video, Animation, Audio, Voice, Round video, Sticker. Browser upload ≤45 MB, multiple, drag&drop, optional label prefix/allowed IDs/expiry/caption.
-- Up to 2 GB: post in storage channel/group (auto-indexed), or send/forward to bot in DM as admin (auto-saved, replies with file_id), or "Add file_id".
-- Validate (getFile, chunked). >20 MB can't preview in browser but work normally.
-- Filters: All access/Restricted/Has expiration/Expired/Invalid; sort Newest/Oldest/Largest/Name/Expiring soon.
-- Bulk (progress): Create command, Validate, Grant user, Revoke user, Expiration, Delete.
-- file_id is bot-specific: changing bot token breaks uploaded media → re-upload or use URL.
-
-MEMORY
-Combined AI + DM overview per user. Clear one scope/user/everything. Auto-remove DM by age (off default; runs with scheduled cleanup); AI memory follows AI-tab depth. Save policy: regular private chats (Auto = only when AI off / Always / Never), featured command messages on/off.
-
-AI
-- Providers (7): OpenAI, Gemini, DeepSeek, Groq, OpenRouter, Ollama (local), Custom (OpenAI-compatible). Main + up to 5 fallbacks in order. Test connections.
-- Settings: API key (masked), model, base URL, custom headers (JSON), display name, language (auto/English/Farsi/Arabic/Spanish/French/German/Russian), style (friendly/professional/casual/formal/funny), length, temperature, max tokens, top-p, fallback message.
-- System prompt templates (custom, personal assistant, customer support, restaurant, programming helper, tutor). Placeholders: {{bot_name}}, {{user_first_name}}, {{user_username}}, {{company_name}}, {{website}}, {{phone}}, {{current_time}}, {{available_commands}}, {{title}}, custom {{key}} from key=value lines.
-- Knowledge bases: multiple, toggleable, injected in prompts. Strict mode: answer only from instructions + KBs. RTL support.
-- Trigger: only when no command matches (recommended) / every text / text contains X. Ignore prefixes (default / ! #), ignore bots (recommended), ignore forwarded. Private reply toggle, memory 0/5/10/20; group defaults overridable per group.
-- Rate limits: per-user/min (10 reasonable, 0 none), global per min/hour. Response delay, typing indicator, retry once then fallbacks, streaming, quick replies (one-time keyboard), Playground.
-- MCP tools in AI: streaming auto-disabled; prompt mode Auto/Full/Minimal; tool categories inherit/read/read+write/read+write+outbound. Enable only if you trust the prompt.
-
-MCP
-- Model Context Protocol (Anthropic standard). JSON-RPC 2.0, POST /mcp on Worker URL, Streamable HTTP protocol 2025-03-26 (2024-11-05 accepted). GET=405, DELETE=200.
-- Auth: bearer token (SHA-256 hashed, shown once, treat like admin password; Revoke all). Session memory 10/20/40 exchanges + retention hours. Rate limit default 20 (0 none).
-- /chat mode dropdown: Nyxx built-in support (AI-tab key + built-in prompt/KB), @{bot}'s AI (AI-tab prompt/KB/settings), MCP (MCP-tab provider & tools). Support and Bot AI modes need only an AI API key, not MCP enabled.
-- Works with Claude Desktop (mcp-remote), Cursor, Cline, any MCP client; snippets and curl in MCP tab; Inspector: npx @modelcontextprotocol/inspector.
-- Separate MCP AI provider (OpenAI, Gemini, DeepSeek, Groq, OpenRouter, Custom) powers dashboard chat and /mcp; Save provider, Test connection.
-- 32 tools:
-  - Read (16): get_stats, list_users, get_user, list_commands, get_command, list_groups, get_menu, get_settings, test_webhook, get_memory_overview, get_bot_info, get_group_settings, get_user_memory, get_logs, get_broadcast_history, list_featured_commands.
-  - Write (11): create_command, update_command, delete_command, set_menu, update_ai_settings, set_bot_info, update_group_settings, promote_user, demote_user, block_user, unblock_user. Commands accept inline button type callback|url|command|alert|toast, plus edit_message, inline_auto_back, inline_back_label.
-  - Outbound (2): send_dm, send_broadcast.
-  - Dangerous (3): delete_user, clear_ai_memory, clear_user_memory (need confirm:true).
-  - Read/write on by default; outbound/dangerous off.
-
-SETTINGS
-- System language English/Farsi: only system messages (contact notifications, errors), AI built-in rules, MCP admin prompt. NOT dashboard UI or AI replies (those follow AI tab language).
-- Navigation style: Classic, Modern Pills, Frosted Glass, Compact. Structure: Top Bar (default), Grouped, Flat List.
-- Bot token change/reveal (reveal logged). Webhook: Test (URL match, pending, last error), Health check re-registers, Diagnostics latency.
-- Admin password (min 6; logs out other sessions). ADMIN_PASS env = master password (manual wrangler only).
-- Schema health: Check health; Run auto-heal (fixes missing tables/columns/indexes/settings, prunes orphans; safe to repeat).
-- Factory reset: type FACTORY RESET; erases everything, no undo.
-
-BOT INFO: Name, Description, Short description; Load from Telegram, Publish.
-PERMISSIONS: global feature access + administrators list (promote by numeric ID as Moderator/Admin). Applies to commands, AI, MCP tools, featured commands, button taps. Groups can override.
-
-RETENTION (off until enabled)
-Enable + Save; needs Cron Trigger (or "Run now"); shows last run. Cron can be added in CF dashboard: Workers → Worker → Settings → Triggers. Defaults: dashboard sessions 1d, bot sessions 30d, login attempts 2h, rate-limit buckets 24h, activity log 30d, broadcast history 30d. AI memory, DM history, inactive users: 0 (keep forever).
-
-BACKUP: Full or custom sections. Restore overwrites included sections, no undo. Includes AI keys in plain text (dashboard warns).
-ACTIVITY LOG: recent admin actions, Clear all, optional auto-delete after N days (off).
-
-UPDATE
-Tab shows current/latest version, CF connection (OAuth recommended, or API token with Workers Scripts:Edit + Account Settings:Read), "Check for updates".
-"Update now": reads Worker bindings (aborts if it can't, D1 safe), downloads worker.js from raw.githubusercontent.com only, validates, deploys with same bindings, rotates webhook secret. D1/KV/R2 bindings, env vars, token, data, config preserved.
-Pre-release shows beta notice (optional). "Force redeploy" redeploys GitHub main even if version matches. Manual: replace worker code and redeploy. Credentials stored in user's own D1.
+SETTINGS, ACCOUNTS, RETENTION, BACKUP & UPDATE
+- Settings: System language (en/fa, bot/system msgs only), Nav style/structure, Bot token, Webhook test/health/diagnostics, Global Flood Protection, Account login (username + password; changing username alone needs no password; owner-only rename; ADMIN_USER/ADMIN_PASS override on manual wrangler), Accounts manager (owner creates sub-admins restricted to specific tabs), Schema health/auto-heal, Browser & Recovery (SW reset, clear caches/storage, connectivity test; also on login/connecting screens), Factory reset.
+- Bot Profile: Name, Description, Short description, Menu Button (Default/Commands/Web App), Default Admin Rights (Groups & Channels), avatar & capabilities.
+- Retention (System → Retention): off until enabled; needs Cron Trigger or Run now. Every option is optional (0 = keep forever / skip): sessions, bot sessions, login attempts, rate limits, logs (synced with Activity Log), AI memory, DM history (synced with Memory), broadcast history, mini-game scores, inactive users.
+- Update: OAuth or API token, preserves D1/bindings/config, rotates webhook secret, 15s edge propagation reload lock.
 
 SECURITY
-PBKDF2 SHA-256 100k (legacy sha256 re-hashed on login). Login block after 20 failures in 5 min. Webhook requires X-Telegram-Bot-Api-Secret-Token (rotated on updates). Mutating calls need same-origin Origin/Referer + X-Nyxx-CSRF. Cookies HttpOnly, SameSite=Lax, Secure on HTTPS, 24h. Destructive MCP tools need confirm:true. proxy.js allow-list: api.cloudflare.com, dash.cloudflare.com, raw.githubusercontent.com, *.workers.dev; blocks private/loopback/link-local/CGNAT/metadata (incl. via DoH); 60s timeout, 25 MB cap. CSP, nosniff, Referrer-Policy, X-Frame-Options, HSTS, Permissions-Policy; pages noindex.
-
-FAQ
-- Free? Yes. VPS? No.
-- CF token stored? OAuth: installer doesn't keep it. API-token mode: browser local storage. Dashboard updater stores token/OAuth session in user's own D1, never on a Nyxx server.
-- Customize worker? Yes, open source. Update/delete panel? Update tab or installer Scan Account. Avoid hosted proxy? Self-host proxy.js.
-- Import pre-existing storage files? Media Library → Reindex storage.
-- Chrome "dangerous"/password-leak warning at sign-in: Chrome's leaked-password check; password is in a breach list. Set new unique password (Settings → Admin password or ADMIN_PASS).
+PBKDF2 SHA-256 100k, login rate limit (20/5m), webhook secret header, CSRF + same-origin check, HttpOnly/SameSite=Lax cookies, proxy.js allowlist + SSRF block.
 
 TROUBLESHOOTING (symptom → cause → fix)
-- "Session expired"/"No Cloudflare credentials" on Update → creds rejected/OAuth expired → reconnect or token with Workers Scripts:Edit.
-- "Update aborted ... bindings" → CF refused reading settings; nothing changed → check creds + script name, retry.
-- "Downloaded update file looks invalid" → GitHub download failed; nothing changed → retry later.
-- Update fails → creds lack Workers Scripts:Edit or script name mismatch. Deployment broken → Force redeploy.
-- "Too many failed attempts" → wait a few minutes. Forgot password → set ADMIN_PASS secret in Worker settings.
-- Bot silent everywhere → Settings → Webhook → Health check.
-- Bot silent in groups → AI trigger needs mention, permissions restrict, or group read permission; check group AI trigger + Permissions.
-- "unauthorised" → global Permissions or group override restricts to Mod+/Admin.
-- Can't DM user → hasn't pressed Start (Users shows not reachable, even if manually added).
-- AI silent → disabled, no key, trigger mismatch, rate limit, or group mention required. "API key is missing" → paste key, Save AI settings. Test fails → wrong model/key/provider; Custom: check base URL + headers.
-- Menu button empty → publish from Menu & Featured.
-- Installer proxy errors → default proxy down or self-host misconfigured → check proxy health notice or switch mode; self-hosted OAuth needs DB binding.
-- Panel not loading after install → wait 1–3 min, refresh; blocked workers.dev → custom domain.
-- MCP 401 → bad token, regenerate. 403 "disabled" → enable MCP endpoint. Tool "disabled" → enable category. Rate limited → raise or 0 in MCP tab.
-- "no such column/table" → Settings → Schema health → Run auto-heal.
-- Media upload fails → check storage chat; bot must be able to message it (admin in channel/group; DM: press Start). Browser ≤45 MB; use channel/group/DM for larger.
-- Reindex fails/skips → bot needs post & delete permission; Content Protection blocks forwarding.
-- Proxy check "Check skipped" → Workers block sockets to some ports/IPs (e.g. Cloudflare-proxied); IP/country/ISP/secret still resolve.
-- Media won't preview → >20 MB, still valid.
-- Media broken after token change → file_id bot-specific → re-upload or use URL.
-- Channel features not working → bot needs admin with Post, Edit, Delete (Pin) → fix, then Sync with Telegram.
-- Contact rate limit not working → enable "Save featured command messages" (Memory tab).
-- Global Anti-Flood (Settings → Global Anti-Flood): global flood limit across all chats with Mute / Kick / Ban escalation and admin exemption.
-- Browser & Recovery (Settings → Browser & Recovery, also accessible from Connecting / Sign-in screens without a password): reset Service Worker, clear caches, clear local UI storage, and test API connectivity.
-- Bot Profile: edit Name, Description, Short Description, Menu Button (Default / Commands / Web App), and Default Admin Rights for Groups & Channels, plus view bot avatar & capabilities.
-- Group subtypes: Group, Supergroup, Forum (topic thread replies), Channel Comments / Discussion (auto-comment on new channel posts, exempt linked forwards), Direct Messages Group (admin notifications & auto-reply).
-- Cleanup never runs → needs Cron Trigger, or Retention → Run now.
+- Update fails/expired → reconnect OAuth or use token with Workers Scripts:Edit + Account Settings:Read. Deployment broken → Force redeploy.
+- "Too many failed attempts" → wait a few minutes. Forgot username/password → set ADMIN_USER & ADMIN_PASS secrets in CF Worker settings.
+- Bot silent everywhere → Settings → Bot & Webhook → Health check. Silent in groups → check group AI trigger + Permissions.
+- "unauthorised" → global Permissions or group override restricts to Mod+/Admin. Can't DM user → hasn't started bot.
+- AI silent/fails → check key, trigger, rate limit, group mention, base URL. Free AI models hitting token limit → reduce max tokens or start a fresh /chat thread.
+- Menu empty → publish from Menu & Featured. MCP 401/403 → regenerate token / enable MCP or tool category.
+- "no such column/table" → Settings → Security & DB → Run auto-heal. 409 Conflict → refresh before saving.
+- Media upload/reindex fails → bot needs storage chat access (admin in channel/group; DM: Start). Browser ≤45 MB; >20 MB won't preview. Token change breaks uploaded file_ids.
+- Contact rate limit ignored → enable "Save featured command messages" (Memory tab).
+- Web Push not arriving → enable in Messaging → Notifications, allow browser permission, use HTTPS; check Test button.
+- Cleanup never runs → enable Retention + save, add Cron Trigger or click Run now.

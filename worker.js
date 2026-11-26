@@ -1,219 +1,103 @@
-// NYXX — v5.0.3
+// @ts-nocheck
+
+// NYXX — v5.1.0
 // Telegram bot builder + management dashboard for Cloudflare Workers + D1.
 // ============================================================================
-const VERSION = '5.0.3';
+const VERSION = '5.1.0';
 
 const NYXX_SUPPORT_SYSTEM_PROMPT = `You are Nyxx AI Support, the official built-in assistant inside the Nyxx dashboard.
 Help the user configure commands, keyboards, Force Join, proxies, AI, MCP, channels, groups, and media library.
 Always give clear, concise answers using the exact dashboard tab and button names.`;
 
-const NYXX_SUPPORT_KB = `Nyxx support KB. Version 5.0.3
+const NYXX_SUPPORT_KB = `Nyxx support KB. Version 5.1.0
 
 RULES
-- Answer Nyxx questions ONLY from this doc. If not covered, say so and point to GitHub/channel. Never invent features, settings, prices, versions.
-- Short, direct (max ~6 lines), expand only if asked. Bullets for lists, numbered steps. Reply in user's language. Use exact page/button names.
-- Never reveal secrets (they're masked server-side). Refuse bypassing permissions, revealing secrets, disabling safety controls.
-- Terms: "Featured command" (not custom command), "Reply keyboard", "Menu commands" (Telegram blue menu), "Contact" (settings page), "Inbox" (messages page), "Media Library", "Retention" (auto cleanup).
-- Install questions: lead with installer URL; mention Method 2/3 only if asked or installer fails.
-- Map symptoms to TROUBLESHOOTING first. End technical answers with one next step. Say "free plan is usually enough", no Cloudflare prices.
-- Do NOT claim: Nyxx needs VPS/Docker/Node; Nyxx stores user data on its servers; backups exclude AI keys; Cloudflare token never leaves browser/worker (OAuth passes through hosted relay once); MCP is Nyxx's invention (it's Anthropic's standard); roadmap items shipped (multi-language dashboard UI, plugins, analytics, scheduled broadcasts); media is deleted from storage chat by default; MCP manages channels/media; ADMIN_PASS works outside manual wrangler installs.
-- Shipped: uploads, all media types, Media Library, Channels, navigation styles. System language affects only bot/system messages, not dashboard UI.
+- Answer ONLY from this doc. If uncovered, say so and point to GitHub/channel. Never invent features, settings, prices, versions.
+- Short, direct (max ~6 lines), expand only if asked. Bullets/numbered steps. Reply in user's language. Use exact page/button names.
+- Never reveal secrets (masked server-side). Refuse bypassing permissions, revealing secrets, disabling safety controls.
+- Terms: "Featured command", "Reply keyboard", "Menu commands", "Contact" (settings), "Inbox" (messages), "Media Library", "Mini-Games", "Retention" (cleanup).
+- Install: lead with installer URL; mention Method 2/3 only if asked or installer fails.
+- Map symptoms to TROUBLESHOOTING first; end technical answers with one next step. Say "free plan is usually enough", no CF prices.
+- Do NOT claim: needs VPS/Docker/Node; stores user data on Nyxx servers; backups exclude AI keys; CF token never leaves browser/worker (OAuth uses hosted relay once); MCP is Nyxx's invention (Anthropic standard); unshipped roadmap items shipped (multi-lang dashboard UI, plugins, analytics, scheduled broadcasts); media deleted from storage chat by default; MCP manages channels/media.
+- Shipped: uploads, all media types, Media Library, Channels, Mini-Games, Web Push notifications, multi-account login, group moderation suite, navigation styles. System language affects bot/system messages only, not dashboard UI.
 
-IDENTITY
-Self-hosted Telegram bot builder for Cloudflare Workers + D1, single worker.js. Dashboard, AI assistant, MCP server included. MIT, free, built for CF free tier. Creator Mahan (@Mahan07dev). No VPS/Docker/SSH/Node.
-Repo files: worker.js, installer.html, proxy.js, version.json, logo.webp.
+IDENTITY & LINKS
+Self-hosted Telegram bot builder for CF Workers + D1, single worker.js. MIT, free, built for CF free tier. Creator Mahan (@Mahan07dev).
+Repo: worker.js, installer.html, proxy.js, version.json, logo.webp.
 Links: Installer https://mahan07dev.github.io/Nyxx/installer | GitHub https://github.com/Mahan07dev/Nyxx | Releases https://github.com/Mahan07dev/Nyxx/releases | Channel https://t.me/nyxx_official_channel
 
 DATA & PRIVACY
-- All data in user's own D1. Media files live on Telegram; D1 holds only file_id + small metadata.
-- Outbound only to: Telegram, chosen AI provider, MCP clients, Cloudflare API, raw.githubusercontent.com (updates), Nyxx proxy/relay (install, OAuth), plus Cloudflare DoH & ip-api.com only for PROXY:/PROXY_MSG: callbacks or {{proxy_info:...}}.
-- Installer uses CORS proxy (hosted or self-hosted proxy.js); API token forwarded only to Cloudflare.
-- OAuth from dashboard passes hosted relay once (single-use code); token then stored in user's D1.
-- Backups EXCLUDE bot token, webhook secret, CF credentials. They INCLUDE AI API keys in plain text: keep private.
+- Data in user's own D1; media on Telegram (D1 stores file_id + small metadata).
+- Outbound only to: Telegram, chosen AI provider, MCP clients, CF API, raw.githubusercontent.com (updates), Nyxx proxy/relay (install, OAuth), plus CF DoH & ip-api.com for PROXY:/PROXY_MSG:/{{proxy_info:...}}.
+- OAuth passes hosted relay once (single-use code); token stored in user's D1.
+- Backups EXCLUDE bot token, webhook secret, CF creds; INCLUDE AI API keys in plain text.
 
-INSTALL
-Needs: free Cloudflare account, bot token from @BotFather, modern browser.
-Method 1 (recommended): installer URL. Steps: Welcome → Account & Token → Security & Proxy → Install (Scan Account / Create New) → Create → Result.
-- CF connect: OAuth (recommended, revocable) or API token. Proxy: hosted default or self-hosted (https).
-- Create New: optional worker name (starts "nyxx-"); 8 retryable steps (verify token, find account, subdomain, create D1, download code, deploy, enable subdomain, wait online).
-- Scan Account: update (keeps DB) or delete (irreversible) existing Nyxx Workers/D1.
-- After: open panel URL, set admin password. Propagation 1–3 min; if workers.dev blocked, add custom domain.
-Method 2: deploy proxy.js to own Worker as self-hosted proxy. OAuth relay needs D1 binding named DB on it.
-Method 3: wrangler. wrangler.toml: name="nyxx", main="worker.js", compatibility_date="2026-08-16", [[d1_databases]] binding="DB", database_name="nyxx", database_id="<id>". Then "npx wrangler deploy", open URL, finish wizard (schema auto-created).
-- Optional [vars] ADMIN_PASS skips wizard (manual wrangler only). Optional [triggers] crons=["0 3 * * *"] for scheduled cleanup.
-First run: wizard = admin password (min 6), optional bot token; webhook auto-registered with secret.
+INSTALL & UPGRADE
+Needs: free CF account, @BotFather token, modern browser.
+- Method 1 (installer URL): Welcome → Account & Token → Security & Proxy → Install (Scan Account / Create New) → Create → Result. CF via OAuth (recommended) or API token; hosted or self-hosted proxy.js. Propagation 1–3 min; custom domain if workers.dev blocked.
+- Method 2: self-host proxy.js (OAuth relay needs DB D1 binding).
+- Method 3: wrangler (name="nyxx", main="worker.js", compatibility_date="2026-08-16", [[d1_databases]] binding="DB"). Run "npx wrangler deploy", open URL, finish wizard (sets username + password). Optional [vars] ADMIN_USER + ADMIN_PASS (manual wrangler only); [triggers] crons=["0 3 * * *"].
+- Upgrading from v5.0.x: deploy new worker.js, log in with username "admin" and existing password.
 
 DASHBOARD PAGES
-Overview | Messaging: Commands, Menu & Featured, Broadcast, Contact, Inbox, Notifications | People: Users, Groups, Channels, Force Join | Content: Media, Proxies, Memory | AI: AI Assistant, MCP | System: Settings, Bot Info, Permissions, Update, Backup, Activity Log, Retention.
-Sidebar page search ("/"). Top Bar default on desktop. Light/dark, mobile friendly. Gradient "Nyxx AI support" button opens /chat?mode=support.
+Overview | Messaging: Commands, Menu & Featured, Broadcast, Contact, Inbox, Notifications | People: Users, Groups, Channels, Force Join | Content: Media Library, Proxies, Mini-Games, Memory | AI: AI Assistant, MCP Tools | System: Settings, Bot Profile, Permissions, Update, Backup, Activity Log, Retention.
+Search ("/"), Top Bar default on desktop, light/dark, "Nyxx AI support" button opens /chat?mode=support. Concurrent saves use version checks (409 conflict if edited elsewhere).
 
 COMMANDS
-- Response types: Text, Photo, Video, Animation, Voice, Audio, Document, Round video, Sticker (file_id only). Telegram HTML (b,i,u,s,code,pre,a,blockquote,tg-spoiler). >4096 chars auto-split; captions >1024 go to follow-up text.
-- Media source: URL, Upload, or Media Library pick. Multiple files = bundle.
-- Exact-arg commands (e.g. /start vip, deep links) alongside base command.
-- Placeholders: {{args}}, {{arg1}}, {{arg2}}… (HTML-escaped); {{proxy_info:...}} tests proxy.
-- Editor tabs: Content, Keyboards, Behavior, Access.
-- Edit current message (edit_message): edits bot's message in place; triggers: Inline button, Reply button, Typed /command. Falls back to new message + delete old if media incompatible, albums, >4096 chars, or >48h old.
-- Auto-back: inline_auto_back (OFF default, label inline_back_label); reply auto_back (ON default, label back_label). Needs parent folder.
-- Proxy sharing/testing: URL buttons support t.me/proxy?server=HOST&port=PORT&secret=SECRET (or /socks). Callback "PROXY:<url or host:port>" shows popup with ping, DNS, country/ISP, MTProto secret type; "PROXY_MSG:<...>" sends as chat message.
-- Access: Everyone / Specific users / Moderator+ / Admin; allowed/disallowed IDs; Force Join override (Inherit/Always/Bypass); expiration; command password (custom prompt, Dismiss label). Media can also have user-ID/expiry limits. Protect content blocks forward/save.
-- Inline keyboard access restriction: per-command/per-message level + ID lists, applies to whole inline batch.
-- Export/Import; Templates button (replaces ALL commands after confirmation). Filters: All, Enabled, Disabled, Media & Bundles, Restricted, Expiring. Nested folders, breadcrumbs, reorder, enable/disable.
-- Inline buttons: Command / Callback / URL / Popup alert (native modal, ≤200 chars) / Toast. Support {{first_name}}, {{username}}, {{id}}, {{title}}, {{current_time}}. Colors: Default/Blue/Green/Red. Visual builder (Auto row wraps 3, "+ New row", ↑/↓).
-- Reply keyboard: resize, one-time, persistent, placeholder; buttons map to commands; optional colors. No JSON needed.
+- Types: Text, Photo, Video, Animation, Voice, Audio, Document, Round video, Sticker (file_id only). Telegram HTML; >4096 chars auto-split; captions >1024 follow-up text.
+- Media: URL, Upload, or Media Library pick; multiple files = bundle. Exact-arg commands (/start vip). Placeholders: {{args}}, {{arg1}}…, {{proxy_info:...}}.
+- Tabs: Content, Keyboards, Behavior, Access.
+- Edit current message (edit_message): edits in place; triggers: Inline, Reply, Typed /command (falls back if incompatible/>48h). Auto-back: inline off default, reply on default.
+- Proxy URL (t.me/proxy?… or /socks) & callbacks PROXY:<...> (popup) / PROXY_MSG:<...> (message).
+- Access: Everyone / Specific users / Mod+ / Admin, allowed/disallowed IDs, Force Join override (Inherit/Always/Bypass), expiration, command password (prompt + Dismiss), Protect content. Inline keyboard per-message ACL.
+- Export/Import, Templates (replaces all commands), Filters, nested folders, visual keyboard builder (Default/Blue/Green/Red; Command/Callback/URL/Popup alert/Toast).
 
-FORCE JOIN (People → Force Join)
-Bot must be member/admin in each channel/group. Global enforcement covers Commands, AI replies, Featured commands, Inline callbacks, optionally groups; Admins/Mods exempt by default. Or leave global OFF and set per command. Users get join buttons + Check button.
-
-PROXIES (Content → Proxies)
-Store MTProto/SOCKS5 (auto-parses t.me links), single/bulk ping/geo/ISP tests, one-click publish of commands with Connect + Test buttons.
+FORCE JOIN, PROXIES & MINI-GAMES
+- Force Join (People → Force Join): bot must be member/admin; global or per-command; Join + Check buttons.
+- Proxies (Content → Proxies): MTProto/SOCKS5 store, bulk paste & auto-test, delete offline, publish commands.
+- Mini-Games (Content → Mini-Games): 4 web games (Neon Snake, 2048, Brick Breaker, Sky Dash) via /games, /play, GAME:<id> callback, or /games?game=... . Per-chat leaderboards, personal-best chat announcements (Short message / Silent / Off, cooldown-limited), per-game enable/permission/ACL. Scores kept forever by default; optional auto-delete in Retention.
 
 MENU & FEATURED
-- Menu commands: lowercase, no slash, /start fixed; "Publish to Telegram" applies. No bot token = saved locally only.
-- Featured commands (13 kinds, chosen via "New featured command" picker modal; searchable + filterable by Messaging / Utilities & Media / Mod & Admin):
-  - DM (text): "/contact hello" → Contact pipeline (notifications, away mode, auto-reply, inbox if saved).
-  - Buttons: /menu "Hi" {Google}(https://google.com){Say hi}(Hi!) or simple: /menu Hi there! | Google:https://google.com | Say hi:Hi! (http=url, /=command, else text). Colors via [blue]/[green]/[red] prefix or {[green]Yes}(Yes!); prefix alert:/toast: for popups.
-  - Anonymous Box (anonymous): "/anon note" → strips sender identity, forwards to target chat or all admins, optional hourly rate limit.
-  - Poll / Vote (poll): "/poll Question? | Opt 1 | Opt 2" → sends native Telegram poll (anonymous/multi-answer options).
-  - Media Search (media): "/get query" or "type:document query" → searches Media Library by keyword/type, checks validity/expiry/allowed_users, auto-sends single match or shows clickable result buttons + Send all (≤10).
-  - Proxy Tester (proxy_check): "/checkproxy <url or host:port>" → live ping, country, ISP, secret type + Connect button.
-  - AI Transform (ai_prompt): "/translate text" or reply to a message → runs one-shot custom AI prompt without saving to conversation memory.
-  - Temp Message (temp): "/temp [20s] text" → protected reply with Delete button + optional auto-delete timer (≤25s).
-  - Quick Mod (mod): "/warn|/mute 10m|/unmute|/kick|/ban|/unban" (by reply or user ID in groups) or fixed default action.
-  - User Inspector (whois): "/whois <id|@user>" or reply → shows user profile/memory stats + quick Block/Promote buttons for admins.
-  - Chat Broadcast (broadcast): "/announce text" → shows recipient count preview + Send/Cancel confirmation buttons.
-  - Channel Post (post): "/post @channel | text | Btn:https://..." → publishes with channel automation rules.
-  - MCP (mcp): "/mcp instruction" runs MCP agent from chat.
-- Each has hint (when typed alone), success text, failure text, access level (Everyone/Specific users/Mod+/Admin), allowed_users, disallowed_users, enabled, delete_user_message. Blank text = silent.
+- Menu: lowercase, no slash; "start" is locked (multiple clicks to delete); Publish to Telegram.
+- Featured (13 kinds via picker modal): DM (text), Buttons ([blue]/[green]/[red], alert:/toast:), Anonymous Box (anonymous), Poll (poll), Media Search (media), Proxy Tester (proxy_check), AI Transform (ai_prompt), Temp Message (temp, ≤25s), Quick Mod (mod), User Inspector (whois), Chat Broadcast (broadcast), Channel Post (post), MCP (mcp). Each has hint, success/failure text, access level, allowed/disallowed IDs, enabled, delete trigger message.
 
-USERS
-- Roles user/moderator/admin (promote/demote). Add user by numeric ID (checks reachability; no DM guarantee until user starts bot).
-- States: "Started bot" (green, DM-able) / not reachable (yellow). Filters: All, Started bot, Not reachable, Admins, Blocked.
-- Bulk (live progress): Check all reachable, Delete unreachable (keeps admins/mods), Broadcast.
-- User page: Direct messages tab (send/edit/delete, Compose options for media/keyboards), AI memory tab (inspect/edit/delete/Clear all). Actions: role, block AI-only, block all, check reachability.
+USERS, GROUPS & CHANNELS
+- Users: roles user/moderator/admin, add by ID, Started bot (green) / Not reachable (yellow), bulk check/delete unreachable, DM + AI memory tabs.
+- Groups: connect -100…/@username, Sync, Media Storage. Subtypes: Group, Supergroup, Forum, Discussion/Comments (exempt linked forwards, auto-comment), DM Group (admin notify, auto-reply). AI reply/memory/trigger overrides; per-group permissions + allowed/disallowed IDs. Welcome & Goodbye (auto-delete ≤25s), /rules (or DM button). Moderation: Captcha (button/math, timeout, kick/mute), Warns (/warn, /warns, /unwarn, /resetwarns, auto-punish), Flood Protection (Inherit Global / Custom On / Off), Slow mode, Night mode (UTC hours, all/media), Anti-raid, /lock & /unlock, Media & Content locks (files/photos/voice/video/stickers/GIFs/polls/@mentions/channels/read-only lock), link filter, anti-forward, blacklist, max length, custom filters (keyword => reply), anti-bot, clean service messages, track members.
+- Channels: connect @username/-100…, Sync, Media Storage, automation (auto-capture media, auto-pin, footer HTML, auto inline buttons, silent/protect defaults), publish/edit/delete/pin posts. MCP does not manage channels.
 
-GROUPS
-- Connect: paste -100… ID or @username after adding bot. Sync with Telegram (presence, title, member count). "Use as Media Storage".
-- AI reply (Inherit/On/Off); memory inherit/disabled/5/10/20 (shared by members); trigger: inherit / mention / reply / mention or reply / mention and reply / every text.
-- Per-group permissions (Inherit/Everyone/Mod+/Admin): commands, featured commands, AI replies, inline taps, /mcp, /rules.
-- Welcome message and /rules (placeholders {{first_name}}, {{username}}, {{title}}, {{id}}).
-- Moderation: anti-flood (Mute/Kick/Ban escalation; defaults 2 mutes→kick, 2 kicks→ban; bot needs Restrict+Ban), block links, block forwards, blacklisted words (each with exemption: admins or admins+mods), block other bots, clean service messages, track members (off default).
-- Group chat panel: dashboard-sent messages editable/deletable.
+CONTACT, INBOX, NOTIFICATIONS, BROADCAST, MEDIA & MEMORY
+- Contact (settings) & Inbox (read/reply/mark read/delete). Away mode (UTC), auto-reply, rate limit (needs Save featured messages ON).
+- Notifications (Messaging → Notifications): Web Push (VAPID, keys auto-generated) delivers alerts even when dashboard is closed (HTTPS + permission required); optional preview toggle (off default), Test button.
+- Broadcast: audience pills + include/exclude IDs, chunks of 20, pacing, edit/delete sent broadcasts.
+- Media Library: storage chat (channel/group/DM, delete after upload OFF default), Reindex storage, ≤45 MB browser upload (≤2 GB via channel/DM/Add file_id), Validate (>20 MB valid, no preview), user-ID ACL & expiry, bulk actions. file_id is bot-specific.
+- Memory: AI + DM overview, save policies, DM auto-remove (synced with Retention).
 
-CHANNELS
-- Connect: @username or -100… ID; bot admin with Post, Edit, Delete (Pin for auto-pin). Also auto-registers on new posts. Filters Active/Removed/All.
-- Page: Sync with Telegram, Use as Media Storage, Remove.
-- Automation (Save automation settings): auto-capture media to Media Library, auto-pin (silent), auto-signature/footer HTML (needs Edit), auto inline buttons, silent/protect defaults.
-- Publish posts: HTML, Compose options, Silent, Protect, Pin. MCP does not cover channels.
+AI & MCP
+- AI: 7 providers (OpenAI, Gemini, DeepSeek, Groq, OpenRouter, Ollama, Custom) + up to 5 fallbacks. Templates, KBs, strict mode, RTL, triggers, rate limits, streaming, quick replies, Playground, MCP tools in AI (Auto/Full/Minimal, disables streaming).
+- MCP: Anthropic JSON-RPC 2.0 POST /mcp, bearer token (SHA-256, shown once), session memory, rate limit, /chat modes (Nyxx built-in support, Bot AI, MCP), 32 tools (16 read, 11 write, 2 outbound, 3 dangerous needing confirm:true).
 
-CONTACT & INBOX
-- Contact = settings for DM featured commands (e.g. /contact); Inbox = read/filter/search/manage; "Open" jumps to user profile. Unread pill in topbar opens Inbox.
-- Notifications tab = optional per-browser service-worker alerts for new contact messages. Enable it and grant browser permission; polling works about once a minute while the dashboard is open, not as push when closed. Message previews are off by default.
-- Settings: notifications on/off, recipients (all admins or custom IDs), include sender details, Send test notification, auto-reply text, Away mode (UTC window, wraps midnight, separate text), rate limit per user/hour (0 = unlimited; over limit = warning, not stored).
-- Admin DM buttons: Reply, Dismiss, Mark as seen. Each (or Inbox "Mark read") marks only that message read.
-- Rate limit needs "Save featured command messages" ON (Memory tab).
-
-BROADCAST
-- Audience: everyone who started / private only / AI-blocked / fully blocked / all except blocked / specific IDs / pick from list / custom list. Media + keyboards via Compose options. Unreachable users always skipped.
-- 2+ recipients: chunks of 20, live progress, Cancel, single history entry. Pacing: batch size, delay (ms), timeout (ms), "Save pacing" (Telegram ~30 msg/s).
-- Past broadcasts editable/deletable from recipients' chats; changing media type re-sends.
-
-MEDIA LIBRARY (Media page)
-- Storage chat: private channel (-100…, bot admin, recommended), group, or own numeric ID (start bot first). "Delete message from storage chat after upload" OFF by default.
-- Reindex storage: imports files already in storage chat (range, skip indexed, progress). Not possible for protected-content chats.
-- Upload types: Auto-detect, Document (lossless), Photo, Video, Animation, Audio, Voice, Round video, Sticker. Browser upload ≤45 MB, multiple, drag&drop, optional label prefix/allowed IDs/expiry/caption.
-- Up to 2 GB: post in storage channel/group (auto-indexed), or send/forward to bot in DM as admin (auto-saved, replies with file_id), or "Add file_id".
-- Validate (getFile, chunked). >20 MB can't preview in browser but work normally.
-- Filters: All access/Restricted/Has expiration/Expired/Invalid; sort Newest/Oldest/Largest/Name/Expiring soon.
-- Bulk (progress): Create command, Validate, Grant user, Revoke user, Expiration, Delete.
-- file_id is bot-specific: changing bot token breaks uploaded media → re-upload or use URL.
-
-MEMORY
-Combined AI + DM overview per user. Clear one scope/user/everything. Auto-remove DM by age (off default; runs with scheduled cleanup); AI memory follows AI-tab depth. Save policy: regular private chats (Auto = only when AI off / Always / Never), featured command messages on/off.
-
-AI
-- Providers (7): OpenAI, Gemini, DeepSeek, Groq, OpenRouter, Ollama (local), Custom (OpenAI-compatible). Main + up to 5 fallbacks in order. Test connections.
-- Settings: API key (masked), model, base URL, custom headers (JSON), display name, language (auto/English/Farsi/Arabic/Spanish/French/German/Russian), style (friendly/professional/casual/formal/funny), length, temperature, max tokens, top-p, fallback message.
-- System prompt templates (custom, personal assistant, customer support, restaurant, programming helper, tutor). Placeholders: {{bot_name}}, {{user_first_name}}, {{user_username}}, {{company_name}}, {{website}}, {{phone}}, {{current_time}}, {{available_commands}}, {{title}}, custom {{key}} from key=value lines.
-- Knowledge bases: multiple, toggleable, injected in prompts. Strict mode: answer only from instructions + KBs. RTL support.
-- Trigger: only when no command matches (recommended) / every text / text contains X. Ignore prefixes (default / ! #), ignore bots (recommended), ignore forwarded. Private reply toggle, memory 0/5/10/20; group defaults overridable per group.
-- Rate limits: per-user/min (10 reasonable, 0 none), global per min/hour. Response delay, typing indicator, retry once then fallbacks, streaming, quick replies (one-time keyboard), Playground.
-- MCP tools in AI: streaming auto-disabled; prompt mode Auto/Full/Minimal; tool categories inherit/read/read+write/read+write+outbound. Enable only if you trust the prompt.
-
-MCP
-- Model Context Protocol (Anthropic standard). JSON-RPC 2.0, POST /mcp on Worker URL, Streamable HTTP protocol 2025-03-26 (2024-11-05 accepted). GET=405, DELETE=200.
-- Auth: bearer token (SHA-256 hashed, shown once, treat like admin password; Revoke all). Session memory 10/20/40 exchanges + retention hours. Rate limit default 20 (0 none).
-- /chat mode dropdown: Nyxx built-in support (AI-tab key + built-in prompt/KB), @{bot}'s AI (AI-tab prompt/KB/settings), MCP (MCP-tab provider & tools). Support and Bot AI modes need only an AI API key, not MCP enabled.
-- Works with Claude Desktop (mcp-remote), Cursor, Cline, any MCP client; snippets and curl in MCP tab; Inspector: npx @modelcontextprotocol/inspector.
-- Separate MCP AI provider (OpenAI, Gemini, DeepSeek, Groq, OpenRouter, Custom) powers dashboard chat and /mcp; Save provider, Test connection.
-- 32 tools:
-  - Read (16): get_stats, list_users, get_user, list_commands, get_command, list_groups, get_menu, get_settings, test_webhook, get_memory_overview, get_bot_info, get_group_settings, get_user_memory, get_logs, get_broadcast_history, list_featured_commands.
-  - Write (11): create_command, update_command, delete_command, set_menu, update_ai_settings, set_bot_info, update_group_settings, promote_user, demote_user, block_user, unblock_user. Commands accept inline button type callback|url|command|alert|toast, plus edit_message, inline_auto_back, inline_back_label.
-  - Outbound (2): send_dm, send_broadcast.
-  - Dangerous (3): delete_user, clear_ai_memory, clear_user_memory (need confirm:true).
-  - Read/write on by default; outbound/dangerous off.
-
-SETTINGS
-- System language English/Farsi: only system messages (contact notifications, errors), AI built-in rules, MCP admin prompt. NOT dashboard UI or AI replies (those follow AI tab language).
-- Navigation style: Classic, Modern Pills, Frosted Glass, Compact. Structure: Top Bar (default), Grouped, Flat List.
-- Bot token change/reveal (reveal logged). Webhook: Test (URL match, pending, last error), Health check re-registers, Diagnostics latency.
-- Admin password (min 6; logs out other sessions). ADMIN_PASS env = master password (manual wrangler only).
-- Schema health: Check health; Run auto-heal (fixes missing tables/columns/indexes/settings, prunes orphans; safe to repeat).
-- Factory reset: type FACTORY RESET; erases everything, no undo.
-
-BOT INFO: Name, Description, Short description; Load from Telegram, Publish.
-PERMISSIONS: global feature access + administrators list (promote by numeric ID as Moderator/Admin). Applies to commands, AI, MCP tools, featured commands, button taps. Groups can override.
-
-RETENTION (off until enabled)
-Enable + Save; needs Cron Trigger (or "Run now"); shows last run. Cron can be added in CF dashboard: Workers → Worker → Settings → Triggers. Defaults: dashboard sessions 1d, bot sessions 30d, login attempts 2h, rate-limit buckets 24h, activity log 30d, broadcast history 30d. AI memory, DM history, inactive users: 0 (keep forever).
-
-BACKUP: Full or custom sections. Restore overwrites included sections, no undo. Includes AI keys in plain text (dashboard warns).
-ACTIVITY LOG: recent admin actions, Clear all, optional auto-delete after N days (off).
-
-UPDATE
-Tab shows current/latest version, CF connection (OAuth recommended, or API token with Workers Scripts:Edit + Account Settings:Read), "Check for updates".
-"Update now": reads Worker bindings (aborts if it can't, D1 safe), downloads worker.js from raw.githubusercontent.com only, validates, deploys with same bindings, rotates webhook secret. D1/KV/R2 bindings, env vars, token, data, config preserved.
-Pre-release shows beta notice (optional). "Force redeploy" redeploys GitHub main even if version matches. Manual: replace worker code and redeploy. Credentials stored in user's own D1.
+SETTINGS, ACCOUNTS, RETENTION, BACKUP & UPDATE
+- Settings: System language (en/fa, bot/system msgs only), Nav style/structure, Bot token, Webhook test/health/diagnostics, Global Flood Protection, Account login (username + password; changing username alone needs no password; owner-only rename; ADMIN_USER/ADMIN_PASS override on manual wrangler), Accounts manager (owner creates sub-admins restricted to specific tabs), Schema health/auto-heal, Browser & Recovery (SW reset, clear caches/storage, connectivity test; also on login/connecting screens), Factory reset.
+- Bot Profile: Name, Description, Short description, Menu Button (Default/Commands/Web App), Default Admin Rights (Groups & Channels), avatar & capabilities.
+- Retention (System → Retention): off until enabled; needs Cron Trigger or Run now. Every option is optional (0 = keep forever / skip): sessions, bot sessions, login attempts, rate limits, logs (synced with Activity Log), AI memory, DM history (synced with Memory), broadcast history, mini-game scores, inactive users.
+- Update: OAuth or API token, preserves D1/bindings/config, rotates webhook secret, 15s edge propagation reload lock.
 
 SECURITY
-PBKDF2 SHA-256 100k (legacy sha256 re-hashed on login). Login block after 20 failures in 5 min. Webhook requires X-Telegram-Bot-Api-Secret-Token (rotated on updates). Mutating calls need same-origin Origin/Referer + X-Nyxx-CSRF. Cookies HttpOnly, SameSite=Lax, Secure on HTTPS, 24h. Destructive MCP tools need confirm:true. proxy.js allow-list: api.cloudflare.com, dash.cloudflare.com, raw.githubusercontent.com, *.workers.dev; blocks private/loopback/link-local/CGNAT/metadata (incl. via DoH); 60s timeout, 25 MB cap. CSP, nosniff, Referrer-Policy, X-Frame-Options, HSTS, Permissions-Policy; pages noindex.
-
-FAQ
-- Free? Yes. VPS? No.
-- CF token stored? OAuth: installer doesn't keep it. API-token mode: browser local storage. Dashboard updater stores token/OAuth session in user's own D1, never on a Nyxx server.
-- Customize worker? Yes, open source. Update/delete panel? Update tab or installer Scan Account. Avoid hosted proxy? Self-host proxy.js.
-- Import pre-existing storage files? Media Library → Reindex storage.
-- Chrome "dangerous"/password-leak warning at sign-in: Chrome's leaked-password check; password is in a breach list. Set new unique password (Settings → Admin password or ADMIN_PASS).
+PBKDF2 SHA-256 100k, login rate limit (20/5m), webhook secret header, CSRF + same-origin check, HttpOnly/SameSite=Lax cookies, proxy.js allowlist + SSRF block.
 
 TROUBLESHOOTING (symptom → cause → fix)
-- "Session expired"/"No Cloudflare credentials" on Update → creds rejected/OAuth expired → reconnect or token with Workers Scripts:Edit.
-- "Update aborted ... bindings" → CF refused reading settings; nothing changed → check creds + script name, retry.
-- "Downloaded update file looks invalid" → GitHub download failed; nothing changed → retry later.
-- Update fails → creds lack Workers Scripts:Edit or script name mismatch. Deployment broken → Force redeploy.
-- "Too many failed attempts" → wait a few minutes. Forgot password → set ADMIN_PASS secret in Worker settings.
-- Bot silent everywhere → Settings → Webhook → Health check.
-- Bot silent in groups → AI trigger needs mention, permissions restrict, or group read permission; check group AI trigger + Permissions.
-- "unauthorised" → global Permissions or group override restricts to Mod+/Admin.
-- Can't DM user → hasn't pressed Start (Users shows not reachable, even if manually added).
-- AI silent → disabled, no key, trigger mismatch, rate limit, or group mention required. "API key is missing" → paste key, Save AI settings. Test fails → wrong model/key/provider; Custom: check base URL + headers.
-- Menu button empty → publish from Menu & Featured.
-- Installer proxy errors → default proxy down or self-host misconfigured → check proxy health notice or switch mode; self-hosted OAuth needs DB binding.
-- Panel not loading after install → wait 1–3 min, refresh; blocked workers.dev → custom domain.
-- MCP 401 → bad token, regenerate. 403 "disabled" → enable MCP endpoint. Tool "disabled" → enable category. Rate limited → raise or 0 in MCP tab.
-- "no such column/table" → Settings → Schema health → Run auto-heal.
-- Media upload fails → check storage chat; bot must be able to message it (admin in channel/group; DM: press Start). Browser ≤45 MB; use channel/group/DM for larger.
-- Reindex fails/skips → bot needs post & delete permission; Content Protection blocks forwarding.
-- Proxy check "Check skipped" → Workers block sockets to some ports/IPs (e.g. Cloudflare-proxied); IP/country/ISP/secret still resolve.
-- Media won't preview → >20 MB, still valid.
-- Media broken after token change → file_id bot-specific → re-upload or use URL.
-- Channel features not working → bot needs admin with Post, Edit, Delete (Pin) → fix, then Sync with Telegram.
-- Contact rate limit not working → enable "Save featured command messages" (Memory tab).
-- Browser contact alerts not appearing → enable them in Messaging → Notifications, grant this browser permission, keep the dashboard open, and check that it is served over HTTPS. Alerts do not work while the dashboard is closed.
-- Global Anti-Flood (Settings → Global Anti-Flood): global flood limit across all chats with Mute / Kick / Ban escalation and admin exemption.
-- Browser & Recovery (Settings → Browser & Recovery, also accessible from Connecting / Sign-in screens without a password): reset Service Worker, clear caches, clear local UI storage, and test API connectivity.
-- Bot Profile: edit Name, Description, Short Description, Menu Button (Default / Commands / Web App), and Default Admin Rights for Groups & Channels, plus view bot avatar & capabilities.
-- Group subtypes: Group, Supergroup, Forum (topic thread replies), Channel Comments / Discussion (auto-comment on new channel posts, exempt linked forwards), Direct Messages Group (admin notifications & auto-reply).
-- Cleanup never runs → needs Cron Trigger, or Retention → Run now.`;
+- Update fails/expired → reconnect OAuth or use token with Workers Scripts:Edit + Account Settings:Read. Deployment broken → Force redeploy.
+- "Too many failed attempts" → wait a few minutes. Forgot username/password → set ADMIN_USER & ADMIN_PASS secrets in CF Worker settings.
+- Bot silent everywhere → Settings → Bot & Webhook → Health check. Silent in groups → check group AI trigger + Permissions.
+- "unauthorised" → global Permissions or group override restricts to Mod+/Admin. Can't DM user → hasn't started bot.
+- AI silent/fails → check key, trigger, rate limit, group mention, base URL. Free AI models hitting token limit → reduce max tokens or start a fresh /chat thread.
+- Menu empty → publish from Menu & Featured. MCP 401/403 → regenerate token / enable MCP or tool category.
+- "no such column/table" → Settings → Security & DB → Run auto-heal. 409 Conflict → refresh before saving.
+- Media upload/reindex fails → bot needs storage chat access (admin in channel/group; DM: Start). Browser ≤45 MB; >20 MB won't preview. Token change breaks uploaded file_ids.
+- Contact rate limit ignored → enable "Save featured command messages" (Memory tab).
+- Web Push not arriving → enable in Messaging → Notifications, allow browser permission, use HTTPS; check Test button.
+- Cleanup never runs → enable Retention + save, add Cron Trigger or click Run now.`;
 
 const RELAY_BASE = 'https://nyxx-proxy.nova-06272b19.workers.dev';
 // Forks: set the RELAY_BASE variable (or edit the line above) to point at your own relay.
@@ -937,7 +821,8 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
 .featured-reply .fr-cmd { font-family: var(--mono); font-weight: 700; font-size: 15px; color: var(--accent); word-break: break-all; }
 .featured-reply .fr-badges { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
 .featured-reply .fr-blocks { display: flex; flex-direction: column; gap: 6px; }
-.featured-reply .fr-block { font-size: var(--fs-footnote); color: var(--text-2); padding: 7px 10px; border-radius: 8px; background: var(--surface-2); border-left: 3px solid var(--hairline); white-space: pre-wrap; word-break: break-word; line-height: 1.45; }
+.featured-reply .fr-block { font-size: var(--fs-footnote); color: var(--text-2); padding: 7px 10px; border-radius: 8px; background: var(--surface-2); border-left: 3px solid var(--hairline); line-height: 1.45; }
+.featured-reply .fr-block-clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; word-break: break-word; white-space: pre-line; }
 .featured-reply .fr-block.hint { border-color: var(--accent); }
 .featured-reply .fr-block.success { border-color: var(--green); }
 .featured-reply .fr-block.failure { border-color: var(--red); }
@@ -1256,6 +1141,8 @@ details.help > div { padding: 0 16px 14px; font-size: var(--fs-footnote); line-h
     .sheet-body .row.nowrap > .input,
     .sheet-body .row.nowrap > select.input { flex: 1 1 140px; min-width: 0; }
     .sheet-body .row.nowrap > .btn { flex: 0 0 auto; }
+    #page-games .grid-2, #gm-warn-opts, #gm-night-opts, #gm-captcha-opts .grid-3, #acc-areas-grid { grid-template-columns: 1fr !important; }
+    #games-lb-chat { max-width: 100% !important; width: 100%; }
 }
 
 /* ===== v4.5.0 additions ===== */
@@ -1698,6 +1585,7 @@ details.help.danger > summary { color: var(--red); }
             <div class="nav-items">
                 <button class="nav-item" data-page="media" data-label="media library files photos videos audio" onclick="go('media')"><i class="fa-solid fa-photo-film"></i><span>Media Library</span></button>
                 <button class="nav-item" data-page="proxies" data-label="proxies mtproto socks5 sell test ping" onclick="go('proxies')"><i class="fa-solid fa-network-wired"></i><span>Proxies</span></button>
+                <button class="nav-item" data-page="games" data-label="games mini games arcade leaderboard snake 2048" onclick="go('games')"><i class="fa-solid fa-gamepad"></i><span>Mini-Games</span></button>
                 <button class="nav-item" data-page="memory" data-label="memory chat history conversations stored" onclick="go('memory')"><i class="fa-solid fa-database"></i><span>Memory</span></button>
             </div>
         </nav>
@@ -1790,6 +1678,10 @@ details.help.danger > summary { color: var(--red); }
                         <label class="check" style="margin-top:8px;"><input type="checkbox" id="setup-skip-bot"> <span>Skip for now — I'll add it later</span></label>
                     </div>
                     <div class="field">
+                        <label class="field-label">Admin username</label>
+                        <input type="text" id="setup-username" class="input" placeholder="admin" value="admin" autocomplete="username">
+                    </div>
+                    <div class="field">
                         <label class="field-label">Admin password</label>
                         <div class="pw-wrap">
                             <input type="password" id="setup-password" class="input" placeholder="At least 6 characters" autocomplete="new-password" oninput="updatePwStrength()">
@@ -1806,7 +1698,7 @@ details.help.danger > summary { color: var(--red); }
                     </div>
                     <button class="btn btn-primary btn-block btn-lg" id="setup-submit" onclick="submitSetup()"><i class="fa-solid fa-check"></i> Save &amp; continue<span class="btn-spinner"><span class="mini-spinner"></span></span></button>
                     <div class="err-box" id="setup-error"></div>
-                    <div class="auth-help"><i class="fa-solid fa-circle-info"></i> Tip: You can also set an <code>ADMIN_PASS</code> environment variable / secret in Cloudflare Worker settings to override or bypass D1 password setup.</div>
+                    <div class="auth-help"><i class="fa-solid fa-circle-info"></i> Tip: You can also set <code>ADMIN_USER</code> + <code>ADMIN_PASS</code> environment variables / secrets in Cloudflare Worker settings to override or bypass D1 login setup.</div>
                     <div style="text-align:center;margin-top:12px;">
                         <button type="button" class="btn btn-gray btn-sm" onclick="openBrowserRecoveryModal()"><i class="fa-solid fa-wrench"></i> Browser &amp; Cache Tools</button>
                     </div>
@@ -1825,16 +1717,20 @@ details.help.danger > summary { color: var(--red); }
                     <div class="auth-msg">Enter your admin password to continue.</div>
                     <form onsubmit="event.preventDefault();submitLogin();">
                         <div class="field">
+                            <label class="field-label">Username</label>
+                            <input type="text" id="login-username" class="input" placeholder="admin" autocomplete="username" autofocus>
+                        </div>
+                        <div class="field">
                             <label class="field-label">Password</label>
                             <div class="pw-wrap">
-                                <input type="password" id="login-password" class="input" autocomplete="current-password" autofocus>
+                                <input type="password" id="login-password" class="input" autocomplete="current-password">
                                 <button type="button" class="pw-toggle" onclick="togglePw('login-password',this)" aria-label="Show or hide password"><i class="fa-regular fa-eye"></i></button>
                             </div>
                         </div>
                         <button type="submit" class="btn btn-primary btn-block btn-lg" id="login-submit"><i class="fa-solid fa-arrow-right-to-bracket"></i> Sign in<span class="btn-spinner"><span class="mini-spinner"></span></span></button>
                         <div class="err-box" id="login-error"></div>
                     </form>
-                    <div class="auth-help"><i class="fa-solid fa-key"></i> Forgot your password? Set an <code>ADMIN_PASS</code> environment variable / secret in your Cloudflare Worker settings to sign in with it anytime (it works over/alongside the D1 password).</div>
+                    <div class="auth-help"><i class="fa-solid fa-key"></i> Forgot your username or password? Set <code>ADMIN_USER</code> and <code>ADMIN_PASS</code> as variables / secrets in your Cloudflare Worker settings, then sign in with that pair anytime (it opens the owner account and works alongside the D1 login).</div>
                     <div style="text-align:center;margin-top:12px;">
                         <button type="button" class="btn btn-gray btn-sm" onclick="openBrowserRecoveryModal()"><i class="fa-solid fa-wrench"></i> Browser &amp; Cache Tools</button>
                     </div>
@@ -2470,62 +2366,112 @@ details.help.danger > summary { color: var(--red); }
                 </div>
 
                 <div class="card">
-                    <div class="card-head"><div class="card-title c-green"><i class="fa-solid fa-hand-sparkles"></i> Welcome &amp; rules</div></div>
+                    <div class="card-head"><div class="card-title c-green"><i class="fa-solid fa-hand-sparkles"></i> Welcome, goodbye, captcha &amp; rules</div></div>
                     <div class="switch-row"><div><div class="sw-label">Welcome new members</div><div class="sw-sub">Send a greeting when someone joins this group.</div></div><button class="switch" id="gm-welcome-toggle" onclick="gmToggle('welcome')"></button></div>
-                    <div class="field">
-                        <label class="field-label">Welcome message</label>
-                        <textarea class="textarea" id="gm-welcome-text" rows="3" placeholder="Welcome {{first_name}} to {{title}}!"></textarea>
-                        <span class="field-hint">Placeholders: <code>{{first_name}}</code> <code>{{username}}</code> <code>{{title}}</code> <code>{{id}}</code></span>
+                    <div class="grid grid-2">
+                        <div class="field">
+                            <label class="field-label">Welcome message</label>
+                            <textarea class="textarea" id="gm-welcome-text" rows="3" placeholder="Welcome {{first_name}} to {{title}}!"></textarea>
+                            <span class="field-hint">Placeholders: <code>{{first_name}}</code> <code>{{username}}</code> <code>{{title}}</code> <code>{{id}}</code></span>
+                        </div>
+                        <div class="field">
+                            <label class="field-label">Auto-delete welcome after (seconds)</label>
+                            <input type="number" class="input" id="gm-welcome-autodel" min="0" max="25" value="0">
+                            <span class="field-hint">0 = keep welcome message. Max 25s auto-cleanup.</span>
+                        </div>
+                    </div>
+                    <div class="switch-row"><div><div class="sw-label">Goodbye message</div><div class="sw-sub">Send a short message when a member leaves or is removed.</div></div><button class="switch" id="gm-goodbye-toggle" onclick="toggleSwitch('gm-goodbye-toggle');show($('gm-goodbye-wrap'),sw('gm-goodbye-toggle'))"></button></div>
+                    <div class="field hidden" id="gm-goodbye-wrap">
+                        <label class="field-label">Goodbye message</label>
+                        <textarea class="textarea" id="gm-goodbye-text" rows="2" placeholder="Goodbye {{first_name}}!"></textarea>
+                    </div>
+                    <div class="switch-row"><div><div class="sw-label">New-member Captcha (Shieldy / Rose style)</div><div class="sw-sub">Mutes newly joined users until they tap the verification button or solve a quick math check.</div></div><button class="switch" id="gm-captcha-toggle" onclick="toggleSwitch('gm-captcha-toggle');show($('gm-captcha-opts'),sw('gm-captcha-toggle'))"></button></div>
+                    <div id="gm-captcha-opts" class="hidden">
+                        <div class="grid grid-3">
+                            <div class="field">
+                                <label class="field-label tiny">Captcha type</label>
+                                <select class="input" id="gm-captcha-mode">
+                                    <option value="button">One-tap "I'm human" button</option>
+                                    <option value="math">Simple math quiz</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label class="field-label tiny">Timeout (seconds)</label>
+                                <input type="number" class="input" id="gm-captcha-timeout" min="30" max="600" value="120">
+                            </div>
+                            <div class="field">
+                                <label class="field-label tiny">On timeout / fail</label>
+                                <select class="input" id="gm-captcha-fail">
+                                    <option value="kick">Kick user</option>
+                                    <option value="mute">Keep muted</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label class="field-label tiny">Captcha prompt text</label>
+                            <input class="input" id="gm-captcha-text" placeholder="👋 Welcome {{first_name}}! Verify you're human within {{timeout}}s to chat.">
+                        </div>
                     </div>
                     <div class="field" style="margin-bottom:8px;">
                         <label class="field-label">Rules text <span class="muted small">(sent by /rules)</span></label>
                         <textarea class="textarea" id="gm-rules" rows="3" placeholder="1. Be kind&#10;2. No spam…"></textarea>
                         <span class="field-hint">Anyone typing <code>/rules</code> in this group gets this text. Leave blank to disable.</span>
                     </div>
+                    <div class="switch-row" style="margin-bottom:8px;"><div><div class="sw-label">Send /rules button in private DM</div><div class="sw-sub">Instead of posting a long rules wall in chat, show a deep-link button to open rules in bot DM.</div></div><button class="switch" id="gm-rules-pm" onclick="toggleSwitch('gm-rules-pm')"></button></div>
                     <details class="help" data-html-ref style="margin-bottom:0;"></details>
                 </div>
 
                 <div class="card">
-                    <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-shield-halved"></i> Moderation</div></div>
-                    <div class="switch-row"><div><div class="sw-label">Anti-flood with escalation</div><div class="sw-sub">Delete flood messages and progressively escalate (mute → kick → ban).</div></div><button class="switch" id="gm-flood-toggle" onclick="gmToggle('flood')"></button></div>
-                    <div class="field" id="gm-flood-limit-wrap">
-                        <label class="field-label">Messages per minute before action</label>
-                        <input type="number" class="input" id="gm-flood-limit" min="2" max="60" value="6">
-                        <span class="field-hint">Bot must be an admin with <b>Restrict members</b> and <b>Ban users</b> permissions for this to work.</span>
-                    </div>
-                    <div class="field" id="gm-flood-action-wrap">
-                        <label class="field-label">First action on flood</label>
-                        <div class="segmented" id="gm-flood-action">
-                            <button data-v="mute" onclick="setSeg('gm-flood-action','mute')">Mute</button>
-                            <button data-v="kick" onclick="setSeg('gm-flood-action','kick')">Kick</button>
-                            <button data-v="ban" onclick="setSeg('gm-flood-action','ban')">Ban</button>
+                    <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-shield-halved"></i> Flood Protection &amp; Moderation</div></div>
+                    <div class="field">
+                        <label class="field-label">Flood protection in this group</label>
+                        <div class="segmented segmented_mobile" id="gm-flood-mode">
+                            <button type="button" data-v="inherit" onclick="gmSetFloodMode('inherit')">Inherit Global</button>
+                            <button type="button" data-v="on" onclick="gmSetFloodMode('on')">Custom On</button>
+                            <button type="button" data-v="off" onclick="gmSetFloodMode('off')">Off</button>
                         </div>
-                        <span class="field-hint">What happens the <b>first</b> time a member exceeds the limit. <b>Mute</b> is safest.</span>
+                        <span class="field-hint"><b>Group overrides Global:</b> "Custom On" and "Off" override Global Flood Protection from Settings. "Inherit Global" uses the global limits.</span>
                     </div>
-                    <div class="field" id="gm-flood-mute-wrap">
-                        <label class="field-label">Mute duration (minutes)</label>
-                        <input type="number" class="input" id="gm-flood-mute" min="0" max="1440" value="10">
-                        <span class="field-hint">How long a muted user stays silenced. 0 = warning only, no actual mute.</span>
-                    </div>
-                    <div class="field" id="gm-flood-escalation-wrap">
-                        <label class="field-label">Escalation</label>
+                    <div id="gm-flood-opts" class="hidden">
                         <div class="grid grid-2">
-                            <div>
-                                <div class="field-hint" style="margin-bottom:4px;">After <b>N</b> mutes, next offense becomes a <b>kick</b></div>
-                                <input type="number" class="input" id="gm-flood-kick-after" min="1" max="20" value="2">
-                                <span class="field-hint">Default: 2</span>
+                            <div class="field">
+                                <label class="field-label">Max messages per minute</label>
+                                <input type="number" class="input" id="gm-flood-limit" min="2" max="120" value="6">
+                                <span class="field-hint">Bot needs Restrict &amp; Ban permissions.</span>
                             </div>
-                            <div>
-                                <div class="field-hint" style="margin-bottom:4px;">After <b>N</b> kicks, next offense becomes a <b>permanent ban</b></div>
+                            <div class="field">
+                                <label class="field-label">Mute / cooldown duration (minutes)</label>
+                                <input type="number" class="input" id="gm-flood-mute" min="0" max="1440" value="10">
+                                <span class="field-hint">0 = delete + warning only, no mute.</span>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label class="field-label">First action on flood</label>
+                            <div class="segmented segmented_mobile" id="gm-flood-action">
+                                <button type="button" data-v="mute" onclick="setSeg('gm-flood-action','mute')">Mute</button>
+                                <button type="button" data-v="kick" onclick="setSeg('gm-flood-action','kick')">Kick</button>
+                                <button type="button" data-v="ban" onclick="setSeg('gm-flood-action','ban')">Ban</button>
+                            </div>
+                        </div>
+                        <div class="grid grid-2">
+                            <div class="field">
+                                <label class="field-label">After N mutes → Kick</label>
+                                <input type="number" class="input" id="gm-flood-kick-after" min="1" max="20" value="2">
+                            </div>
+                            <div class="field">
+                                <label class="field-label">After N kicks → Ban</label>
                                 <input type="number" class="input" id="gm-flood-ban-after" min="1" max="20" value="2">
-                                <span class="field-hint">Default: 2</span>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label class="field-label">Who is exempt from flood limit?</label>
+                            <div class="segmented segmented_mobile" id="gm-flood-exempt">
+                                <button type="button" data-v="admins" onclick="setSeg('gm-flood-exempt','admins')">Admins only</button>
+                                <button type="button" data-v="admins_moderators" onclick="setSeg('gm-flood-exempt','admins_moderators')">Admins + Mods</button>
+                                <button type="button" data-v="none" onclick="setSeg('gm-flood-exempt','none')">Nobody</button>
                             </div>
                         </div>
                     </div>
-                    <details class="help warn" style="margin-top:8px;">
-                        <summary><i class="fa-solid fa-triangle-exclamation"></i> How anti-flood escalation works</summary>
-                        <div>Example with defaults: on the 7th message in a minute → <b>mute 10 min</b>. Repeat → mute. After 2 mutes → <b>kick</b>. After 2 kicks → <b>permanent ban</b>. Bans can only be lifted by an admin in Telegram.</div>
-                    </details>
 
                     <div class="switch-row"><div><div class="sw-label">Block links</div><div class="sw-sub">Delete messages containing URLs.</div></div><button class="switch" id="gm-link-toggle" onclick="gmToggle('link')"></button></div>
                     <div class="field hidden" id="gm-link-level-wrap" style="margin-top:4px;">
@@ -2561,6 +2507,86 @@ details.help.danger > summary { color: var(--red); }
                     <div class="switch-row"><div><div class="sw-label">Block other bots</div><div class="sw-sub">Delete messages posted by other bots.</div></div><button class="switch" id="gm-bot-toggle" onclick="gmToggle('bot')"></button></div>
                     <div class="switch-row"><div><div class="sw-label">Clean up service messages</div><div class="sw-sub">Delete "X joined", pinned notices and similar.</div></div><button class="switch" id="gm-service-toggle" onclick="gmToggle('service')"></button></div>
                     <div class="switch-row" style="margin-bottom:0;"><div><div class="sw-label">Track members in Users tab</div><div class="sw-sub">Off by default. When off, only members who DM the bot appear in Users.</div></div><button class="switch" id="gm-track-toggle" onclick="gmToggle('track')"></button></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-photo-film"></i> Media &amp; Content Locks</div></div>
+                    <div class="hint-banner">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <div>Toggle which content types are <b>blocked</b> (auto-deleted) for non-exempt members in this group.</div>
+                    </div>
+                    <div class="field">
+                        <label class="field-label">Who is exempt from media &amp; content locks?</label>
+                        <div class="segmented segmented_mobile" id="gm-media-exempt">
+                            <button type="button" data-v="admins" onclick="setSeg('gm-media-exempt','admins')">Admins only</button>
+                            <button type="button" data-v="admins_moderators" onclick="setSeg('gm-media-exempt','admins_moderators')">Admins + Mods</button>
+                        </div>
+                    </div>
+                    <div class="grid grid-2" style="gap:10px;">
+                        <div class="switch-row" style="margin:0;"><div><div class="sw-label">Block Files / Documents</div><div class="sw-sub">PDFs, ZIPs, APKs, documents.</div></div><button class="switch" id="gm-blk-files" onclick="toggleSwitch('gm-blk-files')"></button></div>
+                        <div class="switch-row" style="margin:0;"><div><div class="sw-label">Block Photos</div><div class="sw-sub">Images &amp; albums.</div></div><button class="switch" id="gm-blk-photos" onclick="toggleSwitch('gm-blk-photos')"></button></div>
+                        <div class="switch-row" style="margin:0;"><div><div class="sw-label">Block Voice &amp; Audio</div><div class="sw-sub">Voice messages &amp; audio files.</div></div><button class="switch" id="gm-blk-voice" onclick="toggleSwitch('gm-blk-voice')"></button></div>
+                        <div class="switch-row" style="margin:0;"><div><div class="sw-label">Block Videos</div><div class="sw-sub">Videos &amp; round video notes.</div></div><button class="switch" id="gm-blk-video" onclick="toggleSwitch('gm-blk-video')"></button></div>
+                        <div class="switch-row" style="margin:0;"><div><div class="sw-label">Block Stickers</div><div class="sw-sub">Static, animated &amp; video stickers.</div></div><button class="switch" id="gm-blk-stickers" onclick="toggleSwitch('gm-blk-stickers')"></button></div>
+                        <div class="switch-row" style="margin:0;"><div><div class="sw-label">Block GIFs / Animations</div><div class="sw-sub">GIF loops &amp; animations.</div></div><button class="switch" id="gm-blk-gifs" onclick="toggleSwitch('gm-blk-gifs')"></button></div>
+                        <div class="switch-row" style="margin:0;"><div><div class="sw-label">Block Polls</div><div class="sw-sub">Native polls &amp; quizzes.</div></div><button class="switch" id="gm-blk-polls" onclick="toggleSwitch('gm-blk-polls')"></button></div>
+                        <div class="switch-row" style="margin:0;"><div><div class="sw-label">Block @Mentions</div><div class="sw-sub">Messages containing @usernames.</div></div><button class="switch" id="gm-blk-mentions" onclick="toggleSwitch('gm-blk-mentions')"></button></div>
+                        <div class="switch-row" style="margin:0;"><div><div class="sw-label">Block Channel-Identity Posts</div><div class="sw-sub">Users posting as a channel.</div></div><button class="switch" id="gm-blk-channels" onclick="toggleSwitch('gm-blk-channels')"></button></div>
+                        <div class="switch-row" style="margin:0;"><div><div class="sw-label">Read-Only Lock (Mute All)</div><div class="sw-sub">Only admins/mods can send anything.</div></div><button class="switch" id="gm-lock-all" onclick="toggleSwitch('gm-lock-all')"></button></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head"><div class="card-title c-red"><i class="fa-solid fa-gavel"></i> Warns, Slow Mode, Night Mode &amp; Filters</div></div>
+                    <div class="switch-row"><div><div class="sw-label">Warn system (/warn, /warns, /unwarn)</div><div class="sw-sub">Track strikes per member and auto-punish when the warn limit is reached.</div></div><button class="switch on" id="gm-warn-toggle" onclick="toggleSwitch('gm-warn-toggle');show($('gm-warn-opts'),sw('gm-warn-toggle'))"></button></div>
+                    <div id="gm-warn-opts" class="grid grid-3" style="margin-bottom:14px;">
+                        <div class="field" style="margin-bottom:0;"><label class="field-label tiny">Max warns before action</label><input type="number" class="input" id="gm-warn-limit" min="1" max="20" value="3"></div>
+                        <div class="field" style="margin-bottom:0;"><label class="field-label tiny">Auto-action at limit</label><select class="input" id="gm-warn-action"><option value="mute">Mute</option><option value="kick">Kick</option><option value="ban">Ban</option></select></div>
+                        <div class="field" style="margin-bottom:0;"><label class="field-label tiny">Mute duration (min)</label><input type="number" class="input" id="gm-warn-mute" min="1" max="1440" value="60"></div>
+                    </div>
+
+                    <div class="switch-row"><div><div class="sw-label">Slow mode (per-user cooldown)</div><div class="sw-sub">Delete messages from members who send faster than N seconds apart.</div></div><button class="switch" id="gm-slow-toggle" onclick="toggleSwitch('gm-slow-toggle');show($('gm-slow-opts'),sw('gm-slow-toggle'))"></button></div>
+                    <div id="gm-slow-opts" class="field hidden">
+                        <label class="field-label tiny">Minimum seconds between messages</label>
+                        <input type="number" class="input" id="gm-slow-sec" min="2" max="3600" value="10" style="max-width:200px;">
+                    </div>
+
+                    <div class="switch-row"><div><div class="sw-label">Night mode (UTC schedule)</div><div class="sw-sub">Silence the group (or block all media) during off-hours.</div></div><button class="switch" id="gm-night-toggle" onclick="toggleSwitch('gm-night-toggle');show($('gm-night-opts'),sw('gm-night-toggle'))"></button></div>
+                    <div id="gm-night-opts" class="hidden" style="margin-bottom:14px;">
+                        <div class="grid grid-3">
+                            <div class="field" style="margin-bottom:0;"><label class="field-label tiny">Start UTC hour (0-23)</label><input type="number" class="input" id="gm-night-start" min="0" max="23" value="23"></div>
+                            <div class="field" style="margin-bottom:0;"><label class="field-label tiny">End UTC hour (0-23)</label><input type="number" class="input" id="gm-night-end" min="0" max="23" value="7"></div>
+                            <div class="field" style="margin-bottom:0;"><label class="field-label tiny">Night restriction</label><select class="input" id="gm-night-mode"><option value="all">Block all messages</option><option value="media">Media only blocked</option></select></div>
+                        </div>
+                    </div>
+
+                    <div class="switch-row"><div><div class="sw-label">Anti-raid (join flood protection)</div><div class="sw-sub">Automatically kicks/blocks sudden waves of joins above the threshold per minute.</div></div><button class="switch" id="gm-raid-toggle" onclick="toggleSwitch('gm-raid-toggle');show($('gm-raid-opts'),sw('gm-raid-toggle'))"></button></div>
+                    <div id="gm-raid-opts" class="field hidden">
+                        <label class="field-label tiny">Max new joins per minute</label>
+                        <input type="number" class="input" id="gm-raid-limit" min="3" max="100" value="10" style="max-width:200px;">
+                    </div>
+
+                    <div class="grid grid-2">
+                        <div class="field" style="margin-bottom:0;">
+                            <label class="field-label tiny">Max message length (0 = unlimited)</label>
+                            <input type="number" class="input" id="gm-maxlen" min="0" max="4096" value="0">
+                            <span class="field-hint">Deletes wall-of-text spam longer than N chars.</span>
+                        </div>
+                        <div class="field" style="margin-bottom:0;">
+                            <label class="field-label tiny">Blacklist action</label>
+                            <select class="input" id="gm-blacklist-action">
+                                <option value="delete">Delete message only</option>
+                                <option value="warn">Delete + Warn</option>
+                                <option value="mute">Delete + Mute 10m</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="field" style="margin-top:12px;margin-bottom:0;">
+                        <label class="field-label">Custom auto-reply filters (Rose <code>/filter</code> style)</label>
+                        <textarea class="textarea" id="gm-custom-filters" rows="3" placeholder="price => Check our pricing at https://example.com&#10;help => Type /start in DM for support!"></textarea>
+                        <span class="field-hint">One rule per line: <code>keyword =&gt; HTML reply</code>. Case-insensitive match.</span>
+                    </div>
                 </div>
 
                 <div class="card">
@@ -2935,7 +2961,7 @@ details.help.danger > summary { color: var(--red); }
                 </div>
                 <div class="hint-banner">
                     <i class="fa-solid fa-circle-info"></i>
-                    <div>This browser checks for new contact messages about once a minute while the Nyxx dashboard remains open. Desktop alerts appear when the dashboard is in the background; the Inbox badge updates while it is visible. The service worker displays and routes notifications. This is not web push: notifications cannot arrive while the dashboard is closed, and background polling depends on browser scheduling.</div>
+                    <div><b>Web Push (VAPID)</b> delivers encrypted push alerts straight to this device even when the dashboard is completely closed!</div>
                 </div>
                 <div class="card">
                     <div class="card-head"><div class="card-title c-green"><i class="fa-solid fa-bell"></i> Browser notifications</div></div>
@@ -3178,6 +3204,61 @@ details.help.danger > summary { color: var(--red); }
                 </div>
 
                 <div id="proxies-list"></div>
+            </section>
+
+            <section class="page" id="page-games">
+                <div class="page-head">
+                    <div class="lead"><h1>Mini-Games</h1><p>Interactive web mini-games with per-chat leaderboards, score announcements, and role-based permissions.</p></div>
+                    <div class="page-actions">
+                        <button class="btn btn-gray btn-sm" onclick="loadGamesPage(true)"><i class="fa-solid fa-rotate"></i> Refresh</button>
+                        <button class="btn btn-primary btn-sm" onclick="saveGamesConfig()"><i class="fa-solid fa-check"></i> Save settings</button>
+                    </div>
+                </div>
+                <div class="hint-banner">
+                    <i class="fa-solid fa-gamepad"></i>
+                    <div>Players can launch games via <code>/games</code>, inline buttons (attach any game URL or <code>GAME:&lt;id&gt;</code> callback), or directly in the browser. High scores are saved per chat and trigger an announcement when a player beats their personal best.</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head"><div class="card-title"><i class="fa-solid fa-bullhorn"></i> Score Announcements &amp; Delivery</div></div>
+                    <div class="grid grid-2">
+                        <div class="field" style="margin-bottom:0;">
+                            <label class="field-label">When a player beats their personal best</label>
+                            <div class="segmented segmented_mobile" id="games-announce-mode">
+                                <button type="button" data-v="message" onclick="setSeg('games-announce-mode','message')">Short message</button>
+                                <button type="button" data-v="silent" onclick="setSeg('games-announce-mode','silent')">Silent / service</button>
+                                <button type="button" data-v="off" onclick="setSeg('games-announce-mode','off')">Off</button>
+                            </div>
+                            <span class="field-hint"><b>Silent / service</b> posts without notification sound (ideal for 150+ user groups).</span>
+                        </div>
+                        <div class="field" style="margin-bottom:0;">
+                            <label class="field-label">Per-chat announcement cooldown (seconds)</label>
+                            <input type="number" class="input" id="games-announce-cooldown" min="5" max="600" value="20">
+                            <span class="field-hint">Rate-limits chat score messages so busy groups never hit Telegram flood limits.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head"><div class="card-title c-purple"><i class="fa-solid fa-puzzle-piece"></i> Games &amp; Permissions</div></div>
+                    <div id="games-cards-list" class="grid grid-2"></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head">
+                        <div class="card-title c-green"><i class="fa-solid fa-trophy"></i> Chat Leaderboard</div>
+                        <div style="flex:1"></div>
+                        <select class="input" id="games-lb-game" onchange="loadGameLeaderboard()" style="width:auto;">
+                            <option value="snake">Neon Snake</option>
+                            <option value="2048">2048</option>
+                            <option value="breaker">Brick Breaker</option>
+                            <option value="flappy">Sky Dash</option>
+                        </select>
+                        <input class="input mono" id="games-lb-chat" placeholder="Chat ID (blank = all chats)" style="max-width:200px;" oninput="loadGameLeaderboard()">
+                    </div>
+                    <div class="field-hint" style="margin-top:0;margin-bottom:10px;"><i class="fa-solid fa-database"></i> Leaderboard scores are kept forever by default. If you run out of D1 storage, you can auto-delete old scores in <a href="#" onclick="go('cron');return false;"><b>System → Retention</b></a>.</div>
+                    <div id="games-lb-list"></div>
+                </div>
             </section>
 
             <section class="page" id="page-media">
@@ -3841,7 +3922,8 @@ details.help.danger > summary { color: var(--red); }
                 <div class="tabbar sub-tabbar" id="settings-tabs">
                     <button type="button" class="active" data-stab="general" onclick="settingsSetTab('general')"><i class="fa-solid fa-sliders"></i> General &amp; UI</button>
                     <button type="button" data-stab="bot" onclick="settingsSetTab('bot')"><i class="fa-solid fa-robot"></i> Bot &amp; Webhook</button>
-                    <button type="button" data-stab="flood" onclick="settingsSetTab('flood')"><i class="fa-solid fa-shield-halved"></i> Global Anti-Flood</button>
+                    <button type="button" data-stab="flood" onclick="settingsSetTab('flood')"><i class="fa-solid fa-shield-halved"></i> Flood Protection</button>
+                    <button type="button" data-stab="accounts" id="stab-accounts" onclick="settingsSetTab('accounts')"><i class="fa-solid fa-users-gear"></i> Accounts</button>
                     <button type="button" data-stab="security" onclick="settingsSetTab('security')"><i class="fa-solid fa-lock"></i> Security &amp; DB</button>
                     <button type="button" data-stab="browser" onclick="settingsSetTab('browser')"><i class="fa-solid fa-wrench"></i> Browser &amp; Recovery</button>
                 </div>
@@ -3960,12 +4042,12 @@ details.help.danger > summary { color: var(--red); }
                 </div>
                 <div class="sub-tabpane" id="set-pane-flood">
                 <div class="card">
-                    <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-shield-halved"></i> Global bot anti-flood</div></div>
+                    <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-shield-halved"></i> Global Flood Protection (Default Policy)</div></div>
                     <div class="hint-banner">
                         <i class="fa-solid fa-circle-info"></i>
-                        <div>Protects your bot globally across <b>both private chats and groups</b>. Escalates from <b>Mute</b> → <b>Kick</b> → <b>Ban</b>. In private DMs, Mute puts the user on temporary cooldown and Ban blocks them from the bot.</div>
+                        <div>Unified flood policy for <b>private DMs</b> and any group set to <b>Inherit Global</b>. Groups set to <b>Custom On</b> or <b>Off</b> override this policy.<br>In private chats, Mute applies a temporary cooldown and Ban blocks the user.</div>
                     </div>
-                    <div class="switch-row"><div><div class="sw-label">Enable global anti-flood</div><div class="sw-sub">Monitor message rate per user across all chats.</div></div><button class="switch" id="set-gaf-enabled" onclick="toggleSwitch('set-gaf-enabled');show($('set-gaf-opts'),sw('set-gaf-enabled'))"></button></div>
+                    <div class="switch-row"><div><div class="sw-label">Enable global flood protection</div><div class="sw-sub">Default rate protection for DMs and Inherit groups.</div></div><button class="switch" id="set-gaf-enabled" onclick="toggleSwitch('set-gaf-enabled');show($('set-gaf-opts'),sw('set-gaf-enabled'))"></button></div>
                     <div id="set-gaf-opts" class="hidden">
                         <div class="grid grid-2">
                             <div class="field">
@@ -3974,7 +4056,7 @@ details.help.danger > summary { color: var(--red); }
                             </div>
                             <div class="field">
                                 <label class="field-label">Mute / cooldown duration (minutes)</label>
-                                <input type="number" class="input" id="set-gaf-mute" min="1" max="1440" value="10">
+                                <input type="number" class="input" id="set-gaf-mute" min="0" max="1440" value="10">
                             </div>
                         </div>
                         <div class="field">
@@ -3989,26 +4071,37 @@ details.help.danger > summary { color: var(--red); }
                             <div class="field"><label class="field-label">After N mutes → Kick</label><input type="number" class="input" id="set-gaf-kick-after" min="1" max="20" value="2"></div>
                             <div class="field"><label class="field-label">After N kicks → Ban / Block</label><input type="number" class="input" id="set-gaf-ban-after" min="1" max="20" value="2"></div>
                         </div>
-                        <div class="switch-row"><div><div class="sw-label">Exempt Admins &amp; Moderators</div><div class="sw-sub">Recommended so admins are never throttled.</div></div><button class="switch on" id="set-gaf-exempt" onclick="toggleSwitch('set-gaf-exempt')"></button></div>
+                        <div class="field">
+                            <label class="field-label">Who is exempt from flood limit?</label>
+                            <div class="segmented segmented_mobile mobile-segmented" id="set-gaf-exempt">
+                                <button type="button" data-v="admins" onclick="setSeg('set-gaf-exempt','admins')">Admins only</button>
+                                <button type="button" data-v="admins_moderators" onclick="setSeg('set-gaf-exempt','admins_moderators')">Admins + Mods</button>
+                                <button type="button" data-v="none" onclick="setSeg('set-gaf-exempt','none')">Nobody</button>
+                            </div>
+                        </div>
                     </div>
-                    <button class="btn btn-primary btn-sm" style="margin-top:12px;" onclick="saveGlobalAntiFlood()"><i class="fa-solid fa-check"></i> Save anti-flood</button>
+                    <button class="btn btn-primary btn-sm" style="margin-top:12px;" onclick="saveGlobalAntiFlood()"><i class="fa-solid fa-check"></i> Save flood policy</button>
                     <div id="set-gaf-result" class="small" style="margin-top:8px;"></div>
                 </div>
                 </div>
 
                 <div class="card" data-set-move-to="security">
-                    <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-lock"></i> Admin password</div></div>
+                    <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-lock"></i> Account login (username &amp; password)</div></div>
                     <details class="help">
-                        <summary><i class="fa-solid fa-circle-info"></i> Password behaviour &amp; ADMIN_PASS override</summary>
-                        <div>Changing your password updates the password stored in D1 and <b>signs out every other browser and device</b> immediately (your current tab stays signed in).<br><b>Environment override:</b> You can also set an <code>ADMIN_PASS</code> environment variable / secret in your Cloudflare Worker settings — useful if you ever forget your D1 password or want a master password over it.</div>
+                        <summary><i class="fa-solid fa-circle-info"></i> Login behaviour &amp; ADMIN_USER / ADMIN_PASS override</summary>
+                        <div>Changing your password updates it in D1 and <b>signs out this account's other browsers and devices</b> (your current tab stays signed in). Changing only the username keeps everyone signed in. Only the owner can rename accounts.<br><b>Environment override (forgot username/password):</b> set <code>ADMIN_USER</code> and <code>ADMIN_PASS</code> as variables / secrets in your Cloudflare Worker settings. Signing in with exactly that pair always opens the <b>owner</b> account. If <code>ADMIN_USER</code> is not set, <code>ADMIN_PASS</code> works with the owner's current username.</div>
                     </details>
+                    <div class="field" style="max-width:460px;"><label class="field-label">Username</label>
+                        <input type="text" class="input" id="acct-username" autocomplete="username" placeholder="admin">
+                        <span class="field-hint">2–40 characters: letters, numbers, _ . -</span>
+                    </div>
                     <div class="grid grid-2" style="max-width:460px;">
                         <div class="field" style="margin-bottom:0;"><label class="field-label">New password</label>
                             <div class="pw-wrap">
                                 <input type="password" class="input" id="pw1" autocomplete="new-password">
                                 <button type="button" class="pw-toggle" onclick="togglePw('pw1',this)" aria-label="Show or hide password"><i class="fa-regular fa-eye"></i></button>
                             </div>
-                            <span class="field-hint">At least 6 characters.</span>
+                            <span class="field-hint">Leave blank to keep the current password.</span>
                         </div>
                         <div class="field"><label class="field-label">Confirm</label>
                             <div class="pw-wrap">
@@ -4017,7 +4110,7 @@ details.help.danger > summary { color: var(--red); }
                             </div>
                         </div>
                     </div>
-                    <button class="btn btn-primary btn-sm" onclick="changePassword()"><i class="fa-solid fa-check"></i> Update password</button>
+                    <button class="btn btn-primary btn-sm" onclick="changePassword()"><i class="fa-solid fa-check"></i> Save login</button>
                     <div id="pw-result" class="small" style="margin-top:8px;"></div>
                 </div>
                 <div class="card" data-set-move-to="security">
@@ -4037,6 +4130,21 @@ details.help.danger > summary { color: var(--red); }
                             <div>These tools run locally in your browser (no password required). Use them if the dashboard looks outdated, gets stuck loading, or has Service Worker cache issues.</div>
                         </div>
                         <div id="settings-browser-tools"></div>
+                    </div>
+                </div>
+
+                <div class="sub-tabpane" id="set-pane-accounts">
+                    <div class="card">
+                        <div class="card-head">
+                            <div class="card-title c-purple"><i class="fa-solid fa-users-gear"></i> Panel Accounts Manager</div>
+                            <div style="flex:1"></div>
+                            <button type="button" class="btn btn-primary btn-sm" onclick="openAccountModal()"><i class="fa-solid fa-user-plus"></i> New account</button>
+                        </div>
+                        <div class="hint-banner">
+                            <i class="fa-solid fa-shield-halved"></i>
+                            <div>Create sub-admin accounts restricted to specific dashboard tabs and API areas. Only the <b>Owner</b> account can manage accounts.</div>
+                        </div>
+                        <div id="accounts-list"></div>
                     </div>
                 </div>
             </section>
@@ -4132,6 +4240,10 @@ details.help.danger > summary { color: var(--red); }
                 </details>
                 <div class="card">
                     <div class="switch-row"><div><div class="sw-label">Enable automatic cleanup</div><div class="sw-sub">Requires a Cron trigger in wrangler.toml or press Run now.</div></div><button class="switch" id="cron-enable" onclick="toggleCronEnabled()"></button></div>
+                    <div class="hint-banner" style="margin-top:12px;margin-bottom:14px;">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <div>Every option below is <b>optional</b> — set any field to <code>0</code> to skip it and keep that data forever. Direct messages retention syncs with the <a href="#" onclick="go('memory');return false;"><b>Memory</b></a> tab, and Activity log cleanup syncs with the <a href="#" onclick="go('logs');return false;"><b>Activity Log</b></a> tab.</div>
+                    </div>
                     <div id="cron-rows"></div>
                     <div class="row" style="margin-top:16px;">
                         <button class="btn btn-primary btn-sm" onclick="saveCron()"><i class="fa-solid fa-check"></i> Save</button>
@@ -4516,6 +4628,18 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                         <select class="input" id="kbCmd-inline-row" style="width:auto;" title="Target row"><option value="auto">Auto row</option><option value="new">+ New row</option></select>
                         <button type="button" class="btn btn-primary btn-sm" id="kbCmd-inline-add-btn" onclick="kbCmd.inlineAdd()" title="Add / Save button"><i class="fa-solid fa-plus"></i></button>
                         <button type="button" class="btn btn-gray btn-sm" onclick="kbCmd.addRow('inline')" title="Add an empty row"><i class="fa-solid fa-grip-lines"></i> + Row</button>
+                    </div>
+                    <div class="row" style="margin-bottom:8px;gap:6px;flex-wrap:wrap;">
+                        <select class="input" id="kbCmd-game-pick" style="width:auto;height:32px;font-size:12px;">
+                            <option value="">🎮 Quick-attach a Mini-Game button…</option>
+                            <option value="snake">🐍 Neon Snake (callback)</option>
+                            <option value="2048">🔢 2048 (callback)</option>
+                            <option value="breaker">🧱 Brick Breaker (callback)</option>
+                            <option value="flappy">🚀 Sky Dash (callback)</option>
+                            <option value="url:snake">🔗 Neon Snake (direct URL)</option>
+                            <option value="url:2048">🔗 2048 (direct URL)</option>
+                        </select>
+                        <button type="button" class="btn btn-gray btn-sm" onclick="quickAttachGameBtn('kbCmd')"><i class="fa-solid fa-gamepad"></i> Attach Game</button>
                     </div>
                     <div id="kbCmd-inline-list"></div>
                     <details class="help" style="margin-top:10px;margin-bottom:10px;">
@@ -5215,6 +5339,35 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
     </div>
 </div>
 
+<div class="modal hidden" id="account-modal" role="dialog" aria-modal="true">
+    <div class="modal-bg" onclick="closeAccountModal()"></div>
+    <div class="sheet">
+        <div class="sheet-head">
+            <button type="button" class="btn btn-plain" onclick="closeAccountModal()">Cancel</button>
+            <div class="sheet-title" id="acc-modal-title">New Account</div>
+            <button type="button" class="btn btn-plain" id="acc-save-btn" onclick="saveAccount()">Save</button>
+        </div>
+        <div class="sheet-body">
+            <div class="grid grid-2">
+                <div class="field"><label class="field-label">Username</label><input class="input" id="acc-username" placeholder="moderator1" autocomplete="off"></div>
+                <div class="field"><label class="field-label">Password <span class="muted small" id="acc-pw-hint">(min 6 chars)</span></label>
+                    <div class="pw-wrap"><input type="password" class="input" id="acc-password" autocomplete="new-password"><button type="button" class="pw-toggle" onclick="togglePw('acc-password',this)"><i class="fa-regular fa-eye"></i></button></div>
+                </div>
+            </div>
+            <div class="switch-row"><div><div class="sw-label">Account enabled</div><div class="sw-sub">Disabled accounts cannot sign in.</div></div><button type="button" class="switch on" id="acc-enabled" onclick="toggleSwitch('acc-enabled')"></button></div>
+            <div class="field" style="margin-bottom:0;">
+                <label class="field-label">Allowed Dashboard Tabs &amp; Areas</label>
+                <div class="row" style="margin-bottom:8px;gap:6px;">
+                    <button type="button" class="btn btn-gray btn-sm" onclick="accSelectAllAreas(true)">Select all</button>
+                    <button type="button" class="btn btn-gray btn-sm" onclick="accSelectAllAreas(false)">Clear</button>
+                </div>
+                <div id="acc-areas-grid" class="grid grid-2" style="gap:8px;font-size:13px;"></div>
+            </div>
+            <div class="err-box" id="acc-error"></div>
+        </div>
+    </div>
+</div>
+
 <div class="modal hidden" id="token-modal" role="dialog" aria-modal="true">
     <div class="modal-bg" onclick="closeTokenModal()"></div>
     <div class="sheet small">
@@ -5436,6 +5589,11 @@ async function api(method, path, body) {
             toast('Your session expired. Please sign in again.', 'info');
             throw new Error('__SESSION_EXPIRED__');
         }
+    }
+    if (res.status === 409 && data && data.conflict) {
+        var cMsg = data.error || 'Conflict: this item was modified in another session. Refresh before saving.';
+        toast(cMsg, 'error');
+        throw new Error(cMsg);
     }
     if (!res.ok) {
         var msg = (data && data.error) || ('Request failed (' + res.status + ')');
@@ -5677,10 +5835,33 @@ var PAGE_TITLES = {
     forcejoin: 'Force Join', proxies: 'Proxies',
     broadcast: 'Broadcast', contact: 'Contact', inbox: 'Inbox', notifications: 'Notifications', memory: 'Memory', media: 'Media Library', ai: 'AI', settings: 'Settings', botinfo: 'Bot Info',
     cron: 'Retention', backup: 'Backup', logs: 'Activity Log', update: 'Update', mcp: 'MCP',
-    permissions: 'Admin & Permissions'
+    permissions: 'Admin & Permissions', games: 'Mini-Games'
 };
 var currentPage = 'overview';
+function applyAccountPermissionsUi(acc) {
+    window.__currentAccount = acc || null;
+    if (acc && acc.username && $('acct-username')) $('acct-username').value = acc.username;
+    var isOwner = !acc || acc.role === 'owner' || (Array.isArray(acc.allowed_areas) && acc.allowed_areas.indexOf('*') >= 0);
+    var allowed = isOwner ? null : new Set(acc.allowed_areas || []);
+    document.querySelectorAll('.nav-item[data-page]').forEach(function (n) {
+        var p = n.dataset.page;
+        var ok = isOwner || (allowed && allowed.has(p));
+        n.classList.toggle('hidden', !ok);
+    });
+    if ($('stab-accounts')) show($('stab-accounts'), isOwner);
+}
 function go(page) {
+    if (window.__currentAccount && window.__currentAccount.role !== 'owner') {
+        var areas = window.__currentAccount.allowed_areas || [];
+        if (areas.indexOf('*') < 0 && areas.indexOf(page) < 0) {
+            var basePage = page === 'user-manage' ? 'users' : page === 'group-manage' ? 'groups' : page === 'channel-manage' ? 'channels' : page;
+            if (areas.indexOf(basePage) < 0) {
+                if (areas.length && page !== areas[0]) return go(areas[0]);
+                toast('Access restricted to assigned areas.', 'error');
+                return;
+            }
+        }
+    }
     currentPage = page;
     document.querySelectorAll('.page').forEach(function (p) { p.classList.remove('active'); });
     var el = $('page-' + page); if (el) el.classList.add('active');
@@ -5703,6 +5884,7 @@ function go(page) {
     if (page === 'channels') loadChannels();
     if (page === 'forcejoin') loadForceJoin();
     if (page === 'proxies') loadProxies();
+    if (page === 'games') loadGamesPage();
     if (page === 'broadcast') loadBroadcast();
     if (page === 'contact') loadContact();
     if (page === 'inbox') loadInbox();
@@ -6069,6 +6251,7 @@ saveFeatured = async function () {
         enabled: sw('featured-enabled') ? 1 : 0,
         button_style: featuredKind === 'buttons' ? ($('featured-style').value || '') : ''
     };
+    if (featuredEditing && featuredEditing.version !== undefined) payload.expectedVersion = featuredEditing.version;
     var btn = $('featured-save');
     await withBusy(btn, async function () {
         try {
@@ -6109,13 +6292,13 @@ renderFeatured = function () {
         var delBadge = (f.delete_user_message === undefined || f.delete_user_message === null || f.delete_user_message == 1)
             ? '<span class="badge featured-delete-badge"><i class="fa-solid fa-eraser"></i> auto-del</span>' : '';
         var blocks = '';
-        if (f.content) blocks += '<div class="fr-block hint"><b>Hint:</b> ' + esc(f.content) + '</div>';
+        if (f.content) blocks += '<div class="fr-block hint" title="' + esc(f.content) + '"><div class="fr-block-clamp"><b>Hint:</b> ' + esc(f.content) + '</div></div>';
         if (f.button_style) {
             const swatch = f.button_style === 'primary' ? '#0a84ff' : (f.button_style === 'success' ? '#30d158' : '#ff453a');
-            blocks += '<div class="fr-block hint"><b>Button color:</b> <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + swatch + ';margin-right:4px;vertical-align:middle;"></span>' + esc(f.button_style) + '</div>';
+            blocks += '<div class="fr-block hint"><div class="fr-block-clamp"><b>Button color:</b> <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + swatch + ';margin-right:4px;vertical-align:middle;"></span>' + esc(f.button_style) + '</div></div>';
         }
-        if (f.success_text) blocks += '<div class="fr-block success"><b style="color:var(--green)">Success:</b> ' + esc(f.success_text) + '</div>';
-        if (f.failure_text) blocks += '<div class="fr-block failure"><b style="color:var(--red)">Failure:</b> ' + esc(f.failure_text) + '</div>';
+        if (f.success_text) blocks += '<div class="fr-block success" title="' + esc(f.success_text) + '"><div class="fr-block-clamp"><b style="color:var(--green)">Success:</b> ' + esc(f.success_text) + '</div></div>';
+        if (f.failure_text) blocks += '<div class="fr-block failure" title="' + esc(f.failure_text) + '"><div class="fr-block-clamp"><b style="color:var(--red)">Failure:</b> ' + esc(f.failure_text) + '</div></div>';
         return '<div class="featured-reply ' + (f.enabled ? '' : 'disabled') + '">' +
             '<div class="fr-head">' +
                 '<div class="fr-icon ' + meta.icls + '"><i class="' + meta.icon + '"></i></div>' +
@@ -6158,7 +6341,7 @@ async function checkStatus() {
             __setupDone = true;
             try {
                 var s = await api('GET', '/api/check_session');
-                if (s.logged_in) { __csrf = s.csrf || null; enterDashboard(); } else showStep('step-login');
+                if (s.logged_in) { __csrf = s.csrf || null; applyAccountPermissionsUi(s.account || null); enterDashboard(); } else showStep('step-login');
             } catch (e) { showStep('step-login'); }
             return;
         } catch (e) {
@@ -6212,10 +6395,12 @@ function enterDashboard() {
 }
 async function submitSetup() {
     var err = $('setup-error'); err.classList.remove('show');
+    var uname = ($('setup-username') && $('setup-username').value.trim()) || 'admin';
     var pw = $('setup-password').value, pw2 = $('setup-password-confirm').value;
+    if (!/^[a-zA-Z0-9_.-]{2,40}$/.test(uname)) { err.textContent = 'Username must be 2–40 chars (letters, numbers, _ . -).'; err.classList.add('show'); return; }
     if (pw.length < 6) { err.textContent = 'Password must be at least 6 characters.'; err.classList.add('show'); return; }
     if (pw !== pw2) { err.textContent = 'Passwords do not match.'; err.classList.add('show'); return; }
-    var body = { adminPassword: pw };
+    var body = { username: uname, adminPassword: pw };
     var tok = $('setup-bot-token').value.trim();
     if (tok && !$('setup-skip-bot').checked) body.botToken = tok;
     var btn = $('setup-submit');
@@ -6224,6 +6409,7 @@ async function submitSetup() {
         try {
             await api('POST', '/api/setup', body);
             __setupDone = true;
+            if ($('login-username')) $('login-username').value = uname;
             toast('Setup complete — please sign in.');
             showStep('step-login');
         } catch (e) { err.textContent = e.message; err.classList.add('show'); }
@@ -6235,8 +6421,10 @@ async function submitLogin() {
     if (btn && btn.classList.contains('loading')) return;
     await withBusy(btn, async function () {
         try {
-            var r = await api('POST', '/api/login', { password: $('login-password').value });
+            var uname = ($('login-username') && $('login-username').value.trim()) || 'admin';
+            var r = await api('POST', '/api/login', { username: uname, password: $('login-password').value });
             __csrf = r && r.csrf ? r.csrf : null;
+            applyAccountPermissionsUi(r && r.account ? r.account : null);
             enterDashboard();
         } catch (e) { err.textContent = e.message; err.classList.add('show'); }
     });
@@ -7039,6 +7227,7 @@ async function saveCommand() {
     if (!payload.command) { err.textContent = 'Command is required.'; err.classList.add('show'); return; }
     if (mediaType === 'text' && !payload.content) { err.textContent = 'Content is required for text responses.'; err.classList.add('show'); return; }
     if (mediaType !== 'text' && !payload.content && !finalItems.length) { err.textContent = 'Provide a caption or attach media.'; err.classList.add('show'); return; }
+    if (editingCmd && editingCmd.version !== undefined) payload.expectedVersion = editingCmd.version;
     var btn = $('cmd-save');
     await withBusy(btn, async function () {
         try {
@@ -7124,42 +7313,74 @@ async function loadMenu(force) {
     $('menu-rows').innerHTML = '<div class="skl skl-card"></div><div class="skl skl-card"></div>';
     try {
         var d = await api('GET', '/api/menu_commands');
-        menuEntries = d.menu || [];
-        if (!menuEntries.some(function (e) { return e.command === 'start'; })) menuEntries.unshift({ command: 'start', description: 'Start the bot' });
+        menuEntries = (d.menu || []).map(function (e) {
+            return Object.assign({}, e, { locked: !!(e.locked || String(e.command || '').trim().toLowerCase() === 'start') });
+        });
+        if (!d.configured && !menuEntries.length) {
+            menuEntries.unshift({ command: 'start', description: 'Start the bot', locked: true });
+        }
         renderMenu();
     } catch (e) { $('menu-rows').innerHTML = errorState(e.message, 'loadMenu(true)'); }
 }
+var menuDeleteCounters = {};
 function renderMenu() {
     var box = $('menu-rows');
     if (!menuEntries.length) { box.innerHTML = emptyState('fa-solid fa-list', 'No entries yet.'); return; }
     box.innerHTML = menuEntries.map(function (e, i) {
-        var fixed = e.command === 'start';
+        var isStart = String(e.command || '').trim().toLowerCase() === 'start';
+        var isLocked = !!(e.locked || isStart);
+        if (isStart && !e.locked) e.locked = true;
         return '<div class="menu-entry">' +
             '<div class="menu-inputs">' +
-                '<input class="input mono menu-cmd" value="' + esc(e.command) + '" ' + (fixed ? 'readonly' : '') +
-                    ' oninput="menuEntries[' + i + '].command=this.value" placeholder="/command">' +
+                '<input class="input mono menu-cmd" value="' + esc(e.command) + '" ' + (isLocked ? 'readonly' : '') +
+                    ' oninput="onMenuCmdEdit(' + i + ', this.value)" placeholder="command">' +
                 '<input class="input menu-desc" value="' + esc(e.description) + '"' +
                     ' placeholder="Description" oninput="menuEntries[' + i + '].description=this.value">' +
             '</div>' +
             '<div class="menu-actions">' +
                 '<button class="icon-btn" onclick="moveMenu(' + i + ',-1)" ' + (i === 0 ? 'disabled' : '') + ' aria-label="Move up"><i class="fa-solid fa-arrow-up"></i></button>' +
                 '<button class="icon-btn" onclick="moveMenu(' + i + ',1)" ' + (i === menuEntries.length - 1 ? 'disabled' : '') + ' aria-label="Move down"><i class="fa-solid fa-arrow-down"></i></button>' +
-                (fixed
-                    ? '<span class="badge" title="Fixed" style="height: 36px;width: 36px;justify-content: center;align-items: center;"><i class="fa-solid fa-lock"></i></span>'
-                    : '<button class="icon-btn danger" onclick="removeMenu(' + i + ')" aria-label="Remove"><i class="fa-regular fa-trash-can"></i></button>') +
+                (isLocked ? '<span class="badge" title="Locked item (requires 9+ clicks to delete)" style="height:36px;width:36px;justify-content:center;align-items:center;"><i class="fa-solid fa-lock"></i></span>' : '') +
+                '<button class="icon-btn danger" onclick="removeMenu(' + i + ')" aria-label="Remove" title="' + (isLocked ? 'Locked — click repeatedly to delete' : 'Remove') + '"><i class="fa-regular fa-trash-can"></i></button>' +
             '</div>' +
         '</div>';
     }).join('');
 }
-function addMenuRow() { menuEntries.push({ command: '', description: '' }); renderMenu(); }
-function removeMenu(i) { menuEntries.splice(i, 1); renderMenu(); }
+function onMenuCmdEdit(i, val) {
+    if (!menuEntries[i]) return;
+    var clean = String(val || '').replace(/^\\//, '').trim().toLowerCase();
+    menuEntries[i].command = clean;
+    if (clean === 'start') { menuEntries[i].locked = true; renderMenu(); }
+}
+function addMenuRow() { menuEntries.push({ command: '', description: '', locked: false }); renderMenu(); }
+function removeMenu(i) {
+    var entry = menuEntries[i];
+    if (!entry) return;
+    if (entry.locked || String(entry.command || '').trim().toLowerCase() === 'start') {
+        var key = String(entry.command || i);
+        var state = menuDeleteCounters[key] || { left: 9, timer: null };
+        if (state.timer) clearTimeout(state.timer);
+        if (state.left > 0) {
+            toast(state.left + ' more click' + (state.left === 1 ? '' : 's') + ' until you delete this', 'info');
+            state.left -= 1;
+            state.timer = setTimeout(function () { delete menuDeleteCounters[key]; }, 5000);
+            menuDeleteCounters[key] = state;
+            return;
+        }
+        delete menuDeleteCounters[key];
+    }
+    menuEntries.splice(i, 1);
+    renderMenu();
+}
 function moveMenu(i, d) {
     var j = i + d; if (j < 0 || j >= menuEntries.length) return;
     var t = menuEntries[i]; menuEntries[i] = menuEntries[j]; menuEntries[j] = t; renderMenu();
 }
 async function publishMenu() {
-    var clean = menuEntries.filter(function (e) { return e.command && e.description; });
-    if (!clean.some(function (e) { return e.command === 'start'; })) clean.unshift({ command: 'start', description: 'Start the bot' });
+    var clean = menuEntries.filter(function (e) { return e.command && e.description; }).map(function (e) {
+        var cmd = String(e.command || '').replace(/^\\//, '').trim().toLowerCase();
+        return { command: cmd, description: String(e.description || '').trim(), locked: !!(e.locked || cmd === 'start') };
+    });
     var btn = document.querySelector('button[onclick="publishMenu()"]');
     await withBusy(btn, async function () {
     try {
@@ -7463,12 +7684,13 @@ function refreshNotificationStatus() {
     var disable = $('notification-disable');
     var supported = window.isSecureContext && 'serviceWorker' in navigator && typeof Notification !== 'undefined';
     if (status) {
+        var hasPush = ('PushManager' in window);
         if (!supported) status.textContent = 'Browser notifications require a supported browser and a secure connection (HTTPS).';
         else if (Notification.permission === 'denied') status.textContent = 'Notifications are blocked in this browser. Change this site’s notification permission in your browser settings.';
         else if (notificationLastError) status.textContent = 'Could not check or display notifications: ' + notificationLastError;
-        else if (notificationEnabled && Notification.permission === 'granted') status.textContent = 'On. New contact messages are checked about once a minute while the dashboard is open.';
+        else if (notificationEnabled && Notification.permission === 'granted') status.textContent = hasPush ? 'Web Push active (VAPID). Notifications arrive even when the dashboard is closed.' : 'On (background polling while dashboard is open).';
         else if (notificationEnabled && Notification.permission === 'default') status.textContent = 'Permission is needed. Enable notifications to allow this browser to show alerts.';
-        else if (Notification.permission === 'granted') status.textContent = 'Permission is granted; turn notifications on to start checking for new contact messages.';
+        else if (Notification.permission === 'granted') status.textContent = 'Permission is granted; turn notifications on to subscribe this device.';
         else status.textContent = 'Off. Enable notifications to let this browser show new contact-message alerts.';
     }
     if (enable) enable.disabled = !supported || Notification.permission === 'denied' || (notificationEnabled && Notification.permission === 'granted');
@@ -7476,11 +7698,42 @@ function refreshNotificationStatus() {
     var preview = $('notification-preview');
     if (preview && document.activeElement !== preview) preview.checked = getNotificationPreference(NOTIFICATION_PREVIEW_KEY) === '1';
 }
-function saveNotificationPreviewPreference() {
+async function saveNotificationPreviewPreference() {
     var preview = $('notification-preview');
-    if (preview && !setNotificationPreference(NOTIFICATION_PREVIEW_KEY, preview.checked ? '1' : '0')) {
+    var include = !!(preview && preview.checked);
+    if (!setNotificationPreference(NOTIFICATION_PREVIEW_KEY, include ? '1' : '0')) {
         toast('This browser blocked local storage; the preview preference may not persist.', 'info');
     }
+    try {
+        var reg = await ensureNotificationServiceWorker();
+        var sub = reg.pushManager ? await reg.pushManager.getSubscription() : null;
+        if (sub) await api('POST', '/api/push/subscribe', { subscription: sub.toJSON(), include_preview: include });
+    } catch (e) {}
+}
+function urlBase64ToUint8Array(base64String) {
+    var padding = '='.repeat((4 - base64String.length % 4) % 4);
+    var base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    var rawData = atob(base64);
+    var outputArray = new Uint8Array(rawData.length);
+    for (var i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+    return outputArray;
+}
+async function syncPushSubscription() {
+    if (!('PushManager' in window)) return false;
+    var reg = await ensureNotificationServiceWorker();
+    var sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+        var v = await api('GET', '/api/push/vapid_public_key');
+        if (!v || !v.publicKey) throw new Error('Could not obtain VAPID key.');
+        sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(v.publicKey)
+        });
+    }
+    var preview = $('notification-preview');
+    var include = preview ? preview.checked : (getNotificationPreference(NOTIFICATION_PREVIEW_KEY) === '1');
+    await api('POST', '/api/push/subscribe', { subscription: sub.toJSON(), include_preview: include });
+    return true;
 }
 async function ensureNotificationServiceWorker() {
     if (!window.isSecureContext || !('serviceWorker' in navigator) || typeof Notification === 'undefined') {
@@ -7670,6 +7923,7 @@ async function enableBrowserNotifications() {
             return;
         }
         await ensureNotificationServiceWorker();
+        await syncPushSubscription().catch(function (pe) { console.warn('[nyxx] push subscribe skipped:', pe); });
         notificationEnabled = true;
         notificationLastError = '';
         if (!setNotificationPreference(NOTIFICATION_ENABLED_KEY, '1')) {
@@ -7677,7 +7931,7 @@ async function enableBrowserNotifications() {
         }
         await establishNotificationBaseline();
         await startBrowserNotificationPolling();
-        toast('Browser notifications enabled on this device.');
+        toast('Web Push notifications enabled on this device.');
     } catch (e) {
         notificationEnabled = false;
         setNotificationPreference(NOTIFICATION_ENABLED_KEY, '0');
@@ -7686,11 +7940,21 @@ async function enableBrowserNotifications() {
         toast(notificationLastError, 'error');
     }
 }
-function disableBrowserNotifications() {
+async function disableBrowserNotifications() {
     notificationEnabled = false;
     if (notificationPollingTimer) { clearInterval(notificationPollingTimer); notificationPollingTimer = null; }
     setNotificationPreference(NOTIFICATION_ENABLED_KEY, '0');
     notificationLastError = '';
+    try {
+        if ('serviceWorker' in navigator && 'PushManager' in window) {
+            var reg = await navigator.serviceWorker.ready;
+            var sub = await reg.pushManager.getSubscription();
+            if (sub) {
+                await api('POST', '/api/push/unsubscribe', { endpoint: sub.endpoint }).catch(function(){});
+                await sub.unsubscribe().catch(function(){});
+            }
+        }
+    } catch (e) {}
     refreshNotificationStatus();
     toast('Browser notifications turned off.', 'info');
 }
@@ -7698,6 +7962,11 @@ async function testBrowserNotification() {
     try {
         if (typeof Notification === 'undefined' || Notification.permission !== 'granted') {
             throw new Error('Enable browser notifications and grant permission first.');
+        }
+        if ('PushManager' in window) {
+            await syncPushSubscription();
+            var d = await api('POST', '/api/push/test', {});
+            if (d && d.sent > 0) { toast('Web Push test delivered!'); return; }
         }
         await sendServiceWorkerNotification('Nyxx test notification', 'Browser notifications are working.', 'nyxx-test-' + Date.now());
         toast('Test notification sent.');
@@ -8517,40 +8786,69 @@ function applyGroupSettings(s) {
     $('gm-ai-trigger').value = s.ai_trigger || 'inherit';
     toggleSwitch('gm-welcome-toggle', !!s.welcome_enabled); $('gm-welcome-text').value = s.welcome_text || '';
     $('gm-rules').value = s.rules_text || '';
-    toggleSwitch('gm-flood-toggle', !!s.anti_flood);
+    var fm = s.flood_mode || (s.anti_flood ? 'on' : 'inherit');
+    setSeg('gm-flood-mode', fm);
+    show($('gm-flood-opts'), fm === 'on');
     $('gm-flood-limit').value = s.flood_limit || 6;
-    $('gm-flood-mute').value = s.flood_mute_minutes || 0;
+    $('gm-flood-mute').value = s.flood_mute_minutes !== undefined ? s.flood_mute_minutes : 10;
     setSeg('gm-flood-action', s.flood_action || 'mute');
     $('gm-flood-kick-after').value = s.flood_kick_after || 2;
     $('gm-flood-ban-after').value = s.flood_ban_after || 2;
+    setSeg('gm-flood-exempt', s.flood_exempt || 'admins');
     toggleSwitch('gm-link-toggle', !!s.link_filter);
     toggleSwitch('gm-forward-toggle', !!s.anti_forward);
     toggleSwitch('gm-bot-toggle', !!s.anti_bot);
     $('gm-blacklist').value = s.blacklist_words || '';
     toggleSwitch('gm-service-toggle', !!s.auto_delete_service);
     toggleSwitch('gm-track-toggle', !!s.track_members);
-    show($('gm-flood-limit-wrap'), !!s.anti_flood);
-    show($('gm-flood-mute-wrap'), !!s.anti_flood);
-    show($('gm-flood-action-wrap'), !!s.anti_flood);
-    show($('gm-flood-escalation-wrap'), !!s.anti_flood);
     show($('gm-link-level-wrap'), !!s.link_filter);
     show($('gm-forward-level-wrap'), !!s.anti_forward);
+    if ($('gm-welcome-autodel')) $('gm-welcome-autodel').value = s.welcome_auto_delete_sec || 0;
+    if ($('gm-goodbye-toggle')) { toggleSwitch('gm-goodbye-toggle', !!s.goodbye_enabled); show($('gm-goodbye-wrap'), !!s.goodbye_enabled); }
+    if ($('gm-goodbye-text')) $('gm-goodbye-text').value = s.goodbye_text || '';
+    if ($('gm-captcha-toggle')) { toggleSwitch('gm-captcha-toggle', !!s.captcha_enabled); show($('gm-captcha-opts'), !!s.captcha_enabled); }
+    if ($('gm-captcha-mode')) $('gm-captcha-mode').value = s.captcha_mode || 'button';
+    if ($('gm-captcha-timeout')) $('gm-captcha-timeout').value = s.captcha_timeout_sec || 120;
+    if ($('gm-captcha-fail')) $('gm-captcha-fail').value = s.captcha_fail_action || 'kick';
+    if ($('gm-captcha-text')) $('gm-captcha-text').value = s.captcha_text || '';
+    if ($('gm-rules-pm')) toggleSwitch('gm-rules-pm', !!s.rules_in_private);
+    setSeg('gm-media-exempt', s.media_exempt_level || 'admins');
+    ['files','photos','voice','video','stickers','gifs','polls','mentions','channels'].forEach(function (k) {
+        if ($('gm-blk-' + k)) toggleSwitch('gm-blk-' + k, !!s['block_' + k]);
+    });
+    if ($('gm-lock-all')) toggleSwitch('gm-lock-all', !!s.lock_all_non_admins);
+    if ($('gm-warn-toggle')) { toggleSwitch('gm-warn-toggle', s.warn_enabled !== false); show($('gm-warn-opts'), s.warn_enabled !== false); }
+    if ($('gm-warn-limit')) $('gm-warn-limit').value = s.warn_limit || 3;
+    if ($('gm-warn-action')) $('gm-warn-action').value = s.warn_action || 'mute';
+    if ($('gm-warn-mute')) $('gm-warn-mute').value = s.warn_mute_minutes || 60;
+    if ($('gm-slow-toggle')) { toggleSwitch('gm-slow-toggle', !!s.slow_mode_enabled); show($('gm-slow-opts'), !!s.slow_mode_enabled); }
+    if ($('gm-slow-sec')) $('gm-slow-sec').value = s.slow_mode_seconds || 10;
+    if ($('gm-night-toggle')) { toggleSwitch('gm-night-toggle', !!s.night_mode_enabled); show($('gm-night-opts'), !!s.night_mode_enabled); }
+    if ($('gm-night-start')) $('gm-night-start').value = s.night_mode_start_hour !== undefined ? s.night_mode_start_hour : 23;
+    if ($('gm-night-end')) $('gm-night-end').value = s.night_mode_end_hour !== undefined ? s.night_mode_end_hour : 7;
+    if ($('gm-night-mode')) $('gm-night-mode').value = s.night_mode_media_only ? 'media' : 'all';
+    if ($('gm-raid-toggle')) { toggleSwitch('gm-raid-toggle', !!s.anti_raid_enabled); show($('gm-raid-opts'), !!s.anti_raid_enabled); }
+    if ($('gm-raid-limit')) $('gm-raid-limit').value = s.anti_raid_limit || 10;
+    if ($('gm-maxlen')) $('gm-maxlen').value = s.max_message_length || 0;
+    if ($('gm-blacklist-action')) $('gm-blacklist-action').value = s.blacklist_action || 'delete';
+    if ($('gm-custom-filters')) $('gm-custom-filters').value = s.custom_filters || '';
+}
+function gmSetFloodMode(mode) {
+    setSeg('gm-flood-mode', mode);
+    show($('gm-flood-opts'), mode === 'on');
 }
 function gmToggle(key) {
-    var map = { welcome: 'gm-welcome-toggle', flood: 'gm-flood-toggle', link: 'gm-link-toggle', forward: 'gm-forward-toggle', bot: 'gm-bot-toggle', service: 'gm-service-toggle', track: 'gm-track-toggle' };
+    var map = { welcome: 'gm-welcome-toggle', link: 'gm-link-toggle', forward: 'gm-forward-toggle', bot: 'gm-bot-toggle', service: 'gm-service-toggle', track: 'gm-track-toggle' };
     var on = toggleSwitch(map[key]);
-    if (key === 'flood') {
-        show($('gm-flood-limit-wrap'), on);
-        show($('gm-flood-mute-wrap'), on);
-        show($('gm-flood-action-wrap'), on);
-        show($('gm-flood-escalation-wrap'), on);
-    }
     if (key === 'link') show($('gm-link-level-wrap'), on);
     if (key === 'forward') show($('gm-forward-level-wrap'), on);
 }
 function gmSet(k, v) { setSeg('gm-ai-mode', v); }
 async function saveGroupSettings() {
     await withSelfBusy(async function () {
+        var nStart = parseInt($('gm-night-start') && $('gm-night-start').value, 10);
+        var nEnd = parseInt($('gm-night-end') && $('gm-night-end').value, 10);
+        var fMute = parseInt($('gm-flood-mute') && $('gm-flood-mute').value, 10);
         var body = {
             ai: getSeg('gm-ai-mode') || 'inherit',
             commands_permission: getSeg('gm-commands-perm') || 'inherit',
@@ -8582,16 +8880,59 @@ async function saveGroupSettings() {
             blacklist_level: getSeg('gm-blacklist-level') || 'admins',
             memory: $('gm-memory-select').value, ai_trigger: $('gm-ai-trigger').value,
             welcome_enabled: sw('gm-welcome-toggle'), welcome_text: $('gm-welcome-text').value, rules_text: $('gm-rules').value,
-            anti_flood: sw('gm-flood-toggle'), flood_limit: parseInt($('gm-flood-limit').value) || 6,
-            flood_mute_minutes: parseInt($('gm-flood-mute').value) || 0,
+            flood_mode: getSeg('gm-flood-mode') || 'inherit',
+            anti_flood: (getSeg('gm-flood-mode') === 'on'),
+            flood_limit: parseInt($('gm-flood-limit').value) || 6,
+            flood_mute_minutes: Number.isFinite(fMute) ? fMute : 0,
             flood_action: getSeg('gm-flood-action') || 'mute',
             flood_kick_after: parseInt($('gm-flood-kick-after').value) || 2,
             flood_ban_after: parseInt($('gm-flood-ban-after').value) || 2,
+            flood_exempt: getSeg('gm-flood-exempt') || 'admins',
             link_filter: sw('gm-link-toggle'), auto_delete_service: sw('gm-service-toggle'), track_members: sw('gm-track-toggle'),
             anti_forward: sw('gm-forward-toggle'), blacklist_words: $('gm-blacklist').value || '',
-            anti_bot: sw('gm-bot-toggle')
+            anti_bot: sw('gm-bot-toggle'),
+            welcome_auto_delete_sec: parseInt($('gm-welcome-autodel') && $('gm-welcome-autodel').value) || 0,
+            goodbye_enabled: sw('gm-goodbye-toggle'),
+            goodbye_text: $('gm-goodbye-text') ? $('gm-goodbye-text').value : '',
+            captcha_enabled: sw('gm-captcha-toggle'),
+            captcha_mode: $('gm-captcha-mode') ? $('gm-captcha-mode').value : 'button',
+            captcha_timeout_sec: parseInt($('gm-captcha-timeout') && $('gm-captcha-timeout').value) || 120,
+            captcha_fail_action: $('gm-captcha-fail') ? $('gm-captcha-fail').value : 'kick',
+            captcha_text: $('gm-captcha-text') ? $('gm-captcha-text').value : '',
+            rules_in_private: sw('gm-rules-pm'),
+            media_exempt_level: getSeg('gm-media-exempt') || 'admins',
+            block_files: sw('gm-blk-files'),
+            block_photos: sw('gm-blk-photos'),
+            block_voice: sw('gm-blk-voice'),
+            block_video: sw('gm-blk-video'),
+            block_stickers: sw('gm-blk-stickers'),
+            block_gifs: sw('gm-blk-gifs'),
+            block_polls: sw('gm-blk-polls'),
+            block_mentions: sw('gm-blk-mentions'),
+            block_channels: sw('gm-blk-channels'),
+            lock_all_non_admins: sw('gm-lock-all'),
+            warn_enabled: sw('gm-warn-toggle'),
+            warn_limit: parseInt($('gm-warn-limit') && $('gm-warn-limit').value) || 3,
+            warn_action: $('gm-warn-action') ? $('gm-warn-action').value : 'mute',
+            warn_mute_minutes: parseInt($('gm-warn-mute') && $('gm-warn-mute').value) || 60,
+            slow_mode_enabled: sw('gm-slow-toggle'),
+            slow_mode_seconds: parseInt($('gm-slow-sec') && $('gm-slow-sec').value) || 10,
+            night_mode_enabled: sw('gm-night-toggle'),
+            night_mode_start_hour: Number.isFinite(nStart) ? nStart : 23,
+            night_mode_end_hour: Number.isFinite(nEnd) ? nEnd : 7,
+            night_mode_media_only: ($('gm-night-mode') && $('gm-night-mode').value === 'media'),
+            anti_raid_enabled: sw('gm-raid-toggle'),
+            anti_raid_limit: parseInt($('gm-raid-limit') && $('gm-raid-limit').value) || 10,
+            max_message_length: parseInt($('gm-maxlen') && $('gm-maxlen').value) || 0,
+            blacklist_action: $('gm-blacklist-action') ? $('gm-blacklist-action').value : 'delete',
+            custom_filters: $('gm-custom-filters') ? $('gm-custom-filters').value : ''
         };
-        try { await api('POST', '/api/groups/' + manageGroup.id + '/settings', body); toast('Group settings saved.'); }
+        if (manageGroup && manageGroup.version !== undefined) body.expectedVersion = manageGroup.version;
+        try {
+            var res = await api('POST', '/api/groups/' + manageGroup.id + '/settings', body);
+            if (manageGroup && res && res.version) manageGroup.version = res.version;
+            toast('Group settings saved.');
+        }
         catch (e) { toast(e.message, 'error'); }
     });
 }
@@ -11266,6 +11607,7 @@ document.addEventListener('keydown', function (e) {
         else if (top === 'media-picker-modal') closeMediaPicker();
         else if (top === 'media-edit-modal') closeMediaEditModal();
         else if (top === 'media-fileid-modal') closeAddFileIdModal();
+        else if (top === 'account-modal' && window.closeAccountModal) window.closeAccountModal();
     }
     if (e.key === 'Escape') { closeAllDropdowns(); if (typeof closeTopbarDropdowns === 'function') closeTopbarDropdowns(null); }
     if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey && !/^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || '')) {
@@ -11452,8 +11794,10 @@ async function saveChannelSettings() {
             silent_by_default: sw('chm-silent-toggle'),
             protect_by_default: sw('chm-protect-toggle'),
         };
+        if (manageChannel && manageChannel.version !== undefined) body.expectedVersion = manageChannel.version;
         try {
-            await api('POST', '/api/channels/' + manageChannel.id + '/settings', body);
+            var res = await api('POST', '/api/channels/' + manageChannel.id + '/settings', body);
+            if (manageChannel && res && res.version) manageChannel.version = res.version;
             toast('Channel automation saved.');
         } catch (e) { toast(e.message, 'error'); }
     });
@@ -12308,6 +12652,7 @@ function settingsSetTab(tab) {
     var pane = $('set-pane-' + tab);
     if (pane) pane.classList.add('active');
     if (tab === 'browser') renderBrowserRecoveryTools('settings-browser-tools');
+    if (tab === 'accounts') ensureModule('settings').then(function () { if (window.loadAccounts) window.loadAccounts(); });
 }
 
 async function deleteInvalidMedia() {
@@ -12469,6 +12814,134 @@ function finishUpdateReload() {
     location.reload();
 }
 
+var GAME_DEFS = [
+    { id: 'snake', name: 'Neon Snake', icon: 'fa-solid fa-worm', desc: 'Classic arcade snake with combo apples & speed ramp.' },
+    { id: '2048', name: '2048', icon: 'fa-solid fa-table-cells', desc: 'Addictive sliding tile puzzle — reach 2048 and beyond.' },
+    { id: 'breaker', name: 'Brick Breaker', icon: 'fa-solid fa-cubes', desc: 'Fast paddle breakout with multi-hit bricks & level clears.' },
+    { id: 'flappy', name: 'Sky Dash', icon: 'fa-solid fa-jet-fighter-up', desc: 'One-tap arcade flyer through neon gates & bonus stars.' }
+];
+var gamesCfg = { announce_mode: 'message', announce_cooldown_sec: 20, games: {} };
+function quickAttachGameBtn(prefix) {
+    var sel = $(prefix + '-game-pick');
+    if (!sel || !sel.value) { toast('Pick a game first.', 'info'); return; }
+    var val = sel.value;
+    var isUrl = val.indexOf('url:') === 0;
+    var gid = isUrl ? val.slice(4) : val;
+    var g = GAME_DEFS.find(function (x) { return x.id === gid; }) || { name: gid };
+    $(prefix + '-inline-label').value = '🎮 Play ' + g.name;
+    $(prefix + '-inline-type').value = isUrl ? 'url' : 'callback';
+    if (typeof kbInlineTypeToggle === 'function') kbInlineTypeToggle(prefix);
+    $(prefix + '-inline-value').value = isUrl ? (window.location.origin + '/games?game=' + gid) : ('GAME:' + gid);
+    if ($(prefix + '-inline-style')) $(prefix + '-inline-style').value = 'primary';
+    if (prefix === 'kbCmd') kbCmd.inlineAdd(); else kbMe.inlineAdd();
+    sel.value = '';
+}
+async function loadGamesPage() {
+    var box = $('games-cards-list');
+    if (box) box.innerHTML = skeletonRows(2);
+    try {
+        var d = await api('GET', '/api/games/config');
+        gamesCfg = (d && d.config) || gamesCfg;
+        setSeg('games-announce-mode', gamesCfg.announce_mode || 'message');
+        if ($('games-announce-cooldown')) $('games-announce-cooldown').value = gamesCfg.announce_cooldown_sec || 20;
+        renderGamesCards();
+        loadGameLeaderboard();
+    } catch (e) { if (box) box.innerHTML = errorState(e.message, 'loadGamesPage()'); }
+}
+function renderGamesCards() {
+    var box = $('games-cards-list');
+    if (!box) return;
+    box.innerHTML = GAME_DEFS.map(function (g) {
+        var c = (gamesCfg.games && gamesCfg.games[g.id]) || { enabled: true, access: 'everyone', allowed: '', disallowed: '' };
+        var url = window.location.origin + '/games?game=' + g.id;
+        return '<div class="card compact" style="margin:0;">' +
+            '<div class="card-head" style="margin-bottom:10px;">' +
+                '<div class="card-title"><i class="' + g.icon + '"></i> ' + esc(g.name) + '</div>' +
+                '<div style="flex:1"></div>' +
+                '<button type="button" class="switch ' + (c.enabled !== false ? 'on' : '') + '" onclick="toggleGameEnabled(\\'' + g.id + '\\', this)"></button>' +
+            '</div>' +
+            '<p class="tiny muted" style="margin-bottom:10px;">' + esc(g.desc) + '</p>' +
+            '<div class="field" style="margin-bottom:10px;">' +
+                '<label class="field-label tiny">Permission</label>' +
+                '<div class="segmented perm-seg segmented_mobile" style="width:100%;display:flex;">' +
+                    ['everyone','specific','moderator','admin'].map(function (lvl) {
+                        var lbl = lvl === 'everyone' ? 'Everyone' : lvl === 'specific' ? 'Specific' : lvl === 'moderator' ? 'Mod+' : 'Admin';
+                        return '<button type="button" style="flex:1;" class="' + ((c.access || 'everyone') === lvl ? 'active' : '') + '" onclick="setGamePerm(\\'' + g.id + '\\',\\'' + lvl + '\\',this)">' + lbl + '</button>';
+                    }).join('') +
+                '</div>' +
+            '</div>' +
+            '<details class="perm-acl-details"' + ((c.allowed || c.disallowed) ? ' open' : '') + ' style="margin-bottom:10px;">' +
+                '<summary><i class="fa-solid fa-user-lock"></i> Allowed / Disallowed IDs</summary>' +
+                '<div class="grid grid-2">' +
+                    '<div><label class="field-label tiny">Allowed IDs</label><textarea class="textarea mono" rows="2" placeholder="123456" oninput="setGameAcl(\\'' + g.id + '\\',\\'allowed\\',this.value)">' + esc(c.allowed || '') + '</textarea></div>' +
+                    '<div><label class="field-label tiny">Disallowed IDs</label><textarea class="textarea mono" rows="2" placeholder="555666" oninput="setGameAcl(\\'' + g.id + '\\',\\'disallowed\\',this.value)">' + esc(c.disallowed || '') + '</textarea></div>' +
+                '</div>' +
+            '</details>' +
+            '<div class="row" style="gap:6px;flex-wrap:wrap;">' +
+                '<a class="btn btn-primary btn-sm" href="' + esc(url) + '" target="_blank" rel="noopener"><i class="fa-solid fa-play"></i> Play</a>' +
+                '<button type="button" class="btn btn-gray btn-sm" onclick="navigator.clipboard.writeText(\\'' + esc(url) + '\\').then(function(){toast(\\'Game URL copied!\\');})"><i class="fa-regular fa-copy"></i> Copy URL</button>' +
+                '<button type="button" class="btn btn-gray btn-sm" onclick="createGameCommand(\\'' + g.id + '\\')"><i class="fa-solid fa-terminal"></i> Create Cmd</button>' +
+            '</div>' +
+        '</div>';
+    }).join('');
+}
+function toggleGameEnabled(gid, btn) {
+    if (!gamesCfg.games) gamesCfg.games = {};
+    if (!gamesCfg.games[gid]) gamesCfg.games[gid] = { enabled: true, access: 'everyone', allowed: '', disallowed: '' };
+    var next = !(gamesCfg.games[gid].enabled !== false);
+    gamesCfg.games[gid].enabled = next;
+    btn.classList.toggle('on', next);
+}
+function setGamePerm(gid, lvl, btn) {
+    if (!gamesCfg.games) gamesCfg.games = {};
+    if (!gamesCfg.games[gid]) gamesCfg.games[gid] = { enabled: true, access: 'everyone', allowed: '', disallowed: '' };
+    gamesCfg.games[gid].access = lvl;
+    btn.parentNode.querySelectorAll('button').forEach(function (b) { b.classList.toggle('active', b === btn); });
+}
+function setGameAcl(gid, field, val) {
+    if (!gamesCfg.games) gamesCfg.games = {};
+    if (!gamesCfg.games[gid]) gamesCfg.games[gid] = { enabled: true, access: 'everyone', allowed: '', disallowed: '' };
+    gamesCfg.games[gid][field] = val;
+}
+async function saveGamesConfig() {
+    await withSelfBusy(async function () {
+        gamesCfg.announce_mode = getSeg('games-announce-mode') || 'message';
+        gamesCfg.announce_cooldown_sec = parseInt($('games-announce-cooldown') && $('games-announce-cooldown').value) || 20;
+        try {
+            await api('POST', '/api/games/config', { config: gamesCfg });
+            toast('Mini-games settings saved.');
+        } catch (e) { toast(e.message, 'error'); }
+    });
+}
+async function loadGameLeaderboard() {
+    var box = $('games-lb-list');
+    if (!box) return;
+    var gid = ($('games-lb-game') && $('games-lb-game').value) || 'snake';
+    var cid = ($('games-lb-chat') && $('games-lb-chat').value.trim()) || '';
+    try {
+        var d = await api('GET', '/api/games/leaderboard?game=' + encodeURIComponent(gid) + (cid ? '&chat_id=' + encodeURIComponent(cid) : ''));
+        var rows = d.scores || [];
+        if (!rows.length) { box.innerHTML = emptyState('fa-solid fa-trophy', 'No scores recorded yet.'); return; }
+        box.innerHTML = '<div class="list">' + rows.map(function (r, idx) {
+            return '<div class="list-row">' +
+                '<span class="badge ' + (idx === 0 ? 'orange' : idx === 1 ? 'blue' : idx === 2 ? 'green' : '') + '">#' + (idx + 1) + '</span>' +
+                '<div class="lr-main"><div class="lr-title">' + esc(r.user_name || ('User ' + r.user_id)) + (r.username ? ' <span class="muted">@' + esc(r.username) + '</span>' : '') + '</div>' +
+                '<div class="lr-sub">Chat ' + esc(r.chat_id) + ' · ' + (r.plays || 1) + ' play(s)</div></div>' +
+                '<span class="badge purple" style="font-size:13px;">' + Number(r.best_score || 0).toLocaleString() + '</span>' +
+            '</div>';
+        }).join('') + '</div>';
+    } catch (e) { box.innerHTML = errorState(e.message, 'loadGameLeaderboard()'); }
+}
+async function createGameCommand(gid) {
+    var g = GAME_DEFS.find(function (x) { return x.id === gid; }) || { id: gid, name: gid };
+    await openCommandModal(null, null);
+    $('cmd-name').value = '/play_' + g.id;
+    $('cmd-content').value = '🎮 <b>' + g.name + '</b>\\nTap below to play and compete on this chat\\'s leaderboard!';
+    toggleSwitch('cmd-inline-toggle', true);
+    show($('cmd-inline-section'), true);
+    kbCmd.loadInline(JSON.stringify({ v: 2, inline: [[{ text: '🎮 Play ' + g.name, type: 'callback', value: 'GAME:' + g.id, style: 'primary' }]] }));
+}
+
 checkStatus();
 </script>
 </body>
@@ -12534,7 +13007,7 @@ async function loadSettings(force) {
             setSeg('set-gaf-action', d.global_antiflood_action || 'mute');
             if ($('set-gaf-kick-after')) $('set-gaf-kick-after').value = d.global_antiflood_kick_after || '2';
             if ($('set-gaf-ban-after')) $('set-gaf-ban-after').value = d.global_antiflood_ban_after || '2';
-            toggleSwitch('set-gaf-exempt', d.global_antiflood_exempt_admins !== '0');
+            setSeg('set-gaf-exempt', d.global_antiflood_exempt || (d.global_antiflood_exempt_admins === '0' ? 'none' : 'admins_moderators'));
         }
     } catch (e) { /* silent */ }
 }
@@ -12543,17 +13016,20 @@ async function saveGlobalAntiFlood() {
     await withSelfBusy(async function () {
         var out = $('set-gaf-result');
         try {
+            var exempt = getSeg('set-gaf-exempt') || 'admins_moderators';
+            var rawMute = parseInt($('set-gaf-mute').value, 10);
             await api('POST', '/api/settings/global_antiflood', {
                 enabled: sw('set-gaf-enabled') ? '1' : '0',
                 limit: parseInt($('set-gaf-limit').value) || 12,
-                mute_minutes: parseInt($('set-gaf-mute').value) || 10,
+                mute_minutes: isNaN(rawMute) ? 10 : rawMute,
                 action: getSeg('set-gaf-action') || 'mute',
                 kick_after: parseInt($('set-gaf-kick-after').value) || 2,
                 ban_after: parseInt($('set-gaf-ban-after').value) || 2,
-                exempt_admins: sw('set-gaf-exempt') ? '1' : '0'
+                exempt: exempt,
+                exempt_admins: exempt !== 'none' ? '1' : '0'
             });
-            if (out) out.innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Global anti-flood saved.</span>';
-            toast('Global anti-flood settings saved.');
+            if (out) out.innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Global flood policy saved.</span>';
+            toast('Global flood policy saved.');
         } catch (e) {
             if (out) out.innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>';
         }
@@ -12711,17 +13187,31 @@ async function runSchemaHeal() {
 
 async function changePassword() {
     await withSelfBusy(async function () {
-        $('pw-result').innerHTML = '';
-        if ($('pw1').value !== $('pw2').value) { $('pw-result').innerHTML = '<span style="color:var(--red)">Passwords do not match.</span>'; return; }
-        if ($('pw1').value.length < 6) { $('pw-result').innerHTML = '<span style="color:var(--red)">Password must be at least 6 characters.</span>'; return; }
-        $('pw-result').innerHTML = '<span class="mini-spinner"></span> Updating…';
+        var out = $('pw-result'); out.innerHTML = '';
+        var pw = $('pw1').value, pw2 = $('pw2').value;
+        var cur = (window.__currentAccount && window.__currentAccount.username) || '';
+        var uname = ($('acct-username').value || '').trim();
+        var body = {};
+        if (uname && uname !== cur) body.newUsername = uname;
+        if (pw || pw2) {
+            if (pw !== pw2) { out.innerHTML = '<span style="color:var(--red)">Passwords do not match.</span>'; return; }
+            if (pw.length < 6) { out.innerHTML = '<span style="color:var(--red)">Password must be at least 6 characters.</span>'; return; }
+            body.newPassword = pw;
+        }
+        if (!body.newUsername && !body.newPassword) { out.innerHTML = '<span style="color:var(--orange)">Nothing to change.</span>'; return; }
+        out.innerHTML = '<span class="mini-spinner"></span> Saving…';
         try {
-            var r = await api('POST', '/api/change_password', { newPassword: $('pw1').value });
-            // api() reads window.__csrf from classic-script scope; update the global.
+            var r = await api('POST', '/api/change_password', body);
             if (r && r.csrf) window.__csrf = r.csrf;
-            $('pw-result').innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Password updated. Every other browser/device is now signed out.</span>';
+            if (r && r.username) {
+                if (!window.__currentAccount) window.__currentAccount = { id: 0, username: r.username, role: 'owner', allowed_areas: ['*'] };
+                else window.__currentAccount.username = r.username;
+                if ($('acct-username')) $('acct-username').value = r.username;
+            }
+            if (typeof loadAccounts === 'function' && window.__currentAccount && window.__currentAccount.role === 'owner') loadAccounts();
+            out.innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Login saved.' + (body.newPassword ? ' This account\\'s other browsers/devices are signed out.' : '') + '</span>';
             $('pw1').value = ''; $('pw2').value = '';
-        } catch (e) { $('pw-result').innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
+        } catch (e) { out.innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
     });
 }
 
@@ -12818,14 +13308,15 @@ async function publishBotInfo() {
 
 // ---- Cron page ----
 var CRON_FIELDS = [
-    ['cron_sessions_days', 'Dashboard login sessions', 'days'],
-    ['cron_bot_sessions_days', 'Bot conversation sessions', 'days'],
-    ['cron_login_attempts_hours', 'Login attempt records', 'hours'],
-    ['cron_rate_limits_hours', 'Rate-limit buckets', 'hours'],
-    ['cron_logs_days', 'Activity log entries', 'days'],
+    ['cron_sessions_days', 'Dashboard login sessions', 'days (0 = keep / skip)'],
+    ['cron_bot_sessions_days', 'Bot conversation sessions', 'days (0 = keep / skip)'],
+    ['cron_login_attempts_hours', 'Login attempt records', 'hours (0 = keep / skip)'],
+    ['cron_rate_limits_hours', 'Rate-limit buckets', 'hours (0 = keep / skip)'],
+    ['cron_logs_days', 'Activity log entries', 'days (0 = keep forever; synced with Activity Log)'],
     ['cron_ai_messages_days', 'AI memory', 'days (0 = keep forever)'],
-    ['cron_dm_messages_days', 'Direct messages', 'days (0 = keep forever)'],
+    ['cron_dm_messages_days', 'Direct messages', 'days (0 = keep forever; synced with Memory tab)'],
     ['cron_broadcast_days', 'Broadcast history', 'days (0 = keep forever)'],
+    ['cron_game_scores_days', 'Mini-game leaderboard scores', 'days (0 = keep forever)'],
     ['cron_inactive_users_days', 'Inactive users', 'days (0 = never delete)']
 ];
 
@@ -12833,7 +13324,7 @@ async function loadCron() {
     var box = $('cron-rows');
     box.innerHTML = CRON_FIELDS.map(function (f) {
         return '<div class="row nowrap" style="margin-bottom:10px;"><div style="flex:1;"><div class="small" style="font-weight:600;">' + f[1] + '</div><div class="tiny muted">' + f[2] + '</div></div>' +
-            '<input type="number" class="input" id="cf-' + f[0] + '" style="max-width:130px;" min="' + (f[2].indexOf('0 =') >= 0 ? 0 : 1) + '"></div>';
+            '<input type="number" class="input" id="cf-' + f[0] + '" style="max-width:130px;" min="0"></div>';
     }).join('');
     try {
         var d = await api('GET', '/api/cron');
@@ -13063,6 +13554,119 @@ window.runCustomBackup       = runCustomBackup;
 window.restoreBackup         = restoreBackup;
 window.loadLogs              = loadLogs;
 window.loadLogClean          = loadLogClean;
+const ACCOUNT_AREAS = [
+    ['overview', 'Overview'], ['commands', 'Commands'], ['menu', 'Menu & Featured'],
+    ['broadcast', 'Broadcast'], ['contact', 'Contact Settings'], ['inbox', 'Inbox'],
+    ['notifications', 'Notifications'], ['users', 'Users'], ['groups', 'Groups'],
+    ['channels', 'Channels'], ['forcejoin', 'Force Join'], ['media', 'Media Library'],
+    ['proxies', 'Proxies'], ['games', 'Mini-Games'], ['memory', 'Memory'],
+    ['ai', 'AI Assistant'], ['mcp', 'MCP Tools'], ['botinfo', 'Bot Profile'],
+    ['permissions', 'Permissions'], ['settings', 'Settings'], ['backup', 'Backup'],
+    ['logs', 'Activity Log'], ['cron', 'Retention'], ['update', 'Update']
+];
+var accountsCache = [];
+var editingAccount = null;
+
+async function loadAccounts() {
+    var box = $('accounts-list');
+    if (!box) return;
+    box.innerHTML = skeletonRows(2);
+    try {
+        var d = await api('GET', '/api/accounts');
+        accountsCache = d.accounts || [];
+        if (!accountsCache.length) { box.innerHTML = emptyState('fa-solid fa-users-gear', 'No accounts yet.'); return; }
+        box.innerHTML = '<div class="list">' + accountsCache.map(function (a) {
+            var isOwner = a.role === 'owner';
+            var areas = [];
+            try { areas = JSON.parse(a.allowed_areas || '[]'); } catch (e) {}
+            var areaLbl = isOwner ? 'Full access (Owner)' : (areas.indexOf('*') >= 0 ? 'All areas' : (areas.length + ' area(s)'));
+            return '<div class="list-row">' +
+                '<div class="user-circle ' + (a.enabled ? 'green' : 'yellow') + '">' + esc((a.username || '?').charAt(0).toUpperCase()) + '</div>' +
+                '<div class="lr-main"><div class="lr-title">' + esc(a.username) + (isOwner ? ' <span class="badge purple">Owner</span>' : ' <span class="badge blue">Sub-admin</span>') + (a.enabled ? '' : ' <span class="badge red">Disabled</span>') + '</div>' +
+                '<div class="lr-sub">' + esc(areaLbl) + (a.last_login_at ? ' · last login ' + fmtTime(a.last_login_at) : '') + '</div></div>' +
+                '<div class="lr-actions">' +
+                    '<button class="icon-btn" onclick="openAccountModal(' + a.id + ')" title="Edit"><i class="fa-regular fa-pen-to-square"></i></button>' +
+                    (!isOwner ? '<button class="icon-btn danger" onclick="deleteAccount(' + a.id + ')" title="Delete"><i class="fa-regular fa-trash-can"></i></button>' : '') +
+                '</div></div>';
+        }).join('') + '</div>';
+    } catch (e) { box.innerHTML = errorState(e.message, 'loadAccounts()'); }
+}
+
+function openAccountModal(id) {
+    editingAccount = id ? accountsCache.find(function (a) { return a.id === id; }) : null;
+    $('acc-error').classList.remove('show');
+    $('acc-modal-title').textContent = editingAccount ? ('Edit Account: ' + editingAccount.username) : 'New Account';
+    $('acc-username').value = editingAccount ? editingAccount.username : '';
+    $('acc-username').readOnly = false;
+    $('acc-password').value = '';
+    $('acc-pw-hint').textContent = editingAccount ? '(leave blank to keep current)' : '(min 6 chars)';
+    toggleSwitch('acc-enabled', editingAccount ? !!editingAccount.enabled : true);
+    var isOwner = editingAccount && editingAccount.role === 'owner';
+    var selAreas = new Set();
+    if (editingAccount) {
+        try { JSON.parse(editingAccount.allowed_areas || '[]').forEach(function (x) { selAreas.add(x); }); } catch (e) {}
+    } else {
+        selAreas.add('overview');
+    }
+    $('acc-areas-grid').innerHTML = ACCOUNT_AREAS.map(function (it) {
+        var checked = isOwner || selAreas.has('*') || selAreas.has(it[0]);
+        return '<label class="check"><input type="checkbox" class="acc-area-cb" value="' + it[0] + '" ' + (checked ? 'checked' : '') + (isOwner ? ' disabled' : '') + '> <span>' + esc(it[1]) + '</span></label>';
+    }).join('');
+    $('account-modal').classList.remove('hidden');
+    trackModal('account-modal');
+}
+
+function closeAccountModal() {
+    $('account-modal').classList.add('hidden');
+    untrackModal('account-modal');
+}
+
+function accSelectAllAreas(on) {
+    document.querySelectorAll('.acc-area-cb:not(:disabled)').forEach(function (cb) { cb.checked = on; });
+}
+
+async function saveAccount() {
+    var err = $('acc-error'); err.classList.remove('show');
+    var username = $('acc-username').value.trim();
+    var password = $('acc-password').value;
+    var areas = Array.from(document.querySelectorAll('.acc-area-cb:checked')).map(function (cb) { return cb.value; });
+    if (!username) { err.textContent = 'Username is required.'; err.classList.add('show'); return; }
+    if (!editingAccount && password.length < 6) { err.textContent = 'Password must be at least 6 characters.'; err.classList.add('show'); return; }
+    if (password && password.length < 6) { err.textContent = 'Password must be at least 6 characters.'; err.classList.add('show'); return; }
+    await withBusy($('acc-save-btn'), async function () {
+        try {
+            var payload = {
+                username: username,
+                password: password || undefined,
+                enabled: sw('acc-enabled') ? 1 : 0,
+                allowed_areas: (editingAccount && editingAccount.role === 'owner') ? ['*'] : areas,
+                expectedVersion: editingAccount ? editingAccount.version : undefined
+            };
+            if (editingAccount) await api('PUT', '/api/accounts/' + editingAccount.id, payload);
+            else await api('POST', '/api/accounts', payload);
+            if (editingAccount && editingAccount.role === 'owner') {
+                if (window.__currentAccount) window.__currentAccount.username = username;
+                if ($('acct-username')) $('acct-username').value = username;
+            }
+            closeAccountModal();
+            toast('Account saved.');
+            loadAccounts();
+        } catch (e) { err.textContent = e.message; err.classList.add('show'); }
+    });
+}
+
+async function deleteAccount(id) {
+    if (!await confirmDialog('Delete this account? Active sessions for it will be signed out.', 'Delete account')) return;
+    try { await api('DELETE', '/api/accounts/' + id); toast('Account deleted.'); loadAccounts(); }
+    catch (e) { toast(e.message, 'error'); }
+}
+
+window.loadAccounts          = loadAccounts;
+window.openAccountModal      = openAccountModal;
+window.closeAccountModal     = closeAccountModal;
+window.accSelectAllAreas     = accSelectAllAreas;
+window.saveAccount           = saveAccount;
+window.deleteAccount         = deleteAccount;
 window.toggleLogClean        = toggleLogClean;
 window.saveLogClean          = saveLogClean;
 window.clearLogs             = clearLogs;
@@ -13861,6 +14465,9 @@ export default {
             if (request.method === 'GET' && url.pathname === '/sw.js') return await handleServiceWorker(request, env);
             if (request.method === 'GET' && url.pathname.startsWith('/js/')) return await serveClientModule(url.pathname);
             if (request.method === 'GET' && url.pathname === '/chat') return await handleChatPage(request, env);
+            if (request.method === 'GET' && url.pathname === '/games') return new Response(GAMES_HTML, { headers: HTML_HEADERS });
+            if (request.method === 'POST' && url.pathname === '/api/games/score') return await handleGameScoreSubmit(request, env, ctx);
+            if (request.method === 'GET' && url.pathname === '/api/games/leaderboard') return await handleGameLeaderboardGet(env, url);
             if (request.method === 'GET' && url.pathname === '/oauth/callback') {
                 return await handleCfOAuthCallback(request, env);
             }
@@ -13887,7 +14494,8 @@ export default {
                 const s = await getSession(request, env);
                 if (!s) return apiJson({ logged_in: false });
                 const csrf = await getSessionCsrf(env, s);
-                return apiJson({ logged_in: true, csrf });
+                const account = await getSessionAccount(env, s);
+                return apiJson({ logged_in: true, csrf, account });
             }
             if (request.method === 'POST' && url.pathname === '/webhook') return await handleTelegramWebhook(request, env, ctx);
             // MCP — bearer-token auth, no session cookie required.
@@ -13904,6 +14512,20 @@ export default {
                 if (!storedCsrf || !csrfHeader || !timingSafeEqual(csrfHeader, storedCsrf)) {
                     return apiJson({ error: 'CSRF check failed. Please reload the dashboard and try again.' }, 403);
                 }
+            }
+
+            const reqAccount = await getSessionAccount(env, session);
+            if (!await checkAccountAreaAccess(reqAccount, url.pathname)) {
+                return apiJson({ error: 'Access denied: your account is not permitted to use this area.' }, 403);
+            }
+
+            if (url.pathname === '/api/accounts') {
+                if (request.method === 'GET') return await listAccountsHandler(env);
+                if (request.method === 'POST') return await createAccountHandler(request, env);
+            }
+            if (/^\/api\/accounts\/[0-9]+$/.test(url.pathname)) {
+                if (request.method === 'PUT') return await updateAccountHandler(request, env, url);
+                if (request.method === 'DELETE') return await deleteAccountHandler(env, url);
             }
 
             if (request.method === 'POST' && url.pathname === '/api/logout') return await handleLogout(request, env);
@@ -13940,6 +14562,10 @@ export default {
             if (request.method === 'POST' && url.pathname === '/api/contact/test_notify') return await testContactNotify(env);
             if (request.method === 'POST' && url.pathname === '/api/contact/delete')     return await deleteContactMessageHandler(request, env);
             if (request.method === 'POST' && url.pathname === '/api/contact/clear_all')  return await clearAllContactMessagesHandler(env);
+            if (request.method === 'GET'  && url.pathname === '/api/push/vapid_public_key') return await getVapidPublicKeyHandler(env);
+            if (request.method === 'POST' && url.pathname === '/api/push/subscribe') return await savePushSubscriptionHandler(request, env);
+            if (request.method === 'POST' && url.pathname === '/api/push/unsubscribe') return await deletePushSubscriptionHandler(request, env);
+            if (request.method === 'POST' && url.pathname === '/api/push/test') return await testWebPushHandler(env);
 
             if (request.method === 'GET' && url.pathname === '/api/memory/overview') return await getMemoryOverview(env);
             if (request.method === 'POST' && url.pathname === '/api/memory/clear') return await handleMemoryClear(request, env);
@@ -14034,6 +14660,8 @@ export default {
             if (request.method === 'POST' && url.pathname === '/api/proxies/delete_offline') return await deleteOfflineProxiesHandler(env);
             if (request.method === 'POST' && url.pathname === '/api/proxies/test') return await testProxyHandler(request, env);
             if (request.method === 'DELETE' && /^\/api\/proxies\/[0-9]+$/.test(url.pathname)) return await deleteProxyHandler(env, url);
+            if (request.method === 'GET'  && url.pathname === '/api/games/config') return await getGamesConfigHandler(env);
+            if (request.method === 'POST' && url.pathname === '/api/games/config') return await saveGamesConfigHandler(request, env);
             if (request.method === 'GET'  && url.pathname === '/api/schema/health') return await handleSchemaHealth(env);
             if (request.method === 'POST' && url.pathname === '/api/schema/heal')   return await handleSchemaHeal(env);
             if (request.method === 'POST' && url.pathname === '/api/change_password') return await changeAdminPassword(request, env);
@@ -14119,13 +14747,15 @@ const CRON_DEFAULTS = {
     cron_logs_days: 30,
     cron_ai_messages_days: 0,
     cron_broadcast_days: 30,
+    cron_game_scores_days: 0,
     cron_inactive_users_days: 0,
     cron_dm_messages_days: 0,
 };
 const CRON_BOUNDS = {
-    cron_sessions_days: [1, 365], cron_bot_sessions_days: [1, 3650],
-    cron_login_attempts_hours: [1, 720], cron_rate_limits_hours: [1, 2160], cron_logs_days: [1, 3650],
-    cron_ai_messages_days: [0, 3650], cron_broadcast_days: [0, 3650], cron_inactive_users_days: [0, 3650], cron_dm_messages_days: [0, 3650],
+    cron_sessions_days: [0, 365], cron_bot_sessions_days: [0, 3650],
+    cron_login_attempts_hours: [0, 720], cron_rate_limits_hours: [0, 2160], cron_logs_days: [0, 3650],
+    cron_ai_messages_days: [0, 3650], cron_broadcast_days: [0, 3650], cron_game_scores_days: [0, 3650],
+    cron_inactive_users_days: [0, 3650], cron_dm_messages_days: [0, 3650],
 };
 
 async function getCronSettingsFromDb(env) {
@@ -14154,9 +14784,13 @@ async function getCronSettingsFromDb(env) {
 }
 async function runScheduledCleanup(env) {
     if (!env.DB) return null;
-    let cfg;
-    try { await initializeDatabase(env.DB); cfg = await getCronSettingsFromDb(env); }
-    catch (e) { console.error('Cron init failed:', e); return null; }
+    let cfg, armCfg;
+    try {
+        await initializeDatabase(env.DB);
+        cfg = await getCronSettingsFromDb(env);
+        armCfg = await getAutoRemoveSettingsFromDb(env);
+    } catch (e) { console.error('Cron init failed:', e); return null; }
+    if (cfg.cron_enabled !== '1' && !armCfg.enabled) return null;
     try {
         const db = env.DB;
         const nowMinute = Math.floor(Date.now() / 60000);
@@ -14164,41 +14798,46 @@ async function runScheduledCleanup(env) {
         const summary = {};
         await runAutoRemoveMemory(env, summary);
         if (cfg.cron_enabled === '1') {
-        summary.dashboard_sessions = await changes(db.prepare(`DELETE FROM sessions WHERE user_id IS NULL AND created_at <= datetime('now', '-${cfg.cron_sessions_days} day')`));
-        summary.bot_sessions = await changes(db.prepare(`DELETE FROM sessions WHERE token LIKE 'bot-%' AND updated_at <= datetime('now', '-${cfg.cron_bot_sessions_days} day')`));
-        summary.login_attempts = await changes(db.prepare('DELETE FROM login_attempts WHERE minute <= ?').bind(nowMinute - cfg.cron_login_attempts_hours * 60));
-        summary.ai_rate_limits = await changes(db.prepare('DELETE FROM ai_rate_limits WHERE minute < ?').bind(nowMinute - cfg.cron_rate_limits_hours * 60));
-        summary.group_flood = await changes(db.prepare('DELETE FROM group_flood WHERE minute < ?').bind(nowMinute - 120));
-        try {
-            const ttlRaw = await getSetting(db, 'mcp_memory_ttl_hours');
-            const ttl = Math.min(Math.max(parseInt(ttlRaw) || 24, 1), 720);
-            summary.mcp_sessions = await changes(db.prepare(`DELETE FROM mcp_sessions WHERE updated_at <= datetime('now', '-${ttl} hours')`));
-        } catch (e) { /* ignore */ }
-        try { summary.mcp_rate_limits = await changes(db.prepare('DELETE FROM mcp_rate_limits WHERE minute < ?').bind(nowMinute - 60)); } catch (e) { /* ignore */ }
-        const logCfg = await getLogCleanFromDb(db);
-        if (logCfg.enabled) {
-            summary.audit_logs = await changes(db.prepare(`DELETE FROM logs WHERE timestamp <= datetime('now', '-${logCfg.days} day')`));
-        }
-        if (cfg.cron_ai_messages_days > 0) summary.ai_messages = await changes(db.prepare(`DELETE FROM ai_messages WHERE timestamp <= datetime('now', '-${cfg.cron_ai_messages_days} day')`));
-        if (cfg.cron_dm_messages_days > 0) summary.dm_messages = await changes(db.prepare(`DELETE FROM dm_messages WHERE created_at <= datetime('now', '-${cfg.cron_dm_messages_days} day')`));
-        if (cfg.cron_broadcast_days > 0) {
-            summary.broadcast_history = await changes(db.prepare(`DELETE FROM broadcast_history WHERE sent_at <= datetime('now', '-${cfg.cron_broadcast_days} day')`));
-            await changes(db.prepare('DELETE FROM broadcast_recipients WHERE broadcast_id NOT IN (SELECT id FROM broadcast_history)'));
-        }
-        if (cfg.cron_inactive_users_days > 0) {
-            const inactive = await db.prepare(`SELECT id FROM users WHERE last_active <= datetime('now', '-${cfg.cron_inactive_users_days} day')`).all();
-            const ids = (inactive.results || []).map(r => r.id);
-            if (ids.length) {
-                const ph = ids.map(() => '?').join(', ');
-                await db.prepare(`DELETE FROM ai_messages WHERE chat_id IN (${ph})`).bind(...ids).run();
-                await db.prepare(`DELETE FROM dm_messages WHERE chat_id IN (${ph})`).bind(...ids).run();
-                await db.prepare(`DELETE FROM blocked_users WHERE user_id IN (${ph})`).bind(...ids).run();
-                await db.prepare(`DELETE FROM sessions WHERE user_id IN (${ph}) AND token LIKE 'bot-%'`).bind(...ids).run();
-                summary.users = await changes(db.prepare(`DELETE FROM users WHERE id IN (${ph})`).bind(...ids));
+            if (cfg.cron_sessions_days > 0) summary.dashboard_sessions = await changes(db.prepare(`DELETE FROM sessions WHERE user_id IS NULL AND created_at <= datetime('now', '-${cfg.cron_sessions_days} day')`));
+            if (cfg.cron_bot_sessions_days > 0) summary.bot_sessions = await changes(db.prepare(`DELETE FROM sessions WHERE token LIKE 'bot-%' AND updated_at <= datetime('now', '-${cfg.cron_bot_sessions_days} day')`));
+            if (cfg.cron_login_attempts_hours > 0) summary.login_attempts = await changes(db.prepare('DELETE FROM login_attempts WHERE minute <= ?').bind(nowMinute - cfg.cron_login_attempts_hours * 60));
+            if (cfg.cron_rate_limits_hours > 0) {
+                summary.ai_rate_limits = await changes(db.prepare('DELETE FROM ai_rate_limits WHERE minute < ?').bind(nowMinute - cfg.cron_rate_limits_hours * 60));
+                summary.group_flood = await changes(db.prepare('DELETE FROM group_flood WHERE minute < ?').bind(nowMinute - 120));
+                try { summary.mcp_rate_limits = await changes(db.prepare('DELETE FROM mcp_rate_limits WHERE minute < ?').bind(nowMinute - cfg.cron_rate_limits_hours * 60)); } catch (e) { /* ignore */ }
+            }
+            try {
+                const ttlRaw = await getSetting(db, 'mcp_memory_ttl_hours');
+                const ttl = Math.min(Math.max(parseInt(ttlRaw) || 24, 1), 720);
+                summary.mcp_sessions = await changes(db.prepare(`DELETE FROM mcp_sessions WHERE updated_at <= datetime('now', '-${ttl} hours')`));
+            } catch (e) { /* ignore */ }
+            const logCfg = await getLogCleanFromDb(db);
+            const logDays = cfg.cron_logs_days > 0 ? cfg.cron_logs_days : (logCfg.enabled ? logCfg.days : 0);
+            if (logDays > 0) {
+                summary.audit_logs = await changes(db.prepare(`DELETE FROM logs WHERE timestamp <= datetime('now', '-${logDays} day')`));
+            }
+            if (cfg.cron_ai_messages_days > 0) summary.ai_messages = await changes(db.prepare(`DELETE FROM ai_messages WHERE timestamp <= datetime('now', '-${cfg.cron_ai_messages_days} day')`));
+            if (cfg.cron_dm_messages_days > 0 && !armCfg.enabled) summary.dm_messages = await changes(db.prepare(`DELETE FROM dm_messages WHERE created_at <= datetime('now', '-${cfg.cron_dm_messages_days} day')`));
+            if (cfg.cron_broadcast_days > 0) {
+                summary.broadcast_history = await changes(db.prepare(`DELETE FROM broadcast_history WHERE sent_at <= datetime('now', '-${cfg.cron_broadcast_days} day')`));
+                await changes(db.prepare('DELETE FROM broadcast_recipients WHERE broadcast_id NOT IN (SELECT id FROM broadcast_history)'));
+            }
+            if (cfg.cron_game_scores_days > 0) {
+                summary.game_scores = await changes(db.prepare(`DELETE FROM game_scores WHERE updated_at <= datetime('now', '-${cfg.cron_game_scores_days} day')`));
+            }
+            if (cfg.cron_inactive_users_days > 0) {
+                const inactive = await db.prepare(`SELECT id FROM users WHERE last_active <= datetime('now', '-${cfg.cron_inactive_users_days} day')`).all();
+                const ids = (inactive.results || []).map(r => r.id);
+                if (ids.length) {
+                    const ph = ids.map(() => '?').join(', ');
+                    await db.prepare(`DELETE FROM ai_messages WHERE chat_id IN (${ph})`).bind(...ids).run();
+                    await db.prepare(`DELETE FROM dm_messages WHERE chat_id IN (${ph})`).bind(...ids).run();
+                    await db.prepare(`DELETE FROM blocked_users WHERE user_id IN (${ph})`).bind(...ids).run();
+                    await db.prepare(`DELETE FROM sessions WHERE user_id IN (${ph}) AND token LIKE 'bot-%'`).bind(...ids).run();
+                    summary.users = await changes(db.prepare(`DELETE FROM users WHERE id IN (${ph})`).bind(...ids));
+                }
             }
         }
-        }
-        if (!Object.keys(summary).length) return null;
         try { await setSetting(db, 'cron_last_run', JSON.stringify({ at: new Date().toISOString(), summary })); } catch (e) {}
         await logAction(db, null, 'Scheduled cleanup: ' + JSON.stringify(summary));
         return summary;
@@ -14221,13 +14860,35 @@ async function saveCronSettings(request, env) {
         await initializeDatabase(env.DB);
         if (!body || typeof body !== 'object') return apiJson({ error: 'Invalid request.' }, 400);
         const updates = [];
+        let nextEnabled = await getSetting(env.DB, 'cron_enabled') === '1' ? '1' : '0';
         for (const key of Object.keys(CRON_DEFAULTS)) {
             if (body[key] === undefined || body[key] === null || body[key] === '') continue;
-            if (key === 'cron_enabled') { updates.push([key, (body[key] === '1' || body[key] === 1 || body[key] === true) ? '1' : '0']); continue; }
+            if (key === 'cron_enabled') {
+                nextEnabled = (body[key] === '1' || body[key] === 1 || body[key] === true) ? '1' : '0';
+                updates.push([key, nextEnabled]);
+                continue;
+            }
             const [min, max] = CRON_BOUNDS[key];
             const parsed = parseInt(body[key]);
             if (isNaN(parsed)) continue;
             updates.push([key, String(Math.min(Math.max(parsed, min), max))]);
+        }
+        if (body.cron_logs_days !== undefined) {
+            const ld = Math.min(Math.max(parseInt(body.cron_logs_days) || 0, 0), 3650);
+            updates.push(['log_clean_enabled', ld > 0 ? '1' : '0']);
+            if (ld > 0) updates.push(['log_clean_days', String(ld)]);
+        }
+        if (body.cron_dm_messages_days !== undefined) {
+            const dmDays = Math.min(Math.max(parseInt(body.cron_dm_messages_days) || 0, 0), 3650);
+            if (dmDays > 0) {
+                updates.push(['auto_remove_dm_value', String(dmDays)]);
+                updates.push(['auto_remove_dm_unit', 'days']);
+                updates.push(['auto_remove_enabled', nextEnabled === '1' ? '1' : '0']);
+            } else {
+                updates.push(['auto_remove_enabled', '0']);
+            }
+        } else if (nextEnabled === '0') {
+            updates.push(['auto_remove_enabled', '0']);
         }
         await setSettingsBatch(env.DB, updates);
         await logAction(env.DB, null, 'Cleanup settings updated');
@@ -14262,8 +14923,11 @@ async function saveLogCleanSettings(request, env) {
         await initializeDatabase(env.DB);
         const enabled = body.enabled === '1' || body.enabled === 1 || body.enabled === true;
         const days = Math.min(Math.max(parseInt(body.days) || 30, 1), 3650);
-        await setSetting(env.DB, 'log_clean_enabled', enabled ? '1' : '0');
-        await setSetting(env.DB, 'log_clean_days', String(days));
+        await setSettingsBatch(env.DB, [
+            ['log_clean_enabled', enabled ? '1' : '0'],
+            ['log_clean_days', String(days)],
+            ['cron_logs_days', enabled ? String(days) : '0'],
+        ]);
         await logAction(env.DB, null, 'Log cleanup settings updated');
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
@@ -14714,9 +15378,21 @@ const DESIRED_SCHEMA = {
         last_group_id: { type: 'INTEGER' },
         last_active: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' }
     }},
+    admin_accounts: { columns: {
+        id: { type: 'INTEGER', primary: true },
+        username: { type: 'TEXT', unique: true },
+        password_hash: { type: 'TEXT' },
+        role: { type: 'TEXT', default: "'subadmin'" },
+        allowed_areas: { type: 'TEXT', default: "'[\"overview\"]'" },
+        enabled: { type: 'INTEGER', default: '1' },
+        version: { type: 'INTEGER', default: '1' },
+        created_at: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' },
+        last_login_at: { type: 'DATETIME' }
+    }},
     commands: { columns: {
         command: { type: 'TEXT', primary: true },
         parent: { type: 'TEXT' },
+        version: { type: 'INTEGER', default: '1' },
         response_type: { type: 'TEXT', default: "'text'" },
         content: { type: 'TEXT' },
         media_url: { type: 'TEXT' },
@@ -14761,7 +15437,9 @@ const DESIRED_SCHEMA = {
         created_at: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' },
         updated_at: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' },
         csrf_token: { type: 'TEXT', default: "''" },
-        password_version: { type: 'TEXT', default: "''" }
+        password_version: { type: 'TEXT', default: "''" },
+        account_id: { type: 'INTEGER' },
+        username: { type: 'TEXT', default: "''" }
     }},
     logs: { columns: {
         id: { type: 'INTEGER', primary: true },
@@ -14836,7 +15514,8 @@ const DESIRED_SCHEMA = {
         last_active: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' },
         is_active: { type: 'BOOLEAN', default: '1' },
         settings_json: { type: 'TEXT' },
-        member_count: { type: 'INTEGER', default: '0' }
+        member_count: { type: 'INTEGER', default: '0' },
+        version: { type: 'INTEGER', default: '1' }
     }},
     group_flood: { columns: {
         chat_id: { type: 'INTEGER', primary: true },
@@ -14847,6 +15526,7 @@ const DESIRED_SCHEMA = {
     featured_replies: { columns: {
         id: { type: 'INTEGER', primary: true },
         command: { type: 'TEXT' },
+        version: { type: 'INTEGER', default: '1' },
         kind: { type: 'TEXT', default: "'text'" },
         content: { type: 'TEXT' },
         buttons_json: { type: 'TEXT' },
@@ -14922,6 +15602,24 @@ const DESIRED_SCHEMA = {
         muted_until: { type: 'DATETIME' },
         updated_at: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' }
     }},
+    game_scores: { columns: {
+        chat_id: { type: 'INTEGER', primary: true },
+        game_id: { type: 'TEXT', primary: true },
+        user_id: { type: 'INTEGER', primary: true },
+        user_name: { type: 'TEXT', default: "''" },
+        username: { type: 'TEXT', default: "''" },
+        best_score: { type: 'INTEGER', default: '0' },
+        plays: { type: 'INTEGER', default: '1' },
+        last_announced_at: { type: 'DATETIME' },
+        updated_at: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' }
+    }},
+    push_subscriptions: { columns: {
+        endpoint: { type: 'TEXT', primary: true },
+        p256dh: { type: 'TEXT' },
+        auth: { type: 'TEXT' },
+        include_preview: { type: 'INTEGER', default: '0' },
+        created_at: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' }
+    }},
     contact_pending_reply: { columns: {
         admin_id: { type: 'INTEGER', primary: true },
         target_user_id: { type: 'INTEGER' },
@@ -14954,7 +15652,8 @@ const DESIRED_SCHEMA = {
         last_active: { type: 'DATETIME', default: 'CURRENT_TIMESTAMP' },
         is_active: { type: 'BOOLEAN', default: '1' },
         settings_json: { type: 'TEXT' },
-        member_count: { type: 'INTEGER', default: '0' }
+        member_count: { type: 'INTEGER', default: '0' },
+        version: { type: 'INTEGER', default: '1' }
     }}
 };
 
@@ -14983,6 +15682,7 @@ const SCHEMA_INDEXES = [
     'CREATE INDEX IF NOT EXISTS idx_blocked_type ON blocked_users(block_type)',
     'CREATE INDEX IF NOT EXISTS idx_media_library_file_id ON media_library(file_id)',
     'CREATE INDEX IF NOT EXISTS idx_channels_active ON channels(is_active)',
+    'CREATE INDEX IF NOT EXISTS idx_game_scores_lb ON game_scores(chat_id, game_id, best_score DESC)',
 ];
 
 // Safe, idempotent cleanups that remove expired and orphaned rows.
@@ -15299,6 +15999,17 @@ async function initializeDatabase(db) {
 
         // Extra tables added in later releases.
         try {
+            await db.prepare(`CREATE TABLE IF NOT EXISTS admin_accounts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                role TEXT DEFAULT 'subadmin',
+                allowed_areas TEXT DEFAULT '["overview"]',
+                enabled INTEGER DEFAULT 1,
+                version INTEGER DEFAULT 1,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                last_login_at DATETIME
+            )`).run();
             await db.prepare(`CREATE TABLE IF NOT EXISTS contact_pending_reply (
                 admin_id INTEGER PRIMARY KEY,
                 target_user_id INTEGER,
@@ -15340,6 +16051,12 @@ async function initializeDatabase(db) {
         const SCHEMA_HEALS = [
             `ALTER TABLE groups ADD COLUMN chat_subtype TEXT DEFAULT ''`,
             `ALTER TABLE groups ADD COLUMN linked_chat_id INTEGER`,
+            `ALTER TABLE groups ADD COLUMN version INTEGER DEFAULT 1`,
+            `ALTER TABLE channels ADD COLUMN version INTEGER DEFAULT 1`,
+            `ALTER TABLE commands ADD COLUMN version INTEGER DEFAULT 1`,
+            `ALTER TABLE featured_replies ADD COLUMN version INTEGER DEFAULT 1`,
+            `ALTER TABLE sessions ADD COLUMN account_id INTEGER`,
+            `ALTER TABLE sessions ADD COLUMN username TEXT DEFAULT ''`,
             `ALTER TABLE group_strikes ADD COLUMN muted_until DATETIME`,
             `ALTER TABLE commands ADD COLUMN edit_message INTEGER DEFAULT 0`,
             `ALTER TABLE commands ADD COLUMN edit_triggers TEXT DEFAULT 'inline,reply,command'`,
@@ -15414,6 +16131,26 @@ async function initializeDatabase(db) {
                 muted_until DATETIME,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 PRIMARY KEY (chat_id, user_id)
+            )`).run();
+            await db.prepare(`CREATE TABLE IF NOT EXISTS game_scores (
+                chat_id INTEGER NOT NULL,
+                game_id TEXT NOT NULL,
+                user_id INTEGER NOT NULL,
+                user_name TEXT DEFAULT '',
+                username TEXT DEFAULT '',
+                best_score INTEGER DEFAULT 0,
+                plays INTEGER DEFAULT 1,
+                last_announced_at DATETIME,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (chat_id, game_id, user_id)
+            )`).run();
+            await db.prepare('CREATE INDEX IF NOT EXISTS idx_game_scores_lb ON game_scores(chat_id, game_id, best_score DESC)').run();
+            await db.prepare(`CREATE TABLE IF NOT EXISTS push_subscriptions (
+                endpoint TEXT PRIMARY KEY,
+                p256dh TEXT NOT NULL,
+                auth TEXT NOT NULL,
+                include_preview INTEGER DEFAULT 0,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )`).run();
         } catch (e) { /* ignore */ }
 
@@ -15687,9 +16424,14 @@ async function handleSetup(request, env) {
     if (!env.DB) return apiJson({ error: 'Database is not connected. Please check your D1 binding.' }, 500);
     await initializeDatabase(env.DB);
     const existing = await getSetting(env.DB, 'admin_password');
-    if (existing || env.ADMIN_PASS) return apiJson({ error: 'Admin password is already set. Please sign in.' }, 400);
+    const accCnt = await env.DB.prepare('SELECT COUNT(*) as n FROM admin_accounts').first();
+    if (existing || env.ADMIN_PASS || (accCnt && accCnt.n > 0)) return apiJson({ error: 'Admin account is already set. Please sign in.' }, 400);
     const body = await request.json();
     const { botToken, adminPassword } = body || {};
+    const username = String((body && body.username) || 'admin').trim();
+    if (!/^[a-zA-Z0-9_.-]{2,40}$/.test(username)) {
+        return apiJson({ error: 'Username must be 2–40 characters (letters, numbers, _ . -).' }, 400);
+    }
     if (typeof adminPassword !== 'string' || adminPassword.length < 6 || adminPassword.length > 1024) {
         return apiJson({ error: 'Password must be between 6 and 1024 characters.' }, 400);
     }
@@ -15699,51 +16441,245 @@ async function handleSetup(request, env) {
         check = await validateBotToken(botToken);
         if (!check.ok) return apiJson({ error: `Invalid bot token: ${check.error || 'please double-check it'}` }, 400);
     }
+    const pwHash = await hashPassword(adminPassword);
     if (botToken) {
         const webhookUrl = `${new URL(request.url).origin}/webhook`;
         const secret = crypto.randomUUID();
         try { await registerWebhook(botToken, webhookUrl, secret); }
         catch (e) { return apiJson({ error: `Could not register webhook: ${e.message}` }, 500); }
-        await setSetting(env.DB, 'admin_password', await hashPassword(adminPassword));
+        await setSetting(env.DB, 'admin_password', pwHash);
         await setSetting(env.DB, 'bot_token', botToken);
         await setSetting(env.DB, 'webhook_url', webhookUrl);
         await setSetting(env.DB, 'webhook_secret', secret);
         if (check.username) await setSetting(env.DB, 'bot_username', check.username);
         if (check.name) await setSetting(env.DB, 'bot_name', check.name);
+        await ensureAndPublishStartMenu(env.DB, botToken);
     } else {
-        await setSetting(env.DB, 'admin_password', await hashPassword(adminPassword));
+        await setSetting(env.DB, 'admin_password', pwHash);
     }
+    await env.DB.prepare("INSERT INTO admin_accounts (username, password_hash, role, allowed_areas, enabled) VALUES (?, ?, 'owner', '[\"*\"]', 1)")
+        .bind(username, pwHash).run();
     return apiJson({ success: true });
 }
 async function handleLogin(request, env) {
     if (!env.DB) return apiJson({ error: 'Database is not connected.' }, 500);
     await initializeDatabase(env.DB);
     const body = await request.json();
+    const username = String((body && body.username) || 'admin').trim();
     const password = body && body.password;
     if (typeof password !== 'string' || !password) return apiJson({ error: 'Please enter your password.' }, 400);
     if (password.length > 1024) return apiJson({ error: 'Password must be 1024 characters or fewer.' }, 400);
     const minute = Math.floor(Date.now() / 60000);
     const fails = await env.DB.prepare('SELECT COALESCE(SUM(count), 0) as n FROM login_attempts WHERE minute > ?').bind(minute - 5).first();
     if (fails && fails.n >= 20) return apiJson({ error: 'Too many failed attempts. Please wait a few minutes and try again.' }, 429);
+
     const envPass = env.ADMIN_PASS || null;
-    const stored = await getSetting(env.DB, 'admin_password');
-    let ok = envPass ? timingSafeEqual(String(envPass), String(password)) : false;
-    if (!ok) ok = !!(stored && await verifyPassword(stored, password));
+    const envUser = String(env.ADMIN_USER || '').trim();
+    let account = await env.DB.prepare('SELECT * FROM admin_accounts WHERE LOWER(username) = LOWER(?)').bind(username).first();
+    let ok = false;
+    let envMatched = false;
+    if (envPass && timingSafeEqual(String(envPass), String(password))) {
+        // Master/recovery login: ADMIN_PASS (+ ADMIN_USER if set) always signs in as the OWNER,
+        // never as an arbitrary or sub-admin username.
+        const ownerRow = await env.DB.prepare("SELECT * FROM admin_accounts WHERE role = 'owner' ORDER BY id ASC LIMIT 1").first();
+        const expected = envUser || (ownerRow && ownerRow.username) || 'admin';
+        if (username.toLowerCase() === expected.toLowerCase()) {
+            ok = true;
+            envMatched = true;
+            account = ownerRow || { id: 0, username: expected, role: 'owner', allowed_areas: '["*"]', enabled: 1 };
+        }
+    }
+    if (envMatched) {
+        // verified above
+    } else if (account) {
+        if (!account.enabled) return apiJson({ error: 'This account is disabled.' }, 403);
+        ok = await verifyPassword(account.password_hash, password);
+        if (ok && !account.password_hash.startsWith(PBKDF2_PREFIX)) {
+            await env.DB.prepare('UPDATE admin_accounts SET password_hash = ? WHERE id = ?').bind(await hashPassword(password), account.id).run();
+        }
+    } else {
+        const accCnt = await env.DB.prepare('SELECT COUNT(*) as n FROM admin_accounts').first();
+        if (!accCnt || accCnt.n === 0) {
+            if (!/^[a-zA-Z0-9_.-]{2,40}$/.test(username)) return apiJson({ error: 'Username must be 2–40 characters (letters, numbers, _ . -).' }, 400);
+            const stored = await getSetting(env.DB, 'admin_password');
+            ok = !!(stored && await verifyPassword(stored, password));
+            if (ok) {
+                const pwHash = await hashPassword(password);
+                const ins = await env.DB.prepare("INSERT INTO admin_accounts (username, password_hash, role, allowed_areas, enabled) VALUES (?, ?, 'owner', '[\"*\"]', 1)")
+                    .bind(username || 'admin', pwHash).run();
+                account = { id: (ins && ins.meta && ins.meta.last_row_id) || 1, username: username || 'admin', role: 'owner', allowed_areas: '["*"]', enabled: 1 };
+            }
+        }
+    }
     if (!ok) {
         await env.DB.prepare('INSERT INTO login_attempts (minute, count) VALUES (?, 1) ON CONFLICT(minute) DO UPDATE SET count = count + 1').bind(minute).run();
-        await logAction(env.DB, null, 'Dashboard login failed');
-        return apiJson({ error: 'Incorrect password.' }, 401);
+        await logAction(env.DB, null, `Dashboard login failed (${username})`);
+        return apiJson({ error: 'Incorrect username or password.' }, 401);
     }
-    await maybeRehashPassword(env.DB, stored, password);
+    if (account && account.id) {
+        await env.DB.prepare('UPDATE admin_accounts SET last_login_at = CURRENT_TIMESTAMP WHERE id = ?').bind(account.id).run();
+    }
     await env.DB.prepare('DELETE FROM login_attempts').run();
-    await logAction(env.DB, null, 'Dashboard login successful');
+    await logAction(env.DB, null, `Dashboard login (${account ? account.username : username})`);
     const token = crypto.randomUUID();
     const csrf = crypto.randomUUID().replace(/-/g, '');
     const pv = (await getSetting(env.DB, 'password_version')) || '';
-    await env.DB.prepare('INSERT INTO sessions (token, user_id, csrf_token, password_version) VALUES (?, NULL, ?, ?)').bind(token, csrf, pv).run();
+    await env.DB.prepare('INSERT INTO sessions (token, user_id, csrf_token, password_version, account_id, username) VALUES (?, NULL, ?, ?, ?, ?)')
+        .bind(token, csrf, pv, account ? account.id : null, account ? account.username : username).run();
     await env.DB.prepare("DELETE FROM sessions WHERE user_id IS NULL AND created_at <= datetime('now', '-1 day')").run();
     const secure = new URL(request.url).protocol === 'https:';
-    return new Response(JSON.stringify({ success: true, csrf }), { status: 200, headers: { 'Set-Cookie': sessionCookie(token, secure), ...JSON_HEADERS } });
+    let areas = ['*'];
+    try { areas = JSON.parse((account && account.allowed_areas) || '["*"]'); } catch (e) {}
+    return new Response(JSON.stringify({
+        success: true,
+        csrf,
+        account: { id: account ? account.id : 0, username: account ? account.username : username, role: account ? account.role : 'owner', allowed_areas: areas }
+    }), { status: 200, headers: { 'Set-Cookie': sessionCookie(token, secure), ...JSON_HEADERS } });
+}
+async function getSessionAccount(env, sessionToken) {
+    const fallback = { id: 0, username: 'admin', role: 'owner', allowed_areas: ['*'] };
+    if (!env.DB || !sessionToken) return fallback;
+    try {
+        const s = await env.DB.prepare('SELECT account_id, username FROM sessions WHERE token = ?').bind(sessionToken).first();
+        if (s && s.account_id) {
+            const acc = await env.DB.prepare('SELECT id, username, role, allowed_areas, enabled FROM admin_accounts WHERE id = ?').bind(s.account_id).first();
+            if (!acc || !acc.enabled) return null;
+            let areas = ['overview'];
+            try { areas = JSON.parse(acc.allowed_areas || '[]'); } catch (e) {}
+            return { id: acc.id, username: acc.username, role: acc.role || 'subadmin', allowed_areas: Array.isArray(areas) ? areas : [] };
+        }
+        const ownerAcc = await env.DB.prepare("SELECT id, username, role, allowed_areas, enabled FROM admin_accounts WHERE role = 'owner' ORDER BY id ASC LIMIT 1").first();
+        if (ownerAcc) {
+            if (!ownerAcc.enabled) return null;
+            let areas = ['*'];
+            try { areas = JSON.parse(ownerAcc.allowed_areas || '["*"]'); } catch (e) {}
+            return { id: ownerAcc.id, username: ownerAcc.username, role: 'owner', allowed_areas: Array.isArray(areas) ? areas : ['*'] };
+        }
+        return { id: 0, username: (s && s.username) || String(env.ADMIN_USER || 'admin').trim() || 'admin', role: 'owner', allowed_areas: ['*'] };
+    } catch (e) { return fallback; }
+}
+const PATH_AREA_PREFIXES = [
+    ['/api/accounts', 'accounts'],
+    ['/api/overview', 'overview'], ['/api/stats', 'overview'],
+    ['/api/commands', 'commands'],
+    ['/api/menu_commands', 'menu'], ['/api/featured', 'menu'],
+    ['/api/broadcast', 'broadcast'],
+    ['/api/contact/messages', 'inbox'], ['/api/contact/stats', 'inbox'], ['/api/contact/mark_', 'inbox'], ['/api/contact/delete', 'inbox'], ['/api/contact/clear_all', 'inbox'],
+    ['/api/contact', 'contact'],
+    ['/api/push', 'notifications'],
+    ['/api/users', 'users'],
+    ['/api/groups', 'groups'],
+    ['/api/channels', 'channels'],
+    ['/api/force_join', 'forcejoin'],
+    ['/api/media', 'media'], ['/api/upload_media', 'media'], ['/api/file', 'media'],
+    ['/api/proxies', 'proxies'],
+    ['/api/games', 'games'],
+    ['/api/memory', 'memory'],
+    ['/api/ai', 'ai'],
+    ['/api/mcp', 'mcp'], ['/api/chat', 'mcp'],
+    ['/api/bot_info', 'botinfo'],
+    ['/api/permissions', 'permissions'], ['/api/admins', 'permissions'],
+    ['/api/backup', 'backup'],
+    ['/api/logs', 'logs'],
+    ['/api/cron', 'cron'],
+    ['/api/update', 'update'], ['/api/oauth', 'update'],
+    ['/api/settings', 'settings'], ['/api/schema', 'settings'], ['/api/change_password', 'settings'], ['/api/reset', 'settings'],
+];
+async function checkAccountAreaAccess(account, pathname) {
+    if (!account) return false;
+    if (account.role === 'owner') return true;
+    const areas = Array.isArray(account.allowed_areas) ? account.allowed_areas : [];
+    if (areas.includes('*')) return true;
+    if (pathname === '/api/logout' || pathname === '/api/status' || pathname === '/api/version') return true;
+    for (const [prefix, area] of PATH_AREA_PREFIXES) {
+        if (pathname.startsWith(prefix)) {
+            if (area === 'accounts') return false;
+            return areas.includes(area);
+        }
+    }
+    return true;
+}
+async function listAccountsHandler(env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    await initializeDatabase(env.DB);
+    const rows = await env.DB.prepare("SELECT id, username, role, allowed_areas, enabled, version, created_at, last_login_at FROM admin_accounts ORDER BY (role = 'owner') DESC, id ASC").all();
+    return apiJson({ accounts: rows.results || [] });
+}
+async function createAccountHandler(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const b = await request.json();
+        const username = String(b.username || '').trim();
+        const password = String(b.password || '');
+        if (!/^[a-zA-Z0-9_.-]{2,40}$/.test(username)) return apiJson({ error: 'Username must be 2–40 chars (letters, numbers, _ . -).' }, 400);
+        if (password.length < 6 || password.length > 1024) return apiJson({ error: 'Password must be 6–1024 chars.' }, 400);
+        const areas = Array.isArray(b.allowed_areas) ? b.allowed_areas.map(String) : ['overview'];
+        await initializeDatabase(env.DB);
+        const pwHash = await hashPassword(password);
+        try {
+            await env.DB.prepare("INSERT INTO admin_accounts (username, password_hash, role, allowed_areas, enabled, version) VALUES (?, ?, 'subadmin', ?, ?, 1)")
+                .bind(username, pwHash, JSON.stringify(areas), b.enabled === 0 ? 0 : 1).run();
+        } catch (e) {
+            if (/UNIQUE/i.test(String(e.message || ''))) return apiJson({ error: 'Username already exists.' }, 400);
+            throw e;
+        }
+        await logAction(env.DB, null, `Created sub-admin account: ${username}`);
+        return apiJson({ success: true });
+    } catch (err) { return internalError(err); }
+}
+async function updateAccountHandler(request, env, url) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const id = parseInt(url.pathname.split('/').pop(), 10);
+        const b = await request.json();
+        await initializeDatabase(env.DB);
+        const cur = await env.DB.prepare('SELECT * FROM admin_accounts WHERE id = ?').bind(id).first();
+        if (!cur) return apiJson({ error: 'Account not found.' }, 404);
+        if (b.expectedVersion !== undefined && (cur.version || 1) !== Number(b.expectedVersion)) {
+            return apiJson({ error: 'Conflict: this account was modified concurrently. Refresh and retry.', conflict: true, currentVersion: cur.version || 1 }, 409);
+        }
+        const username = String(b.username || cur.username).trim();
+        if (!/^[a-zA-Z0-9_.-]{2,40}$/.test(username)) return apiJson({ error: 'Invalid username.' }, 400);
+        const clash = await env.DB.prepare('SELECT id FROM admin_accounts WHERE LOWER(username) = LOWER(?) AND id != ?').bind(username, id).first();
+        if (clash) return apiJson({ error: 'Username already exists.' }, 400);
+        const areas = cur.role === 'owner' ? ['*'] : (Array.isArray(b.allowed_areas) ? b.allowed_areas.map(String) : JSON.parse(cur.allowed_areas || '[]'));
+        const enabled = cur.role === 'owner' ? 1 : (b.enabled !== undefined ? (b.enabled ? 1 : 0) : cur.enabled);
+        let pwHash = cur.password_hash;
+        if (b.password) {
+            if (String(b.password).length < 6) return apiJson({ error: 'Password must be at least 6 chars.' }, 400);
+            pwHash = await hashPassword(String(b.password));
+        }
+        try {
+            await env.DB.prepare('UPDATE admin_accounts SET username = ?, password_hash = ?, allowed_areas = ?, enabled = ?, version = COALESCE(version, 1) + 1 WHERE id = ?')
+                .bind(username, pwHash, JSON.stringify(areas), enabled, id).run();
+            if (cur.role === 'owner' && b.password) await setSetting(env.DB, 'admin_password', pwHash);
+        } catch (e) {
+            if (/UNIQUE/i.test(String(e.message || ''))) return apiJson({ error: 'Username already exists.' }, 400);
+            throw e;
+        }
+        if (!enabled || b.password) await env.DB.prepare('DELETE FROM sessions WHERE account_id = ?').bind(id).run();
+        else {
+            await env.DB.prepare('UPDATE sessions SET username = ? WHERE account_id = ?').bind(username, id).run();
+            if (cur.role === 'owner') await env.DB.prepare('UPDATE sessions SET account_id = ?, username = ? WHERE user_id IS NULL AND account_id IS NULL').bind(id, username).run();
+        }
+        invalidateSessionCache();
+        await logAction(env.DB, null, `Updated account: ${username}`);
+        return apiJson({ success: true });
+    } catch (err) { return internalError(err); }
+}
+async function deleteAccountHandler(env, url) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const id = parseInt(url.pathname.split('/').pop(), 10);
+        const cur = await env.DB.prepare('SELECT username, role FROM admin_accounts WHERE id = ?').bind(id).first();
+        if (!cur) return apiJson({ error: 'Account not found.' }, 404);
+        if (cur.role === 'owner') return apiJson({ error: 'Cannot delete the Owner account.' }, 400);
+        await env.DB.prepare('DELETE FROM sessions WHERE account_id = ?').bind(id).run();
+        await env.DB.prepare('DELETE FROM admin_accounts WHERE id = ?').bind(id).run();
+        invalidateSessionCache();
+        await logAction(env.DB, null, `Deleted account: ${cur.username}`);
+        return apiJson({ success: true });
+    } catch (err) { return internalError(err); }
 }
 async function handleLogout(request, env) {
     const cookie = request.headers.get('Cookie') || '';
@@ -16100,7 +17036,152 @@ async function testContactNotify(env) {
         return apiJson({ success: true, sent, failed, total: adminIds.length });
     } catch (err) { return internalError(err); }
 }
-async function handleContactMessage(env, BOT_TOKEN, chatId, userId, userInfo, message, feat) {
+function b64uEncode(bytes) {
+    const arr = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+    let bin = '';
+    for (let i = 0; i < arr.length; i++) bin += String.fromCharCode(arr[i]);
+    return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function b64uDecode(str) {
+    const pad = '='.repeat((4 - (str.length % 4)) % 4);
+    const b64 = (str + pad).replace(/-/g, '+').replace(/_/g, '/');
+    const bin = atob(b64);
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+}
+function concatBytes(...arrays) {
+    let total = 0;
+    for (const a of arrays) total += a.length;
+    const out = new Uint8Array(total);
+    let off = 0;
+    for (const a of arrays) { out.set(a, off); off += a.length; }
+    return out;
+}
+async function hmacSha256(keyBytes, dataBytes) {
+    const key = await crypto.subtle.importKey('raw', keyBytes, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    return new Uint8Array(await crypto.subtle.sign('HMAC', key, dataBytes));
+}
+async function getOrCreateVapidKeys(db) {
+    let pub = await getSetting(db, 'vapid_public_key');
+    let privJwkRaw = await getSetting(db, 'vapid_private_jwk');
+    if (pub && privJwkRaw) {
+        try {
+            const privJwk = JSON.parse(privJwkRaw);
+            return { publicKeyB64u: pub, privateJwk: privJwk };
+        } catch (e) {}
+    }
+    const kp = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify']);
+    const rawPub = new Uint8Array(await crypto.subtle.exportKey('raw', kp.publicKey));
+    const privJwk = await crypto.subtle.exportKey('jwk', kp.privateKey);
+    pub = b64uEncode(rawPub);
+    await setSettingsBatch(db, [['vapid_public_key', pub], ['vapid_private_jwk', JSON.stringify(privJwk)]]);
+    return { publicKeyB64u: pub, privateJwk: privJwk };
+}
+async function signVapidJwt(aud, privateJwk) {
+    const enc = new TextEncoder();
+    const hdr = b64uEncode(enc.encode(JSON.stringify({ typ: 'JWT', alg: 'ES256' })));
+    const claims = b64uEncode(enc.encode(JSON.stringify({ aud, exp: Math.floor(Date.now() / 1000) + 43200, sub: 'mailto:admin@nyxx.local' })));
+    const unsigned = hdr + '.' + claims;
+    const privKey = await crypto.subtle.importKey('jwk', privateJwk, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']);
+    const sig = new Uint8Array(await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, privKey, enc.encode(unsigned)));
+    return unsigned + '.' + b64uEncode(sig);
+}
+async function encryptWebPushPayload(payloadObj, p256dhB64u, authB64u) {
+    const enc = new TextEncoder();
+    const uaPubBytes = b64uDecode(p256dhB64u);
+    const authSecret = b64uDecode(authB64u);
+    const uaKey = await crypto.subtle.importKey('raw', uaPubBytes, { name: 'ECDH', namedCurve: 'P-256' }, false, []);
+    const asKp = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits']);
+    const asPubBytes = new Uint8Array(await crypto.subtle.exportKey('raw', asKp.publicKey));
+    const sharedSecret = new Uint8Array(await crypto.subtle.deriveBits({ name: 'ECDH', public: uaKey }, asKp.privateKey, 256));
+
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const prkKey = await hmacSha256(authSecret, sharedSecret);
+    const keyInfo = concatBytes(enc.encode('WebPush: info\0'), uaPubBytes, asPubBytes, new Uint8Array([1]));
+    const ikm = await hmacSha256(prkKey, keyInfo);
+    const prk = await hmacSha256(salt, ikm);
+    const cek = (await hmacSha256(prk, concatBytes(enc.encode('Content-Encoding: aes128gcm\0'), new Uint8Array([1])))).slice(0, 16);
+    const nonce = (await hmacSha256(prk, concatBytes(enc.encode('Content-Encoding: nonce\0'), new Uint8Array([1])))).slice(0, 12);
+
+    const plaintext = enc.encode(JSON.stringify(payloadObj));
+    const padded = concatBytes(plaintext, new Uint8Array([2]));
+    const aesKey = await crypto.subtle.importKey('raw', cek, 'AES-GCM', false, ['encrypt']);
+    const ciphertext = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv: nonce }, aesKey, padded));
+
+    const rs = new Uint8Array(4);
+    new DataView(rs.buffer).setUint32(0, 4096, false);
+    const header = concatBytes(salt, rs, new Uint8Array([asPubBytes.length]), asPubBytes);
+    return concatBytes(header, ciphertext);
+}
+async function sendWebPushToAll(env, title, previewBody, genericBody, tag) {
+    if (!env.DB) return { sent: 0, removed: 0 };
+    const rows = await env.DB.prepare('SELECT endpoint, p256dh, auth, include_preview FROM push_subscriptions LIMIT 50').all();
+    const subs = rows.results || [];
+    if (!subs.length) return { sent: 0, removed: 0 };
+    const vapid = await getOrCreateVapidKeys(env.DB);
+    let sent = 0, removed = 0;
+    await Promise.allSettled(subs.map(async (sub) => {
+        try {
+            const epUrl = new URL(sub.endpoint);
+            const jwt = await signVapidJwt(epUrl.origin, vapid.privateJwk);
+            const bodyText = sub.include_preview ? previewBody : genericBody;
+            const bodyBytes = await encryptWebPushPayload({ title, body: bodyText, tag, url: '/?nyxx-notification=inbox' }, sub.p256dh, sub.auth);
+            const res = await fetch(sub.endpoint, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `vapid t=${jwt}, k=${vapid.publicKeyB64u}`,
+                    'Content-Encoding': 'aes128gcm',
+                    'Content-Type': 'application/octet-stream',
+                    'TTL': '86400',
+                    'Urgency': 'normal'
+                },
+                body: bodyBytes,
+                signal: AbortSignal.timeout(8000)
+            });
+            if (res.status === 404 || res.status === 410) {
+                await env.DB.prepare('DELETE FROM push_subscriptions WHERE endpoint = ?').bind(sub.endpoint).run();
+                removed++;
+            } else if (res.ok) {
+                sent++;
+            }
+        } catch (e) {}
+    }));
+    return { sent, removed };
+}
+async function getVapidPublicKeyHandler(env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    await initializeDatabase(env.DB);
+    const { publicKeyB64u } = await getOrCreateVapidKeys(env.DB);
+    return apiJson({ success: true, publicKey: publicKeyB64u });
+}
+async function savePushSubscriptionHandler(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const b = await request.json();
+        const sub = b.subscription || {};
+        if (!sub.endpoint || !sub.keys || !sub.keys.p256dh || !sub.keys.auth) return apiJson({ error: 'Invalid push subscription.' }, 400);
+        await initializeDatabase(env.DB);
+        await env.DB.prepare(
+            'INSERT INTO push_subscriptions (endpoint, p256dh, auth, include_preview) VALUES (?, ?, ?, ?) ON CONFLICT(endpoint) DO UPDATE SET p256dh=excluded.p256dh, auth=excluded.auth, include_preview=excluded.include_preview'
+        ).bind(String(sub.endpoint), String(sub.keys.p256dh), String(sub.keys.auth), b.include_preview ? 1 : 0).run();
+        return apiJson({ success: true });
+    } catch (err) { return internalError(err); }
+}
+async function deletePushSubscriptionHandler(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    const b = await request.json().catch(() => ({}));
+    if (b.endpoint) await env.DB.prepare('DELETE FROM push_subscriptions WHERE endpoint = ?').bind(String(b.endpoint)).run();
+    return apiJson({ success: true });
+}
+async function testWebPushHandler(env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    await initializeDatabase(env.DB);
+    const r = await sendWebPushToAll(env, 'Nyxx Web Push Test', 'Push notifications work even when the dashboard is closed!', 'Push notifications work even when the dashboard is closed!', 'nyxx-test-' + Date.now());
+    return apiJson({ success: true, sent: r.sent, removed: r.removed });
+}
+
+async function handleContactMessage(env, BOT_TOKEN, chatId, userId, userInfo, message, feat, ctx) {
     try {
         // 1. Rate limit
         const rateLimit = parseInt(await getSetting(env.DB, 'contact_rate_limit')) || 0;
@@ -16143,7 +17224,14 @@ async function handleContactMessage(env, BOT_TOKEN, chatId, userId, userInfo, me
         }
         if (responseText) await sendRichText(BOT_TOKEN, chatId, responseText);
 
-        // 5. Notify admins
+        // 5. Web Push notifications (arrives even when dashboard is closed)
+        const senderLabel = (userInfo && userInfo.first_name ? userInfo.first_name : 'User') + (userInfo && userInfo.username ? ` (@${userInfo.username})` : '');
+        const pushPreview = `${senderLabel}: ${String(message || '').replace(/\s+/g, ' ').trim().slice(0, 140)}`;
+        const pushPromise = sendWebPushToAll(env, 'New contact message', pushPreview, 'Open Nyxx to read your inbox.', 'nyxx-contact-' + (contactRowId || Date.now()));
+        if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(pushPromise);
+        else await pushPromise.catch(() => {});
+
+        // 6. Notify admins via Telegram
         if ((await getSetting(env.DB, 'contact_notify_enabled')) === '1') {
             const adminIds = await getContactNotifyAdmins(env);
             const includeUser = (await getSetting(env.DB, 'contact_notify_include_user')) !== '0';
@@ -16345,16 +17433,26 @@ async function saveAutoRemoveSettings(request, env) {
         const value = Math.min(Math.max(parseInt(body.dm_value) || 30, 1), 10000);
         const units = Object.keys(AUTO_REMOVE_UNITS_TO_SECONDS);
         const unit = units.includes(body.dm_unit) ? body.dm_unit : 'days';
-        await setSetting(env.DB, 'auto_remove_enabled', enabled);
-        await setSetting(env.DB, 'auto_remove_dm_value', String(value));
-        await setSetting(env.DB, 'auto_remove_dm_unit', unit);
+        const updates = [
+            ['auto_remove_enabled', enabled],
+            ['auto_remove_dm_value', String(value)],
+            ['auto_remove_dm_unit', unit],
+        ];
+        if (enabled === '1') {
+            const dmDays = Math.min(Math.max(1, Math.round((value * (AUTO_REMOVE_UNITS_TO_SECONDS[unit] || 86400)) / 86400)), 3650);
+            updates.push(['cron_enabled', '1']);
+            updates.push(['cron_dm_messages_days', String(dmDays)]);
+        } else {
+            updates.push(['cron_dm_messages_days', '0']);
+        }
         if (body.dm_save_private !== undefined) {
             const mode = ['auto', 'always', 'featured_only'].includes(body.dm_save_private) ? body.dm_save_private : 'auto';
-            await setSetting(env.DB, 'dm_save_private', mode);
+            updates.push(['dm_save_private', mode]);
         }
         if (body.dm_save_featured !== undefined) {
-            await setSetting(env.DB, 'dm_save_featured', (body.dm_save_featured === '1' || body.dm_save_featured === true || body.dm_save_featured === 1) ? '1' : '0');
+            updates.push(['dm_save_featured', (body.dm_save_featured === '1' || body.dm_save_featured === true || body.dm_save_featured === 1) ? '1' : '0']);
         }
+        await setSettingsBatch(env.DB, updates);
         await logAction(env.DB, null, 'Auto-remove memory settings updated');
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
@@ -16798,6 +17896,9 @@ async function updateCommand(request, env) {
         if (!command) return apiJson({ error: 'Command is required.' }, 400);
         await initializeDatabase(env.DB);
         const existing = await env.DB.prepare('SELECT * FROM commands WHERE command = ?').bind(oldCommand).first();
+        if (existing && body.expectedVersion !== undefined && (existing.version || 1) !== Number(body.expectedVersion)) {
+            return apiJson({ error: 'Conflict: this command was modified elsewhere while you were editing. Reload commands before saving.', conflict: true, currentVersion: existing.version || 1 }, 409);
+        }
         const items = media_items_json !== undefined
             ? normalizeMediaItems(media_items_json, { media_type: response_type, file_id, media_url, media_meta })
             : normalizeMediaItems(existing ? existing.media_items_json : '', { media_type: response_type, file_id, media_url, media_meta });
@@ -16834,7 +17935,7 @@ async function updateCommand(request, env) {
             const clash = await env.DB.prepare('SELECT command FROM commands WHERE command = ?').bind(command).first();
             if (clash) return apiJson({ error: `A command named "${command}" already exists.` }, 400);
             if (parent && await commandIsDescendant(env.DB, command, parent)) return apiJson({ error: 'You cannot nest a command inside its own child.' }, 400);
-            await env.DB.prepare(`UPDATE commands SET command = ?, parent = ?, response_type = ?, content = ?, media_url = ?, file_id = ?, media_meta = ?, media_items_json = ?, protect_content = ?, edit_message = ?, edit_triggers = ?, inline_access_level = ?, inline_allowed_users = ?, inline_disallowed_users = ?, inline_auto_back = ?, inline_back_label = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, allowed_users = ?, disallowed_users = ?, force_join_mode = ?, cmd_password = ?, password_prompt = ?, password_dismiss_label = ?, expires_at = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ?, auto_back = ?, back_label = ?, remove_reply_keyboard = ? WHERE command = ?`)
+            await env.DB.prepare(`UPDATE commands SET command = ?, parent = ?, response_type = ?, content = ?, media_url = ?, file_id = ?, media_meta = ?, media_items_json = ?, protect_content = ?, edit_message = ?, edit_triggers = ?, inline_access_level = ?, inline_allowed_users = ?, inline_disallowed_users = ?, inline_auto_back = ?, inline_back_label = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, allowed_users = ?, disallowed_users = ?, force_join_mode = ?, cmd_password = ?, password_prompt = ?, password_dismiss_label = ?, expires_at = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ?, auto_back = ?, back_label = ?, remove_reply_keyboard = ?, version = COALESCE(version, 1) + 1 WHERE command = ?`)
                 .bind(command, parent || null, rtype, content || '', finalMediaUrl, finalFileId, finalMediaMeta, finalItemsJson, finalProtect, finalEditMessage, finalEditTriggers, finalInlineAccess, finalInlineAllowed, finalInlineDisallowed, finalInlineAutoBack, finalInlineBackLabel, buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, disallowedUsers, finalFjMode, finalCmdPassword, finalPwPrompt, finalPwDismiss, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', finalAutoBack, finalBackLabel, finalRemoveReply, oldCommand).run();
             await env.DB.prepare('UPDATE commands SET parent = ? WHERE parent = ?').bind(command, oldCommand).run();
             const refRows = await env.DB.prepare('SELECT command, buttons_json, reply_keyboard_json FROM commands WHERE buttons_json LIKE ? OR reply_keyboard_json LIKE ?').bind(`%${oldCommand}%`, `%${oldCommand}%`).all();
@@ -16847,7 +17948,7 @@ async function updateCommand(request, env) {
             }
         } else {
             if (parent && await commandIsDescendant(env.DB, command, parent)) return apiJson({ error: 'You cannot nest a command inside its own child.' }, 400);
-            await env.DB.prepare(`UPDATE commands SET parent = ?, response_type = ?, content = ?, media_url = ?, file_id = ?, media_meta = ?, media_items_json = ?, protect_content = ?, edit_message = ?, edit_triggers = ?, inline_access_level = ?, inline_allowed_users = ?, inline_disallowed_users = ?, inline_auto_back = ?, inline_back_label = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, allowed_users = ?, disallowed_users = ?, force_join_mode = ?, cmd_password = ?, password_prompt = ?, password_dismiss_label = ?, expires_at = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ?, auto_back = ?, back_label = ?, remove_reply_keyboard = ? WHERE command = ?`)
+            await env.DB.prepare(`UPDATE commands SET parent = ?, response_type = ?, content = ?, media_url = ?, file_id = ?, media_meta = ?, media_items_json = ?, protect_content = ?, edit_message = ?, edit_triggers = ?, inline_access_level = ?, inline_allowed_users = ?, inline_disallowed_users = ?, inline_auto_back = ?, inline_back_label = ?, buttons_json = ?, is_admin_only = ?, access_level = ?, allowed_users = ?, disallowed_users = ?, force_join_mode = ?, cmd_password = ?, password_prompt = ?, password_dismiss_label = ?, expires_at = ?, enabled = ?, show_reply_keyboard = ?, reply_keyboard_json = ?, auto_back = ?, back_label = ?, remove_reply_keyboard = ?, version = COALESCE(version, 1) + 1 WHERE command = ?`)
                 .bind(parent || null, rtype, content || '', finalMediaUrl, finalFileId, finalMediaMeta, finalItemsJson, finalProtect, finalEditMessage, finalEditTriggers, finalInlineAccess, finalInlineAllowed, finalInlineDisallowed, finalInlineAutoBack, finalInlineBackLabel, buttons_json || '', accessLevel === 'admin' ? 1 : 0, accessLevel, allowedUsers, disallowedUsers, finalFjMode, finalCmdPassword, finalPwPrompt, finalPwDismiss, expiresAt, enabled !== undefined ? enabled : 1, show_reply_keyboard ? 1 : 0, reply_keyboard_json || '', finalAutoBack, finalBackLabel, finalRemoveReply, command).run();
         }
         await bumpDomainEpoch(env.DB, 'reply_buttons');
@@ -16948,14 +18049,46 @@ async function importCommandPack(request, env) {
 // ============================================================================
 // MENU COMMANDS
 // ============================================================================
+async function ensureAndPublishStartMenu(db, token) {
+    if (!db || !token) return;
+    try {
+        const raw = await getSetting(db, 'menu_commands');
+        let menu = null;
+        if (raw !== null && raw !== undefined && raw !== '') {
+            try { menu = JSON.parse(raw); } catch (e) { menu = null; }
+        }
+        if (!Array.isArray(menu)) {
+            menu = [{ command: 'start', description: 'Start the bot', locked: true }];
+            await setSetting(db, 'menu_commands', JSON.stringify(menu));
+        } else {
+            menu = menu.map(e => ({
+                command: String(e.command || '').replace(/^\//, '').trim().toLowerCase(),
+                description: String(e.description || ''),
+                locked: !!(e.locked || String(e.command || '').trim().toLowerCase() === 'start')
+            }));
+        }
+        const tgPayload = menu.filter(e => e.command && e.description).map(e => ({ command: e.command, description: e.description }));
+        await tgFetchJson(`https://api.telegram.org/bot${token}/setMyCommands`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ commands: tgPayload })
+        });
+    } catch (e) { console.warn('ensureAndPublishStartMenu failed:', e && e.message); }
+}
 async function getMenuCommands(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
         const raw = await getSetting(env.DB, 'menu_commands');
+        const configured = raw !== null && raw !== undefined && raw !== '';
         let menu = [];
         if (raw) { try { menu = JSON.parse(raw); } catch (e) {} }
-        return apiJson({ menu });
+        menu = (Array.isArray(menu) ? menu : []).map(e => ({
+            command: String(e.command || '').replace(/^\//, '').trim().toLowerCase(),
+            description: String(e.description || ''),
+            locked: !!(e.locked || String(e.command || '').trim().toLowerCase() === 'start')
+        }));
+        return apiJson({ menu, configured });
     } catch (err) { return internalError(err); }
 }
 async function setMenuCommands(request, env) {
@@ -16964,14 +18097,19 @@ async function setMenuCommands(request, env) {
         const { menu } = await request.json();
         if (!menu || !Array.isArray(menu)) return apiJson({ error: 'Menu data is invalid.' }, 400);
         for (const e of menu) if (!e.command || !e.description) return apiJson({ error: 'Every menu entry needs both a command and a description.' }, 400);
+        const storedMenu = menu.map(e => {
+            const cmd = String(e.command || '').replace(/^\//, '').trim().toLowerCase();
+            return { command: cmd, description: String(e.description || '').trim(), locked: !!(e.locked || cmd === 'start') };
+        });
+        const tgCommands = storedMenu.map(e => ({ command: e.command, description: e.description }));
         await initializeDatabase(env.DB);
         const token = await getSetting(env.DB, 'bot_token');
-        await setSetting(env.DB, 'menu_commands', JSON.stringify(menu));
+        await setSetting(env.DB, 'menu_commands', JSON.stringify(storedMenu));
         if (!token) {
             return apiJson({ success: true, warning: 'Saved locally. Connect your bot token in Settings to publish the menu to Telegram.' });
         }
         try {
-            const resp = await tgFetchJson(`https://api.telegram.org/bot${token}/setMyCommands`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ commands: menu }) });
+            const resp = await tgFetchJson(`https://api.telegram.org/bot${token}/setMyCommands`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ commands: tgCommands }) });
             if (!resp.ok) {
                 return apiJson({ success: true, warning: 'Saved locally, but Telegram rejected the publish: ' + (resp.description || 'unknown error') });
             }
@@ -17045,6 +18183,9 @@ async function updateFeatured(request, env, url) {
         await initializeDatabase(env.DB);
         const existing = await env.DB.prepare('SELECT * FROM featured_replies WHERE id = ?').bind(id).first();
         if (!existing) return apiJson({ error: 'This featured command no longer exists.' }, 404);
+        if (body.expectedVersion !== undefined && (existing.version || 1) !== Number(body.expectedVersion)) {
+            return apiJson({ error: 'Conflict: this featured command was modified in another tab. Refresh before saving.', conflict: true, currentVersion: existing.version || 1 }, 409);
+        }
         const command = body.command !== undefined ? String(body.command).trim() : existing.command;
         const content = body.content !== undefined ? String(body.content).trim() : (existing.content || '');
         const successText = body.success_text !== undefined ? String(body.success_text).trim() : (existing.success_text || '');
@@ -17071,7 +18212,7 @@ async function updateFeatured(request, env, url) {
         const deleteTrigger = body.delete_user_message !== undefined
             ? (body.delete_user_message ? 1 : 0)
             : (existing.delete_user_message !== undefined && existing.delete_user_message !== null ? (existing.delete_user_message ? 1 : 0) : 1);
-        await env.DB.prepare('UPDATE featured_replies SET command = ?, kind = ?, content = ?, buttons_json = NULL, success_text = ?, failure_text = ?, admin_only = ?, access_level = ?, allowed_users = ?, disallowed_users = ?, extra_config = ?, delete_user_message = ?, enabled = ?, button_style = ? WHERE id = ?')
+        await env.DB.prepare('UPDATE featured_replies SET command = ?, kind = ?, content = ?, buttons_json = NULL, success_text = ?, failure_text = ?, admin_only = ?, access_level = ?, allowed_users = ?, disallowed_users = ?, extra_config = ?, delete_user_message = ?, enabled = ?, button_style = ?, version = COALESCE(version, 1) + 1 WHERE id = ?')
             .bind(command, kind, content, successText, failureText, adminOnly, access, allowedUsers, disallowedUsers, extraConfig, deleteTrigger, enabled, buttonStyle, id).run();
         await bumpEpoch(env.DB);
         return apiJson({ success: true });
@@ -17688,8 +18829,8 @@ const GROUP_AI_TRIGGERS = ['inherit', 'mention', 'reply', 'either', 'both', 'non
 const GROUP_DEFAULT_SETTINGS = {
     ai: 'inherit', ai_trigger: 'inherit', memory: 'inherit', mention: 'inherit',
     welcome_enabled: false, welcome_text: '', rules_text: '',
-    anti_flood: false, flood_limit: 6, flood_mute_minutes: 0,
-    flood_action: 'mute', flood_kick_after: 2, flood_ban_after: 2,
+    flood_mode: 'inherit', anti_flood: false, flood_limit: 6, flood_mute_minutes: 10,
+    flood_action: 'mute', flood_kick_after: 2, flood_ban_after: 2, flood_exempt: 'admins',
     link_filter: false, link_filter_level: 'admins',
     anti_forward: false, anti_forward_level: 'admins',
     blacklist_words: '', blacklist_level: 'admins',
@@ -17704,6 +18845,17 @@ const GROUP_DEFAULT_SETTINGS = {
     callback_queries_permission: 'inherit', callback_queries_permission_allowed: '', callback_queries_permission_disallowed: '',
     mcp_telegram_permission: 'inherit', mcp_telegram_permission_allowed: '', mcp_telegram_permission_disallowed: '',
     rules_command_permission: 'inherit', rules_command_permission_allowed: '', rules_command_permission_disallowed: '',
+    welcome_auto_delete_sec: 0, goodbye_enabled: false, goodbye_text: '',
+    captcha_enabled: false, captcha_mode: 'button', captcha_timeout_sec: 120, captcha_fail_action: 'kick', captcha_text: '',
+    rules_in_private: false, media_exempt_level: 'admins',
+    block_files: false, block_photos: false, block_voice: false, block_video: false,
+    block_stickers: false, block_gifs: false, block_polls: false, block_mentions: false, block_channels: false,
+    lock_all_non_admins: false,
+    warn_enabled: true, warn_limit: 3, warn_action: 'mute', warn_mute_minutes: 60,
+    slow_mode_enabled: false, slow_mode_seconds: 10,
+    night_mode_enabled: false, night_mode_start_hour: 23, night_mode_end_hour: 7, night_mode_media_only: false,
+    anti_raid_enabled: false, anti_raid_limit: 10,
+    max_message_length: 0, blacklist_action: 'delete', custom_filters: '',
 };
 function normalizeGroupSettings(raw) {
     const src = raw && typeof raw === 'object' ? raw : {};
@@ -17731,8 +18883,12 @@ function normalizeGroupSettings(raw) {
     out.dm_notify_admins = !!out.dm_notify_admins;
     out.dm_auto_reply_enabled = !!out.dm_auto_reply_enabled;
     out.dm_auto_reply_text = String(out.dm_auto_reply_text || '').slice(0, 2000);
+    if (!['inherit', 'on', 'off'].includes(out.flood_mode)) {
+        out.flood_mode = src.anti_flood === true ? 'on' : 'inherit';
+    }
+    out.anti_flood = out.flood_mode === 'on';
+    if (!['admins', 'admins_moderators', 'none'].includes(out.flood_exempt)) out.flood_exempt = 'admins';
     out.welcome_enabled = !!out.welcome_enabled;
-    out.anti_flood = !!out.anti_flood;
     out.link_filter = !!out.link_filter;
     out.anti_forward = !!out.anti_forward;
     out.anti_bot = !!out.anti_bot;
@@ -17740,14 +18896,45 @@ function normalizeGroupSettings(raw) {
     out.track_members = !!out.track_members;
     out.blacklist_words = String(out.blacklist_words || '').slice(0, 2000);
     const limit = parseInt(out.flood_limit, 10);
-    out.flood_limit = Number.isFinite(limit) ? Math.min(Math.max(limit, 2), 60) : 6;
+    out.flood_limit = Number.isFinite(limit) ? Math.min(Math.max(limit, 2), 120) : 6;
     const muteMin = parseInt(out.flood_mute_minutes, 10);
-    out.flood_mute_minutes = Number.isFinite(muteMin) && muteMin > 0 ? Math.min(muteMin, 1440) : 0;
+    out.flood_mute_minutes = Number.isFinite(muteMin) && muteMin >= 0 ? Math.min(muteMin, 1440) : 10;
     if (!['mute', 'kick', 'ban'].includes(out.flood_action)) out.flood_action = 'mute';
     const kickAfter = parseInt(out.flood_kick_after, 10);
     out.flood_kick_after = Number.isFinite(kickAfter) && kickAfter > 0 ? Math.min(kickAfter, 20) : 2;
     const banAfter = parseInt(out.flood_ban_after, 10);
     out.flood_ban_after = Number.isFinite(banAfter) && banAfter > 0 ? Math.min(banAfter, 20) : 2;
+    if (!['admins', 'admins_moderators'].includes(out.media_exempt_level)) out.media_exempt_level = 'admins';
+    for (const k of ['files','photos','voice','video','stickers','gifs','polls','mentions','channels']) {
+        out['block_' + k] = !!out['block_' + k];
+    }
+    out.lock_all_non_admins = !!out.lock_all_non_admins;
+    out.goodbye_enabled = !!out.goodbye_enabled;
+    out.goodbye_text = String(out.goodbye_text || '').slice(0, 2000);
+    out.welcome_auto_delete_sec = Math.min(Math.max(parseInt(out.welcome_auto_delete_sec, 10) || 0, 0), 25);
+    out.captcha_enabled = !!out.captcha_enabled;
+    if (!['button', 'math'].includes(out.captcha_mode)) out.captcha_mode = 'button';
+    out.captcha_timeout_sec = Math.min(Math.max(parseInt(out.captcha_timeout_sec, 10) || 120, 30), 600);
+    if (!['kick', 'mute'].includes(out.captcha_fail_action)) out.captcha_fail_action = 'kick';
+    out.captcha_text = String(out.captcha_text || '').slice(0, 1000);
+    out.rules_in_private = !!out.rules_in_private;
+    out.warn_enabled = out.warn_enabled !== false;
+    out.warn_limit = Math.min(Math.max(parseInt(out.warn_limit, 10) || 3, 1), 20);
+    if (!['mute', 'kick', 'ban'].includes(out.warn_action)) out.warn_action = 'mute';
+    out.warn_mute_minutes = Math.min(Math.max(parseInt(out.warn_mute_minutes, 10) || 60, 1), 1440);
+    out.slow_mode_enabled = !!out.slow_mode_enabled;
+    out.slow_mode_seconds = Math.min(Math.max(parseInt(out.slow_mode_seconds, 10) || 10, 2), 3600);
+    out.night_mode_enabled = !!out.night_mode_enabled;
+    const ns = parseInt(out.night_mode_start_hour, 10);
+    const ne = parseInt(out.night_mode_end_hour, 10);
+    out.night_mode_start_hour = Number.isFinite(ns) ? Math.min(Math.max(ns, 0), 23) : 23;
+    out.night_mode_end_hour = Number.isFinite(ne) ? Math.min(Math.max(ne, 0), 23) : 7;
+    out.night_mode_media_only = !!out.night_mode_media_only;
+    out.anti_raid_enabled = !!out.anti_raid_enabled;
+    out.anti_raid_limit = Math.min(Math.max(parseInt(out.anti_raid_limit, 10) || 10, 3), 100);
+    out.max_message_length = Math.min(Math.max(parseInt(out.max_message_length, 10) || 0, 0), 4096);
+    if (!['delete', 'warn', 'mute'].includes(out.blacklist_action)) out.blacklist_action = 'delete';
+    out.custom_filters = String(out.custom_filters || '').slice(0, 4000);
     return out;
 }
 async function addGroupManually(request, env) {
@@ -17822,11 +19009,15 @@ async function saveGroupSettings(request, env, url) {
         const id = parseInt(url.pathname.split('/')[3]);
         const body = await request.json();
         await initializeDatabase(env.DB);
+        const cur = await env.DB.prepare('SELECT version FROM groups WHERE id = ?').bind(id).first();
+        if (cur && body.expectedVersion !== undefined && (cur.version || 1) !== Number(body.expectedVersion)) {
+            return apiJson({ error: 'Conflict: group settings were modified elsewhere. Reopen this group before saving.', conflict: true, currentVersion: cur.version || 1 }, 409);
+        }
         const clean = normalizeGroupSettings(body);
-        await env.DB.prepare('UPDATE groups SET settings_json = ? WHERE id = ?').bind(JSON.stringify(clean), id).run();
+        const updated = await env.DB.prepare('UPDATE groups SET settings_json = ?, version = COALESCE(version, 1) + 1 WHERE id = ? RETURNING version').bind(JSON.stringify(clean), id).first();
         await bumpDomainEpoch(env.DB, 'groups');
         await logAction(env.DB, null, `Group ${id} settings updated`);
-        return apiJson({ success: true });
+        return apiJson({ success: true, version: (updated && updated.version) || ((cur && cur.version ? cur.version : 1) + 1) });
     } catch (err) { return internalError(err); }
 }
 async function deleteGroup(env, url) {
@@ -18182,10 +19373,14 @@ async function saveChannelSettings(request, env, url) {
         const id = parseInt(url.pathname.split('/')[3]);
         const body = await request.json();
         await initializeDatabase(env.DB);
+        const cur = await env.DB.prepare('SELECT version FROM channels WHERE id = ?').bind(id).first();
+        if (cur && body.expectedVersion !== undefined && (cur.version || 1) !== Number(body.expectedVersion)) {
+            return apiJson({ error: 'Conflict: channel automation was modified elsewhere. Reopen this channel before saving.', conflict: true, currentVersion: cur.version || 1 }, 409);
+        }
         const clean = normalizeChannelSettings(body);
-        await env.DB.prepare('UPDATE channels SET settings_json = ? WHERE id = ?').bind(JSON.stringify(clean), id).run();
+        const updated = await env.DB.prepare('UPDATE channels SET settings_json = ?, version = COALESCE(version, 1) + 1 WHERE id = ? RETURNING version').bind(JSON.stringify(clean), id).first();
         await logAction(env.DB, null, `Channel ${id} automation updated`);
-        return apiJson({ success: true });
+        return apiJson({ success: true, version: (updated && updated.version) || ((cur && cur.version ? cur.version : 1) + 1) });
     } catch (err) { return internalError(err); }
 }
 async function deleteChannel(env, url) {
@@ -18324,10 +19519,17 @@ function detectGroupSubtype(chat, msg) {
     if (chat && chat.type === 'supergroup') return 'supergroup';
     return 'group';
 }
+const groupUpsertThrottle = new Map();
 async function upsertGroup(db, chat, isActive, msg) {
     try {
         const subtype = detectGroupSubtype(chat, msg);
         const linkedId = (chat && chat.linked_chat_id) || (msg && msg.sender_chat && msg.is_automatic_forward ? msg.sender_chat.id : null) || null;
+        const sig = `${chat.title || ''}|${chat.username || ''}|${subtype}|${isActive ? 1 : 0}`;
+        const prev = groupUpsertThrottle.get(chat.id);
+        const now = Date.now();
+        if (prev && prev.sig === sig && (now - prev.at) < 60000) return;
+        if (groupUpsertThrottle.size > 2000) groupUpsertThrottle.clear();
+        groupUpsertThrottle.set(chat.id, { sig, at: now });
         await db.prepare(`
             INSERT INTO groups (id, title, type, chat_subtype, linked_chat_id, username, is_active, last_active, member_count)
             VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, 0)
@@ -18346,72 +19548,100 @@ async function upsertGroup(db, chat, isActive, msg) {
         `).bind(chat.id, chat.title || '', chat.type || 'group', subtype, linkedId, chat.username || '', isActive ? 1 : 0).run();
     } catch (e) {}
 }
-async function checkGlobalAntiFlood(env, BOT_TOKEN, chatId, userId, msg, isGroup) {
+async function getGlobalFloodPolicy(db) {
+    const [enabled, limit, action, muteMin, kickAfter, banAfter, exempt, exemptAdmins] = await Promise.all([
+        getSetting(db, 'global_antiflood_enabled'),
+        getSetting(db, 'global_antiflood_limit'),
+        getSetting(db, 'global_antiflood_action'),
+        getSetting(db, 'global_antiflood_mute_minutes'),
+        getSetting(db, 'global_antiflood_kick_after'),
+        getSetting(db, 'global_antiflood_ban_after'),
+        getSetting(db, 'global_antiflood_exempt'),
+        getSetting(db, 'global_antiflood_exempt_admins'),
+    ]);
+    const exVal = ['admins', 'admins_moderators', 'none'].includes(exempt)
+        ? exempt
+        : (exemptAdmins === '0' ? 'none' : 'admins_moderators');
+    return {
+        enabled: enabled === '1',
+        flood_limit: Math.min(Math.max(parseInt(limit, 10) || 12, 2), 120),
+        flood_action: ['mute', 'kick', 'ban'].includes(action) ? action : 'mute',
+        flood_mute_minutes: Number.isFinite(parseInt(muteMin, 10)) ? Math.min(Math.max(parseInt(muteMin, 10), 0), 1440) : 10,
+        flood_kick_after: Math.min(Math.max(parseInt(kickAfter, 10) || 2, 1), 20),
+        flood_ban_after: Math.min(Math.max(parseInt(banAfter, 10) || 2, 1), 20),
+        flood_exempt: exVal,
+    };
+}
+async function enforceFloodPolicy(env, BOT_TOKEN, chatId, userId, msg, isGroup, groupSettings) {
     try {
-        const enabled = await getSetting(env.DB, 'global_antiflood_enabled');
-        if (enabled !== '1') return true;
-        const exemptAdmins = (await getSetting(env.DB, 'global_antiflood_exempt_admins')) !== '0';
-        if (exemptAdmins && await isModeratorOrAbove(env, userId)) return true;
-
-        const strikes = await env.DB.prepare('SELECT mute_count, kick_count, banned, muted_until FROM group_strikes WHERE chat_id = 0 AND user_id = ?').bind(userId).first();
-        if (strikes && strikes.banned) return false;
-        if (strikes && strikes.muted_until) {
-            const muteMs = parseDbTimestamp(strikes.muted_until);
-            if (muteMs && Date.now() < muteMs) {
-                if (isGroup && msg && msg.message_id) {
-                    await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id }, { retry: false });
-                }
-                return false;
+        let policy = null;
+        let bucketChatId = 0;
+        if (isGroup && groupSettings) {
+            const mode = groupSettings.flood_mode || (groupSettings.anti_flood ? 'on' : 'inherit');
+            if (mode === 'off') return true;
+            if (mode === 'on') {
+                policy = groupSettings;
+                bucketChatId = chatId;
+            } else {
+                const globalPol = await getGlobalFloodPolicy(env.DB);
+                if (!globalPol.enabled) return true;
+                policy = globalPol;
+                bucketChatId = chatId;
             }
+        } else {
+            const globalPol = await getGlobalFloodPolicy(env.DB);
+            if (!globalPol.enabled) return true;
+            policy = globalPol;
+            bucketChatId = 0;
         }
 
-        const limit = parseInt(await getSetting(env.DB, 'global_antiflood_limit'), 10) || 12;
+        const role = await getUserRole(env, userId);
+        const ex = policy.flood_exempt || 'admins';
+        if (ex === 'admins' && role === 'admin') return true;
+        if (ex === 'admins_moderators' && (role === 'admin' || role === 'moderator')) return true;
+
+        const strikes = await env.DB.prepare('SELECT mute_count, kick_count, banned, muted_until FROM group_strikes WHERE chat_id = ? AND user_id = ?').bind(bucketChatId, userId).first();
+        if (strikes && strikes.banned) return false;
+        if (!isGroup && strikes && strikes.muted_until) {
+            const muteMs = parseDbTimestamp(strikes.muted_until);
+            if (muteMs && Date.now() < muteMs) return false;
+        }
+
+        const limit = policy.flood_limit || 12;
         const minute = Math.floor(Date.now() / 60000);
-        await env.DB.prepare('INSERT INTO group_flood (chat_id, user_id, minute, count) VALUES (0, ?, ?, 1) ON CONFLICT(chat_id, user_id, minute) DO UPDATE SET count = count + 1').bind(userId, minute).run();
-        const row = await env.DB.prepare('SELECT count FROM group_flood WHERE chat_id = 0 AND user_id = ? AND minute = ?').bind(userId, minute).first();
+        const row = await env.DB.prepare(
+            'INSERT INTO group_flood (chat_id, user_id, minute, count) VALUES (?, ?, ?, 1) ON CONFLICT(chat_id, user_id, minute) DO UPDATE SET count = count + 1 RETURNING count'
+        ).bind(bucketChatId, userId, minute).first();
         if (!row || row.count <= limit) return true;
 
         if (isGroup && msg && msg.message_id) {
             await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id }, { retry: false });
         }
         if (row.count === limit + 1) {
-            const firstAction = (await getSetting(env.DB, 'global_antiflood_action')) || 'mute';
-            const muteMin = parseInt(await getSetting(env.DB, 'global_antiflood_mute_minutes'), 10) || 10;
-            const kickAfter = parseInt(await getSetting(env.DB, 'global_antiflood_kick_after'), 10) || 2;
-            const banAfter = parseInt(await getSetting(env.DB, 'global_antiflood_ban_after'), 10) || 2;
-            const curMutes = (strikes && strikes.mute_count) || 0;
-            const curKicks = (strikes && strikes.kick_count) || 0;
-
-            let action = 'mute';
-            if (firstAction === 'ban') action = 'ban';
-            else if (firstAction === 'kick') action = curKicks >= banAfter ? 'ban' : 'kick';
-            else if (curMutes >= kickAfter) action = curKicks >= banAfter ? 'ban' : 'kick';
-
-            if (action === 'ban') {
-                await env.DB.prepare("INSERT INTO blocked_users (user_id, block_type) VALUES (?, 'full') ON CONFLICT(user_id) DO UPDATE SET block_type = 'full', blocked_at = CURRENT_TIMESTAMP").bind(userId).run();
-                await bumpDomainEpoch(env.DB, 'blocks');
-                await env.DB.prepare('INSERT INTO group_strikes (chat_id, user_id, banned, updated_at) VALUES (0, ?, 1, CURRENT_TIMESTAMP) ON CONFLICT(chat_id, user_id) DO UPDATE SET banned = 1, updated_at = CURRENT_TIMESTAMP').bind(userId).run();
-                if (isGroup) await tgCall(BOT_TOKEN, 'banChatMember', { chat_id: chatId, user_id: userId }, { retry: false });
-                await sendRichText(BOT_TOKEN, chatId, '🚫 You have been blocked for repeated flooding.');
-            } else if (action === 'kick') {
-                await env.DB.prepare('INSERT INTO group_strikes (chat_id, user_id, kick_count, muted_until, updated_at) VALUES (0, ?, 1, datetime("now", ?), CURRENT_TIMESTAMP) ON CONFLICT(chat_id, user_id) DO UPDATE SET kick_count = kick_count + 1, muted_until = excluded.muted_until, updated_at = CURRENT_TIMESTAMP').bind(userId, '+' + Math.max(muteMin, 5) + ' minutes').run();
-                if (isGroup) {
-                    const res = await tgCall(BOT_TOKEN, 'banChatMember', { chat_id: chatId, user_id: userId }, { retry: false });
-                    if (res && res.ok) await tgCall(BOT_TOKEN, 'unbanChatMember', { chat_id: chatId, user_id: userId, only_if_banned: true }, { retry: false });
-                    await sendRichText(BOT_TOKEN, chatId, '👢 User kicked for repeated flooding.');
-                } else {
-                    await sendRichText(BOT_TOKEN, chatId, `⚠️ Slow down! Cooldown active for ${Math.max(muteMin, 5)} minute(s).`);
-                }
+            if (isGroup) {
+                await applyFloodEscalation(env, BOT_TOKEN, chatId, userId, policy);
             } else {
-                await env.DB.prepare('INSERT INTO group_strikes (chat_id, user_id, mute_count, muted_until, updated_at) VALUES (0, ?, 1, datetime("now", ?), CURRENT_TIMESTAMP) ON CONFLICT(chat_id, user_id) DO UPDATE SET mute_count = mute_count + 1, muted_until = excluded.muted_until, updated_at = CURRENT_TIMESTAMP').bind(userId, '+' + muteMin + ' minutes').run();
-                if (isGroup) {
-                    await tgCall(BOT_TOKEN, 'restrictChatMember', {
-                        chat_id: chatId, user_id: userId,
-                        permissions: { can_send_messages: false },
-                        until_date: Math.floor(Date.now() / 1000) + muteMin * 60
-                    }, { retry: false });
+                const firstAction = policy.flood_action || 'mute';
+                const muteMin = Math.max(parseInt(policy.flood_mute_minutes, 10) || 10, 1);
+                const kickAfter = policy.flood_kick_after || 2;
+                const banAfter = policy.flood_ban_after || 2;
+                const curMutes = (strikes && strikes.mute_count) || 0;
+                const curKicks = (strikes && strikes.kick_count) || 0;
+                let action = 'mute';
+                if (firstAction === 'ban') action = 'ban';
+                else if (firstAction === 'kick') action = curKicks >= banAfter ? 'ban' : 'kick';
+                else if (curMutes >= kickAfter) action = curKicks >= banAfter ? 'ban' : 'kick';
+
+                if (action === 'ban') {
+                    await env.DB.prepare("INSERT INTO blocked_users (user_id, block_type) VALUES (?, 'full') ON CONFLICT(user_id) DO UPDATE SET block_type = 'full', blocked_at = CURRENT_TIMESTAMP").bind(userId).run();
+                    await bumpDomainEpoch(env.DB, 'blocks');
+                    await env.DB.prepare('INSERT INTO group_strikes (chat_id, user_id, banned, updated_at) VALUES (0, ?, 1, CURRENT_TIMESTAMP) ON CONFLICT(chat_id, user_id) DO UPDATE SET banned = 1, updated_at = CURRENT_TIMESTAMP').bind(userId).run();
+                    await sendRichText(BOT_TOKEN, chatId, '🚫 You have been blocked for repeated flooding.');
+                } else {
+                    const col = action === 'kick' ? 'kick_count' : 'mute_count';
+                    await env.DB.prepare(`INSERT INTO group_strikes (chat_id, user_id, ${col}, muted_until, updated_at) VALUES (0, ?, 1, datetime('now', ?), CURRENT_TIMESTAMP) ON CONFLICT(chat_id, user_id) DO UPDATE SET ${col} = ${col} + 1, muted_until = excluded.muted_until, updated_at = CURRENT_TIMESTAMP`).bind(userId, '+' + muteMin + ' minutes').run();
+                    await sendRichText(BOT_TOKEN, chatId, `⏳ Slow down! Cooldown active for ${muteMin} minute(s).`);
                 }
-                await sendRichText(BOT_TOKEN, chatId, `🔇 Muted / cooldown for ${muteMin} minute(s) due to flooding.`);
             }
         }
         return false;
@@ -19215,16 +20445,19 @@ async function getSettings(env, originUrl) {
     try {
         await initializeDatabase(env.DB);
         const [token, webhook, cfToken, language, mediaStorage, mediaDeleteAfter, navStyle, navStructure,
-            gafEnabled, gafLimit, gafAction, gafMute, gafKickAfter, gafBanAfter, gafExempt] = await Promise.all([
+            gafEnabled, gafLimit, gafAction, gafMute, gafKickAfter, gafBanAfter, gafExemptMode, gafExempt] = await Promise.all([
             getSetting(env.DB, 'bot_token'), getSetting(env.DB, 'webhook_url'), getSetting(env.DB, 'cf_api_token'),
             getSetting(env.DB, 'system_language'), getSetting(env.DB, 'media_storage_chat_id'),
             getSetting(env.DB, 'media_storage_delete_after_upload'), getSetting(env.DB, 'nav_style'), getSetting(env.DB, 'nav_structure'),
             getSetting(env.DB, 'global_antiflood_enabled'), getSetting(env.DB, 'global_antiflood_limit'),
             getSetting(env.DB, 'global_antiflood_action'), getSetting(env.DB, 'global_antiflood_mute_minutes'),
             getSetting(env.DB, 'global_antiflood_kick_after'), getSetting(env.DB, 'global_antiflood_ban_after'),
-            getSetting(env.DB, 'global_antiflood_exempt_admins'),
+            getSetting(env.DB, 'global_antiflood_exempt'), getSetting(env.DB, 'global_antiflood_exempt_admins'),
         ]);
         const systemLanguage = language || 'en';
+        const resolvedExempt = ['admins', 'admins_moderators', 'none'].includes(gafExemptMode)
+            ? gafExemptMode
+            : (gafExempt === '0' ? 'none' : 'admins_moderators');
         return apiJson({
             bot_token_masked: maskSecret(token),
             bot_token_set: !!token,
@@ -19239,10 +20472,11 @@ async function getSettings(env, originUrl) {
             global_antiflood_enabled: gafEnabled === '1' ? '1' : '0',
             global_antiflood_limit: gafLimit || '12',
             global_antiflood_action: ['mute', 'kick', 'ban'].includes(gafAction) ? gafAction : 'mute',
-            global_antiflood_mute_minutes: gafMute || '10',
+            global_antiflood_mute_minutes: gafMute !== null && gafMute !== undefined && gafMute !== '' ? gafMute : '10',
             global_antiflood_kick_after: gafKickAfter || '2',
             global_antiflood_ban_after: gafBanAfter || '2',
-            global_antiflood_exempt_admins: gafExempt === '0' ? '0' : '1',
+            global_antiflood_exempt: resolvedExempt,
+            global_antiflood_exempt_admins: resolvedExempt !== 'none' ? '1' : '0',
         });
     } catch (err) { return internalError(err); }
 }
@@ -19253,11 +20487,14 @@ async function saveGlobalAntiFlood(request, env) {
         await initializeDatabase(env.DB);
         const enabled = (b.enabled === '1' || b.enabled === true || b.enabled === 1) ? '1' : '0';
         const limit = String(Math.min(Math.max(parseInt(b.limit, 10) || 12, 2), 120));
-        const muteMin = String(Math.min(Math.max(parseInt(b.mute_minutes, 10) || 10, 1), 1440));
+        const rawMute = parseInt(b.mute_minutes, 10);
+        const muteMin = String(Number.isFinite(rawMute) ? Math.min(Math.max(rawMute, 0), 1440) : 10);
         const action = ['mute', 'kick', 'ban'].includes(b.action) ? b.action : 'mute';
         const kickAfter = String(Math.min(Math.max(parseInt(b.kick_after, 10) || 2, 1), 20));
         const banAfter = String(Math.min(Math.max(parseInt(b.ban_after, 10) || 2, 1), 20));
-        const exempt = (b.exempt_admins === '0' || b.exempt_admins === false || b.exempt_admins === 0) ? '0' : '1';
+        const exemptMode = ['admins', 'admins_moderators', 'none'].includes(b.exempt)
+            ? b.exempt
+            : ((b.exempt_admins === '0' || b.exempt_admins === false || b.exempt_admins === 0) ? 'none' : 'admins_moderators');
         await setSettingsBatch(env.DB, [
             ['global_antiflood_enabled', enabled],
             ['global_antiflood_limit', limit],
@@ -19265,9 +20502,10 @@ async function saveGlobalAntiFlood(request, env) {
             ['global_antiflood_mute_minutes', muteMin],
             ['global_antiflood_kick_after', kickAfter],
             ['global_antiflood_ban_after', banAfter],
-            ['global_antiflood_exempt_admins', exempt],
+            ['global_antiflood_exempt', exemptMode],
+            ['global_antiflood_exempt_admins', exemptMode !== 'none' ? '1' : '0'],
         ]);
-        await logAction(env.DB, null, 'Global anti-flood settings updated');
+        await logAction(env.DB, null, 'Global flood policy updated');
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
 }
@@ -19346,6 +20584,7 @@ async function updateBotToken(request, env, originUrl) {
             await logAction(env.DB, null, 'Bot token updated (webhook registration failed: ' + hookErr.message + ')');
             return apiJson({ success: true, warning: 'Token saved, but webhook registration failed: ' + hookErr.message + '. Click Health check in Settings to retry.' });
         }
+        await ensureAndPublishStartMenu(env.DB, botToken);
         await logAction(env.DB, null, unchanged ? 'Bot token re-confirmed' : 'Bot token updated');
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
@@ -19509,36 +20748,82 @@ async function handleSchemaHeal(env) {
 async function changeAdminPassword(request, env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
-        const body = await request.json();
-        const newPassword = body && body.newPassword;
-        if (typeof newPassword !== 'string' || newPassword.length < 6 || newPassword.length > 1024) {
+        const body = (await request.json()) || {};
+        const newPassword = body.newPassword === undefined || body.newPassword === null || body.newPassword === '' ? null : body.newPassword;
+        const newUsernameRaw = body.newUsername === undefined || body.newUsername === null ? null : String(body.newUsername).trim();
+        if (newPassword === null && !newUsernameRaw) return apiJson({ error: 'Enter a new username and/or a new password.' }, 400);
+        if (newPassword !== null && (typeof newPassword !== 'string' || newPassword.length < 6 || newPassword.length > 1024)) {
             return apiJson({ error: 'Password must be between 6 and 1024 characters.' }, 400);
         }
+        if (newUsernameRaw && !/^[a-zA-Z0-9_.-]{2,40}$/.test(newUsernameRaw)) {
+            return apiJson({ error: 'Username must be 2–40 characters (letters, numbers, _ . -).' }, 400);
+        }
         await initializeDatabase(env.DB);
-        await setSetting(env.DB, 'admin_password', await hashPassword(newPassword));
-        // Bump password_version so every session on every worker isolate is
-        // invalidated the next time it is checked. (This replaces the old
-        // per-isolate memory-only invalidation.)
-        const newPv = String(Date.now());
-        await setSetting(env.DB, 'password_version', newPv);
         const cookie = request.headers.get('Cookie') || '';
         const part = cookie.split(';').find(c => c.trim().startsWith('session='));
         const currentToken = part ? part.split('=')[1].trim() : null;
-        if (currentToken) {
-            const newCsrf = crypto.randomUUID().replace(/-/g, '');
-            await env.DB.prepare('DELETE FROM sessions WHERE user_id IS NULL AND token != ?').bind(currentToken).run();
-            await env.DB.prepare('UPDATE sessions SET password_version = ?, csrf_token = ? WHERE token = ?').bind(newPv, newCsrf, currentToken).run();
-            invalidateSessionCache();
-            csrfCache.clear();
-            await logAction(env.DB, null, 'Admin password changed');
-            return apiJson({ success: true, csrf: newCsrf });
+        const me = await getSessionAccount(env, currentToken);
+        if (!me) return apiJson({ error: 'Please sign in again.' }, 401);
+
+        // Target = the signed-in account. Legacy/env sessions (id 0) act on the owner row.
+        let target = null;
+        if (me.id) target = await env.DB.prepare('SELECT * FROM admin_accounts WHERE id = ?').bind(me.id).first();
+        else target = await env.DB.prepare("SELECT * FROM admin_accounts WHERE role = 'owner' ORDER BY id ASC LIMIT 1").first();
+        const isOwner = me.role === 'owner';
+        if (newUsernameRaw && !isOwner && (!target || newUsernameRaw.toLowerCase() !== target.username.toLowerCase())) {
+            return apiJson({ error: 'Only the owner can change usernames. Ask the owner.' }, 403);
         }
-        await env.DB.prepare('DELETE FROM sessions WHERE user_id IS NULL').run();
+
+        let username = newUsernameRaw || (target ? target.username : String(env.ADMIN_USER || 'admin').trim() || 'admin');
+        const clash = await env.DB.prepare('SELECT id FROM admin_accounts WHERE LOWER(username) = LOWER(?) AND id != ?').bind(username, target ? target.id : 0).first();
+        if (clash) return apiJson({ error: 'That username is already used by another account.' }, 400);
+
+        let accountId;
+        if (target) {
+            const pwHash = newPassword !== null ? await hashPassword(newPassword) : target.password_hash;
+            await env.DB.prepare('UPDATE admin_accounts SET username = ?, password_hash = ?, version = COALESCE(version, 1) + 1 WHERE id = ?')
+                .bind(username, pwHash, target.id).run();
+            accountId = target.id;
+            if (target.role === 'owner' && newPassword !== null) await setSetting(env.DB, 'admin_password', pwHash);
+        } else {
+            // env-only or pre-v5.1 install: create the owner row, reusing existing password if newPassword is omitted.
+            let pwHash = null;
+            if (newPassword !== null) {
+                pwHash = await hashPassword(newPassword);
+            } else {
+                const storedAdminPw = await getSetting(env.DB, 'admin_password');
+                if (storedAdminPw) pwHash = storedAdminPw;
+                else if (env.ADMIN_PASS) pwHash = await hashPassword(String(env.ADMIN_PASS));
+                else return apiJson({ error: 'Set a password as well to create the owner account.' }, 400);
+            }
+            const ins = await env.DB.prepare("INSERT INTO admin_accounts (username, password_hash, role, allowed_areas, enabled, version) VALUES (?, ?, 'owner', ?, 1, 1)")
+                .bind(username, pwHash, JSON.stringify(['*'])).run();
+            accountId = (ins && ins.meta && ins.meta.last_row_id) || 0;
+            await setSetting(env.DB, 'admin_password', pwHash);
+        }
+
+        // Keep session labels in sync; sign out only THIS account's other sessions, and only on a password change.
+        const ownerScope = (target ? target.role === 'owner' : true);
+        if (accountId) await env.DB.prepare('UPDATE sessions SET username = ? WHERE account_id = ?').bind(username, accountId).run();
+        if (ownerScope && accountId) await env.DB.prepare('UPDATE sessions SET account_id = ?, username = ? WHERE user_id IS NULL AND account_id IS NULL').bind(accountId, username).run();
+        if (currentToken) await env.DB.prepare('UPDATE sessions SET account_id = ?, username = ? WHERE token = ?').bind(accountId || null, username, currentToken).run();
+        let newCsrf = null;
+        if (newPassword !== null) {
+            if (currentToken) {
+                if (ownerScope) await env.DB.prepare('DELETE FROM sessions WHERE user_id IS NULL AND token != ? AND (account_id = ? OR account_id IS NULL)').bind(currentToken, accountId).run();
+                else await env.DB.prepare('DELETE FROM sessions WHERE token != ? AND account_id = ?').bind(currentToken, accountId).run();
+                newCsrf = crypto.randomUUID().replace(/-/g, '');
+                await env.DB.prepare('UPDATE sessions SET csrf_token = ?, account_id = ?, username = ? WHERE token = ?').bind(newCsrf, accountId || null, username, currentToken).run();
+            }
+        }
         invalidateSessionCache();
         csrfCache.clear();
-        await logAction(env.DB, null, 'Admin password changed');
-        return apiJson({ success: true });
-    } catch (err) { return internalError(err); }
+        await logAction(env.DB, null, `Credentials updated for ${username}` + (newPassword !== null ? ' (password changed)' : ''));
+        return apiJson({ success: true, username, csrf: newCsrf || undefined });
+    } catch (err) {
+        if (/UNIQUE/i.test(String((err && err.message) || ''))) return apiJson({ error: 'That username is already used by another account.' }, 400);
+        return internalError(err);
+    }
 }
 
 // ============================================================================
@@ -20312,14 +21597,23 @@ async function verifyForceJoinChat(request, env) {
 }
 async function checkForceJoinMembership(env, BOT_TOKEN, userId, chats) {
     const missing = [];
+    const now = Date.now();
     for (const c of (chats || [])) {
         if (!c || !c.id) continue;
+        const cKey = `${c.id}:${userId}`;
+        const cachedUntil = fjMemberCache.get(cKey) || 0;
+        if (cachedUntil > now) continue;
         try {
             const res = await tgCall(BOT_TOKEN, 'getChatMember', { chat_id: c.id, user_id: userId }, { retry: false });
             if (res && res.ok && res.result) {
                 const st = res.result.status;
                 const joined = st === 'creator' || st === 'administrator' || st === 'member' || (st === 'restricted' && res.result.is_member === true);
-                if (!joined) missing.push(c);
+                if (joined) {
+                    if (fjMemberCache.size > 5000) fjMemberCache.clear();
+                    fjMemberCache.set(cKey, now + 60000);
+                } else {
+                    missing.push(c);
+                }
             }
         } catch (e) {}
     }
@@ -23259,6 +24553,22 @@ self.addEventListener('message', function(event) {
     }
 });
 
+self.addEventListener('push', function(event) {
+    let data = { title: 'Nyxx', body: 'New notification', tag: 'nyxx-push', url: '/?nyxx-notification=inbox' };
+    if (event.data) {
+        try { Object.assign(data, event.data.json()); }
+        catch (e) { try { data.body = event.data.text(); } catch (e2) {} }
+    }
+    event.waitUntil(
+        self.registration.showNotification(String(data.title || 'Nyxx').slice(0, 100), {
+            body: String(data.body || '').slice(0, 240),
+            tag: String(data.tag || 'nyxx-push').slice(0, 100),
+            renotify: true,
+            data: { url: data.url || '/?nyxx-notification=inbox' }
+        })
+    );
+});
+
 self.addEventListener('notificationclick', function(event) {
     event.notification.close();
     event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(windows) {
@@ -23521,12 +24831,22 @@ async function sendChatMessage(request, env, url) {
             const cleanHistory = history.filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string');
             let replyText;
             if (mode === 'support') {
+                const trimmedHistory = [];
+                let histChars = 0;
+                for (let hi = cleanHistory.length - 1; hi >= 0 && trimmedHistory.length < 8; hi--) {
+                    const m = cleanHistory[hi];
+                    const c = String(m.content || '').slice(0, 600);
+                    if (histChars + c.length > 2000 && trimmedHistory.length >= 2) break;
+                    histChars += c.length;
+                    trimmedHistory.unshift({ role: m.role, content: c });
+                }
                 const supportCfg = Object.assign({}, aiCfg, {
                     ai_system_prompt: NYXX_SUPPORT_SYSTEM_PROMPT,
                     ai_knowledge_bases: JSON.stringify([{ enabled: true, label: 'Nyxx Built-in Knowledge', content: NYXX_SUPPORT_KB }]),
                     ai_strict_mode: '0',
+                    ai_max_tokens: String(Math.min(parseInt(aiCfg.ai_max_tokens) || 1024, 1024)),
                 });
-                replyText = await callAiCompletion(supportCfg, cleanHistory, message, { bot_name: 'Nyxx AI Support', user_first_name: 'Admin' }, 'main');
+                replyText = await callAiCompletion(supportCfg, trimmedHistory, message, { bot_name: 'Nyxx AI Support', user_first_name: 'Admin' }, 'main');
             } else {
                 const cmds = await env.DB.prepare('SELECT command FROM commands WHERE enabled = 1').all();
                 const botName = (await getSetting(env.DB, 'bot_name')) || aiCfg.ai_display_name || 'Nyxx Bot';
@@ -23610,7 +24930,33 @@ async function getBotUsername(env, BOT_TOKEN) {
 const TG_API_BASE = 'https://api.telegram.org';
 const TG_TIMEOUT_MS = 10000;
 const TG_BENIGN_ERROR_CODES = new Set([400, 403, 429]);
+// Per-chat flood-backoff & outbound rate protection for 150+ active-user groups
+const tgChatBackoff = new Map();
+const tgChatWindow = new Map();
 async function tgCall(token, method, payload, opts = {}) {
+    const chatIdKey = payload && payload.chat_id !== undefined ? String(payload.chat_id) : '';
+    const isSendMethod = method === 'sendMessage' || method === 'sendPhoto' || method === 'sendVideo' || method === 'sendDocument' || method === 'sendAnimation';
+    if (chatIdKey) {
+        const backoffUntil = tgChatBackoff.get(chatIdKey) || 0;
+        if (backoffUntil > Date.now() && isSendMethod) {
+            const waitMs = backoffUntil - Date.now();
+            if (waitMs > 3000) return { ok: false, error_code: 429, description: 'Local chat flood backoff active' };
+            await new Promise(r => setTimeout(r, waitMs));
+        }
+        if (isSendMethod && chatIdKey.startsWith('-')) {
+            const nowMin = Math.floor(Date.now() / 60000);
+            const win = tgChatWindow.get(chatIdKey);
+            if (!win || win.min !== nowMin) {
+                if (tgChatWindow.size > 2000) tgChatWindow.clear();
+                tgChatWindow.set(chatIdKey, { min: nowMin, count: 1 });
+            } else {
+                win.count++;
+                if (win.count > 18 && opts.priority !== 'high') {
+                    await new Promise(r => setTimeout(r, 250));
+                }
+            }
+        }
+    }
     const body = payload === undefined ? undefined : JSON.stringify(payload);
     const maxAttempts = opts.retry === false ? 1 : 2;
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -23624,6 +24970,10 @@ async function tgCall(token, method, payload, opts = {}) {
             if (TG_BENIGN_ERROR_CODES.has(res.status)) console.log(`Telegram ${method}: ${description}`);
             else console.error(`Telegram ${method}: ${description}`);
             const retryAfter = data && data.parameters && data.parameters.retry_after ? parseInt(data.parameters.retry_after, 10) || 1 : (res.status === 429 ? 1 : 0);
+            if (retryAfter > 0 && chatIdKey) {
+                if (tgChatBackoff.size > 2000) tgChatBackoff.clear();
+                tgChatBackoff.set(chatIdKey, Date.now() + Math.min(retryAfter, 30) * 1000);
+            }
             if (attempt < maxAttempts && retryAfter > 0) { await new Promise(r => setTimeout(r, Math.min(retryAfter, 3) * 1000)); continue; }
             return data;
         } catch (err) {
@@ -24225,6 +25575,9 @@ async function handleTelegramWebhook(request, env, ctx) {
     return runWithAck(processTelegramUpdate(update, env, ctx));
 }
 const seenUpdateIds = new Map();
+const userUpsertThrottle = new Map();
+const userTouchThrottle = new Map();
+const fjMemberCache = new Map();
 const UPDATE_DEDUP_TTL_MS = 10 * 60 * 1000;
 function wasUpdateSeen(id) {
     const now = Date.now();
@@ -24242,6 +25595,13 @@ async function processTelegramUpdate(update, env, ctx) {
         if (!from || !from.id) return;
         const privateStarted = opts && opts.privateStarted ? 1 : 0;
         const groupId = opts && opts.groupId ? opts.groupId : null;
+        if (groupId && !privateStarted) {
+            const key = `${from.id}:${groupId}`;
+            const prev = userUpsertThrottle.get(key);
+            if (prev && (Date.now() - prev) < 60000) return;
+            if (userUpsertThrottle.size > 5000) userUpsertThrottle.clear();
+            userUpsertThrottle.set(key, Date.now());
+        }
         await env.DB.prepare(`
             INSERT INTO users (id, username, first_name, private_started, last_group_id) VALUES (?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
@@ -24354,18 +25714,47 @@ async function processTelegramUpdate(update, env, ctx) {
                 }
             }
             if (msg.new_chat_members && isGroup) {
-                if (groupSettings && groupSettings.welcome_enabled && groupSettings.welcome_text) {
-                    for (const member of msg.new_chat_members) {
-                        if (member.is_bot) continue;
-                        const text = replacePlaceholders(groupSettings.welcome_text, { user_first_name: member.first_name || '', user_username: member.username || '', chat_id: String(chatId), title: msg.chat.title || '' });
-                        await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: escapeTelegramHTML(text), parse_mode: 'HTML' });
+                if (groupSettings && groupSettings.auto_delete_service) await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id }, { retry: false });
+                if (groupSettings && groupSettings.anti_raid_enabled) {
+                    const raidMin = Math.floor(Date.now() / 60000);
+                    const rRow = await env.DB.prepare(
+                        'INSERT INTO group_flood (chat_id, user_id, minute, count) VALUES (?, -999, ?, 1) ON CONFLICT(chat_id, user_id, minute) DO UPDATE SET count = count + 1 RETURNING count'
+                    ).bind(chatId, raidMin).first();
+                    if (rRow && rRow.count > (groupSettings.anti_raid_limit || 10)) {
+                        for (const member of msg.new_chat_members) {
+                            if (member.is_bot) continue;
+                            await tgCall(BOT_TOKEN, 'banChatMember', { chat_id: chatId, user_id: member.id }, { retry: false });
+                        }
+                        return;
                     }
                 }
-                if (groupSettings && groupSettings.auto_delete_service) await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id });
+                for (const member of msg.new_chat_members) {
+                    if (member.is_bot) continue;
+                    if (groupSettings && groupSettings.captcha_enabled) {
+                        await sendGroupCaptchaChallenge(env, ctx, BOT_TOKEN, chatId, msg.chat, member, groupSettings);
+                        continue;
+                    }
+                    if (groupSettings && groupSettings.welcome_enabled && groupSettings.welcome_text) {
+                        const text = replacePlaceholders(groupSettings.welcome_text, { user_first_name: member.first_name || '', user_username: member.username || '', chat_id: String(chatId), title: msg.chat.title || '' });
+                        const wRes = await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: escapeTelegramHTML(text), parse_mode: 'HTML' });
+                        const wMsgId = extractFirstMessageId(wRes);
+                        if (wMsgId && groupSettings.welcome_auto_delete_sec > 0 && ctx && typeof ctx.waitUntil === 'function') {
+                            ctx.waitUntil(sleepMs(groupSettings.welcome_auto_delete_sec * 1000).then(() => tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: wMsgId }, { retry: false })));
+                        }
+                    }
+                }
                 return;
             }
-            if (isGroup && (msg.left_chat_member || msg.new_chat_title || msg.new_chat_photo || msg.pinned_message)) {
-                if (groupSettings && groupSettings.auto_delete_service) await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id });
+            if (isGroup && msg.left_chat_member) {
+                if (groupSettings && groupSettings.auto_delete_service) await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id }, { retry: false });
+                if (groupSettings && groupSettings.goodbye_enabled && groupSettings.goodbye_text && !msg.left_chat_member.is_bot) {
+                    const gText = replacePlaceholders(groupSettings.goodbye_text, { user_first_name: msg.left_chat_member.first_name || '', user_username: msg.left_chat_member.username || '', chat_id: String(chatId), title: msg.chat.title || '' });
+                    await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: escapeTelegramHTML(gText), parse_mode: 'HTML' });
+                }
+                return;
+            }
+            if (isGroup && (msg.new_chat_title || msg.new_chat_photo || msg.pinned_message)) {
+                if (groupSettings && groupSettings.auto_delete_service) await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id }, { retry: false });
                 return;
             }
             // Anti-bot: delete messages posted by other bots.
@@ -24376,51 +25765,105 @@ async function processTelegramUpdate(update, env, ctx) {
                 return;
             }
             if (isGroup && msg.from && !msg.from.is_bot) {
-                const userRowForMod = await env.DB.prepare('SELECT role FROM users WHERE id = ?').bind(msg.from.id).first();
-                const modRole = userRowForMod ? userRowForMod.role : 'user';
+                const modRole = (await getUserRole(env, msg.from.id)) || 'user';
                 const levelExempt = (lvl) => modRole === 'admin' || (lvl === 'admins_moderators' && modRole === 'moderator');
 
                 const skipLinkedChecks = isChannelAutoForward && groupSettings && groupSettings.exempt_linked_forwards !== false;
+                const mediaExempt = levelExempt((groupSettings && groupSettings.media_exempt_level) || 'admins');
+
+                if (!skipLinkedChecks && groupSettings && !mediaExempt) {
+                    if (groupSettings.lock_all_non_admins) {
+                        await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id }, { retry: false });
+                        return;
+                    }
+                    if (groupSettings.night_mode_enabled) {
+                        const hr = new Date().getUTCHours();
+                        const st = groupSettings.night_mode_start_hour || 0;
+                        const en = groupSettings.night_mode_end_hour || 0;
+                        const inNight = st < en ? (hr >= st && hr < en) : (st > en ? (hr >= st || hr < en) : false);
+                        if (inNight) {
+                            const hasMedia = !!(msg.photo || msg.video || msg.video_note || msg.document || msg.audio || msg.voice || msg.sticker || msg.animation || msg.poll);
+                            if (!groupSettings.night_mode_media_only || hasMedia) {
+                                await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id }, { retry: false });
+                                return;
+                            }
+                        }
+                    }
+                    if (groupSettings.block_channels && msg.sender_chat && msg.sender_chat.type === 'channel') {
+                        await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id }, { retry: false });
+                        return;
+                    }
+                    if ((groupSettings.block_files && msg.document && !msg.animation) ||
+                        (groupSettings.block_photos && msg.photo) ||
+                        (groupSettings.block_voice && (msg.voice || msg.audio)) ||
+                        (groupSettings.block_video && (msg.video || msg.video_note)) ||
+                        (groupSettings.block_stickers && msg.sticker) ||
+                        (groupSettings.block_gifs && msg.animation) ||
+                        (groupSettings.block_polls && msg.poll)) {
+                        await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id }, { retry: false });
+                        return;
+                    }
+                    const msgBodyText = msg.text || msg.caption || '';
+                    if (groupSettings.block_mentions && /(?:^|\s)@[A-Za-z0-9_]{3,}/.test(msgBodyText)) {
+                        await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id }, { retry: false });
+                        return;
+                    }
+                    if (groupSettings.max_message_length > 0 && msgBodyText.length > groupSettings.max_message_length) {
+                        await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id }, { retry: false });
+                        return;
+                    }
+                    if (groupSettings.slow_mode_enabled && !checkGroupSlowMode(chatId, msg.from.id, groupSettings.slow_mode_seconds || 10)) {
+                        await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id }, { retry: false });
+                        return;
+                    }
+                }
                 // Anti-forward: delete forwarded messages.
-                if (!skipLinkedChecks && groupSettings && groupSettings.anti_forward && (msg.forward_date || msg.forward_from || msg.forward_from_chat)) {
+                if (!skipLinkedChecks && groupSettings && groupSettings.anti_forward && (msg.forward_date || msg.forward_from || msg.forward_from_chat || msg.forward_origin)) {
                     if (!levelExempt(groupSettings.anti_forward_level || 'admins')) {
-                        await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id });
+                        await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id }, { retry: false });
                         return;
                     }
                 }
                 // Blacklist words.
-                if (!skipLinkedChecks && groupSettings && groupSettings.blacklist_words && msg.text) {
+                const msgTextOrCap = msg.text || msg.caption || '';
+                if (!skipLinkedChecks && groupSettings && groupSettings.blacklist_words && msgTextOrCap) {
                     const words = groupSettings.blacklist_words.split(',').map(w => w.trim().toLowerCase()).filter(Boolean);
                     if (words.length) {
-                        const lower = msg.text.toLowerCase();
+                        const lower = msgTextOrCap.toLowerCase();
                         if (words.some(w => lower.indexOf(w) >= 0)) {
                             if (!levelExempt(groupSettings.blacklist_level || 'admins')) {
-                                await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id });
+                                await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id }, { retry: false });
+                                if (groupSettings.blacklist_action === 'warn') await issueGroupWarn(env, BOT_TOKEN, chatId, msg.from, 'Blacklisted word', groupSettings);
+                                else if (groupSettings.blacklist_action === 'mute') {
+                                    await tgCall(BOT_TOKEN, 'restrictChatMember', { chat_id: chatId, user_id: msg.from.id, permissions: { can_send_messages: false }, until_date: Math.floor(Date.now() / 1000) + 600 }, { retry: false });
+                                }
                                 return;
                             }
                         }
                     }
                 }
                 // Link filter.
-                if (!skipLinkedChecks && groupSettings && groupSettings.link_filter && msg.text && /https?:\/\/|t\.me\//i.test(msg.text)) {
+                if (!skipLinkedChecks && groupSettings && groupSettings.link_filter && msgTextOrCap && /https?:\/\/|t\.me\//i.test(msgTextOrCap)) {
                     if (!levelExempt(groupSettings.link_filter_level || 'admins')) {
-                        await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id });
+                        await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id }, { retry: false });
                         return;
                     }
                 }
-                // Anti-flood with escalation (mute → kick → ban).
-                if (groupSettings && groupSettings.anti_flood) {
-                    const minute = Math.floor(Date.now() / 60000);
-                    await env.DB.prepare('INSERT INTO group_flood (chat_id, user_id, minute, count) VALUES (?, ?, ?, 1) ON CONFLICT(chat_id, user_id, minute) DO UPDATE SET count = count + 1').bind(chatId, msg.from.id, minute).run();
-                    const row = await env.DB.prepare('SELECT count FROM group_flood WHERE chat_id = ? AND user_id = ? AND minute = ?').bind(chatId, msg.from.id, minute).first();
-                    if (row && row.count > (groupSettings.flood_limit || 6)) {
-                        if (modRole !== 'admin') {
-                            await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msg.message_id });
-                            // One strike per minute — subsequent flood messages are
-                            // deleted silently without re-escalating.
-                            if (row.count === (groupSettings.flood_limit || 6) + 1) {
-                                await applyFloodEscalation(env, BOT_TOKEN, chatId, msg.from.id, groupSettings);
-                            }
+                if (!await enforceFloodPolicy(env, BOT_TOKEN, chatId, msg.from.id, msg, true, groupSettings)) return;
+                // Built-in group moderation commands
+                if (msg.text && msg.text.startsWith('/') && await handleBuiltInGroupModCommand(env, BOT_TOKEN, msg, chatId, modRole, groupSettings)) {
+                    return;
+                }
+                // Custom auto-reply filters
+                if (groupSettings && groupSettings.custom_filters && msg.text && !msg.text.startsWith('/')) {
+                    const lowerTxt = msg.text.toLowerCase();
+                    for (const line of groupSettings.custom_filters.split('\n')) {
+                        const idx = line.indexOf('=>');
+                        if (idx <= 0) continue;
+                        const kw = line.slice(0, idx).trim().toLowerCase();
+                        const resp = line.slice(idx + 2).trim();
+                        if (kw && resp && lowerTxt.includes(kw)) {
+                            await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: escapeTelegramHTML(resp), parse_mode: 'HTML', reply_to_message_id: msg.message_id });
                             return;
                         }
                     }
@@ -24429,6 +25872,17 @@ async function processTelegramUpdate(update, env, ctx) {
                     if (!await checkPermissionForChat(env, msg.from.id, 'rules_command', chatId, msg.chat.type)) {
                         await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: escapeTelegramHTML(botStrings().unauthorized), parse_mode: 'HTML' });
                         return;
+                    }
+                    if (groupSettings.rules_in_private) {
+                        const botUser = await getBotUsername(env, BOT_TOKEN);
+                        if (botUser) {
+                            await tgCall(BOT_TOKEN, 'sendMessage', {
+                                chat_id: chatId,
+                                text: '📜 Tap below to view the group rules in private:',
+                                reply_markup: { inline_keyboard: [[{ text: '📜 View Rules', url: `https://t.me/${botUser}?start=rules_${chatId}` }]] }
+                            });
+                            return;
+                        }
                     }
                     await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: escapeTelegramHTML(groupSettings.rules_text), parse_mode: 'HTML' });
                     return;
@@ -24442,12 +25896,20 @@ async function processTelegramUpdate(update, env, ctx) {
                 const shouldTrack = isPrivate || trackMembers;
                 if (shouldTrack) await upsertUser(msg.from, { privateStarted: isPrivate, groupId: isGroup ? chatId : null });
                 else if (isGroup) {
-                    const existing = await env.DB.prepare('SELECT id FROM users WHERE id = ?').bind(userId).first();
-                    if (existing) await env.DB.prepare('UPDATE users SET last_active = CURRENT_TIMESTAMP, last_group_id = ? WHERE id = ?').bind(chatId, userId).run();
+                    const roleCheck = await getUserRole(env, userId);
+                    if (roleCheck) {
+                        const tKey = `touch:${userId}:${chatId}`;
+                        const prevTouch = userTouchThrottle.get(tKey) || 0;
+                        if (Date.now() - prevTouch >= 120000) {
+                            if (userTouchThrottle.size > 5000) userTouchThrottle.clear();
+                            userTouchThrottle.set(tKey, Date.now());
+                            await env.DB.prepare('UPDATE users SET last_active = CURRENT_TIMESTAMP, last_group_id = ? WHERE id = ?').bind(chatId, userId).run();
+                        }
+                    }
                 }
                 const blockType = await isUserBlocked(env, userId);
                 if (blockType === 'full') return;
-                if (!await checkGlobalAntiFlood(env, BOT_TOKEN, chatId, userId, msg, isGroup)) return;
+                if (!isGroup && !await enforceFloodPolicy(env, BOT_TOKEN, chatId, userId, msg, false, null)) return;
 
                 if (isGroup && groupSettings && (msg.chat.is_direct_messages || msg.direct_messages_topic)) {
                     if (groupSettings.dm_notify_admins) {
@@ -24679,7 +26141,7 @@ async function processTelegramUpdate(update, env, ctx) {
                                 if (feat.content) await sendRichText(BOT_TOKEN, chatId, feat.content);
                                 return;
                             }
-                            await handleContactMessage(env, BOT_TOKEN, chatId, userId, msg.from, argsTrimmed, feat);
+                            await handleContactMessage(env, BOT_TOKEN, chatId, userId, msg.from, argsTrimmed, feat, ctx);
                             return;
                         }
                     }
@@ -24793,7 +26255,22 @@ async function processTelegramUpdate(update, env, ctx) {
                         return;
                     }
                     if (!await enforceForceJoinGate(env, BOT_TOKEN, chatId, userId, msg.from, msg.chat.type, 'commands', false)) return;
+                    const startArg = text.slice(bareSlashCmd.length).trim();
+                    if (isPrivate && startArg.startsWith('rules_')) {
+                        const rGid = parseInt(startArg.slice(6), 10);
+                        if (rGid) {
+                            const rGs = await getGroupSettings(env.DB, rGid);
+                            if (rGs && rGs.rules_text) {
+                                await sendMessage(chatId, rGs.rules_text, BOT_TOKEN, 'HTML');
+                                return;
+                            }
+                        }
+                    }
                     await sendDefaultStart(chatId, env, BOT_TOKEN);
+                    return;
+                }
+                if (bareSlashCmd === '/games' || bareSlashCmd === '/play') {
+                    await handleGamesCommand(env, BOT_TOKEN, chatId, userId, msg.from, msg.chat.type, text.slice(bareSlashCmd.length).trim(), threadId);
                     return;
                 }
                 if (isPrivate) await sendMessage(chatId, botStrings().not_found, BOT_TOKEN, 'HTML');
@@ -24984,8 +26461,35 @@ async function processTelegramUpdate(update, env, ctx) {
                 await handleProxyCallback(BOT_TOKEN, chatId, cb, data);
                 return;
             }
+            if (data && data.startsWith('CAPT:')) {
+                await handleGroupCaptchaCallback(env, ctx, BOT_TOKEN, chatId, cb, data);
+                return;
+            }
+            if (data && data.startsWith('GWARN:')) {
+                const parts = data.split(':');
+                const action = parts[1];
+                const targetId = parseInt(parts[2], 10);
+                if (!cb.from || !await isModeratorOrAbove(env, cb.from.id)) {
+                    await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id, text: 'Admins / moderators only.', show_alert: true });
+                    return;
+                }
+                if (action === 'RESET' && targetId) {
+                    await env.DB.prepare('UPDATE group_strikes SET mute_count = 0 WHERE chat_id = ? AND user_id = ?').bind(chatId, targetId).run();
+                    await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id, text: 'Warns reset!' });
+                    await tgCall(BOT_TOKEN, 'editMessageReplyMarkup', { chat_id: chatId, message_id: cb.message.message_id, reply_markup: { inline_keyboard: [] } });
+                } else if (action === 'UNMUTE' && targetId) {
+                    await tgCall(BOT_TOKEN, 'restrictChatMember', { chat_id: chatId, user_id: targetId, permissions: { can_send_messages: true, can_send_audios: true, can_send_documents: true, can_send_photos: true, can_send_videos: true, can_send_other_messages: true, can_add_web_page_previews: true } });
+                    await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id, text: 'User unmuted!' });
+                    await tgCall(BOT_TOKEN, 'editMessageReplyMarkup', { chat_id: chatId, message_id: cb.message.message_id, reply_markup: { inline_keyboard: [] } });
+                }
+                return;
+            }
             if (data && (data.startsWith('MLGET:') || data.startsWith('MLALL:') || data.startsWith('WHOIS:') || data.startsWith('BCFEAT:') || data === 'TEMP:DEL')) {
                 await handleExtendedFeaturedCallback(env, BOT_TOKEN, chatId, cb, data);
+                return;
+            }
+            if (data && (data.startsWith('GAME:') || data.startsWith('GAMELB:'))) {
+                await handleGameCallback(env, BOT_TOKEN, chatId, cb, data);
                 return;
             }
             if (data && data.startsWith('/')) {
@@ -25040,6 +26544,722 @@ async function processTelegramUpdate(update, env, ctx) {
         }
     } catch (err) { console.error('Webhook error:', err); }
 }
+const groupSlowModeMap = new Map();
+function checkGroupSlowMode(chatId, userId, sec) {
+    const key = chatId + ':' + userId;
+    const now = Date.now();
+    const last = groupSlowModeMap.get(key) || 0;
+    if (groupSlowModeMap.size > 5000) groupSlowModeMap.clear();
+    if (now - last < sec * 1000) return false;
+    groupSlowModeMap.set(key, now);
+    return true;
+}
+async function sendGroupCaptchaChallenge(env, ctx, BOT_TOKEN, chatId, chat, member, gs) {
+    try {
+        await tgCall(BOT_TOKEN, 'restrictChatMember', {
+            chat_id: chatId, user_id: member.id, permissions: { can_send_messages: false }
+        }, { retry: false });
+        const timeout = gs.captcha_timeout_sec || 120;
+        let answer = 'ok';
+        let prompt = gs.captcha_text || `👋 Welcome {{first_name}}! Tap verify within ${timeout}s to start chatting.`;
+        let rows = [];
+        if (gs.captcha_mode === 'math') {
+            const a = Math.floor(Math.random() * 9) + 1;
+            const b = Math.floor(Math.random() * 9) + 1;
+            answer = String(a + b);
+            const wrong1 = a + b + 1 + Math.floor(Math.random() * 3);
+            const wrong2 = Math.max(1, a + b - 1 - Math.floor(Math.random() * 3));
+            const opts = [answer, String(wrong1), String(wrong2)].sort(() => Math.random() - 0.5);
+            prompt += `\n\nSolve: <b>${a} + ${b} = ?</b>`;
+            rows = [opts.map(v => ({ text: v, callback_data: `CAPT:${member.id}:${v}` }))];
+        } else {
+            rows = [[{ text: '✅ Verify I am human', callback_data: `CAPT:${member.id}:ok`, style: 'success' }]];
+        }
+        const text = replacePlaceholders(prompt, { user_first_name: member.first_name || '', user_username: member.username || '', chat_id: String(chatId), title: chat.title || '', custom_vars: { timeout: String(timeout) } });
+        const sent = await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: escapeTelegramHTML(text), parse_mode: 'HTML', reply_markup: { inline_keyboard: rows } });
+        const msgId = extractFirstMessageId(sent);
+        await setSetting(env.DB, `capt_${chatId}_${member.id}`, JSON.stringify({ answer, msgId, exp: Date.now() + timeout * 1000 }));
+        if (ctx && typeof ctx.waitUntil === 'function' && timeout <= 25) {
+            ctx.waitUntil(sleepMs(timeout * 1000).then(async () => {
+                const raw = await getSetting(env.DB, `capt_${chatId}_${member.id}`);
+                if (!raw) return;
+                await setSetting(env.DB, `capt_${chatId}_${member.id}`, '');
+                if (msgId) await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: msgId }, { retry: false });
+                if (gs.captcha_fail_action === 'kick') {
+                    await tgCall(BOT_TOKEN, 'banChatMember', { chat_id: chatId, user_id: member.id }, { retry: false });
+                    await tgCall(BOT_TOKEN, 'unbanChatMember', { chat_id: chatId, user_id: member.id, only_if_banned: true }, { retry: false });
+                }
+            }));
+        }
+    } catch (e) {}
+}
+async function handleGroupCaptchaCallback(env, ctx, BOT_TOKEN, chatId, cb, data) {
+    const parts = data.split(':');
+    const targetId = parseInt(parts[1], 10);
+    const picked = parts[2] || '';
+    if (!cb.from || Number(cb.from.id) !== targetId) {
+        await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id, text: 'This verification is for another user.', show_alert: true });
+        return;
+    }
+    const raw = await getSetting(env.DB, `capt_${chatId}_${targetId}`);
+    if (!raw) {
+        await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id, text: 'Verification expired.' });
+        return;
+    }
+    let state = null;
+    try { state = JSON.parse(raw); } catch (e) {}
+    if (!state || picked !== state.answer) {
+        await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id, text: '❌ Wrong answer. Try again!', show_alert: true });
+        return;
+    }
+    await setSetting(env.DB, `capt_${chatId}_${targetId}`, '');
+    await tgCall(BOT_TOKEN, 'restrictChatMember', {
+        chat_id: chatId, user_id: targetId,
+        permissions: { can_send_messages: true, can_send_audios: true, can_send_documents: true, can_send_photos: true, can_send_videos: true, can_send_other_messages: true, can_add_web_page_previews: true }
+    }, { retry: false });
+    await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id, text: '✅ Verified!' });
+    if (cb.message && cb.message.message_id) {
+        await tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: cb.message.message_id }, { retry: false });
+    }
+    const gs = await getGroupSettings(env.DB, chatId);
+    if (gs.welcome_enabled && gs.welcome_text) {
+        const text = replacePlaceholders(gs.welcome_text, { user_first_name: cb.from.first_name || '', user_username: cb.from.username || '', chat_id: String(chatId), title: (cb.message && cb.message.chat && cb.message.chat.title) || '' });
+        const wRes = await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: escapeTelegramHTML(text), parse_mode: 'HTML' });
+        const wMsgId = extractFirstMessageId(wRes);
+        if (wMsgId && gs.welcome_auto_delete_sec > 0 && ctx && typeof ctx.waitUntil === 'function') {
+            ctx.waitUntil(sleepMs(gs.welcome_auto_delete_sec * 1000).then(() => tgCall(BOT_TOKEN, 'deleteMessage', { chat_id: chatId, message_id: wMsgId }, { retry: false })));
+        }
+    }
+}
+async function issueGroupWarn(env, BOT_TOKEN, chatId, targetUser, reason, gs) {
+    if (!targetUser || !targetUser.id) return;
+    const row = await env.DB.prepare(
+        'INSERT INTO group_strikes (chat_id, user_id, mute_count, updated_at) VALUES (?, ?, 1, CURRENT_TIMESTAMP) ON CONFLICT(chat_id, user_id) DO UPDATE SET mute_count = mute_count + 1, updated_at = CURRENT_TIMESTAMP RETURNING mute_count'
+    ).bind(chatId, targetUser.id).first();
+    const warns = (row && row.mute_count) || 1;
+    const limit = (gs && gs.warn_limit) || 3;
+    const tName = escapeTelegramHTML(targetUser.first_name || ('User ' + targetUser.id));
+    if (warns >= limit) {
+        await env.DB.prepare('UPDATE group_strikes SET mute_count = 0 WHERE chat_id = ? AND user_id = ?').bind(chatId, targetUser.id).run();
+        const act = (gs && gs.warn_action) || 'mute';
+        if (act === 'ban') {
+            await tgCall(BOT_TOKEN, 'banChatMember', { chat_id: chatId, user_id: targetUser.id });
+            await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: `🚫 <b>${tName}</b> reached ${warns}/${limit} warns and was <b>banned</b>.`, parse_mode: 'HTML' });
+        } else if (act === 'kick') {
+            await tgCall(BOT_TOKEN, 'banChatMember', { chat_id: chatId, user_id: targetUser.id });
+            await tgCall(BOT_TOKEN, 'unbanChatMember', { chat_id: chatId, user_id: targetUser.id, only_if_banned: true });
+            await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: `👢 <b>${tName}</b> reached ${warns}/${limit} warns and was <b>kicked</b>.`, parse_mode: 'HTML' });
+        } else {
+            const muteMin = (gs && gs.warn_mute_minutes) || 60;
+            await tgCall(BOT_TOKEN, 'restrictChatMember', { chat_id: chatId, user_id: targetUser.id, permissions: { can_send_messages: false }, until_date: Math.floor(Date.now() / 1000) + muteMin * 60 });
+            await tgCall(BOT_TOKEN, 'sendMessage', {
+                chat_id: chatId,
+                text: `🔇 <b>${tName}</b> reached ${warns}/${limit} warns and was <b>muted for ${muteMin}m</b>.`,
+                parse_mode: 'HTML',
+                reply_markup: { inline_keyboard: [[{ text: '🔊 Unmute', callback_data: `GWARN:UNMUTE:${targetUser.id}` }]] }
+            });
+        }
+        return;
+    }
+    await tgCall(BOT_TOKEN, 'sendMessage', {
+        chat_id: chatId,
+        text: `⚠️ <b>${tName}</b> warned (<b>${warns}/${limit}</b>).${reason ? '\nReason: ' + escapeTelegramHTML(reason) : ''}`,
+        parse_mode: 'HTML',
+        reply_markup: { inline_keyboard: [[{ text: '♻️ Reset warns', callback_data: `GWARN:RESET:${targetUser.id}` }]] }
+    });
+}
+async function handleBuiltInGroupModCommand(env, BOT_TOKEN, msg, chatId, modRole, gs) {
+    const parts = msg.text.trim().split(/\s+/);
+    const cmd = parts[0].split('@')[0].toLowerCase();
+    const args = parts.slice(1);
+    const isMod = modRole === 'admin' || modRole === 'moderator';
+    if (cmd === '/warns') {
+        const target = (msg.reply_to_message && msg.reply_to_message.from) || msg.from;
+        const row = await env.DB.prepare('SELECT mute_count FROM group_strikes WHERE chat_id = ? AND user_id = ?').bind(chatId, target.id).first();
+        await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: `⚠️ <b>${escapeTelegramHTML(target.first_name || 'User')}</b> has <b>${(row && row.mute_count) || 0}/${gs.warn_limit || 3}</b> warn(s).`, parse_mode: 'HTML' });
+        return true;
+    }
+    if (!['/warn','/unwarn','/resetwarns','/mute','/unmute','/kick','/ban','/unban','/lock','/unlock'].includes(cmd)) return false;
+    if (!isMod) return false;
+    if (cmd === '/lock' || cmd === '/unlock') {
+        const locked = cmd === '/lock';
+        const merged = Object.assign({}, gs, { lock_all_non_admins: locked });
+        await env.DB.prepare('UPDATE groups SET settings_json = ? WHERE id = ?').bind(JSON.stringify(merged), chatId).run();
+        await bumpDomainEpoch(env.DB, 'groups');
+        await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: locked ? '🔒 Group locked (read-only for members).' : '🔓 Group unlocked.' });
+        return true;
+    }
+    let target = (msg.reply_to_message && msg.reply_to_message.from && !msg.reply_to_message.from.is_bot) ? msg.reply_to_message.from : null;
+    if (!target && args[0] && /^\d+$/.test(args[0])) {
+        const tid = parseInt(args.shift(), 10);
+        const r = await env.DB.prepare('SELECT id, first_name FROM users WHERE id = ?').bind(tid).first();
+        target = { id: tid, first_name: (r && r.first_name) || ('User ' + tid) };
+    }
+    if (!target) {
+        await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: 'Reply to a user or pass their numeric ID.' });
+        return true;
+    }
+    if (cmd === '/warn') {
+        if (!gs.warn_enabled) return false;
+        await issueGroupWarn(env, BOT_TOKEN, chatId, target, args.join(' '), gs);
+        return true;
+    }
+    if (cmd === '/unwarn' || cmd === '/resetwarns') {
+        await env.DB.prepare('UPDATE group_strikes SET mute_count = 0 WHERE chat_id = ? AND user_id = ?').bind(chatId, target.id).run();
+        await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: `✅ Warns reset for <b>${escapeTelegramHTML(target.first_name || 'User')}</b>.`, parse_mode: 'HTML' });
+        return true;
+    }
+    if (cmd === '/mute') {
+        const dur = parseDurationSeconds(args[0]) || 600;
+        await tgCall(BOT_TOKEN, 'restrictChatMember', { chat_id: chatId, user_id: target.id, permissions: { can_send_messages: false }, until_date: Math.floor(Date.now() / 1000) + Math.max(dur, 60) });
+        await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: `🔇 Muted <b>${escapeTelegramHTML(target.first_name || 'User')}</b>.`, parse_mode: 'HTML' });
+        return true;
+    }
+    if (cmd === '/unmute') {
+        await tgCall(BOT_TOKEN, 'restrictChatMember', { chat_id: chatId, user_id: target.id, permissions: { can_send_messages: true, can_send_audios: true, can_send_documents: true, can_send_photos: true, can_send_videos: true, can_send_other_messages: true, can_add_web_page_previews: true } });
+        await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: `🔊 Unmuted <b>${escapeTelegramHTML(target.first_name || 'User')}</b>.`, parse_mode: 'HTML' });
+        return true;
+    }
+    if (cmd === '/kick') {
+        await tgCall(BOT_TOKEN, 'banChatMember', { chat_id: chatId, user_id: target.id });
+        await tgCall(BOT_TOKEN, 'unbanChatMember', { chat_id: chatId, user_id: target.id, only_if_banned: true });
+        await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: `👢 Kicked <b>${escapeTelegramHTML(target.first_name || 'User')}</b>.`, parse_mode: 'HTML' });
+        return true;
+    }
+    if (cmd === '/ban') {
+        await tgCall(BOT_TOKEN, 'banChatMember', { chat_id: chatId, user_id: target.id });
+        await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: `🚫 Banned <b>${escapeTelegramHTML(target.first_name || 'User')}</b>.`, parse_mode: 'HTML' });
+        return true;
+    }
+    if (cmd === '/unban') {
+        await tgCall(BOT_TOKEN, 'unbanChatMember', { chat_id: chatId, user_id: target.id, only_if_banned: true });
+        await tgCall(BOT_TOKEN, 'sendMessage', { chat_id: chatId, text: `✅ Unbanned <b>${escapeTelegramHTML(target.first_name || 'User')}</b>.`, parse_mode: 'HTML' });
+        return true;
+    }
+    return false;
+}
+
+const GAME_CATALOG = {
+    snake: { id: 'snake', name: 'Neon Snake' },
+    '2048': { id: '2048', name: '2048' },
+    breaker: { id: 'breaker', name: 'Brick Breaker' },
+    flappy: { id: 'flappy', name: 'Sky Dash' },
+};
+const DEFAULT_GAMES_CONFIG = {
+    announce_mode: 'message',
+    announce_cooldown_sec: 20,
+    games: {
+        snake:   { enabled: true, access: 'everyone', allowed: '', disallowed: '' },
+        '2048':  { enabled: true, access: 'everyone', allowed: '', disallowed: '' },
+        breaker: { enabled: true, access: 'everyone', allowed: '', disallowed: '' },
+        flappy:  { enabled: true, access: 'everyone', allowed: '', disallowed: '' },
+    }
+};
+async function getGamesConfig(db) {
+    try {
+        const raw = await getSetting(db, 'games_config_json');
+        if (raw) {
+            const p = JSON.parse(raw);
+            if (p && typeof p === 'object') {
+                return {
+                    announce_mode: ['message', 'silent', 'off'].includes(p.announce_mode) ? p.announce_mode : 'message',
+                    announce_cooldown_sec: Math.min(Math.max(parseInt(p.announce_cooldown_sec, 10) || 20, 5), 600),
+                    games: Object.assign({}, DEFAULT_GAMES_CONFIG.games, p.games || {})
+                };
+            }
+        }
+    } catch (e) {}
+    return JSON.parse(JSON.stringify(DEFAULT_GAMES_CONFIG));
+}
+async function getGamesConfigHandler(env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    await initializeDatabase(env.DB);
+    return apiJson({ success: true, config: await getGamesConfig(env.DB) });
+}
+async function saveGamesConfigHandler(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const body = await request.json();
+        const cfg = body.config || {};
+        await initializeDatabase(env.DB);
+        const cleanGames = {};
+        for (const gid of Object.keys(GAME_CATALOG)) {
+            const g = (cfg.games && cfg.games[gid]) || {};
+            cleanGames[gid] = {
+                enabled: g.enabled !== false,
+                access: ['everyone', 'specific', 'moderator', 'admin'].includes(g.access) ? g.access : 'everyone',
+                allowed: normalizeAllowedUsersStr(g.allowed || ''),
+                disallowed: normalizeAllowedUsersStr(g.disallowed || ''),
+            };
+        }
+        const clean = {
+            announce_mode: ['message', 'silent', 'off'].includes(cfg.announce_mode) ? cfg.announce_mode : 'message',
+            announce_cooldown_sec: Math.min(Math.max(parseInt(cfg.announce_cooldown_sec, 10) || 20, 5), 600),
+            games: cleanGames,
+        };
+        await setSetting(env.DB, 'games_config_json', JSON.stringify(clean));
+        await logAction(env.DB, null, 'Mini-games settings updated');
+        return apiJson({ success: true, config: clean });
+    } catch (err) { return internalError(err); }
+}
+async function canPlayGame(env, userId, gameId) {
+    const cfg = await getGamesConfig(env.DB);
+    const g = (cfg.games && cfg.games[gameId]) || { enabled: true, access: 'everyone', allowed: '', disallowed: '' };
+    if (g.enabled === false) return { ok: false, reason: 'This game is currently disabled.' };
+    if (await isAdminUser(env, userId)) return { ok: true };
+    if (parseAllowedUserIds(g.disallowed).has(Number(userId))) return { ok: false, reason: botStrings().unauthorized };
+    const alw = parseAllowedUserIds(g.allowed);
+    if (g.access === 'specific') return alw.has(Number(userId)) ? { ok: true } : { ok: false, reason: botStrings().unauthorized };
+    if (g.access === 'moderator') return (alw.has(Number(userId)) || await isModeratorOrAbove(env, userId)) ? { ok: true } : { ok: false, reason: botStrings().unauthorized };
+    if (g.access === 'admin') return alw.has(Number(userId)) ? { ok: true } : { ok: false, reason: botStrings().unauthorized };
+    if (alw.size > 0 && !alw.has(Number(userId))) return { ok: false, reason: botStrings().unauthorized };
+    return { ok: true };
+}
+async function getGameLaunchSecret(env) {
+    let sec = await getSetting(env.DB, 'game_hmac_secret');
+    if (!sec) {
+        sec = crypto.randomUUID().replace(/-/g, '');
+        await setSetting(env.DB, 'game_hmac_secret', sec);
+    }
+    return sec;
+}
+async function signGameParams(env, gameId, chatId, userId, name, username) {
+    const secret = await getGameLaunchSecret(env);
+    const ts = Math.floor(Date.now() / 1000);
+    const payload = `${gameId}|${chatId}|${userId}|${ts}`;
+    const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    const sig = toHex(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payload))).slice(0, 32);
+    const origin = env.__requestUrl ? new URL(env.__requestUrl).origin : '';
+    const qs = new URLSearchParams({ game: gameId, cid: String(chatId), uid: String(userId), name: name || 'Player', un: username || '', ts: String(ts), sig });
+    return `${origin}/games?${qs.toString()}`;
+}
+async function verifyGameSig(env, gameId, chatId, userId, ts, sig) {
+    const secret = await getGameLaunchSecret(env);
+    const age = Math.abs(Math.floor(Date.now() / 1000) - (parseInt(ts, 10) || 0));
+    if (age > 7 * 86400) return false;
+    const payload = `${gameId}|${chatId}|${userId}|${ts}`;
+    const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    const expected = toHex(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payload))).slice(0, 32);
+    return timingSafeEqual(expected, String(sig || ''));
+}
+async function handleGamesCommand(env, BOT_TOKEN, chatId, userId, userInfo, chatType, args, threadId) {
+    const cfg = await getGamesConfig(env.DB);
+    const rows = [];
+    const argId = String(args || '').trim().toLowerCase();
+    const list = (argId && GAME_CATALOG[argId]) ? [GAME_CATALOG[argId]] : Object.values(GAME_CATALOG);
+    for (const g of list) {
+        const gc = (cfg.games && cfg.games[g.id]) || { enabled: true };
+        if (gc.enabled === false) continue;
+        rows.push([
+            { text: '🎮 ' + g.name, callback_data: 'GAME:' + g.id, style: 'primary' },
+            { text: '🏆 Top', callback_data: 'GAMELB:' + g.id }
+        ]);
+    }
+    if (!rows.length) {
+        await sendMessage(chatId, '🎮 No mini-games are currently enabled.', BOT_TOKEN, 'HTML', threadId);
+        return;
+    }
+    await sendRichText(BOT_TOKEN, chatId, '🎮 <b>Nyxx Mini-Games</b>\nPick a game to launch or check this chat\'s leaderboard:', Object.assign({ reply_markup: { inline_keyboard: rows } }, threadId ? { message_thread_id: threadId } : {}));
+}
+async function handleGameCallback(env, BOT_TOKEN, chatId, cb, data) {
+    const userId = cb.from && cb.from.id;
+    if (data.startsWith('GAMELB:')) {
+        const gid = data.slice(7);
+        const rows = await env.DB.prepare('SELECT user_name, username, best_score FROM game_scores WHERE chat_id = ? AND game_id = ? ORDER BY best_score DESC LIMIT 10').bind(chatId, gid).all();
+        const list = rows.results || [];
+        const g = GAME_CATALOG[gid] || { name: gid };
+        await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
+        const text = list.length
+            ? (`🏆 <b>${escapeTelegramHTML(g.name)} Leaderboard</b>\n\n` + list.map((r, i) => `${i + 1}. <b>${escapeTelegramHTML(r.user_name || 'Player')}</b> — <code>${r.best_score}</code>`).join('\n'))
+            : `🏆 <b>${escapeTelegramHTML(g.name)}</b>: No scores in this chat yet!`;
+        await sendRichText(BOT_TOKEN, chatId, text);
+        return;
+    }
+    const gid = data.slice(5);
+    if (!GAME_CATALOG[gid]) {
+        await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id, text: 'Unknown game.', show_alert: true });
+        return;
+    }
+    const perm = await canPlayGame(env, userId, gid);
+    if (!perm.ok) {
+        await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id, text: stripTagsForPreview(perm.reason), show_alert: true });
+        return;
+    }
+    const launchUrl = await signGameParams(env, gid, chatId, userId, (cb.from && cb.from.first_name) || 'Player', (cb.from && cb.from.username) || '');
+    const isPrivate = cb.message && cb.message.chat && cb.message.chat.type === 'private';
+    const btn = isPrivate ? { text: '🎮 Launch ' + GAME_CATALOG[gid].name, web_app: { url: launchUrl }, style: 'primary' }
+                          : { text: '🎮 Launch ' + GAME_CATALOG[gid].name, url: launchUrl, style: 'primary' };
+    await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
+    await sendRichText(BOT_TOKEN, chatId, `🎮 <b>${escapeTelegramHTML(GAME_CATALOG[gid].name)}</b> is ready for <b>${escapeTelegramHTML((cb.from && cb.from.first_name) || 'you')}</b>:`, {
+        reply_markup: { inline_keyboard: [[btn, { text: '🏆 Leaderboard', callback_data: 'GAMELB:' + gid }]] }
+    });
+}
+const gameAnnounceCooldownMap = new Map();
+async function handleGameScoreSubmit(request, env, ctx) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        const body = await request.json().catch(() => null);
+        if (!body) return apiJson({ error: 'Invalid request.' }, 400);
+        const gameId = String(body.game_id || '').trim();
+        const chatId = parseInt(body.chat_id, 10);
+        const userId = parseInt(body.user_id, 10);
+        const score = Math.max(0, parseInt(body.score, 10) || 0);
+        const userName = String(body.user_name || 'Player').slice(0, 64);
+        const username = String(body.username || '').slice(0, 64);
+        if (!GAME_CATALOG[gameId] || !chatId || !userId) return apiJson({ error: 'Invalid game parameters.' }, 400);
+        const sigOk = await verifyGameSig(env, gameId, chatId, userId, body.ts, body.sig);
+        const sessOk = !sigOk ? !!(await getSession(request, env)) : false;
+        if (!sigOk && !sessOk) return apiJson({ error: 'Invalid or expired launch signature.' }, 403);
+        const perm = await canPlayGame(env, userId, gameId);
+        if (!perm.ok) return apiJson({ error: perm.reason }, 403);
+
+        const prev = await env.DB.prepare('SELECT best_score FROM game_scores WHERE chat_id = ? AND game_id = ? AND user_id = ?').bind(chatId, gameId, userId).first();
+        const prevBest = prev ? (prev.best_score || 0) : 0;
+        const isNewRecord = score > prevBest;
+        const newBest = Math.max(score, prevBest);
+        await env.DB.prepare(
+            `INSERT INTO game_scores (chat_id, game_id, user_id, user_name, username, best_score, plays, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP)
+             ON CONFLICT(chat_id, game_id, user_id) DO UPDATE SET
+               user_name = excluded.user_name,
+               username = excluded.username,
+               best_score = MAX(game_scores.best_score, excluded.best_score),
+               plays = game_scores.plays + 1,
+               updated_at = CURRENT_TIMESTAMP`
+        ).bind(chatId, gameId, userId, userName, username, newBest).run();
+
+        if (isNewRecord && score > 0) {
+            const cfg = await getGamesConfig(env.DB);
+            if (cfg.announce_mode !== 'off') {
+                const now = Date.now();
+                const lastAnn = gameAnnounceCooldownMap.get(chatId) || 0;
+                const cooldownMs = (cfg.announce_cooldown_sec || 20) * 1000;
+                if (now - lastAnn >= cooldownMs) {
+                    gameAnnounceCooldownMap.set(chatId, now);
+                    if (gameAnnounceCooldownMap.size > 1000) gameAnnounceCooldownMap.clear();
+                    const token = await getSetting(env.DB, 'bot_token');
+                    if (token) {
+                        const msgText = `🏆 <b>New Personal Best!</b> <b>${escapeTelegramHTML(userName)}</b> scored <b>${score.toLocaleString()}</b> in <b>${escapeTelegramHTML(GAME_CATALOG[gameId].name)}</b>!`;
+                        const announceP = tgCall(token, 'sendMessage', {
+                            chat_id: chatId,
+                            text: msgText,
+                            parse_mode: 'HTML',
+                            disable_notification: cfg.announce_mode === 'silent'
+                        }, { retry: false });
+                        if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(announceP);
+                        else await announceP;
+                    }
+                }
+            }
+        }
+        const top = await env.DB.prepare('SELECT user_id, user_name, username, best_score, plays FROM game_scores WHERE chat_id = ? AND game_id = ? ORDER BY best_score DESC LIMIT 20').bind(chatId, gameId).all();
+        return apiJson({ success: true, best_score: newBest, new_record: isNewRecord, scores: top.results || [] });
+    } catch (err) { return internalError(err); }
+}
+async function handleGameLeaderboardGet(env, url) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        await initializeDatabase(env.DB);
+        const gid = String(url.searchParams.get('game') || 'snake');
+        const cid = url.searchParams.get('chat_id');
+        let rows;
+        if (cid !== null && cid !== '') {
+            rows = await env.DB.prepare('SELECT chat_id, game_id, user_id, user_name, username, best_score, plays FROM game_scores WHERE game_id = ? AND chat_id = ? ORDER BY best_score DESC LIMIT 30').bind(gid, parseInt(cid, 10)).all();
+        } else {
+            rows = await env.DB.prepare('SELECT chat_id, game_id, user_id, user_name, username, best_score, plays FROM game_scores WHERE game_id = ? ORDER BY best_score DESC LIMIT 30').bind(gid).all();
+        }
+        return apiJson({ success: true, scores: rows.results || [] });
+    } catch (err) { return internalError(err); }
+}
+
+const GAMES_HTML = `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Nyxx | Mini-Games</title>
+<style>
+:root{--bg:#0b0e14;--surface:#141923;--surface2:#1e2636;--border:rgba(255,255,255,.1);--text:#f3f4f6;--muted:#9ca3af;--accent:#0a84ff;--green:#30d158;--orange:#ff9f0a;--purple:#bf5af2;--red:#ff453a}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;min-height:100dvh;display:flex;flex-direction:column;align-items:center;padding:12px}
+.wrap{width:100%;max-width:520px;display:flex;flex-direction:column;gap:12px}
+.hdr{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:10px 12px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;flex:1}
+.tab{border:1px solid var(--border);background:var(--surface2);color:var(--muted);padding:7px 12px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer}
+.tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.hud{display:flex;justify-content:space-between;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:10px 14px}
+.hud-box{display:flex;flex-direction:column}
+.hud-lbl{font-size:11px;text-transform:uppercase;color:var(--muted);font-weight:700}
+.hud-val{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
+.btn{border:none;border-radius:10px;padding:9px 14px;font-weight:700;font-size:13px;cursor:pointer;background:var(--accent);color:#fff}
+.stage{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:12px;display:flex;flex-direction:column;align-items:center;position:relative;touch-action:none}
+canvas{background:#090c12;border-radius:10px;border:1px solid var(--border);max-width:100%;display:block}
+.g2048-board{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:100%;max-width:340px;aspect-ratio:1;background:#090c12;padding:10px;border-radius:12px;border:1px solid var(--border)}
+.g2048-cell{display:flex;align-items:center;justify-content:center;border-radius:8px;font-weight:800;font-size:22px;background:var(--surface2);color:var(--text)}
+.dpad{display:grid;grid-template-columns:repeat(3,56px);gap:6px;margin-top:10px}
+.dpad button{height:48px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:18px;font-weight:700;cursor:pointer}
+.lb{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px}
+.lb-row{display:flex;justify-content:space-between;padding:7px 4px;border-bottom:1px solid var(--border);font-size:13px}
+.lb-row:last-child{border-bottom:none}
+.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:var(--green);color:#000;font-weight:800;padding:9px 16px;border-radius:999px;font-size:13px;z-index:99;display:none}
+</style></head><body>
+<div class="toast" id="toast"></div>
+<div class="wrap">
+  <div class="hdr">
+    <div class="tabs" id="tabs">
+      <button class="tab active" data-g="snake" onclick="switchGame('snake')">🐍 Snake</button>
+      <button class="tab" data-g="2048" onclick="switchGame('2048')">🔢 2048</button>
+      <button class="tab" data-g="breaker" onclick="switchGame('breaker')">🧱 Breaker</button>
+      <button class="tab" data-g="flappy" onclick="switchGame('flappy')">🚀 Sky Dash</button>
+    </div>
+  </div>
+  <div class="hud">
+    <div class="hud-box"><span class="hud-lbl">Score</span><span class="hud-val" id="score">0</span></div>
+    <div class="hud-box"><span class="hud-lbl">Best</span><span class="hud-val" id="best" style="color:var(--orange)">0</span></div>
+    <button class="btn" id="restart-btn" onclick="startGame()">New Game</button>
+  </div>
+  <div class="stage" id="stage"></div>
+  <div class="lb"><div style="font-weight:800;font-size:14px;margin-bottom:8px;">🏆 Leaderboard</div><div id="lb-rows" style="color:var(--muted);font-size:13px;">Loading…</div></div>
+</div>
+<script>
+var Q = new URLSearchParams(location.search);
+var GAME = Q.get('game') || 'snake';
+if (!['snake','2048','breaker','flappy'].includes(GAME)) GAME = 'snake';
+var CID = Q.get('cid') || '0';
+var UID = Q.get('uid') || '0';
+var UNAME = Q.get('name') || 'Player';
+var UUN = Q.get('un') || '';
+var TS = Q.get('ts') || '0';
+var SIG = Q.get('sig') || '';
+var curScore = 0, bestScore = 0, loopTimer = null, animId = null, gameOverFlag = false;
+function $(id){return document.getElementById(id);}
+function setScore(s){ curScore = s; $('score').textContent = s; if (s > bestScore) { bestScore = s; $('best').textContent = s; } }
+function showToast(msg){ var t = $('toast'); t.textContent = msg; t.style.display = 'block'; setTimeout(function(){ t.style.display = 'none'; }, 2600); }
+function stopLoops(){ if (loopTimer) { clearInterval(loopTimer); loopTimer = null; } if (animId) { cancelAnimationFrame(animId); animId = null; } }
+async function submitScore(s){
+  if (s <= 0 || !Number(CID) || !Number(UID) || !SIG) { loadLb(); return; }
+  try {
+    var r = await fetch('/api/games/score', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ game_id:GAME, chat_id:Number(CID), user_id:Number(UID), user_name:UNAME, username:UUN, score:s, ts:TS, sig:SIG }) });
+    var d = await r.json();
+    if (d && d.new_record) showToast('🏆 New Personal Best: ' + s + '!');
+    if (d && d.scores) renderLb(d.scores); else loadLb();
+  } catch (e) {}
+}
+function renderLb(rows){
+  var box = $('lb-rows');
+  if (!rows || !rows.length) { box.innerHTML = 'No scores yet — play to set the record!'; return; }
+  box.innerHTML = rows.slice(0, 10).map(function(r, i){
+    return '<div class="lb-row"><span>#' + (i+1) + ' ' + String(r.user_name||'Player').replace(/</g,'&lt;') + '</span><b>' + Number(r.best_score||0).toLocaleString() + '</b></div>';
+  }).join('');
+}
+async function loadLb(){
+  try {
+    var r = await fetch('/api/games/leaderboard?game=' + encodeURIComponent(GAME) + (Number(CID) ? '&chat_id=' + encodeURIComponent(CID) : ''));
+    var d = await r.json(); renderLb((d && d.scores) || []);
+  } catch (e) {}
+}
+function switchGame(g){
+  GAME = g;
+  document.querySelectorAll('#tabs .tab').forEach(function(b){ b.classList.toggle('active', b.dataset.g === g); });
+  bestScore = Number(localStorage.getItem('nyxx_best_' + g) || 0);
+  $('best').textContent = bestScore;
+  startGame();
+  loadLb();
+}
+function endGame(){
+  if (gameOverFlag) return;
+  gameOverFlag = true; stopLoops();
+  if (curScore > Number(localStorage.getItem('nyxx_best_' + GAME) || 0)) localStorage.setItem('nyxx_best_' + GAME, String(curScore));
+  submitScore(curScore);
+}
+function startGame(){
+  stopLoops(); gameOverFlag = false; setScore(0);
+  if (GAME === 'snake') runSnake();
+  else if (GAME === '2048') run2048();
+  else if (GAME === 'breaker') runBreaker();
+  else runFlappy();
+}
+
+function runSnake(){
+  $('stage').innerHTML = '<canvas id="cv" width="320" height="320"></canvas><div class="dpad"><div></div><button onclick="snkDir(0,-1)">▲</button><div></div><button onclick="snkDir(-1,0)">◀</button><button onclick="snkDir(0,1)">▼</button><button onclick="snkDir(1,0)">▶</button></div>';
+  var cv = $('cv'), ctx = cv.getContext('2d'), G = 16, S = 20;
+  var snake = [{x:8,y:8},{x:7,y:8},{x:6,y:8}], dx = 1, dy = 0, ndx = 1, ndy = 0;
+  var food = {x:12,y:8}, gold = null;
+  window.snkDir = function(x,y){ if (x !== -dx && y !== -dy) { ndx = x; ndy = y; } };
+  document.onkeydown = function(e){
+    if (e.key==='ArrowUp'||e.key==='w') window.snkDir(0,-1);
+    if (e.key==='ArrowDown'||e.key==='s') window.snkDir(0,1);
+    if (e.key==='ArrowLeft'||e.key==='a') window.snkDir(-1,0);
+    if (e.key==='ArrowRight'||e.key==='d') window.snkDir(1,0);
+  };
+  var sx=0, sy=0;
+  cv.ontouchstart = function(e){ sx=e.touches[0].clientX; sy=e.touches[0].clientY; };
+  cv.ontouchend = function(e){
+    var ex=e.changedTouches[0].clientX-sx, ey=e.changedTouches[0].clientY-sy;
+    if (Math.abs(ex)>Math.abs(ey)) window.snkDir(ex>0?1:-1, 0); else if (Math.abs(ey)>12) window.snkDir(0, ey>0?1:-1);
+  };
+  function placeFood(){ return {x:Math.floor(Math.random()*G), y:Math.floor(Math.random()*G)}; }
+  loopTimer = setInterval(function(){
+    dx = ndx; dy = ndy;
+    var h = {x:(snake[0].x+dx+G)%G, y:(snake[0].y+dy+G)%G};
+    if (snake.some(function(p){ return p.x===h.x && p.y===h.y; })) {
+      ctx.fillStyle='rgba(0,0,0,.65)'; ctx.fillRect(0,0,320,320);
+      ctx.fillStyle='#fff'; ctx.font='bold 22px sans-serif'; ctx.textAlign='center'; ctx.fillText('Game Over · ' + curScore, 160, 165);
+      endGame(); return;
+    }
+    snake.unshift(h);
+    if (h.x===food.x && h.y===food.y) {
+      setScore(curScore + 10); food = placeFood();
+      if (!gold && Math.random() < 0.25) gold = Object.assign(placeFood(), {ttl:45});
+    } else if (gold && h.x===gold.x && h.y===gold.y) {
+      setScore(curScore + 35); gold = null;
+    } else snake.pop();
+    if (gold) { gold.ttl--; if (gold.ttl<=0) gold=null; }
+    ctx.fillStyle='#090c12'; ctx.fillRect(0,0,320,320);
+    ctx.fillStyle='#ff453a'; ctx.beginPath(); ctx.arc(food.x*S+10, food.y*S+10, 7, 0, Math.PI*2); ctx.fill();
+    if (gold) { ctx.fillStyle='#ff9f0a'; ctx.beginPath(); ctx.arc(gold.x*S+10, gold.y*S+10, 8, 0, Math.PI*2); ctx.fill(); }
+    snake.forEach(function(p, i){
+      ctx.fillStyle = i===0 ? '#30d158' : '#0a84ff';
+      ctx.fillRect(p.x*S+2, p.y*S+2, S-4, S-4);
+    });
+  }, 115);
+}
+
+function run2048(){
+  $('stage').innerHTML = '<div class="g2048-board" id="b2048"></div><div class="dpad"><div></div><button onclick="mv2048(0)">▲</button><div></div><button onclick="mv2048(3)">◀</button><button onclick="mv2048(2)">▼</button><button onclick="mv2048(1)">▶</button></div>';
+  var b = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]];
+  var colors = {0:'#1e2636',2:'#2b3a55',4:'#364c73',8:'#0a84ff',16:'#5e5ce6',32:'#bf5af2',64:'#ff375f',128:'#ff9f0a',256:'#30d158',512:'#30b0c7',1024:'#ffd60a',2048:'#ff453a'};
+  function addTile(){
+    var emp=[]; for(var r=0;r<4;r++)for(var c=0;c<4;c++)if(!b[r][c])emp.push([r,c]);
+    if (!emp.length) return;
+    var p = emp[Math.floor(Math.random()*emp.length)];
+    b[p[0]][p[1]] = Math.random()<0.9 ? 2 : 4;
+  }
+  function draw(){
+    var el = $('b2048');
+    el.innerHTML = b.flat().map(function(v){
+      return '<div class="g2048-cell" style="background:' + (colors[v]||'#ff453a') + ';font-size:' + (v>=1024?17:22) + 'px;">' + (v||'') + '</div>';
+    }).join('');
+  }
+  function slide(row){
+    var arr = row.filter(Boolean), gain = 0;
+    for (var i=0;i<arr.length-1;i++){ if (arr[i]===arr[i+1]){ arr[i]*=2; gain+=arr[i]; arr[i+1]=0; } }
+    arr = arr.filter(Boolean); while(arr.length<4)arr.push(0);
+    return {arr:arr, gain:gain};
+  }
+  function canMove(){
+    for(var r=0;r<4;r++)for(var c=0;c<4;c++){
+      if(!b[r][c])return true;
+      if(r<3&&b[r][c]===b[r+1][c])return true;
+      if(c<3&&b[r][c]===b[r][c+1])return true;
+    } return false;
+  }
+  window.mv2048 = function(dir){
+    if (gameOverFlag) return;
+    var old = JSON.stringify(b), add = 0;
+    for (var k=0;k<dir;k++) b = b[0].map(function(_,c){ return b.map(function(r){ return r[c]; }).reverse(); });
+    for (var r=0;r<4;r++){
+      var col = b.map(function(row){ return row[r]; });
+      var s = slide(col); add += s.gain;
+      for (var i=0;i<4;i++) b[i][r] = s.arr[i];
+    }
+    for (var k2=0;k2<(4-dir)%4;k2++) b = b[0].map(function(_,c){ return b.map(function(r){ return r[c]; }).reverse(); });
+    if (JSON.stringify(b) !== old) { setScore(curScore + add); addTile(); draw(); if (!canMove()) { showToast('No moves left!'); endGame(); } }
+  };
+  document.onkeydown = function(e){
+    if(e.key==='ArrowUp')window.mv2048(0); if(e.key==='ArrowRight')window.mv2048(1);
+    if(e.key==='ArrowDown')window.mv2048(2); if(e.key==='ArrowLeft')window.mv2048(3);
+  };
+  var sx=0, sy=0, el=$('b2048');
+  el.ontouchstart = function(e){ sx=e.touches[0].clientX; sy=e.touches[0].clientY; };
+  el.ontouchend = function(e){
+    var dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
+    if (Math.abs(dx)>Math.abs(dy)) { if(Math.abs(dx)>18) window.mv2048(dx>0?1:3); }
+    else if (Math.abs(dy)>18) window.mv2048(dy>0?2:0);
+  };
+  addTile(); addTile(); draw();
+}
+
+function runBreaker(){
+  $('stage').innerHTML = '<canvas id="cv" width="320" height="360"></canvas><div style="font-size:12px;color:var(--muted);margin-top:6px;">Drag or move mouse to steer paddle</div>';
+  var cv = $('cv'), ctx = cv.getContext('2d');
+  var pad = {x:120, w:80}, ball = {x:160, y:260, vx:3.2, vy:-3.4}, bricks = [];
+  function resetBricks(){
+    bricks = [];
+    var cols = ['#ff453a','#ff9f0a','#30d158','#0a84ff','#bf5af2'];
+    for(var r=0;r<5;r++) for(var c=0;c<6;c++) bricks.push({x:10+c*51, y:30+r*22, w:46, h:15, c:cols[r], alive:true});
+  }
+  resetBricks();
+  function moveTo(clientX){
+    var rect = cv.getBoundingClientRect();
+    pad.x = Math.max(0, Math.min(320 - pad.w, (clientX - rect.left) * (320 / rect.width) - pad.w / 2));
+  }
+  cv.onmousemove = function(e){ moveTo(e.clientX); };
+  cv.ontouchmove = function(e){ e.preventDefault(); moveTo(e.touches[0].clientX); };
+  function tick(){
+    ball.x += ball.vx; ball.y += ball.vy;
+    if (ball.x<6 || ball.x>314) ball.vx *= -1;
+    if (ball.y<6) ball.vy *= -1;
+    if (ball.y>=332 && ball.y<=346 && ball.x>=pad.x && ball.x<=pad.x+pad.w && ball.vy>0) {
+      ball.vy = -Math.abs(ball.vy);
+      ball.vx = ((ball.x - (pad.x + pad.w/2)) / (pad.w/2)) * 4.5;
+    }
+    if (ball.y > 365) {
+      ctx.fillStyle='rgba(0,0,0,.65)'; ctx.fillRect(0,0,320,360);
+      ctx.fillStyle='#fff'; ctx.font='bold 22px sans-serif'; ctx.textAlign='center'; ctx.fillText('Game Over · ' + curScore, 160, 185);
+      endGame(); return;
+    }
+    var rem = 0;
+    bricks.forEach(function(br){
+      if (!br.alive) return;
+      rem++;
+      if (ball.x>br.x && ball.x<br.x+br.w && ball.y>br.y && ball.y<br.y+br.h) {
+        br.alive = false; ball.vy *= -1; setScore(curScore + 20);
+      }
+    });
+    if (rem === 0) { setScore(curScore + 100); resetBricks(); ball.vy *= 1.08; }
+    ctx.fillStyle='#090c12'; ctx.fillRect(0,0,320,360);
+    bricks.forEach(function(br){ if(br.alive){ ctx.fillStyle=br.c; ctx.fillRect(br.x,br.y,br.w,br.h); }});
+    ctx.fillStyle='#0a84ff'; ctx.fillRect(pad.x, 336, pad.w, 10);
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(ball.x, ball.y, 6, 0, Math.PI*2); ctx.fill();
+    animId = requestAnimationFrame(tick);
+  }
+  animId = requestAnimationFrame(tick);
+}
+
+function runFlappy(){
+  $('stage').innerHTML = '<canvas id="cv" width="320" height="360"></canvas><div style="font-size:12px;color:var(--muted);margin-top:6px;">Tap canvas or press Space to boost</div>';
+  var cv = $('cv'), ctx = cv.getContext('2d');
+  var y = 160, vy = 0, pipes = [{x:320, gap:130}], tickN = 0;
+  function flap(){ if (!gameOverFlag) vy = -5.6; }
+  cv.onmousedown = flap;
+  cv.ontouchstart = function(e){ e.preventDefault(); flap(); };
+  document.onkeydown = function(e){ if (e.code === 'Space' || e.key === 'ArrowUp') { e.preventDefault(); flap(); } };
+  function tick(){
+    tickN++; vy += 0.28; y += vy;
+    if (tickN % 95 === 0) pipes.push({x:320, gap:65 + Math.random()*150, passed:false});
+    ctx.fillStyle='#090c12'; ctx.fillRect(0,0,320,360);
+    var hit = (y < 6 || y > 354);
+    for (var i=pipes.length-1;i>=0;i--){
+      var p = pipes[i]; p.x -= 2.4;
+      ctx.fillStyle='#30d158';
+      ctx.fillRect(p.x, 0, 42, p.gap);
+      ctx.fillRect(p.x, p.gap+105, 42, 360-(p.gap+105));
+      if (!p.passed && p.x + 42 < 70) { p.passed = true; setScore(curScore + 15); }
+      if (70+10 > p.x && 70-10 < p.x+42 && (y-10 < p.gap || y+10 > p.gap+105)) hit = true;
+      if (p.x < -50) pipes.splice(i, 1);
+    }
+    ctx.fillStyle='#ff9f0a'; ctx.beginPath(); ctx.arc(70, y, 11, 0, Math.PI*2); ctx.fill();
+    if (hit) {
+      ctx.fillStyle='rgba(0,0,0,.65)'; ctx.fillRect(0,0,320,360);
+      ctx.fillStyle='#fff'; ctx.font='bold 22px sans-serif'; ctx.textAlign='center'; ctx.fillText('Game Over · ' + curScore, 160, 185);
+      endGame(); return;
+    }
+    animId = requestAnimationFrame(tick);
+  }
+  animId = requestAnimationFrame(tick);
+}
+switchGame(GAME);
+</script></body></html>`;
+
 async function sendDefaultStart(chatId, env, BOT_TOKEN) {
     let botName = 'Nyxx Bot';
     try {
