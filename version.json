@@ -1,7 +1,7 @@
 {
   "version": "5.3.0",
   "released": "2026-11-26",
-  "notes": "🔔 Mini-games improvements, New permission gates, etc.",
+  "notes": "🔔 6 polished games, Sound effects, Inline query support, etc.",
   "worker_url": "https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/worker.js",
   "worker_sha256": "bfbaafe862d8a42464b7dc3666ef8d284bcfe4d51ee3d0e07b85e247bcdc6be5",
   "worker_urls": []
