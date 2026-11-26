@@ -55,16 +55,18 @@
   <li>Inline and reply keyboards built visually with <b>full row &amp; layout control</b> — add buttons to specific rows, move them left/right/up/down, and set <b>per-button colors</b> (blue / green / red) with live preview</li>
   <li>Telegram menu commands and <b>13 featured command types</b> (DM, Buttons, Anonymous Box, Native Poll, Media Library Search, Live Proxy Tester, AI Transform, Temp Self-Destruct Message, Quick Group Moderation, User Inspector, Chat Broadcast, Channel Post, and MCP Agent) — each with per-command <b>Allowed &amp; Disallowed user IDs</b></li>
   <li>Featured Buttons commands support <code>[blue]</code> / <code>[green]</code> / <code>[red]</code> label prefixes and a default button color</li>
-  <li>Granular access control: per-command access levels (everyone, specific users, moderator+, admin), <b>allowed &amp; disallowed user IDs</b>, expiry dates, plus <b>per-message inline button batch restrictions</b></li>
+  <li>Granular access control: per-command access levels (everyone, specific users, moderator+, admin), <b>allowed &amp; disallowed user IDs</b>, <b>chat-type gates</b> (multi-select Private DM / Group / Supergroup / Channel) &amp; <b>exact chat IDs / <code>@usernames</code></b>, expiry dates, plus <b>per-message inline button batch restrictions</b></li>
+  <li><b>Inline query support (<code>@bot</code>)</b> — toggle inline search per command, per featured command, and globally in Permissions (requires <code>/setinline</code> in <code>@BotFather</code>)</li>
   <li><b>Protect content</b> — prevent forwarding and saving on commands, DMs, group announcements and broadcasts</li>
   <li><b>Locked Start menu button</b> — published to Telegram on setup and protected against accidental deletion with a click-countdown guard</li>
 </ul>
 
 <h3>Mini-games</h3>
 <ul>
-  <li><b>4 built-in games</b> — Neon Snake, 2048, Brick Breaker, and Sky Dash, launchable by URL or attached to bot buttons</li>
-  <li><b>Per-chat leaderboards</b> — beating a personal record posts a cooldown-limited announcement to the chat so large groups aren't spammed</li>
-  <li><b>Granular controls</b> — per-game enable switch, access level, and Allowed/Disallowed user ID lists</li>
+  <li><b>6 built-in games</b> — Neon Snake, Corsairs, Brick Breaker, Sky Dash, Neon Blocks, and Minesweeper, launchable by URL, inline query, or bot buttons</li>
+  <li><b>Sound effects &amp; Tap-to-Play</b> — built-in Web Audio API retro synth sounds with a mute toggle, plus a Tap-to-Play overlay so games never auto-start</li>
+  <li><b>3-row Telegram game card &amp; Top 10 leaderboards</b> — Launch, My Score (personal best, chat rank &amp; plays), and Top 10 chat leaderboard, plus cooldown-limited personal-best announcements</li>
+  <li><b>Granular controls</b> — per-game enable switch, inline query toggle, access level, Allowed/Disallowed user IDs, and chat-type / exact-chat gates</li>
 </ul>
 
 <h3>Channels &amp; media library</h3>
@@ -142,6 +144,7 @@
   <li><b>Browser &amp; Recovery tools</b> — reset Service Workers, clear caches/localStorage, and test connectivity directly from Settings or the pre-login screen (no password required)</li>
   <li><b>Username + password login &amp; Accounts manager</b> — create tab-restricted accounts and rename accounts without resetting passwords</li>
   <li><b>Safe concurrent editing</b> — version-checked saves detect conflicts instead of silently overwriting concurrent edits</li>
+  <li><b>Full System Language support (English &amp; Farsi)</b> — switching to فارسی (<code>fa</code>) translates all bot user-facing strings, moderation, flood protection, captcha, Force Join defaults, proxies, mini-games, and passwords</li>
   <li><b>Flexible Retention &amp; storage sync</b> — every cleanup option in <b>System → Retention</b> is optional (<code>0</code> = keep forever), includes mini-game leaderboard scores, and stays synced with Memory and Activity Log</li>
   <li>In-dashboard updates with automatic webhook secret rotation, 15s propagation lock timer, and automatic cache/SW refresh</li>
   <li>Factory reset</li>
@@ -199,6 +202,7 @@ database_id = "&lt;your-d1-database-id&gt;"
 <p><b>Upgrading to 5.0.0?</b> The schema moves to version <b>26</b> (adds <code>chat_subtype</code> and <code>linked_chat_id</code> on <code>groups</code>, <code>muted_until</code> on <code>group_strikes</code>, and <code>global_antiflood_*</code> defaults via non-destructive migrations).</p>
 <p><b>Upgrading to 5.0.2?</b> The schema moves to version <b>27</b> (adds <code>allowed_users</code>, <code>disallowed_users</code>, and <code>extra_config</code> on <code>featured_replies</code> via non-destructive migrations).</p>
 <p><b>Upgrading to 5.0.3?</b> No database migration is required. Browser notifications are optional and configured per browser in the new <b>Notifications</b> tab.</p>
+<p><b>Upgrading to 5.3.0?</b> The schema moves to version <b>29</b> (adds <code>allowed_chat_types</code>, <code>allowed_chat_ids</code>, and <code>inline_enabled</code> on <code>commands</code> and <code>featured_replies</code> via non-destructive migrations). To use inline queries, enable <code>/setinline</code> in <code>@BotFather</code>.</p>
 </blockquote>
 
 <p>If the dashboard ever shows <b>"Database schema is out of date"</b> after an update, open <b>Settings → Schema health → Run auto-heal</b> — it fixes missing tables, columns, indexes and settings without touching live data.</p>

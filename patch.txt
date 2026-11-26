@@ -1,123 +1,41 @@
 @@@@ SEARCH
-# Nyxx v5.1.0
+  <li>Granular access control: per-command access levels (everyone, specific users, moderator+, admin), <b>allowed &amp; disallowed user IDs</b>, expiry dates, plus <b>per-message inline button batch restrictions</b></li>
+  <li><b>Protect content</b> — prevent forwarding and saving on commands, DMs, group announcements and broadcasts</li>
+  <li><b>Locked Start menu button</b> — published to Telegram on setup and protected against accidental deletion with a click-countdown guard</li>
+</ul>
 
-Group chats are the focus of this release. It adds a full group moderation suite, in-panel mini-games, multi-account login and Web Push notifications.
-
-## ✨ Highlights
-
-- 🛡️ **Group management suite**: captcha, warns, slow mode, media locks, night mode and more
-- 🎮 **Mini-games**: web-app style games with per-chat leaderboards and permission switches
-- 👥 **Username + password login** with an **Accounts manager** and per-tab access
-- 🔔 **Web Push notifications**, delivered even when the dashboard is closed
-
-## 🛡️ Group management
-
-- **Media locks**: block files, photos, voice, video, stickers, GIFs, polls, mentions and channel posts. A "lock all for non-admins" switch is also available.
-- **Join and leave**: welcome and goodbye messages with optional auto-delete, plus group rules (also sendable in private).
-- **Captcha for new members** with configurable mode, timeout and fail action.
-- **Warn system** with a warn limit and automatic action (mute and so on).
-- **Slow mode**, **night mode** (scheduled hours, optional media-only) and **anti-raid** protection.
-- **Filters**: link filter, anti-forward, word blacklist with a configurable action, custom filters and a maximum message length.
-- **Housekeeping**: auto-delete service messages, anti-bot and member tracking.
-- **Per-group permission switches** for commands, featured commands, AI chat, callbacks, MCP and rules. Each has an allowed/disallowed ID list.
-
-## 🎮 Mini-games
-
-- New **Mini-Games** page with four games: Neon Snake, 2048, Brick Breaker and Sky Dash.
-- **Per-chat leaderboards**. When a player beats their own record, a short message with the new top score is sent to the chat. It is cooldown-limited so large groups aren't spammed.
-- Each game has an **enable switch**, an access level and an **allowed/disallowed ID list**, like the other permission switches.
-- Games can be attached to buttons and launched by URL.
-
-## 👥 Accounts and login
-
-- Login now uses **username + password** instead of password only.
-- New **Accounts manager** in Settings. The owner can create accounts limited to specific tabs and rename accounts without having to reset the password.
-- **Safe concurrent editing**: saves are version-checked, so two people editing the same panel get a conflict message instead of silently overwriting each other.
-
-## 🔔 Push notifications
-
-- Web Push with VAPID keys, which are auto-generated on first use.
-- Subscribe or unsubscribe from the dashboard, with an optional message-preview toggle and a test button.
-
-## 🧹 Retention & Storage Sync
-
-- **Every cleanup option in Retention is now optional** (`0` = keep forever / skip), so you can enable cleanup for only the specific tables you want.
-- **Mini-Game Leaderboard Retention**: added `Mini-game leaderboard scores` cleanup to **System → Retention** (optional, `0` = keep forever by default) with a storage hint in **Content → Mini-Games**.
-- **Synced retention**: **System → Retention** now stays in sync with **Content → Memory** (direct messages auto-remove) and **System → Activity Log** (log auto-cleanup).
-
-## 🧩 Panel and bot improvements
-
-- **Start menu button**: published to Telegram when the panel is set up. It is locked, and clicking delete shows an "N more clicks until you delete this" countdown that resets after 5 seconds. Future locked entries use the same flag.
-- **Featured command cards**: success, failed and hint previews are clamped to 2 lines so the UI stays tidy.
-- **Settings consistency**: global and per-group anti-flood now follow a single structure. A group can be set to `inherit`, `on` or `off`.
-- **Compact Support KB**: updated the built-in Nyxx support knowledge base for v5.1.0 and trimmed token size and support-chat history so free models on Groq and OpenRouter stay well within rate and context limits.
-- **Scale**: throttled upserts and in-memory caches for large groups.
-- **Mobile**: the new pages and cards are responsive.
-
-## 🐛 Fixes
-
-- Fixed owner username updates in Settings not persisting or requiring a password when only changing the username.
-- Fixed a duplicated block of group-moderation functions that prevented the worker from loading as a module.
-- Fixed an undefined variable (`privateJwk`) in VAPID key generation that would have broken push notifications.
-
-## ⬆️ Upgrading from v5.0.3
-
-1. Deploy the new `worker.js`.
-2. Log in with username `admin` and your existing password.
-3. Open **Messaging → Notifications** to enable Web Push.
-4. Review the new group options in each group's settings. Features such as captcha, slow mode and night mode are **off by default**.
-
-**Full changelog**: https://github.com/mahan07dev/nyxx/compare/v5.0.3...v5.1.0
+<h3>Mini-games</h3>
+<ul>
+  <li><b>4 built-in games</b> — Neon Snake, 2048, Brick Breaker, and Sky Dash, launchable by URL or attached to bot buttons</li>
+  <li><b>Per-chat leaderboards</b> — beating a personal record posts a cooldown-limited announcement to the chat so large groups aren't spammed</li>
+  <li><b>Granular controls</b> — per-game enable switch, access level, and Allowed/Disallowed user ID lists</li>
+</ul>
 @@@@ SPLIT
-# Nyxx v5.3.0
+  <li>Granular access control: per-command access levels (everyone, specific users, moderator+, admin), <b>allowed &amp; disallowed user IDs</b>, <b>chat-type gates</b> (multi-select Private DM / Group / Supergroup / Channel) &amp; <b>exact chat IDs / <code>@usernames</code></b>, expiry dates, plus <b>per-message inline button batch restrictions</b></li>
+  <li><b>Inline query support (<code>@bot</code>)</b> — toggle inline search per command, per featured command, and globally in Permissions (requires <code>/setinline</code> in <code>@BotFather</code>)</li>
+  <li><b>Protect content</b> — prevent forwarding and saving on commands, DMs, group announcements and broadcasts</li>
+  <li><b>Locked Start menu button</b> — published to Telegram on setup and protected against accidental deletion with a click-countdown guard</li>
+</ul>
 
-This release overhauls **Mini-Games**, adds **inline query (`@bot`) support**, introduces **chat-type & exact-chat permission gates**, and expands **Farsi system language** coverage across the entire bot.
-
-## ✨ Highlights
-
-- 🎮 **Mini-Games overhaul**: 6 polished games (including **Corsairs**, **Neon Blocks**, and **Minesweeper**), Web Audio sound effects, Tap-to-Play gates, and synced leaderboards
-- 🔍 **Inline query support**: toggle `@yourbot` inline search per command, per featured command, per game, and globally in Permissions
-- 🛡️ **Chat-type & exact-chat gates**: restrict commands, featured commands, global permissions, and games to specific chat types (Private DM, Group, Supergroup, Channel) and/or exact chat IDs / `@usernames`
-- 🌐 **Full Farsi (`fa`) system language**: translated all remaining hardcoded bot messages across moderation, flood protection, captcha, Force Join, proxies, mini-games, and passwords
-
-## 🎮 Mini-Games
-
-- **6 games in the Game Hub**:
-  - 🐍 **Neon Snake**
-  - 🏴‍☠️ **Corsairs** *(new — replaces 2048)*: dodge cannonballs and collect gold to advance levels
-  - 🧱 **Brick Breaker**
-  - 🚀 **Sky Dash**
-  - 🧩 **Neon Blocks** *(new)*: falling block puzzle with rotation, hard drop, and line combos
-  - 💣 **Minesweeper** *(new)*: 9×9 logic puzzle with flag mode and timer-based bonus scoring
-- **Sound effects**: built-in Web Audio API retro synth sounds with a **🔊 / 🔇 mute toggle** in the HUD.
-- **No more auto-start**: added a **Tap to Play** overlay on action games so games never start or end before you click.
-- **Responsive PC + Mobile UI**: cleaner 2-column desktop / stacked mobile layout, D-pad/touch controls, and live Top 10 leaderboard sidebar.
-- **3-row Telegram game card**: when a game is ready for a user, buttons are arranged in 3 clean rows: **Launch** (row 1), **🎯 My Score** (row 2, shows personal best, chat rank, and play count), and **🏆 Leaderboard** (row 3, Top 10 in the current chat).
-- **Leaderboard sync fix**: hub launch signatures now work across all games when switching tabs inside the Game Hub, and personal bests sync directly with the server.
-
-## 🔍 Inline Query Support
-
-- **Per-command & per-item switches**: enable **Available in inline queries (`@bot`)** on individual **Commands**, **Featured Commands**, and **Mini-Games**.
-- **Global permission gate**: added **Inline queries (`@bot ...`)** to **System → Permissions** (`Everyone` / `Moderator+` / `Admin only` + user & chat gates).
-- Includes dashboard hints reminding you to enable Inline Mode (`/setinline`) in **@BotFather**.
-
-## 🛡️ Chat-Type & Exact-Chat Permission Gates
-
-- Multi-select **Allowed chat types** (`Private DM`, `Group`, `Supergroup`, `Channel`) and optional **Exact allowed chat IDs / `@usernames`** added to:
-  - **Commands → Access**
-  - **Menu & Featured** editor
-  - **System → Permissions** (under User & Chat gates)
-  - **Content → Mini-Games** (per-game User & Chat gates)
-
-## 🌐 System Language (Farsi)
-
-- Switching **System → Settings → System language** to **فارسی (`fa`)** now translates all bot user-facing strings, including flood cooldowns/bans, group moderation (`/warn`, `/mute`, `/kick`, `/ban`, `/lock`), captcha prompts, Force Join defaults, proxy checker alerts, command password prompts, and mini-game messages.
-
-## ⬆️ Upgrading from v5.1.0
-
-1. Deploy the new `worker.js` (or update via **System → Update**).
-2. The database schema auto-migrates to v29 (`allowed_chat_types`, `allowed_chat_ids`, `inline_enabled`).
-3. If you want to use inline queries, enable `/setinline` in **@BotFather** and toggle inline support on the commands or games you want to expose.
-
-**Full changelog**: https://github.com/mahan07dev/nyxx/compare/v5.1.0...v5.3.0
+<h3>Mini-games</h3>
+<ul>
+  <li><b>6 built-in games</b> — Neon Snake, Corsairs, Brick Breaker, Sky Dash, Neon Blocks, and Minesweeper, launchable by URL, inline query, or bot buttons</li>
+  <li><b>Sound effects &amp; Tap-to-Play</b> — built-in Web Audio API retro synth sounds with a mute toggle, plus a Tap-to-Play overlay so games never auto-start</li>
+  <li><b>3-row Telegram game card &amp; Top 10 leaderboards</b> — Launch, My Score (personal best, chat rank &amp; plays), and Top 10 chat leaderboard, plus cooldown-limited personal-best announcements</li>
+  <li><b>Granular controls</b> — per-game enable switch, inline query toggle, access level, Allowed/Disallowed user IDs, and chat-type / exact-chat gates</li>
+</ul>
+@@@@ END
+@@@@ SEARCH
+  <li><b>Flexible Retention &amp; storage sync</b> — every cleanup option in <b>System → Retention</b> is optional (<code>0</code> = keep forever), includes mini-game leaderboard scores, and stays synced with Memory and Activity Log</li>
+@@@@ SPLIT
+  <li><b>Full System Language support (English &amp; Farsi)</b> — switching to فارسی (<code>fa</code>) translates all bot user-facing strings, moderation, flood protection, captcha, Force Join defaults, proxies, mini-games, and passwords</li>
+  <li><b>Flexible Retention &amp; storage sync</b> — every cleanup option in <b>System → Retention</b> is optional (<code>0</code> = keep forever), includes mini-game leaderboard scores, and stays synced with Memory and Activity Log</li>
+@@@@ END
+@@@@ SEARCH
+<p><b>Upgrading to 5.0.3?</b> No database migration is required. Browser notifications are optional and configured per browser in the new <b>Notifications</b> tab.</p>
+</blockquote>
+@@@@ SPLIT
+<p><b>Upgrading to 5.0.3?</b> No database migration is required. Browser notifications are optional and configured per browser in the new <b>Notifications</b> tab.</p>
+<p><b>Upgrading to 5.3.0?</b> The schema moves to version <b>29</b> (adds <code>allowed_chat_types</code>, <code>allowed_chat_ids</code>, and <code>inline_enabled</code> on <code>commands</code> and <code>featured_replies</code> via non-destructive migrations). To use inline queries, enable <code>/setinline</code> in <code>@BotFather</code>.</p>
+</blockquote>
 @@@@ END

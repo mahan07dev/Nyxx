@@ -1,7 +1,7 @@
 # python apply.py worker.js patch.txt
 import re, sys
 
-target = sys.argv[1] if len(sys.argv) > 1 else "release_notes.txt"
+target = sys.argv[1] if len(sys.argv) > 1 else "README.md"
 patch = sys.argv[2] if len(sys.argv) > 2 else "patch.txt"
 
 raw = open(target, encoding="utf-8", newline="").read()
