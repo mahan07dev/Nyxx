@@ -1,37 +1,35 @@
 # Contributing to Nyxx
 
-Thanks for your interest in Nyxx! Whether you're fixing a typo, reporting a bug, or opening a full pull request, every contribution helps.
+Thanks for your interest in Nyxx!
 
 ---
 
-## 💬 Want to contribute or cooperate?
+## 💬 Ideas, Feedback & Forking
 
-For contributions, collaboration, or partnerships, message me directly on Telegram:
+I don't accept direct cooperation or pull requests on this project. However, if you have any **ideas, suggestions, or bug reports**, feel free to share them with me in any way you prefer:
 
-### 👉 [@nyxx_official_channel](https://t.me/nyxx_official_channel)
+### 👉 [@nyxx_official_channel](https://t.me/nyxx_official_channel) · [GitHub Issues](https://github.com/Mahan07dev/Nyxx/issues)
 
-Ideas, bugs, feature proposals, partnership inquiries — all welcome. I read every message.
+If you want to work on the project, modify it, or build your own features, you are welcome to **fork the repository** and work independently on your own fork under the [MIT License](LICENSE).
 
 ---
 
 ## Ways to help
 
 - 🐛 **Report bugs** — open an issue with steps to reproduce
-- 💡 **Suggest features** — describe what and why
-- 📖 **Improve docs** — fix typos, clarify confusing sections
+- 💡 **Suggest features** — share your ideas on Telegram or GitHub Issues
 - 🧪 **Test releases** — try new versions and report breakage
-- 🔧 **Open pull requests** — fix bugs, add features, refactor
 - 📣 **Share the project** — star the repo, tell a friend
-- 🤝 **Cooperate** — reach out on Telegram for partnerships
+- 🍴 **Fork & build** — fork the repository to work on your own version
 
 ---
 
 ## Before you start
 
-- **Small changes** (typos, minor bugs, docs) — open a PR directly
-- **Larger changes** (new features, refactors) — open an issue first to discuss
+- **Ideas & bugs** — open an issue or message me on Telegram
+- **Code changes** — fork the repository and work on your own fork (direct PRs / cooperation are not accepted)
 
-Please read the [README](README.md) and skim the code before opening a PR.
+Please read the [README](README.md) if you want to understand how the project is structured.
 
 ---
 
@@ -110,6 +108,11 @@ Manual testing is the current standard. When testing your changes, verify:
 - **Per-message Contact tracking** — Inbox "Mark read" and admin DM notification buttons (Reply / Dismiss / Mark as seen) mark only the targeted message as read and update the topbar Inbox pill
 - **Featured commands suite & ACL** — choosing any of the 13 featured command types via the picker modal, filtering/searching, per-command Allowed/Disallowed user IDs, and executing Polls, Media Search (`/get`), Proxy Tester (`/checkproxy`), Quick Moderation (`/warn`/`/mute`/`/ban`), User Inspector (`/whois`), Anonymous Box (`/anon`), Chat Broadcast (`/announce`), Channel Post (`/post`), AI Transform (`/translate`/`/tldr`), and Temp Messages (`/temp`)
 - **OAuth refresh** (if touching `proxy.js` or the update flow) — `/oauth/refresh` issues a new access token when a refresh token is present, and `/api/oauth/status` reports the correct connection state
+- **Group management suite** — media locks, welcome/goodbye & rules, captcha, warns, slow mode, night mode, anti-raid, word blacklist / custom filters, and `inherit`/`on`/`off` anti-flood consistency
+- **Mini-games** — Neon Snake, 2048, Brick Breaker, and Sky Dash launch cleanly, enforce per-game access/allowed-disallowed lists, and post cooldown-limited chat leaderboard updates
+- **Accounts & concurrent editing** — username + password login, Accounts manager (tab-scoped accounts, renaming without password reset), and version-checked save conflict detection
+- **Web Push notifications** — VAPID key auto-generation, subscribe/unsubscribe, preview toggle, and test notifications
+- **Retention & locked Start button** — optional `0` retention settings, mini-game leaderboard retention, Memory/Activity Log sync, and click-countdown guard on the locked Start menu button
 
 ---
 
@@ -149,17 +152,13 @@ oauth: add POST /oauth/refresh with offline_access fallback
 
 ---
 
-## Pull request process
+## Forking the project
 
-1. Fork the repo and create a branch: `git checkout -b feature/your-feature`
-2. Make focused changes — keep the diff easy to review
-3. Test everything affected (dashboard, bot, MCP, installer, channels, media library)
-4. Update the README if your change affects user-facing behaviour
-5. Push to your fork and open a PR against `main`
-6. In the PR description, include what, why, and how you tested
-7. Be responsive to review feedback
+Direct cooperation and pull requests are not accepted on this repository. If you'd like to work on Nyxx yourself:
 
-Small, focused PRs are merged faster than large ones.
+1. Fork the repo on GitHub
+2. Make whatever changes or experiments you want on your fork
+3. Keep the [MIT License](LICENSE) notice intact when distributing
 
 ---
 

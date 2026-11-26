@@ -57,6 +57,14 @@
   <li>Featured Buttons commands support <code>[blue]</code> / <code>[green]</code> / <code>[red]</code> label prefixes and a default button color</li>
   <li>Granular access control: per-command access levels (everyone, specific users, moderator+, admin), <b>allowed &amp; disallowed user IDs</b>, expiry dates, plus <b>per-message inline button batch restrictions</b></li>
   <li><b>Protect content</b> — prevent forwarding and saving on commands, DMs, group announcements and broadcasts</li>
+  <li><b>Locked Start menu button</b> — published to Telegram on setup and protected against accidental deletion with a click-countdown guard</li>
+</ul>
+
+<h3>Mini-games</h3>
+<ul>
+  <li><b>4 built-in games</b> — Neon Snake, 2048, Brick Breaker, and Sky Dash, launchable by URL or attached to bot buttons</li>
+  <li><b>Per-chat leaderboards</b> — beating a personal record posts a cooldown-limited announcement to the chat so large groups aren't spammed</li>
+  <li><b>Granular controls</b> — per-game enable switch, access level, and Allowed/Disallowed user ID lists</li>
 </ul>
 
 <h3>Channels &amp; media library</h3>
@@ -83,11 +91,11 @@
   <li>Block users entirely or only from the AI</li>
   <li>Per-user direct messages (send / edit / delete with full media) and AI memory (view / edit / delete)</li>
   <li><b>Contact inbox</b> — collects messages from DM featured commands, with topbar &amp; sidebar unread indicators, per-message read tracking, 3-button admin DM notifications (Reply / Dismiss / Mark as seen), search, and stats</li>
-  <li><b>Browser notifications</b> — opt-in service-worker alerts for new contact messages, with privacy-preserving previews off by default and click-through to the Inbox; polling works while the dashboard is open (not web push)</li>
+  <li><b>Web Push notifications</b> — VAPID-authenticated push alerts delivered even when the dashboard is closed, with subscribe/unsubscribe, optional message-preview toggle, and a test button</li>
   <li><b>Contact automation</b> — admin notifications, auto-reply, away mode, and per-user rate limits</li>
   <li><b>Group subtypes</b> — detects regular groups, supergroups, <b>Forums</b> (replies stay inside active topics via <code>message_thread_id</code>), <b>Comments / Discussion</b> (auto-comment on new channel posts &amp; exempt linked forwards), and <b>Direct Messages Groups</b> (admin alerts &amp; auto-reply)</li>
-  <li>Per-group settings: AI mode, AI trigger (mention / reply / either / both / every message), memory, welcome, rules, anti-flood, link filter, service-message cleanup, member tracking</li>
-  <li><b>Anti-flood escalation (per-group &amp; global)</b> — group anti-flood plus <b>Global Bot Anti-Flood</b> in Settings (mute/cooldown → kick → ban escalation across private chats and groups)</li>
+  <li><b>Group management suite</b> — media locks (files, photos, voice, video, stickers, GIFs, polls, mentions, channel posts, or lock all for non-admins), welcome/goodbye with optional auto-delete, private-sendable rules, captcha, warn system with auto-action, slow mode, scheduled night mode, anti-raid, link/forward/word-blacklist/custom filters, max message length, anti-bot, and service-message cleanup</li>
+  <li><b>Anti-flood escalation (per-group &amp; global)</b> — unified global and per-group structure (<code>inherit</code>, <code>on</code>, or <code>off</code> per group) with mute/cooldown → kick → ban escalation across private chats and groups</li>
   <li>Per-group &amp; global permission overrides for commands, featured commands, AI, callbacks, rules, and MCP — each with multi-line <b>Allowed &amp; Disallowed user IDs</b></li>
   <li>Broadcast with visual <b>Audience Builder</b> (base audience pills + include/exclude IDs + custom picker), any media type, keyboards, delivery pacing, and newest-first history</li>
   <li>Automatic unreachable-user detection when Telegram reports blocked / deactivated users</li>
@@ -132,6 +140,9 @@
   <li><b>Media storage</b> setting for upload hosting</li>
   <li><b>Bot Profile</b> — live avatar preview, capability badges, Default Chat Menu Button (Commands / Default / Web App), and Suggested Default Admin Rights for Groups &amp; Channels</li>
   <li><b>Browser &amp; Recovery tools</b> — reset Service Workers, clear caches/localStorage, and test connectivity directly from Settings or the pre-login screen (no password required)</li>
+  <li><b>Username + password login &amp; Accounts manager</b> — create tab-restricted accounts and rename accounts without resetting passwords</li>
+  <li><b>Safe concurrent editing</b> — version-checked saves detect conflicts instead of silently overwriting concurrent edits</li>
+  <li><b>Flexible Retention &amp; storage sync</b> — every cleanup option in <b>System → Retention</b> is optional (<code>0</code> = keep forever), includes mini-game leaderboard scores, and stays synced with Memory and Activity Log</li>
   <li>In-dashboard updates with automatic webhook secret rotation, 15s propagation lock timer, and automatic cache/SW refresh</li>
   <li>Factory reset</li>
 </ul>
@@ -337,11 +348,11 @@ database_id = "&lt;your-d1-database-id&gt;"
 
 <h2>Contributing</h2>
 
-<p>Contributions are welcome — bug reports, feature suggestions, documentation fixes, and pull requests.</p>
+<p>I don't accept direct cooperation or pull requests on this project, but if you have any ideas, feedback, or bug reports, feel free to share them with me in any way — such as <a href="https://t.me/nyxx_official_channel">@nyxx_official_channel</a> on Telegram or <a href="https://github.com/Mahan07dev/Nyxx/issues">GitHub Issues</a>.</p>
 
-<p><b>Want to contribute or cooperate directly?</b> Message me on Telegram: <a href="https://t.me/nyxx_official_channel">@nyxx_official_channel</a>. Whether it's an idea, a bug, or a partnership, I read every message.</p>
+<p>If you'd like to work on the project yourself, you're welcome to <b>fork the repository</b> and build on your own fork under the MIT License.</p>
 
-<p>See <a href="CONTRIBUTING.md">CONTRIBUTING.md</a> for guidelines.</p>
+<p>See <a href="CONTRIBUTING.md">CONTRIBUTING.md</a> for details.</p>
 
 <hr>
 
