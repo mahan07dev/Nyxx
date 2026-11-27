@@ -26407,6 +26407,7 @@ const SYSTEM_STRINGS = {
         games_unknown: 'Unknown game.',
         games_launch: (n) => `🎮 Launch ${n}`,
         games_my_score: '🎯 My Score',
+        games_back: '⬅️ Back',
         games_leaderboard: '🏆 Leaderboard',
         games_ready: (g, u) => `🎮 <b>${g}</b> is ready for <b>${u}</b>:`,
         games_lb_title: (g) => `🏆 <b>${g} — Top 10 Leaderboard</b>`,
@@ -26549,6 +26550,7 @@ Guidelines:
         games_unknown: 'بازی ناشناخته.',
         games_launch: (n) => `🎮 شروع ${n}`,
         games_my_score: '🎯 امتیاز من',
+        games_back: '⬅️ بازگشت',
         games_leaderboard: '🏆 جدول امتیازات',
         games_ready: (g, u) => `🎮 بازی <b>${g}</b> برای <b>${u}</b> آماده است:`,
         games_lb_title: (g) => `🏆 <b>جدول ۱۰ نفر برتر — ${g}</b>`,
@@ -27691,7 +27693,7 @@ async function processTelegramUpdate(update, env, ctx) {
                 await handleExtendedFeaturedCallback(env, BOT_TOKEN, chatId, cb, data);
                 return;
             }
-            if (data && (data.startsWith('GAME:') || data.startsWith('GAMELB:') || data.startsWith('GAMEMY:'))) {
+            if (data && (data.startsWith('GAME:') || data.startsWith('GAMELB:') || data.startsWith('GAMEMY:') || data.startsWith('GAMEHUB:'))) {
                 await handleGameCallback(env, BOT_TOKEN, chatId, cb, data);
                 return;
             }
@@ -28198,6 +28200,22 @@ async function handleGameCallback(env, BOT_TOKEN, chatId, cb, data) {
     const userId = cb.from && cb.from.id;
     const cfg = await getGamesConfig(env.DB);
     const shouldEdit = !!(cfg.edit_message && parseEditTriggers(cfg.edit_triggers).has('inline') && cb.message && cb.message.message_id);
+        const backRow = shouldEdit ? [[{ text: L.games_back, callback_data: 'GAMEHUB:' }]] : [];
+    if (data.startsWith('GAMEHUB:')) {
+        const ct = cb.message && cb.message.chat;
+        const hubRows = [];
+        for (const g of Object.values(GAME_CATALOG)) {
+            const gc = (cfg.games && cfg.games[g.id]) || { enabled: true };
+            if (gc.enabled === false) continue;
+            if (!checkChatGate(ct && ct.type, chatId, (ct && ct.username) || '', gc.chat_types, gc.chat_ids)) continue;
+            hubRows.push([{ text: '🎮 ' + g.name, callback_data: 'GAME:' + g.id, style: 'primary' }, { text: L.games_leaderboard, callback_data: 'GAMELB:' + g.id }]);
+        }
+        await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
+        if (cb.message && cb.message.message_id) {
+            await tgCall(BOT_TOKEN, 'editMessageText', { chat_id: chatId, message_id: cb.message.message_id, text: hubRows.length ? L.games_hub_title : L.games_none, parse_mode: 'HTML', reply_markup: { inline_keyboard: hubRows } }, { retry: false });
+        }
+        return;
+    }
 
     if (data.startsWith('GAMEMY:')) {
         const gid = data.slice(7);
@@ -28230,7 +28248,7 @@ async function handleGameCallback(env, BOT_TOKEN, chatId, cb, data) {
         const text = list.length
             ? (L.games_lb_title(escapeTelegramHTML(g.name)) + '\n\n' + list.map((r, i) => `${medals[i] || (i + 1) + '.'} <b>${escapeTelegramHTML(cleanUserDisplayName(r.user_name, 32) || 'Player')}</b> — <code>${Number(r.best_score || 0).toLocaleString()}</code>`).join('\n'))
             : L.games_lb_empty(escapeTelegramHTML(g.name));
-        const backKb = { inline_keyboard: [[{ text: '🎮 ' + g.name, callback_data: 'GAME:' + gid, style: 'primary' }]] };
+        const backKb = { inline_keyboard: [[{ text: '🎮 ' + g.name, callback_data: 'GAME:' + gid, style: 'primary' }]].concat(backRow) };
         if (shouldEdit) {
             const ed = await tgCall(BOT_TOKEN, 'editMessageText', { chat_id: chatId, message_id: cb.message.message_id, text, parse_mode: 'HTML', reply_markup: backKb }, { retry: false });
             if (ed && ed.ok) return;
@@ -28262,7 +28280,8 @@ async function handleGameCallback(env, BOT_TOKEN, chatId, cb, data) {
         inline_keyboard: [
             [btn],
             [{ text: L.games_my_score, callback_data: 'GAMEMY:' + gid }],
-            [{ text: L.games_leaderboard, callback_data: 'GAMELB:' + gid }]
+            [{ text: L.games_leaderboard, callback_data: 'GAMELB:' + gid }],
+            ...backRow
         ]
     };
     if (shouldEdit) {
@@ -28319,8 +28338,9 @@ async function handleGameScoreSubmit(request, env, ctx) {
                     if (token) {
                         await getSystemLanguageFromDb(env);
                         const isSilent = cfg.announce_mode === 'silent';
-                        const safeUser = escapeTelegramHTML(cleanUserDisplayName(userName, 32) || 'Player');
-                        const safeGame = escapeTelegramHTML(GAME_CATALOG[gameId].name);
+                        const escStrict = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                        const safeUser = escStrict(cleanUserDisplayName(userName, 32) || 'Player');
+                        const safeGame = escStrict(GAME_CATALOG[gameId].name);
                         const GS = sysStr('games');
                         const scoreTxt = Number(score).toLocaleString('en-US');
                         const msgText = isSilent
@@ -28338,6 +28358,7 @@ async function handleGameScoreSubmit(request, env, ctx) {
                                     disable_notification: isSilent, disable_web_page_preview: true
                                 }, { retry: false });
                             }
+                            if (!r || !r.ok) console.error('Game announce failed:', JSON.stringify(r));
                             return r;
                         })();
                         if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(announceP);
