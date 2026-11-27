@@ -1,41 +1,80 @@
 @@@@ SEARCH
-  <li>Granular access control: per-command access levels (everyone, specific users, moderator+, admin), <b>allowed &amp; disallowed user IDs</b>, expiry dates, plus <b>per-message inline button batch restrictions</b></li>
-  <li><b>Protect content</b> — prevent forwarding and saving on commands, DMs, group announcements and broadcasts</li>
-  <li><b>Locked Start menu button</b> — published to Telegram on setup and protected against accidental deletion with a click-countdown guard</li>
-</ul>
-
-<h3>Mini-games</h3>
-<ul>
-  <li><b>4 built-in games</b> — Neon Snake, 2048, Brick Breaker, and Sky Dash, launchable by URL or attached to bot buttons</li>
-  <li><b>Per-chat leaderboards</b> — beating a personal record posts a cooldown-limited announcement to the chat so large groups aren't spammed</li>
-  <li><b>Granular controls</b> — per-game enable switch, access level, and Allowed/Disallowed user ID lists</li>
-</ul>
+                            <select class="input" id="bi-menu-type" onchange="show($('bi-menu-webapp-wrap'),this.value==='web_app')">
 @@@@ SPLIT
-  <li>Granular access control: per-command access levels (everyone, specific users, moderator+, admin), <b>allowed &amp; disallowed user IDs</b>, <b>chat-type gates</b> (multi-select Private DM / Group / Supergroup / Channel) &amp; <b>exact chat IDs / <code>@usernames</code></b>, expiry dates, plus <b>per-message inline button batch restrictions</b></li>
-  <li><b>Inline query support (<code>@bot</code>)</b> — toggle inline search per command, per featured command, and globally in Permissions (requires <code>/setinline</code> in <code>@BotFather</code>)</li>
-  <li><b>Protect content</b> — prevent forwarding and saving on commands, DMs, group announcements and broadcasts</li>
-  <li><b>Locked Start menu button</b> — published to Telegram on setup and protected against accidental deletion with a click-countdown guard</li>
-</ul>
-
-<h3>Mini-games</h3>
-<ul>
-  <li><b>6 built-in games</b> — Neon Snake, Corsairs, Brick Breaker, Sky Dash, Neon Blocks, and Minesweeper, launchable by URL, inline query, or bot buttons</li>
-  <li><b>Sound effects &amp; Tap-to-Play</b> — built-in Web Audio API retro synth sounds with a mute toggle, plus a Tap-to-Play overlay so games never auto-start</li>
-  <li><b>3-row Telegram game card &amp; Top 10 leaderboards</b> — Launch, My Score (personal best, chat rank &amp; plays), and Top 10 chat leaderboard, plus cooldown-limited personal-best announcements</li>
-  <li><b>Granular controls</b> — per-game enable switch, inline query toggle, access level, Allowed/Disallowed user IDs, and chat-type / exact-chat gates</li>
-</ul>
+                            <select class="input" id="bi-menu-type" onchange="show($('bi-menu-webapp-wrap'),this.value==='web_app');show($('bi-webapp-host-card'),this.value==='web_app')">
 @@@@ END
 @@@@ SEARCH
-  <li><b>Flexible Retention &amp; storage sync</b> — every cleanup option in <b>System → Retention</b> is optional (<code>0</code> = keep forever), includes mini-game leaderboard scores, and stays synced with Memory and Activity Log</li>
+        const commands = await env.DB.prepare('SELECT command, parent, response_type, content, media_url, file_id, media_meta, media_items_json, protect_content, edit_message, edit_triggers, inline_access_level, inline_allowed_users, inline_disallowed_users, inline_auto_back, inline_back_label, buttons_json, is_admin_only, access_level, allowed_users, disallowed_users, force_join_mode, cmd_password, password_prompt, password_dismiss_label, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, auto_back, back_label FROM commands ORDER BY order_idx, command').all();
 @@@@ SPLIT
-  <li><b>Full System Language support (English &amp; Farsi)</b> — switching to فارسی (<code>fa</code>) translates all bot user-facing strings, moderation, flood protection, captcha, Force Join defaults, proxies, mini-games, and passwords</li>
-  <li><b>Flexible Retention &amp; storage sync</b> — every cleanup option in <b>System → Retention</b> is optional (<code>0</code> = keep forever), includes mini-game leaderboard scores, and stays synced with Memory and Activity Log</li>
+        const commands = await env.DB.prepare('SELECT command, parent, response_type, content, media_url, file_id, media_meta, media_items_json, protect_content, inline_enabled, edit_message, edit_triggers, inline_access_level, inline_allowed_users, inline_disallowed_users, inline_auto_back, inline_back_label, buttons_json, is_admin_only, access_level, allowed_users, disallowed_users, allowed_chat_types, allowed_chat_ids, force_join_mode, cmd_password, password_prompt, password_dismiss_label, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, auto_back, back_label FROM commands ORDER BY order_idx, command').all();
 @@@@ END
 @@@@ SEARCH
-<p><b>Upgrading to 5.0.3?</b> No database migration is required. Browser notifications are optional and configured per browser in the new <b>Notifications</b> tab.</p>
-</blockquote>
+        const stmts = valid.map((c, i) => {
+            const access = effectiveCommandAccess(c);
+            return env.DB.prepare(`
+            INSERT INTO commands (command, parent, response_type, content, media_url, file_id, media_meta, media_items_json, protect_content, edit_message, edit_triggers, inline_access_level, inline_allowed_users, inline_disallowed_users, inline_auto_back, inline_back_label, buttons_json, is_admin_only, access_level, allowed_users, disallowed_users, force_join_mode, cmd_password, password_prompt, password_dismiss_label, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, auto_back, back_label, order_idx)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(command) DO UPDATE SET
+                parent = excluded.parent, response_type = excluded.response_type, content = excluded.content,
+                media_url = excluded.media_url, file_id = excluded.file_id, media_meta = excluded.media_meta,
+                media_items_json = excluded.media_items_json, protect_content = excluded.protect_content,
+                edit_message = excluded.edit_message, edit_triggers = excluded.edit_triggers,
+                inline_access_level = excluded.inline_access_level, inline_allowed_users = excluded.inline_allowed_users, inline_disallowed_users = excluded.inline_disallowed_users,
+                inline_auto_back = excluded.inline_auto_back, inline_back_label = excluded.inline_back_label,
+                buttons_json = excluded.buttons_json,
+                is_admin_only = excluded.is_admin_only, access_level = excluded.access_level,
+                allowed_users = excluded.allowed_users, disallowed_users = excluded.disallowed_users,
+                force_join_mode = excluded.force_join_mode, cmd_password = excluded.cmd_password, password_prompt = excluded.password_prompt, password_dismiss_label = excluded.password_dismiss_label,
+                expires_at = excluded.expires_at, enabled = excluded.enabled,
+                show_reply_keyboard = excluded.show_reply_keyboard, reply_keyboard_json = excluded.reply_keyboard_json,
+                auto_back = excluded.auto_back, back_label = excluded.back_label
+        `).bind(c.command, c.parent || null, c.response_type || 'text', c.content || '', c.media_url || '', c.file_id || '', c.media_meta || '', c.media_items_json || '', c.protect_content ? 1 : 0, c.edit_message ? 1 : 0, c.edit_triggers || 'inline,reply,command', c.inline_access_level || 'everyone', normalizeAllowedUsersStr(c.inline_allowed_users), normalizeAllowedUsersStr(c.inline_disallowed_users), c.inline_auto_back ? 1 : 0, c.inline_back_label || '', c.buttons_json || '', access === 'admin' ? 1 : 0, access, normalizeAllowedUsersStr(c.allowed_users), normalizeAllowedUsersStr(c.disallowed_users), c.force_join_mode || 'inherit', c.cmd_password || '', c.password_prompt || '', c.password_dismiss_label || '', c.expires_at || null, c.enabled != 0 ? 1 : 0, c.show_reply_keyboard ? 1 : 0, c.reply_keyboard_json || '', c.auto_back !== undefined && c.auto_back !== null ? (c.auto_back ? 1 : 0) : 1, c.back_label || '', i);
+        });
 @@@@ SPLIT
-<p><b>Upgrading to 5.0.3?</b> No database migration is required. Browser notifications are optional and configured per browser in the new <b>Notifications</b> tab.</p>
-<p><b>Upgrading to 5.3.0?</b> The schema moves to version <b>29</b> (adds <code>allowed_chat_types</code>, <code>allowed_chat_ids</code>, and <code>inline_enabled</code> on <code>commands</code> and <code>featured_replies</code> via non-destructive migrations). To use inline queries, enable <code>/setinline</code> in <code>@BotFather</code>.</p>
-</blockquote>
+        const stmts = valid.map((c, i) => {
+            const access = effectiveCommandAccess(c);
+            return env.DB.prepare(`
+            INSERT INTO commands (command, parent, response_type, content, media_url, file_id, media_meta, media_items_json, protect_content, inline_enabled, edit_message, edit_triggers, inline_access_level, inline_allowed_users, inline_disallowed_users, inline_auto_back, inline_back_label, buttons_json, is_admin_only, access_level, allowed_users, disallowed_users, allowed_chat_types, allowed_chat_ids, force_join_mode, cmd_password, password_prompt, password_dismiss_label, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, auto_back, back_label, order_idx)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(command) DO UPDATE SET
+                parent = excluded.parent, response_type = excluded.response_type, content = excluded.content,
+                media_url = excluded.media_url, file_id = excluded.file_id, media_meta = excluded.media_meta,
+                media_items_json = excluded.media_items_json, protect_content = excluded.protect_content,
+                inline_enabled = excluded.inline_enabled,
+                edit_message = excluded.edit_message, edit_triggers = excluded.edit_triggers,
+                inline_access_level = excluded.inline_access_level, inline_allowed_users = excluded.inline_allowed_users, inline_disallowed_users = excluded.inline_disallowed_users,
+                inline_auto_back = excluded.inline_auto_back, inline_back_label = excluded.inline_back_label,
+                buttons_json = excluded.buttons_json,
+                is_admin_only = excluded.is_admin_only, access_level = excluded.access_level,
+                allowed_users = excluded.allowed_users, disallowed_users = excluded.disallowed_users,
+                allowed_chat_types = excluded.allowed_chat_types, allowed_chat_ids = excluded.allowed_chat_ids,
+                force_join_mode = excluded.force_join_mode, cmd_password = excluded.cmd_password, password_prompt = excluded.password_prompt, password_dismiss_label = excluded.password_dismiss_label,
+                expires_at = excluded.expires_at, enabled = excluded.enabled,
+                show_reply_keyboard = excluded.show_reply_keyboard, reply_keyboard_json = excluded.reply_keyboard_json,
+                auto_back = excluded.auto_back, back_label = excluded.back_label
+        `).bind(c.command, c.parent || null, c.response_type || 'text', c.content || '', c.media_url || '', c.file_id || '', c.media_meta || '', c.media_items_json || '', c.protect_content ? 1 : 0, c.inline_enabled ? 1 : 0, c.edit_message ? 1 : 0, c.edit_triggers || 'inline,reply,command', c.inline_access_level || 'everyone', normalizeAllowedUsersStr(c.inline_allowed_users), normalizeAllowedUsersStr(c.inline_disallowed_users), c.inline_auto_back ? 1 : 0, c.inline_back_label || '', c.buttons_json || '', access === 'admin' ? 1 : 0, access, normalizeAllowedUsersStr(c.allowed_users), normalizeAllowedUsersStr(c.disallowed_users), normalizeAllowedChatTypes(c.allowed_chat_types), normalizeAllowedChatIds(c.allowed_chat_ids), c.force_join_mode || 'inherit', c.cmd_password || '', c.password_prompt || '', c.password_dismiss_label || '', c.expires_at || null, c.enabled != 0 ? 1 : 0, c.show_reply_keyboard ? 1 : 0, c.reply_keyboard_json || '', c.auto_back !== undefined && c.auto_back !== null ? (c.auto_back ? 1 : 0) : 1, c.back_label || '', i);
+        });
+@@@@ END
+@@@@ SEARCH
+        if (wants('media_library') && Array.isArray(data.media_library)) {
+            await runBatchChunks(env.DB, data.media_library.filter(m => m && m.file_id).map(m =>
+                env.DB.prepare('INSERT INTO media_library (file_id, media_type, media_meta, label, caption, file_name, file_size, allowed_users, expires_at, storage_chat_id, storage_message_id, is_valid, last_validated_at, uploaded_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+                    .bind(m.file_id, m.media_type || 'document', m.media_meta || '{}', m.label || '', m.caption || '', m.file_name || '', m.file_size || 0, normalizeAllowedUsersStr(m.allowed_users), m.expires_at || null, m.storage_chat_id || '', m.storage_message_id || null, m.is_valid !== undefined ? m.is_valid : 1, m.last_validated_at || null, m.uploaded_at || new Date().toISOString())
+            ));
+        }
+@@@@ SPLIT
+        if (wants('media_library') && Array.isArray(data.media_library)) {
+            await runBatchChunks(env.DB, data.media_library.filter(m => m && m.file_id).map(m =>
+                env.DB.prepare('INSERT INTO media_library (file_id, media_type, media_meta, label, caption, file_name, file_size, allowed_users, disallowed_users, expires_at, storage_chat_id, storage_message_id, is_valid, last_validated_at, uploaded_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+                    .bind(m.file_id, m.media_type || 'document', m.media_meta || '{}', m.label || '', m.caption || '', m.file_name || '', m.file_size || 0, normalizeAllowedUsersStr(m.allowed_users), normalizeAllowedUsersStr(m.disallowed_users), m.expires_at || null, m.storage_chat_id || '', m.storage_message_id || null, m.is_valid !== undefined ? m.is_valid : 1, m.last_validated_at || null, m.uploaded_at || new Date().toISOString())
+            ));
+        }
+@@@@ END
+@@@@ SEARCH
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"><meta name="theme-color" content="#0a0a0a"><title>Nyxx | Chat</title>
+<link rel="shortcut icon" href="https://cdn.jsdelivr.net/gh/Mahan07dev/Nyxx@main/logo.webp" type="image/x-icon">
+@@@@ SPLIT
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"><meta name="theme-color" content="#0a0a0a"><meta name="description" content="Nyxx AI Support, Bot AI Playground, and MCP Bot Manager chat interface."><title>Nyxx | Chat</title>
+<link rel="icon" href="https://cdn.jsdelivr.net/gh/Mahan07dev/Nyxx@main/logo.webp" type="image/webp">
+<link rel="shortcut icon" href="https://cdn.jsdelivr.net/gh/Mahan07dev/Nyxx@main/logo.webp" type="image/webp">
 @@@@ END

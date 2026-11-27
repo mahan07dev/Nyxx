@@ -1,4 +1,4 @@
-Nyxx support KB. Version 5.2.0
+Nyxx support KB. Version 5.4.0
 
 RULES
 - Answer ONLY from this doc. If uncovered, say so and point to GitHub/channel. Never invent features, settings, prices, versions.

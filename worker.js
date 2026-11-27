@@ -1,15 +1,15 @@
 // @ts-nocheck
 
-// NYXX — v5.3.0
+// NYXX — v5.4.0
 // Telegram bot builder + management dashboard for Cloudflare Workers + D1.
 // ============================================================================
-const VERSION = '5.3.0';
+const VERSION = '5.4.0';
 
 const NYXX_SUPPORT_SYSTEM_PROMPT = `You are Nyxx AI Support, the official built-in assistant inside the Nyxx dashboard.
 Help the user configure commands, keyboards, Force Join, proxies, AI, MCP, channels, groups, and media library.
 Always give clear, concise answers using the exact dashboard tab and button names.`;
 
-const NYXX_SUPPORT_KB = `Nyxx support KB. Version 5.2.0
+const NYXX_SUPPORT_KB = `Nyxx support KB. Version 5.4.0
 
 RULES
 - Answer ONLY from this doc. If uncovered, say so and point to GitHub/channel. Never invent features, settings, prices, versions.
@@ -132,7 +132,9 @@ const DASHBOARD_HTML = `<!DOCTYPE html>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<link rel="shortcut icon" href="https://cdn.jsdelivr.net/gh/Mahan07dev/Nyxx@main/logo.webp" type="image/x-icon">
+<meta name="description" content="Nyxx self-hosted Telegram bot builder, automation suite, and management dashboard for Cloudflare Workers and D1.">
+<link rel="icon" href="https://cdn.jsdelivr.net/gh/Mahan07dev/Nyxx@main/logo.webp" type="image/webp">
+<link rel="shortcut icon" href="https://cdn.jsdelivr.net/gh/Mahan07dev/Nyxx@main/logo.webp" type="image/webp">
 <title>Nyxx | Dashboard</title>
 <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
 <link rel="preconnect" href="https://raw.githubusercontent.com" crossorigin>
@@ -478,8 +480,9 @@ select.input { -webkit-appearance: none; appearance: none; padding-right: 34px;
     contain-intrinsic-size: auto 56px;
 }
 .list-row .lr-main { flex: 1; min-width: 0; }
-.list-row .lr-title { font-size: var(--fs-callout); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.list-row .lr-sub { font-size: var(--fs-caption); color: var(--text-4); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.list-row .lr-title { font-size: var(--fs-callout); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-height: 1.5em; line-height: 1.4; }
+.list-row .lr-sub { font-size: var(--fs-caption); color: var(--text-4); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-height: 1.5em; line-height: 1.4; }
+.name-clamp { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-height: 1.5em; line-height: 1.4; vertical-align: bottom; }
 .list-row .lr-actions { display: flex; gap: 4px; flex-shrink: 0; }
 .badge { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-caption2); font-weight: 600; padding: 3px 8px; border-radius: var(--r-pill); background: var(--fill-1); color: var(--text-3); white-space: nowrap; }
 .badge.green { background: var(--green-soft); color: var(--green); }
@@ -1974,6 +1977,13 @@ details.help.danger > summary { color: var(--red); }
                     <button class="chip" data-cf="restricted" onclick="setCmdFilter('restricted')">Restricted</button>
                     <button class="chip" data-cf="expiring" onclick="setCmdFilter('expiring')">Expiring</button>
                 </div>
+                <div class="media-bulk-bar" id="cmd-bulk-bar">
+                    <span class="badge blue" id="cmd-bulk-count">0 selected</span>
+                    <button type="button" class="btn btn-gray btn-sm" onclick="selectAllVisibleCommands()">Select visible</button>
+                    <button type="button" class="btn btn-gray btn-sm" onclick="clearCommandSelection()">Clear</button>
+                    <div style="flex:1"></div>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="openBatchEditModal()"><i class="fa-solid fa-sliders"></i> Batch Edit…</button>
+                </div>
                 <div class="row" style="margin-bottom:12px;">
                     <span class="badge blue"><i class="fa-regular fa-folder-open"></i> <span id="crumb">Root</span></span>
                     <button class="btn btn-gray btn-sm" id="btn-up" onclick="navigateUp()"><i class="fa-solid fa-arrow-up"></i> Up</button>
@@ -2193,6 +2203,15 @@ details.help.danger > summary { color: var(--red); }
 
                 <div class="card">
                     <div class="card-head"><div class="card-title c-purple"><i class="fa-solid fa-wand-magic-sparkles"></i> AI behaviour</div></div>
+                    <div class="field">
+                        <label class="field-label">Group language override</label>
+                        <div class="segmented" id="gm-lang-override">
+                            <button type="button" data-v="inherit" onclick="setSeg('gm-lang-override','inherit')">Inherit Global</button>
+                            <button type="button" data-v="en" onclick="setSeg('gm-lang-override','en')">English</button>
+                            <button type="button" data-v="fa" onclick="setSeg('gm-lang-override','fa')">فارسی</button>
+                        </div>
+                        <span class="field-hint">Overrides the global system language for bot messages in this group.</span>
+                    </div>
                     <div class="field">
                         <label class="field-label">Reply in this group</label>
                         <div class="segmented" id="gm-ai-mode">
@@ -2663,6 +2682,14 @@ details.help.danger > summary { color: var(--red); }
 
                 <div class="card">
                     <div class="card-head"><div class="card-title c-purple"><i class="fa-solid fa-wand-magic-sparkles"></i> Channel automation</div></div>
+                    <div class="field">
+                        <label class="field-label">Channel language override</label>
+                        <div class="segmented" id="chm-lang-override">
+                            <button type="button" data-v="inherit" onclick="setSeg('chm-lang-override','inherit')">Inherit Global</button>
+                            <button type="button" data-v="en" onclick="setSeg('chm-lang-override','en')">English</button>
+                            <button type="button" data-v="fa" onclick="setSeg('chm-lang-override','fa')">فارسی</button>
+                        </div>
+                    </div>
                     <div class="switch-row">
                         <div><div class="sw-label">Auto-capture media to Media Library</div><div class="sw-sub">Any photo, document, video, or audio posted in this channel is saved to your Media Library automatically.</div></div>
                         <button class="switch" id="chm-capture-toggle" onclick="toggleSwitch('chm-capture-toggle')"></button>
@@ -2998,6 +3025,14 @@ details.help.danger > summary { color: var(--red); }
                     <div><b>AI memory</b> is what the assistant remembers about each user's conversations. <b>Direct messages</b> are the private chats between you and your users (including messages sent through DM featured commands). Deleting is permanent.</div>
                 </details>
                 <div class="stats" id="mem-stats"></div>
+                <div class="card" id="mem-d1-card">
+                    <div class="card-head">
+                        <div class="card-title"><i class="fa-solid fa-hard-drive"></i> D1 Database Storage Breakdown</div>
+                        <div style="flex:1"></div>
+                        <span class="badge blue" id="mem-db-size">—</span>
+                    </div>
+                    <div id="mem-db-breakdown" class="grid grid-3" style="gap:8px;"></div>
+                </div>
 
                 <div class="card">
                     <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-clock-rotate-left"></i> Auto-remove memory</div></div>
@@ -3229,12 +3264,31 @@ details.help.danger > summary { color: var(--red); }
                                 <button type="button" data-v="silent" onclick="setSeg('games-announce-mode','silent')">Silent / service</button>
                                 <button type="button" data-v="off" onclick="setSeg('games-announce-mode','off')">Off</button>
                             </div>
-                            <span class="field-hint"><b>Silent / service</b> posts without notification sound (ideal for 150+ user groups).</span>
+                            <span class="field-hint"><b>Silent / service</b> posts a compact silent notice without notification sound (ideal for 150+ user groups).</span>
                         </div>
                         <div class="field" style="margin-bottom:0;">
                             <label class="field-label">Per-chat announcement cooldown (seconds)</label>
                             <input type="number" class="input" id="games-announce-cooldown" min="5" max="600" value="20">
                             <span class="field-hint">Rate-limits chat score messages so busy groups never hit Telegram flood limits.</span>
+                        </div>
+                    </div>
+                    <div class="field" style="margin-top:14px;">
+                        <label class="field-label">Custom "Game Ready" message <span class="muted small">(optional)</span></label>
+                        <input class="input" id="games-ready-text" placeholder="🎮 &lt;b&gt;{{game}}&lt;/b&gt; is ready for &lt;b&gt;{{user}}&lt;/b&gt;:">
+                        <span class="field-hint">Supports <code>{{game}}</code>, <code>{{user}}</code>, and Telegram HTML. Leave blank for the default localized message.</span>
+                    </div>
+                    <div class="switch-row" style="margin-bottom:0;">
+                        <div>
+                            <div class="sw-label">Edit current message</div>
+                            <div class="sw-sub">Update the existing message in place when opening a game or leaderboard.</div>
+                        </div>
+                        <button type="button" class="switch" id="games-edit-message" onclick="toggleSwitch('games-edit-message');show($('games-edit-trig-wrap'),sw('games-edit-message'))"></button>
+                    </div>
+                    <div id="games-edit-trig-wrap" class="hidden" style="margin-top:10px;">
+                        <div class="edit-trig-grid" style="margin-bottom:0;">
+                            <label class="edit-trig-chip"><input type="checkbox" id="games-edit-trig-inline" checked> <div>Inline button<small>GAME: / GAMELB: taps</small></div></label>
+                            <label class="edit-trig-chip"><input type="checkbox" id="games-edit-trig-reply" checked> <div>Reply button<small>Reply keyboard taps</small></div></label>
+                            <label class="edit-trig-chip"><input type="checkbox" id="games-edit-trig-command" checked> <div>Typed /command<small>/games or /play</small></div></label>
                         </div>
                     </div>
                 </div>
@@ -3259,6 +3313,7 @@ details.help.danger > summary { color: var(--red); }
                             <option value="flappy">Sky Dash</option>
                             <option value="tetris">Neon Blocks</option>
                             <option value="mines">Minesweeper</option>
+                            <option value="runner">Cyber Runner</option>
                         </select>
                         <input class="input mono" id="games-lb-chat" placeholder="Chat ID (blank = all chats)" style="max-width:200px;" oninput="loadGameLeaderboard()">
                     </div>
@@ -3350,7 +3405,7 @@ details.help.danger > summary { color: var(--red); }
                     <details class="media-upload-opts">
                         <summary><i class="fa-solid fa-sliders" style="color:var(--accent)"></i> Upload options (label, access user IDs, expiration, caption)</summary>
                         <div class="media-upload-opts-body">
-                            <div class="grid grid-3">
+                            <div class="grid grid-2">
                                 <div class="field" style="margin-bottom:0;">
                                     <label class="field-label tiny">Optional label prefix</label>
                                     <input class="input" id="media-up-label" placeholder="Leave blank to use filename">
@@ -3358,6 +3413,10 @@ details.help.danger > summary { color: var(--red); }
                                 <div class="field" style="margin-bottom:0;">
                                     <label class="field-label tiny">Allowed user IDs (optional)</label>
                                     <textarea class="textarea mono" id="media-up-allowed" rows="2" placeholder="123456&#10;789012"></textarea>
+                                </div>
+                                <div class="field" style="margin-bottom:0;">
+                                    <label class="field-label tiny">Disallowed user IDs (optional)</label>
+                                    <textarea class="textarea mono" id="media-up-disallowed" rows="2" placeholder="555666"></textarea>
                                 </div>
                                 <div class="field" style="margin-bottom:0;">
                                     <label class="field-label tiny">Expires at (optional)</label>
@@ -3898,6 +3957,35 @@ details.help.danger > summary { color: var(--red); }
                 </div>
 
                 <div class="card">
+                    <div class="card-head"><div class="card-title c-purple"><i class="fa-solid fa-globe"></i> Global Bot Access Gate</div></div>
+                    <div class="hint-banner">
+                        <i class="fa-solid fa-shield-halved"></i>
+                        <div>Controls <b>where and who</b> can interact with your bot overall (admins always bypass). Leave empty for open access.</div>
+                    </div>
+                    <div class="field">
+                        <label class="field-label">Allowed chat types</label>
+                        <div class="row" style="gap:12px;flex-wrap:wrap;" id="gba-chat-types">
+                            <label class="check"><input type="checkbox" value="private"> <span>Private DM</span></label>
+                            <label class="check"><input type="checkbox" value="group"> <span>Group</span></label>
+                            <label class="check"><input type="checkbox" value="supergroup"> <span>Supergroup</span></label>
+                            <label class="check"><input type="checkbox" value="channel"> <span>Channel</span></label>
+                        </div>
+                    </div>
+                    <div class="grid grid-2">
+                        <div class="field"><label class="field-label tiny">Global Allowed User IDs <span class="muted">(whitelist, optional)</span></label><textarea class="textarea mono" id="gba-allowed-users" rows="2" placeholder="123456, 789012"></textarea></div>
+                        <div class="field"><label class="field-label tiny">Global Disallowed User IDs <span class="muted">(blacklist, optional)</span></label><textarea class="textarea mono" id="gba-disallowed-users" rows="2" placeholder="555666"></textarea></div>
+                        <div class="field"><label class="field-label tiny">Global Allowed Chat IDs / @usernames <span class="muted">(optional)</span></label><textarea class="textarea mono" id="gba-allowed-chats" rows="2" placeholder="-1001234567890, @mygroup"></textarea></div>
+                        <div class="field"><label class="field-label tiny">Global Disallowed Chat IDs / @usernames <span class="muted">(optional)</span></label><textarea class="textarea mono" id="gba-disallowed-chats" rows="2" placeholder="-100999888"></textarea></div>
+                    </div>
+                    <div class="grid grid-2" style="gap:10px;">
+                        <div class="switch-row" style="margin:0;"><div><div class="sw-label">Telegram Premium users only</div><div class="sw-sub">Only allow users with active Telegram Premium.</div></div><button type="button" class="switch" id="gba-premium-only" onclick="toggleSwitch('gba-premium-only')"></button></div>
+                        <div class="switch-row" style="margin:0;"><div><div class="sw-label">Require @username</div><div class="sw-sub">Block users without a public @username.</div></div><button type="button" class="switch" id="gba-require-username" onclick="toggleSwitch('gba-require-username')"></button></div>
+                    </div>
+                    <div class="switch-row" style="margin-top:10px;"><div><div class="sw-label">Maintenance mode</div><div class="sw-sub">Pause bot replies for all non-admin users.</div></div><button type="button" class="switch" id="gba-maintenance" onclick="toggleSwitch('gba-maintenance')"></button></div>
+                    <div class="field" style="margin-bottom:0;"><label class="field-label tiny">Access denied / Maintenance message <span class="muted">(optional)</span></label><input class="input" id="gba-deny-msg" placeholder="⚠️ Access restricted or bot is under maintenance."></div>
+                </div>
+
+                <div class="card">
                     <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-lock"></i> Global feature access</div></div>
                     <div id="perm-list"></div>
                     <div class="row" style="margin-top:16px;">
@@ -3941,14 +4029,19 @@ details.help.danger > summary { color: var(--red); }
                         <summary><i class="fa-solid fa-circle-info"></i> What system language affects</summary>
                         <div>Changes the language of <b>system prompts</b> — messages the bot sends to users (contact notifications, error messages), the AI assistant's built-in rules, and the MCP admin prompt. It does <b>not</b> change the dashboard UI or AI replies (those follow the AI tab's language setting).</div>
                     </details>
-                    <div class="field" style="margin-bottom:0;">
-                        <label class="field-label">System language</label>
+                    <div class="field">
+                        <label class="field-label">Global system language</label>
                         <div class="segmented" id="sys-lang">
                             <button data-v="en" onclick="setSystemLanguage('en')">English</button>
                             <button data-v="fa" onclick="setSystemLanguage('fa')">فارسی</button>
                         </div>
-                        <span class="field-hint">Applies immediately to every user.</span>
+                        <span class="field-hint">Default language for bot messages, unless overridden per section or per group/channel below.</span>
                     </div>
+                    <details class="perm-acl-details" style="margin-top:10px;">
+                        <summary><i class="fa-solid fa-sliders"></i> Per-section language overrides (English / فارسی)</summary>
+                        <div class="grid grid-2" id="sys-lang-sections" style="gap:10px;margin-top:8px;"></div>
+                        <div style="margin-top:10px;"><button type="button" class="btn btn-primary btn-sm" onclick="saveSystemLanguageSections()"><i class="fa-solid fa-check"></i> Save section languages</button></div>
+                    </details>
                     <div id="sys-lang-result" class="small" style="margin-top:10px;"></div>
                 </div>
 
@@ -4183,18 +4276,58 @@ details.help.danger > summary { color: var(--red); }
                     <div class="grid grid-3">
                         <div class="field" style="margin-bottom:0;">
                             <label class="field-label tiny">Button behavior</label>
-                            <select class="input" id="bi-menu-type" onchange="show($('bi-menu-webapp-wrap'),this.value==='web_app')">
+                            <select class="input" id="bi-menu-type" onchange="show($('bi-menu-webapp-wrap'),this.value==='web_app');show($('bi-webapp-host-card'),this.value==='web_app')">
                                 <option value="commands">Commands menu (default)</option>
                                 <option value="default">Standard / Default</option>
                                 <option value="web_app">Open Mini App (Web App)</option>
                             </select>
                         </div>
                         <div class="field hidden" id="bi-menu-webapp-wrap" style="grid-column:span 2;margin-bottom:0;">
-                            <div class="grid grid-2">
+                            <div class="grid grid-2" style="margin-bottom:10px;">
                                 <div><label class="field-label tiny">Web App button label</label><input class="input" id="bi-menu-text" placeholder="Open App"></div>
                                 <div><label class="field-label tiny">HTTPS Web App URL</label><input class="input" id="bi-menu-url" placeholder="https://example.com/app"></div>
                             </div>
+                            <div class="row" style="gap:8px;flex-wrap:wrap;">
+                                <select class="input" id="bi-webapp-preset" style="flex:1;min-width:190px;" onchange="applyWebAppPreset(this.value)">
+                                    <option value="">✨ Quick-pick Web App source…</option>
+                                    <option value="template">🌟 Use Premade Nyxx Portal Template (/app)</option>
+                                    <option value="custom">📁 Use Custom Multi-Page Web App (/app)</option>
+                                    <option value="game:snake">🐍 Mini-Game: Neon Snake</option>
+                                    <option value="game:corsairs">🏴‍☠️ Mini-Game: Corsairs</option>
+                                    <option value="game:breaker">🧱 Mini-Game: Brick Breaker</option>
+                                    <option value="game:flappy">🚀 Mini-Game: Sky Dash</option>
+                                    <option value="game:tetris">🧩 Mini-Game: Neon Blocks</option>
+                                    <option value="game:mines">💣 Mini-Game: Minesweeper</option>
+                                    <option value="game:runner">⚡ Mini-Game: Cyber Runner</option>
+                                </select>
+                                <a class="btn btn-gray btn-sm" href="/app" target="_blank" rel="noopener"><i class="fa-solid fa-up-right-from-square"></i> Preview /app</a>
+                            </div>
                         </div>
+                    </div>
+                </div>
+
+                <div class="card hidden" id="bi-webapp-host-card">
+                    <div class="card-head">
+                        <div class="card-title c-green"><i class="fa-solid fa-folder-tree"></i> Built-in Multi-Page Web App Host (<code>/app/*</code>)</div>
+                        <div style="flex:1"></div>
+                        <button type="button" class="btn btn-gray btn-sm" onclick="loadPremadeWebAppTemplate()"><i class="fa-solid fa-wand-magic-sparkles"></i> Load Premade Template</button>
+                    </div>
+                    <div class="hint-banner">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <div>Host a multi-page Telegram Mini App directly from your Worker at <code>/app</code>! Use folder paths like <code>index.html</code>, <code>shop/index.html</code>, <code>styles.css</code>, or <code>app.js</code>.</div>
+                    </div>
+                    <div class="row" style="gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+                        <select class="input" id="wa-file-select" style="flex:1;min-width:180px;" onchange="selectWebAppFile(this.value)"></select>
+                        <input class="input mono" id="wa-new-path" placeholder="e.g. pages/about.html" style="flex:1;min-width:160px;">
+                        <button type="button" class="btn btn-gray btn-sm" onclick="addWebAppFile()"><i class="fa-solid fa-plus"></i> Add file</button>
+                        <button type="button" class="btn btn-danger btn-sm" onclick="deleteWebAppFile()"><i class="fa-regular fa-trash-can"></i></button>
+                    </div>
+                    <div class="field" style="margin-bottom:10px;">
+                        <textarea class="textarea mono" id="wa-file-content" rows="10" placeholder="<!DOCTYPE html>…" oninput="updateCurrentWebAppFile(this.value)"></textarea>
+                    </div>
+                    <div class="row" style="gap:8px;">
+                        <button type="button" class="btn btn-primary btn-sm" onclick="saveWebAppFiles()"><i class="fa-solid fa-cloud-arrow-up"></i> Save &amp; Publish /app</button>
+                        <span class="small muted" id="wa-status"></span>
                     </div>
                 </div>
 
@@ -4269,12 +4402,21 @@ crons = ["0 3 * * *"]</code></pre>
 
             <section class="page" id="page-backup">
                 <div class="page-head"><div class="lead"><h1>Backup</h1><p>Download or restore a snapshot of your bot.</p></div></div>
-                <div class="hint-banner danger">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                    <div><b>Your backup will contain your AI API keys</b> (OpenAI, Gemini, DeepSeek, etc.) in plain text. Keep the file private. Bot tokens and webhook secrets are still excluded for safety.</div>
+                <div class="hint-banner warn">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <div>Backups support <b>AES-256-GCM encryption</b>! Provide an encryption passphrase below to encrypt AI API keys and optionally include &amp; encrypt your Bot Token, Webhook Secret, and Cloudflare credentials.</div>
                 </div>
                 <div class="card">
                     <div class="card-head"><div class="card-title c-green"><i class="fa-solid fa-download"></i> Export</div></div>
+                    <div class="grid grid-2" style="margin-bottom:12px;">
+                        <div class="field" style="margin-bottom:0;">
+                            <label class="field-label tiny">Encryption passphrase <span class="muted">(optional, recommended)</span></label>
+                            <input type="password" class="input" id="backup-passphrase" placeholder="Leave blank for unencrypted JSON">
+                        </div>
+                        <div style="display:flex;align-items:flex-end;padding-bottom:6px;">
+                            <label class="check"><input type="checkbox" id="backup-include-secrets"> <span>Include &amp; encrypt sensitive secrets (Bot Token, CF Token, Webhook Secret)</span></label>
+                        </div>
+                    </div>
                     <div class="row">
                         <button class="btn btn-primary" onclick="exportBackup()"><i class="fa-solid fa-box-archive"></i> Full backup</button>
                         <button class="btn btn-gray" onclick="openCustomBackup()"><i class="fa-solid fa-sliders"></i> Custom backup…</button>
@@ -4285,7 +4427,11 @@ crons = ["0 3 * * *"]</code></pre>
                     <div class="card-head"><div class="card-title c-orange"><i class="fa-solid fa-upload"></i> Restore</div></div>
                     <div class="hint-banner warn">
                         <i class="fa-solid fa-triangle-exclamation"></i>
-                        <div>Restoring <b>overwrites</b> the data in the sections contained in the file. Restore early, restore often.</div>
+                        <div>Restoring <b>overwrites</b> the data in the sections contained in the file. Encrypted backups will prompt for your passphrase.</div>
+                    </div>
+                    <div class="field" style="max-width:340px;">
+                        <label class="field-label tiny">Decryption passphrase <span class="muted">(if backup is encrypted)</span></label>
+                        <input type="password" class="input" id="restore-passphrase" placeholder="Enter passphrase if encrypted">
                     </div>
                     <div class="row">
                         <button class="btn btn-primary" onclick="document.getElementById('restore-file').click()"><i class="fa-solid fa-upload"></i> Restore from file</button>
@@ -4638,16 +4784,23 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                     <div class="row" style="margin-bottom:8px;gap:6px;flex-wrap:wrap;">
                         <select class="input" id="kbCmd-game-pick" style="width:auto;height:32px;font-size:12px;">
                             <option value="">🎮 Quick-attach a Mini-Game button…</option>
-                            <option value="snake">🐍 Neon Snake (callback)</option>
-                            <option value="corsairs">🏴‍☠️ Corsairs (callback)</option>
-                            <option value="breaker">🧱 Brick Breaker (callback)</option>
-                            <option value="flappy">🚀 Sky Dash (callback)</option>
-                            <option value="tetris">🧩 Neon Blocks (callback)</option>
-                            <option value="mines">💣 Minesweeper (callback)</option>
+                            <option value="snake">🐍 Neon Snake (Play)</option>
+                            <option value="corsairs">🏴‍☠️ Corsairs (Play)</option>
+                            <option value="breaker">🧱 Brick Breaker (Play)</option>
+                            <option value="flappy">🚀 Sky Dash (Play)</option>
+                            <option value="tetris">🧩 Neon Blocks (Play)</option>
+                            <option value="mines">💣 Minesweeper (Play)</option>
+                            <option value="runner">⚡ Cyber Runner (Play)</option>
+                            <option value="lb:snake">🏆 Neon Snake Leaderboard</option>
+                            <option value="lb:corsairs">🏆 Corsairs Leaderboard</option>
+                            <option value="lb:breaker">🏆 Brick Breaker Leaderboard</option>
+                            <option value="lb:flappy">🏆 Sky Dash Leaderboard</option>
+                            <option value="lb:tetris">🏆 Neon Blocks Leaderboard</option>
+                            <option value="lb:mines">🏆 Minesweeper Leaderboard</option>
+                            <option value="lb:runner">🏆 Cyber Runner Leaderboard</option>
                             <option value="url:snake">🔗 Neon Snake (direct URL)</option>
                             <option value="url:corsairs">🔗 Corsairs (direct URL)</option>
-                            <option value="url:tetris">🔗 Neon Blocks (direct URL)</option>
-                            <option value="url:mines">🔗 Minesweeper (direct URL)</option>
+                            <option value="url:runner">🔗 Cyber Runner (direct URL)</option>
                         </select>
                         <button type="button" class="btn btn-gray btn-sm" onclick="quickAttachGameBtn('kbCmd')"><i class="fa-solid fa-gamepad"></i> Attach Game</button>
                     </div>
@@ -5172,10 +5325,15 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
                 <label class="field-label">Default caption / notes</label>
                 <textarea class="textarea" id="me-caption" rows="2" placeholder="Optional caption or product description (HTML allowed)"></textarea>
             </div>
-            <div class="field">
-                <label class="field-label">Allowed user IDs <span class="muted small">(user-based allowance)</span></label>
-                <textarea class="textarea mono" id="me-allowed" rows="2" placeholder="Leave empty for unrestricted, or enter buyer IDs: 123456, 789012"></textarea>
-                <span class="field-hint"><i class="fa-solid fa-shield-halved"></i> Any command serving this file automatically blocks users not in this list (admins always allowed).</span>
+            <div class="grid grid-2">
+                <div class="field">
+                    <label class="field-label">Allowed user IDs <span class="muted small">(whitelist)</span></label>
+                    <textarea class="textarea mono" id="me-allowed" rows="2" placeholder="Leave empty for unrestricted, or enter buyer IDs: 123456, 789012"></textarea>
+                </div>
+                <div class="field">
+                    <label class="field-label">Disallowed user IDs <span class="muted small">(blacklist)</span></label>
+                    <textarea class="textarea mono" id="me-disallowed" rows="2" placeholder="User IDs blocked from accessing this file: 555666"></textarea>
+                </div>
             </div>
             <div class="field">
                 <label class="field-label">Expiration <span class="muted small">(optional)</span></label>
@@ -5440,6 +5598,48 @@ html[data-theme="dark"] .update-hero{background:linear-gradient(135deg,rgba(10,1
         <div class="sheet-foot">
             <button class="btn btn-gray" id="pm-cancel" onclick="cancelProgressModal()">Cancel</button>
             <button class="btn btn-primary hidden" id="pm-done" onclick="closeProgressModal()">Done</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal hidden" id="cmd-batch-modal" role="dialog" aria-modal="true">
+    <div class="modal-bg" onclick="closeBatchEditModal()"></div>
+    <div class="sheet">
+        <div class="sheet-head">
+            <button type="button" class="btn btn-plain" onclick="closeBatchEditModal()">Cancel</button>
+            <div class="sheet-title" id="cmd-batch-title">Batch Edit Commands</div>
+            <button type="button" class="btn btn-plain" id="cmd-batch-save" onclick="submitBatchEdit()">Apply</button>
+        </div>
+        <div class="sheet-body">
+            <div class="hint-banner"><i class="fa-solid fa-sliders"></i><div>Only fields you change from <b>No change</b> will be applied to the selected commands.</div></div>
+            <div class="grid grid-2">
+                <div class="field"><label class="field-label tiny">Enabled</label>
+                    <select class="input" id="cb-enabled"><option value="__keep__">No change</option><option value="1">Enable</option><option value="0">Disable</option></select>
+                </div>
+                <div class="field"><label class="field-label tiny">Edit current message</label>
+                    <select class="input" id="cb-edit-msg" onchange="show($('cb-edit-trig-wrap'),this.value==='1')"><option value="__keep__">No change</option><option value="1">On</option><option value="0">Off</option></select>
+                </div>
+                <div class="field"><label class="field-label tiny">Protect content</label>
+                    <select class="input" id="cb-protect"><option value="__keep__">No change</option><option value="1">On</option><option value="0">Off</option></select>
+                </div>
+                <div class="field"><label class="field-label tiny">Inline query (@bot)</label>
+                    <select class="input" id="cb-inline-q"><option value="__keep__">No change</option><option value="1">On</option><option value="0">Off</option></select>
+                </div>
+                <div class="field"><label class="field-label tiny">Access level</label>
+                    <select class="input" id="cb-access"><option value="__keep__">No change</option><option value="everyone">Everyone</option><option value="specific">Specific users</option><option value="moderator">Mod+</option><option value="admin">Admin only</option></select>
+                </div>
+                <div class="field"><label class="field-label tiny">Force Join override</label>
+                    <select class="input" id="cb-fj"><option value="__keep__">No change</option><option value="inherit">Inherit</option><option value="required">Always require</option><option value="off">Bypass</option></select>
+                </div>
+            </div>
+            <div id="cb-edit-trig-wrap" class="hidden" style="margin-bottom:12px;">
+                <label class="field-label tiny">Edit triggers</label>
+                <div class="edit-trig-grid" style="margin-bottom:0;">
+                    <label class="edit-trig-chip"><input type="checkbox" id="cb-trig-inline" checked> <div>Inline button</div></label>
+                    <label class="edit-trig-chip"><input type="checkbox" id="cb-trig-reply" checked> <div>Reply button</div></label>
+                    <label class="edit-trig-chip"><input type="checkbox" id="cb-trig-command" checked> <div>Typed /command</div></label>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -5886,6 +6086,11 @@ function applyAccountPermissionsUi(acc) {
         var ok = isOwner || (allowed && allowed.has(p));
         n.classList.toggle('hidden', !ok);
     });
+    document.querySelectorAll('.nav-group').forEach(function (g) {
+        var hasVisible = !!g.querySelector('.nav-item:not(.hidden)');
+        g.classList.toggle('hidden', !hasVisible);
+    });
+    if (typeof filterNav === 'function') filterNav(($('nav-search-input') && $('nav-search-input').value) || '');
     if ($('stab-accounts')) show($('stab-accounts'), isOwner);
 }
 function go(page) {
@@ -6022,7 +6227,7 @@ function filterNav(q) {
         var label = (item.dataset.label || '') + ' ' + (item.textContent || '');
         var match = !q || label.toLowerCase().indexOf(q) >= 0;
         item.style.display = match ? '' : 'none';
-        if (match) anyVisible = true;
+        if (match && !item.classList.contains('hidden')) anyVisible = true;
     });
     document.querySelectorAll('.nav-group[data-group]').forEach(function (g) {
         if (!q) {
@@ -6030,7 +6235,7 @@ function filterNav(q) {
             g.classList.toggle('collapsed', !hasActive);
             return;
         }
-        var hasVisible = Array.from(g.querySelectorAll('.nav-item[data-label]')).some(function (i) { return i.style.display !== 'none'; });
+        var hasVisible = Array.from(g.querySelectorAll('.nav-item[data-label]')).some(function (i) { return i.style.display !== 'none' && !i.classList.contains('hidden'); });
         g.classList.toggle('collapsed', !hasVisible);
     });
     var empty = document.getElementById('nav-no-results');
@@ -6642,10 +6847,78 @@ async function loadCommands(force) {
     } finally { _commandsLoading = false; }
 }
 var cmdFilter = 'all';
+var cmdSelected = new Set();
 function setCmdFilter(f) {
     cmdFilter = f;
     document.querySelectorAll('#cmd-filters .chip').forEach(function (c) { c.classList.toggle('active', c.dataset.cf === f); });
     renderCommands();
+}
+function updateCmdBulkBar() {
+    var bar = $('cmd-bulk-bar'), cnt = $('cmd-bulk-count');
+    if (bar) bar.classList.toggle('show', cmdSelected.size > 0);
+    if (cnt) cnt.textContent = cmdSelected.size + ' selected';
+}
+function toggleCmdSelect(cmd, ev) {
+    if (ev) ev.stopPropagation();
+    if (cmdSelected.has(cmd)) cmdSelected.delete(cmd); else cmdSelected.add(cmd);
+    updateCmdBulkBar();
+}
+function selectAllVisibleCommands() {
+    var q = ($('cmd-search').value || '').toLowerCase().trim();
+    var searchingAll = !!q || cmdFilter !== 'all';
+    var list = searchingAll ? commands.slice() : (children[currentParent || ''] || []).slice();
+    list.forEach(function (c) { cmdSelected.add(c.command); });
+    updateCmdBulkBar();
+    renderCommands();
+}
+function clearCommandSelection() {
+    cmdSelected.clear();
+    updateCmdBulkBar();
+    renderCommands();
+}
+function openBatchEditModal() {
+    if (!cmdSelected.size) return;
+    $('cmd-batch-title').textContent = 'Batch Edit (' + cmdSelected.size + ' commands)';
+    ['cb-enabled','cb-edit-msg','cb-protect','cb-inline-q','cb-access','cb-fj'].forEach(function (id) { if ($(id)) $(id).value = '__keep__'; });
+    show($('cb-edit-trig-wrap'), false);
+    $('cmd-batch-modal').classList.remove('hidden');
+    trackModal('cmd-batch-modal');
+}
+function closeBatchEditModal() {
+    $('cmd-batch-modal').classList.add('hidden');
+    untrackModal('cmd-batch-modal');
+}
+async function submitBatchEdit() {
+    var cmds = Array.from(cmdSelected);
+    if (!cmds.length) return;
+    var patch = {};
+    if ($('cb-enabled').value !== '__keep__') patch.enabled = $('cb-enabled').value === '1' ? 1 : 0;
+    if ($('cb-edit-msg').value !== '__keep__') {
+        patch.edit_message = $('cb-edit-msg').value === '1' ? 1 : 0;
+        if (patch.edit_message) {
+            var trigs = [];
+            if ($('cb-trig-inline').checked) trigs.push('inline');
+            if ($('cb-trig-reply').checked) trigs.push('reply');
+            if ($('cb-trig-command').checked) trigs.push('command');
+            patch.edit_triggers = trigs.join(',') || 'inline,reply,command';
+        }
+    }
+    if ($('cb-protect').value !== '__keep__') patch.protect_content = $('cb-protect').value === '1' ? 1 : 0;
+    if ($('cb-inline-q').value !== '__keep__') patch.inline_enabled = $('cb-inline-q').value === '1' ? 1 : 0;
+    if ($('cb-access').value !== '__keep__') patch.access_level = $('cb-access').value;
+    if ($('cb-fj').value !== '__keep__') patch.force_join_mode = $('cb-fj').value;
+    if (!Object.keys(patch).length) { toast('Pick at least one setting to change.', 'info'); return; }
+    await withBusy($('cmd-batch-save'), async function () {
+        try {
+            var d = await api('POST', '/api/commands/batch_update', { commands: cmds, patch: patch });
+            toast('Updated ' + (d.updated || cmds.length) + ' command(s).');
+            closeBatchEditModal();
+            cmdSelected.clear();
+            updateCmdBulkBar();
+            commands = [];
+            loadCommands(true);
+        } catch (e) { toast(e.message, 'error'); }
+    });
 }
 function getCommandMediaCount(c) {
     if (c.media_items_json) {
@@ -6683,6 +6956,7 @@ function renderCommands() {
     else if (cmdFilter === 'restricted') list = list.filter(function (c) { return commandAccessLevel(c) !== 'everyone' || !!(c.allowed_users && String(c.allowed_users).trim()); });
     else if (cmdFilter === 'expiring') list = list.filter(function (c) { return !!c.expires_at; });
 
+    updateCmdBulkBar();
     $('crumb').textContent = searchingAll
         ? ('All commands (' + list.length + ')')
         : (crumbPath.length ? crumbPath.map(function (c) { return c.replace(/^\\/+/, ''); }).join(' / ') : 'Root');
@@ -6692,6 +6966,7 @@ function renderCommands() {
     list.forEach(function (c, i) {
         var kids = (children[c.command] || []).length;
         var cmdEsc = esc(c.command).replace(/&#39;/g, "\\'");
+        var sel = cmdSelected.has(c.command);
         var mediaCnt = getCommandMediaCount(c);
         var typeLbl = (function(){ var t = c.response_type || 'text'; return t.charAt(0).toUpperCase() + t.slice(1).replace('_',' '); })();
         var subParts = [mediaCnt > 1 ? (mediaCnt + ' files') : typeLbl];
@@ -6700,6 +6975,8 @@ function renderCommands() {
         var lvl = commandAccessLevel(c);
         var tags = [];
         if (c.edit_message) tags.push('<span class="cm-tag accent" title="Edits message in place"><i class="fa-regular fa-pen-to-square"></i> Edit</span>');
+        if (c.inline_enabled) tags.push('<span class="cm-tag accent" title="Available in @bot inline queries">@</span>');
+        if (c.allowed_chat_types || c.allowed_chat_ids) tags.push('<span class="cm-tag warn" title="Chat gate active"><i class="fa-solid fa-filter"></i></span>');
         if (c.protect_content) tags.push('<span class="cm-tag warn" title="Protected content"><i class="fa-solid fa-shield-halved"></i></span>');
         if (c.cmd_password) tags.push('<span class="cm-tag purple" title="Password protected"><i class="fa-solid fa-key"></i></span>');
         if (lvl !== 'everyone') tags.push('<span class="cm-tag purple" title="Restricted: ' + esc(lvl) + '"><i class="fa-solid fa-lock"></i> ' + (lvl === 'admin' ? 'Admin' : lvl === 'moderator' ? 'Mod+' : 'Specific') + '</span>');
@@ -6713,6 +6990,7 @@ function renderCommands() {
             else if (ms) tags.push('<span class="cm-tag warn"><i class="fa-regular fa-clock"></i></span>');
         }
         html += '<div class="list-row">' +
+            '<input type="checkbox" class="media-cb" ' + (sel ? 'checked' : '') + ' onchange="toggleCmdSelect(\\'' + cmdEsc + '\\',event)" aria-label="Select command">' +
             '<i class="fa-regular ' + (kids ? 'fa-folder tag-folder' : (mediaCnt > 0 ? 'fa-file-zipper' : 'fa-file')) + '"></i>' +
             '<div class="lr-main" onclick="' + (kids ? 'enterFolder(\\'' + cmdEsc + '\\')' : 'editCommand(\\'' + cmdEsc + '\\')') + '" style="cursor:pointer;">' +
                 '<div class="lr-title mono">' + esc(c.command) + '</div>' +
@@ -8582,6 +8860,18 @@ async function loadMemory(force) {
             '<div class="stat"><div class="st-ic blue"><i class="fa-solid fa-comment-dots"></i></div><div class="st-val">' + memoryTotals.dm + '</div><div class="st-lbl">Direct messages</div></div>' +
             '<div class="stat"><div class="st-ic green"><i class="fa-solid fa-user-group"></i></div><div class="st-val">' + memoryTotals.users + '</div><div class="st-lbl">Users with memory</div></div>' +
             '<div class="stat"><div class="st-ic orange"><i class="fa-solid fa-comments"></i></div><div class="st-val">' + (memoryTotals.groups || 0) + '</div><div class="st-lbl">Groups with memory</div></div>';
+        if ($('mem-db-breakdown') && !(d && d.db_stats && d.db_stats.tables && Object.keys(d.db_stats.tables).length)) {
+            $('mem-db-breakdown').innerHTML = '<div class="muted small">Storage stats unavailable. Check the Worker logs for "db_stats failed".</div>';
+        }
+        if (d && d.db_stats) {
+            var ds = d.db_stats;
+            if ($('mem-db-size')) $('mem-db-size').textContent = ds.size_label || '—';
+            if ($('mem-db-breakdown') && ds.tables) {
+                $('mem-db-breakdown').innerHTML = Object.entries(ds.tables).map(function (kv) {
+                    return '<div class="kv" style="background:var(--surface-2);padding:8px 12px;border-radius:10px;border:1px solid var(--hairline);"><span class="k">' + esc(kv[0]) + '</span><span class="v">' + Number(kv[1] || 0).toLocaleString() + '</span></div>';
+                }).join('');
+            }
+        }
         renderMemory();
     } catch (e) { box.innerHTML = errorState(e.message, 'loadMemory(true)'); }
     finally { _memoryLoading = false; }
@@ -8814,6 +9104,7 @@ async function openGroup(id) {
     } catch (e) { toast(e.message, 'error'); }
 }
 function applyGroupSettings(s) {
+    setSeg('gm-lang-override', s.language || 'inherit');
     setSeg('gm-ai-mode', s.ai || 'inherit');
     setSeg('gm-commands-perm', s.commands_permission || 'inherit');
     setSeg('gm-featured-perm', s.featured_commands_permission || 'inherit');
@@ -8917,6 +9208,7 @@ async function saveGroupSettings() {
         var nEnd = parseInt($('gm-night-end') && $('gm-night-end').value, 10);
         var fMute = parseInt($('gm-flood-mute') && $('gm-flood-mute').value, 10);
         var body = {
+            language: getSeg('gm-lang-override') || 'inherit',
             ai: getSeg('gm-ai-mode') || 'inherit',
             commands_permission: getSeg('gm-commands-perm') || 'inherit',
             commands_permission_allowed: $('gm-commands-perm-allowed') ? $('gm-commands-perm-allowed').value : '',
@@ -9241,7 +9533,9 @@ function mediaStatusBadges(m) {
     var b = '';
     if (m.is_valid === 0) b += '<span class="badge red"><i class="fa-solid fa-circle-xmark"></i> Invalid</span>';
     var allowed = mediaAllowedList(m);
-    if (allowed.length) b += '<span class="badge blue"><i class="fa-solid fa-user-lock"></i> ' + allowed.length + ' user' + (allowed.length > 1 ? 's' : '') + '</span>';
+    if (allowed.length) b += '<span class="badge blue"><i class="fa-solid fa-user-lock"></i> +' + allowed.length + 'u</span>';
+    var disallowed = m && m.disallowed_users ? String(m.disallowed_users).trim().split(/[\\s,;]+/).filter(Boolean) : [];
+    if (disallowed.length) b += '<span class="badge red"><i class="fa-solid fa-ban"></i> -' + disallowed.length + 'u</span>';
     if (m.expires_at) {
         var ms = parseIsoMs(m.expires_at);
         if (ms && Date.now() > ms) b += '<span class="badge red">Expired</span>';
@@ -9385,6 +9679,7 @@ async function handleMediaTabFiles(fileList) {
     var labelPrefix = ($('media-up-label') && $('media-up-label').value.trim()) || '';
     var caption = ($('media-up-caption') && $('media-up-caption').value.trim()) || '';
     var allowedUsers = ($('media-up-allowed') && $('media-up-allowed').value.trim()) || '';
+    var disallowedUsers = ($('media-up-disallowed') && $('media-up-disallowed').value.trim()) || '';
     var expiresAt = ($('media-up-expires') && $('media-up-expires').value) ? toIsoFromLocalInput($('media-up-expires').value) : '';
     var okCount = 0, failCount = 0;
     for (var i = 0; i < files.length; i++) {
@@ -9402,6 +9697,7 @@ async function handleMediaTabFiles(fileList) {
             fd.append('label', labelPrefix ? (files.length > 1 ? labelPrefix + ' - ' + file.name : labelPrefix) : file.name);
             if (caption) fd.append('caption', caption);
             if (allowedUsers) fd.append('allowed_users', allowedUsers);
+            if (disallowedUsers) fd.append('disallowed_users', disallowedUsers);
             if (expiresAt) fd.append('expires_at', expiresAt);
             var res = await fetch('/api/upload_media', { method: 'POST', body: fd, credentials: 'same-origin', headers: __csrf ? { 'X-Nyxx-CSRF': __csrf } : {} });
             var data = await res.json().catch(function () { return {}; });
@@ -9544,6 +9840,7 @@ function openMediaEditModal(id) {
     $('me-label').value = m.label || '';
     $('me-caption').value = m.caption || '';
     $('me-allowed').value = m.allowed_users || '';
+    if ($('me-disallowed')) $('me-disallowed').value = m.disallowed_users || '';
     $('me-expires').value = toLocalInputFromIso(m.expires_at || '');
     $('me-fileid').value = m.file_id || '';
     var info = [];
@@ -9586,6 +9883,7 @@ async function saveMediaEdit() {
                 label: $('me-label').value.trim(),
                 caption: $('me-caption').value,
                 allowed_users: $('me-allowed').value.trim(),
+                disallowed_users: $('me-disallowed') ? $('me-disallowed').value.trim() : '',
                 expires_at: toIsoFromLocalInput($('me-expires').value)
             });
             toast('Media updated.');
@@ -11183,11 +11481,22 @@ var PERM_LABELS = {
 };
 var permState = {};
 var permAclState = {};
+var globalBotAccess = {};
 async function loadPermissions(force) {
     try {
         var d = await api('GET', '/api/permissions');
         permState = d.permissions || {};
         permAclState = d.acl || {};
+        globalBotAccess = d.global_bot_access || {};
+        setChatTypeCheckboxes('gba-chat-types', globalBotAccess.chat_types || '');
+        if ($('gba-allowed-users')) $('gba-allowed-users').value = globalBotAccess.allowed_users || '';
+        if ($('gba-disallowed-users')) $('gba-disallowed-users').value = globalBotAccess.disallowed_users || '';
+        if ($('gba-allowed-chats')) $('gba-allowed-chats').value = globalBotAccess.allowed_chats || '';
+        if ($('gba-disallowed-chats')) $('gba-disallowed-chats').value = globalBotAccess.disallowed_chats || '';
+        if ($('gba-premium-only')) toggleSwitch('gba-premium-only', !!globalBotAccess.premium_only);
+        if ($('gba-require-username')) toggleSwitch('gba-require-username', !!globalBotAccess.require_username);
+        if ($('gba-maintenance')) toggleSwitch('gba-maintenance', !!globalBotAccess.maintenance_mode);
+        if ($('gba-deny-msg')) $('gba-deny-msg').value = globalBotAccess.deny_message || '';
         renderPermissions();
         loadAdmins();
     } catch (e) { toast(e.message, 'error'); }
@@ -11247,7 +11556,18 @@ function togglePermChatType(key, ct, checked) {
 async function savePermissions() {
     await withSelfBusy(async function () {
         try {
-            await api('POST', '/api/permissions', { permissions: permState, acl: permAclState });
+            var gba = {
+                chat_types: getChatTypeCheckboxes('gba-chat-types'),
+                allowed_users: $('gba-allowed-users') ? $('gba-allowed-users').value.trim() : '',
+                disallowed_users: $('gba-disallowed-users') ? $('gba-disallowed-users').value.trim() : '',
+                allowed_chats: $('gba-allowed-chats') ? $('gba-allowed-chats').value.trim() : '',
+                disallowed_chats: $('gba-disallowed-chats') ? $('gba-disallowed-chats').value.trim() : '',
+                premium_only: $('gba-premium-only') ? sw('gba-premium-only') : false,
+                require_username: $('gba-require-username') ? sw('gba-require-username') : false,
+                maintenance_mode: $('gba-maintenance') ? sw('gba-maintenance') : false,
+                deny_message: $('gba-deny-msg') ? $('gba-deny-msg').value.trim() : ''
+            };
+            await api('POST', '/api/permissions', { permissions: permState, acl: permAclState, global_bot_access: gba });
             toast('Permissions saved.');
         } catch (e) { toast(e.message, 'error'); }
     });
@@ -11692,6 +12012,7 @@ document.addEventListener('keydown', function (e) {
         else if (top === 'media-picker-modal') closeMediaPicker();
         else if (top === 'media-edit-modal') closeMediaEditModal();
         else if (top === 'media-fileid-modal') closeAddFileIdModal();
+        else if (top === 'cmd-batch-modal') closeBatchEditModal();
         else if (top === 'account-modal' && window.closeAccountModal) window.closeAccountModal();
     }
     if (e.key === 'Escape') { closeAllDropdowns(); if (typeof closeTopbarDropdowns === 'function') closeTopbarDropdowns(null); }
@@ -11707,12 +12028,12 @@ document.addEventListener('keydown', function (e) {
 /* ============================================================
    NAVIGATION STYLE & STRUCTURE PRESETS
    ============================================================ */
-var currentNavStyle = 'classic';
+var currentNavStyle = 'glass';
 var currentNavStructure = 'topbar';
 function applyNavLayout(style, structure) {
     var app = document.querySelector('.app');
     if (!app) return;
-    style = ['classic', 'pills', 'glass', 'compact'].indexOf(style) >= 0 ? style : 'classic';
+    style = ['classic', 'pills', 'glass', 'compact'].indexOf(style) >= 0 ? style : 'glass';
     structure = ['grouped', 'flat', 'topbar'].indexOf(structure) >= 0 ? structure : 'topbar';
     currentNavStyle = style;
     currentNavStructure = structure;
@@ -11726,9 +12047,9 @@ function applyNavLayout(style, structure) {
     } catch (e) {}
 }
 (function initNavLayout() {
-    var s = 'classic', st = 'topbar';
+    var s = 'glass', st = 'topbar';
     try {
-        s = localStorage.getItem('nyxx-nav-style') || 'classic';
+        s = localStorage.getItem('nyxx-nav-style') || 'glass';
         st = localStorage.getItem('nyxx-nav-structure') || 'topbar';
     } catch (e) {}
     applyNavLayout(s, st);
@@ -11851,6 +12172,7 @@ async function openChannel(id) {
     } catch (e) { toast(e.message, 'error'); }
 }
 function applyChannelSettings(s) {
+    setSeg('chm-lang-override', s.language || 'inherit');
     toggleSwitch('chm-capture-toggle', !!s.auto_capture_media);
     toggleSwitch('chm-pin-toggle', !!s.auto_pin_posts);
     toggleSwitch('chm-sig-toggle', !!s.auto_signature_enabled);
@@ -11870,6 +12192,7 @@ async function saveChannelSettings() {
     await withSelfBusy(async function () {
         var inlineObj = kbCh.inlineJSON();
         var body = {
+            language: getSeg('chm-lang-override') || 'inherit',
             auto_capture_media: sw('chm-capture-toggle'),
             auto_pin_posts: sw('chm-pin-toggle'),
             auto_signature_enabled: sw('chm-sig-toggle'),
@@ -12905,21 +13228,23 @@ var GAME_DEFS = [
     { id: 'breaker', name: 'Brick Breaker', icon: 'fa-solid fa-cubes', desc: 'Fast paddle breakout with multi-row bricks & level clears.' },
     { id: 'flappy', name: 'Sky Dash', icon: 'fa-solid fa-jet-fighter-up', desc: 'One-tap arcade flyer through neon gates.' },
     { id: 'tetris', name: 'Neon Blocks', icon: 'fa-solid fa-shapes', desc: 'Falling block puzzle with rotation, hard drop & line combos.' },
-    { id: 'mines', name: 'Minesweeper', icon: 'fa-solid fa-bomb', desc: 'Classic 9x9 logic puzzle — clear the board without hitting a mine.' }
+    { id: 'mines', name: 'Minesweeper', icon: 'fa-solid fa-bomb', desc: 'Classic 9x9 logic puzzle — clear the board without hitting a mine.' },
+    { id: 'runner', name: 'Cyber Runner', icon: 'fa-solid fa-bolt', desc: 'High-speed endless obstacle jumper with combo coins & increasing pace.' }
 ];
-var gamesCfg = { announce_mode: 'message', announce_cooldown_sec: 20, games: {} };
+var gamesCfg = { announce_mode: 'message', announce_cooldown_sec: 20, ready_text: '', edit_message: false, edit_triggers: 'inline,reply,command', games: {} };
 function quickAttachGameBtn(prefix) {
     var sel = $(prefix + '-game-pick');
     if (!sel || !sel.value) { toast('Pick a game first.', 'info'); return; }
     var val = sel.value;
     var isUrl = val.indexOf('url:') === 0;
-    var gid = isUrl ? val.slice(4) : val;
+    var isLb = val.indexOf('lb:') === 0;
+    var gid = isUrl ? val.slice(4) : (isLb ? val.slice(3) : val);
     var g = GAME_DEFS.find(function (x) { return x.id === gid; }) || { name: gid };
-    $(prefix + '-inline-label').value = '🎮 Play ' + g.name;
+    $(prefix + '-inline-label').value = isLb ? ('🏆 ' + g.name + ' Top 10') : ('🎮 Play ' + g.name);
     $(prefix + '-inline-type').value = isUrl ? 'url' : 'callback';
     if (typeof kbInlineTypeToggle === 'function') kbInlineTypeToggle(prefix);
-    $(prefix + '-inline-value').value = isUrl ? (window.location.origin + '/games?game=' + gid) : ('GAME:' + gid);
-    if ($(prefix + '-inline-style')) $(prefix + '-inline-style').value = 'primary';
+    $(prefix + '-inline-value').value = isUrl ? (window.location.origin + '/games?game=' + gid) : (isLb ? ('GAMELB:' + gid) : ('GAME:' + gid));
+    if ($(prefix + '-inline-style')) $(prefix + '-inline-style').value = isLb ? '' : 'primary';
     if (prefix === 'kbCmd') kbCmd.inlineAdd(); else kbMe.inlineAdd();
     sel.value = '';
 }
@@ -12931,6 +13256,15 @@ async function loadGamesPage() {
         gamesCfg = (d && d.config) || gamesCfg;
         setSeg('games-announce-mode', gamesCfg.announce_mode || 'message');
         if ($('games-announce-cooldown')) $('games-announce-cooldown').value = gamesCfg.announce_cooldown_sec || 20;
+        if ($('games-ready-text')) $('games-ready-text').value = gamesCfg.ready_text || '';
+        if ($('games-edit-message')) {
+            toggleSwitch('games-edit-message', !!gamesCfg.edit_message);
+            show($('games-edit-trig-wrap'), !!gamesCfg.edit_message);
+        }
+        var tSet = new Set(String(gamesCfg.edit_triggers || 'inline,reply,command').split(',').map(function (s) { return s.trim(); }));
+        if ($('games-edit-trig-inline')) $('games-edit-trig-inline').checked = tSet.has('inline');
+        if ($('games-edit-trig-reply')) $('games-edit-trig-reply').checked = tSet.has('reply');
+        if ($('games-edit-trig-command')) $('games-edit-trig-command').checked = tSet.has('command');
         renderGamesCards();
         loadGameLeaderboard();
     } catch (e) { if (box) box.innerHTML = errorState(e.message, 'loadGamesPage()'); }
@@ -12954,7 +13288,7 @@ function renderGamesCards() {
             '</div>' +
             '<div class="field" style="margin-bottom:10px;">' +
                 '<label class="field-label tiny">Permission</label>' +
-                '<div class="segmented perm-seg segmented_mobile" style="width:100%;display:flex;">' +
+                '<div class="segmented perm-seg segmented_mobile" style="width:100%;display:table;">' +
                     ['everyone','specific','moderator','admin'].map(function (lvl) {
                         var lbl = lvl === 'everyone' ? 'Everyone' : lvl === 'specific' ? 'Specific' : lvl === 'moderator' ? 'Mod+' : 'Admin';
                         return '<button type="button" style="flex:1;" class="' + ((c.access || 'everyone') === lvl ? 'active' : '') + '" onclick="setGamePerm(\\'' + g.id + '\\',\\'' + lvl + '\\',this)">' + lbl + '</button>';
@@ -13023,6 +13357,13 @@ async function saveGamesConfig() {
     await withSelfBusy(async function () {
         gamesCfg.announce_mode = getSeg('games-announce-mode') || 'message';
         gamesCfg.announce_cooldown_sec = parseInt($('games-announce-cooldown') && $('games-announce-cooldown').value) || 20;
+        gamesCfg.ready_text = $('games-ready-text') ? $('games-ready-text').value.trim() : '';
+        gamesCfg.edit_message = $('games-edit-message') ? sw('games-edit-message') : false;
+        var trigs = [];
+        if ($('games-edit-trig-inline') && $('games-edit-trig-inline').checked) trigs.push('inline');
+        if ($('games-edit-trig-reply') && $('games-edit-trig-reply').checked) trigs.push('reply');
+        if ($('games-edit-trig-command') && $('games-edit-trig-command').checked) trigs.push('command');
+        gamesCfg.edit_triggers = trigs.join(',') || 'inline,reply,command';
         try {
             await api('POST', '/api/games/config', { config: gamesCfg });
             toast('Mini-games settings saved.');
@@ -13052,10 +13393,16 @@ async function createGameCommand(gid) {
     var g = GAME_DEFS.find(function (x) { return x.id === gid; }) || { id: gid, name: gid };
     await openCommandModal(null, null);
     $('cmd-name').value = '/play_' + g.id;
-    $('cmd-content').value = '🎮 <b>' + g.name + '</b>\\nTap below to play and compete on this chat\\'s leaderboard!';
+    $('cmd-content').value = '🎮 <b>' + g.name + '</b>\\nTap below to play or view the leaderboard!';
     toggleSwitch('cmd-inline-toggle', true);
     show($('cmd-inline-section'), true);
-    kbCmd.loadInline(JSON.stringify({ v: 2, inline: [[{ text: '🎮 Play ' + g.name, type: 'callback', value: 'GAME:' + g.id, style: 'primary' }]] }));
+    kbCmd.loadInline(JSON.stringify({
+        v: 2,
+        inline: [
+            [{ text: '🎮 Play ' + g.name, type: 'callback', value: 'GAME:' + g.id, style: 'primary' }],
+            [{ text: '🏆 ' + g.name + ' Leaderboard', type: 'callback', value: 'GAMELB:' + g.id }]
+        ]
+    }));
 }
 
 checkStatus();
@@ -13111,9 +13458,10 @@ async function loadSettings(force) {
         window.__botTokenSet = d.bot_token_set;
         if (d.cf_token_set) $('up-token').placeholder = 'Token already stored — click Generate to replace';
         setSeg('sys-lang', d.system_language || 'en');
-        if (typeof window.applyNavLayout === 'function' && (d.nav_style || d.nav_structure)) {
-            window.applyNavLayout(d.nav_style || 'classic', d.nav_structure || 'topbar');
+        if (typeof window.applyNavLayout === 'function') {
+            window.applyNavLayout(d.nav_style || 'glass', d.nav_structure || 'topbar');
         }
+        renderSystemLanguageSections(d.system_language_sections || {});
         if ($('set-gaf-enabled')) {
             var gafOn = d.global_antiflood_enabled === '1';
             toggleSwitch('set-gaf-enabled', gafOn);
@@ -13152,6 +13500,42 @@ async function saveGlobalAntiFlood() {
     });
 }
 
+var SYS_LANG_SECTIONS = [
+    ['core', 'Core & Commands (Errors, Back, Welcome)'],
+    ['contact', 'Contact & Inbox Notifications'],
+    ['moderation', 'Group Moderation (/warn, /mute, /ban, /lock)'],
+    ['flood', 'Flood Protection & Cooldowns'],
+    ['force_join', 'Force Join Prompts & Buttons'],
+    ['games', 'Mini-Games & Leaderboards'],
+    ['ai_prompts', 'AI System Prompts & Rules'],
+    ['mcp', 'MCP Agent Prompts']
+];
+var sysLangSectionsState = {};
+function renderSystemLanguageSections(map) {
+    sysLangSectionsState = Object.assign({}, map || {});
+    var box = $('sys-lang-sections');
+    if (!box) return;
+    box.innerHTML = SYS_LANG_SECTIONS.map(function (it) {
+        var cur = sysLangSectionsState[it[0]] || 'inherit';
+        return '<div class="field" style="margin-bottom:0;">' +
+            '<label class="field-label tiny">' + esc(it[1]) + '</label>' +
+            '<select class="input" data-lsec="' + it[0] + '" onchange="sysLangSectionsState[\\'' + it[0] + '\\']=this.value">' +
+                '<option value="inherit"' + (cur === 'inherit' ? ' selected' : '') + '>Inherit Global</option>' +
+                '<option value="en"' + (cur === 'en' ? ' selected' : '') + '>English</option>' +
+                '<option value="fa"' + (cur === 'fa' ? ' selected' : '') + '>فارسی (Farsi)</option>' +
+            '</select></div>';
+    }).join('');
+}
+async function saveSystemLanguageSections() {
+    await withSelfBusy(async function () {
+        var out = $('sys-lang-result');
+        try {
+            await api('POST', '/api/settings/system_language', { sections: sysLangSectionsState });
+            if (out) out.innerHTML = '<span style="color:var(--green)"><i class="fa-solid fa-circle-check"></i> Section language overrides saved.</span>';
+            toast('Section languages saved.');
+        } catch (e) { if (out) out.innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
+    });
+}
 async function setSystemLanguage(lang) {
     lang = lang === 'fa' ? 'fa' : 'en';
     var out = $('sys-lang-result');
@@ -13387,13 +13771,80 @@ async function loadBotInfo(force) {
             var mt = d.menu_button.type || 'commands';
             $('bi-menu-type').value = mt;
             show($('bi-menu-webapp-wrap'), mt === 'web_app');
+            show($('bi-webapp-host-card'), mt === 'web_app');
             if ($('bi-menu-text')) $('bi-menu-text').value = d.menu_button.text || '';
             if ($('bi-menu-url')) $('bi-menu-url').value = (d.menu_button.web_app && d.menu_button.web_app.url) || '';
         }
+        if (d.webapp_files) { webappFiles = d.webapp_files; renderWebAppFiles(); }
         applyRightsCheckboxes('bi-rights-group', d.default_admin_rights_groups);
         applyRightsCheckboxes('bi-rights-channel', d.default_admin_rights_channels);
         $('bi-result').innerHTML = '<span style="color:var(--green)">Loaded from Telegram.</span>';
     } catch (e) { $('bi-result').innerHTML = '<span style="color:var(--red)">' + esc(e.message) + '</span>'; }
+}
+var webappFiles = { 'index.html': '' };
+var currentWebAppPath = 'index.html';
+function renderWebAppFiles() {
+    var sel = $('wa-file-select');
+    if (!sel) return;
+    var keys = Object.keys(webappFiles);
+    if (!keys.length) webappFiles['index.html'] = '<h1>Hello Nyxx WebApp</h1>';
+    keys = Object.keys(webappFiles);
+    if (!webappFiles[currentWebAppPath]) currentWebAppPath = keys[0];
+    sel.innerHTML = keys.map(function (k) { return '<option value="' + esc(k) + '"' + (k === currentWebAppPath ? ' selected' : '') + '>' + esc(k) + '</option>'; }).join('');
+    if ($('wa-file-content')) $('wa-file-content').value = webappFiles[currentWebAppPath] || '';
+}
+function selectWebAppFile(p) { currentWebAppPath = p; if ($('wa-file-content')) $('wa-file-content').value = webappFiles[p] || ''; }
+function updateCurrentWebAppFile(val) { webappFiles[currentWebAppPath] = val; }
+function addWebAppFile() {
+    var p = ($('wa-new-path') && $('wa-new-path').value.trim().replace(/^\\/+/, '')) || '';
+    if (!p) { toast('Enter a file path like pages/about.html', 'error'); return; }
+    if (!webappFiles[p]) webappFiles[p] = p.endsWith('.html') ? '<!DOCTYPE html>\\n<html><body><h1>' + p + '</h1></body></html>' : '';
+    currentWebAppPath = p;
+    $('wa-new-path').value = '';
+    renderWebAppFiles();
+}
+function deleteWebAppFile() {
+    var keys = Object.keys(webappFiles);
+    if (keys.length <= 1) { toast('Keep at least one file (e.g. index.html).', 'info'); return; }
+    delete webappFiles[currentWebAppPath];
+    currentWebAppPath = Object.keys(webappFiles)[0];
+    renderWebAppFiles();
+}
+async function saveWebAppFiles() {
+    await withSelfBusy(async function () {
+        try {
+            await api('POST', '/api/bot_info/webapp_files', { files: webappFiles });
+            if ($('wa-status')) $('wa-status').textContent = 'Published at ' + window.location.origin + '/app';
+            toast('WebApp files saved to /app!');
+        } catch (e) { toast(e.message, 'error'); }
+    });
+}
+function loadPremadeWebAppTemplate() {
+    api('GET', '/api/bot_info/webapp_template').then(function (d) {
+        if (d && d.files) {
+            webappFiles = d.files;
+            currentWebAppPath = 'index.html';
+            renderWebAppFiles();
+            toast('Premade Nyxx Portal template loaded! Click Save & Publish /app.');
+        }
+    }).catch(function (e) { toast(e.message, 'error'); });
+}
+function applyWebAppPreset(val) {
+    if (!val) return;
+    show($('bi-webapp-host-card'), true);
+    if (val === 'template') {
+        $('bi-menu-text').value = $('bi-menu-text').value.trim() || 'Open Portal';
+        $('bi-menu-url').value = window.location.origin + '/app';
+        loadPremadeWebAppTemplate();
+    } else if (val === 'custom') {
+        $('bi-menu-text').value = $('bi-menu-text').value.trim() || 'Open App';
+        $('bi-menu-url').value = window.location.origin + '/app';
+    } else if (val.indexOf('game:') === 0) {
+        var gid = val.slice(5);
+        $('bi-menu-text').value = $('bi-menu-text').value.trim() || 'Play Game';
+        $('bi-menu-url').value = window.location.origin + '/games?game=' + gid;
+    }
+    $('bi-webapp-preset').value = '';
 }
 
 async function publishBotInfo() {
@@ -13478,8 +13929,14 @@ async function runCron() {
 // ---- Backup page ----
 async function exportBackup() {
     await withSelfBusy(async function () {
-        try { var d = await api('GET', '/api/backup'); downloadJson('nyxx-backup-' + stamp() + '.json', d.data); }
-        catch (e) { toast(e.message, 'error'); }
+        try {
+            var pass = ($('backup-passphrase') && $('backup-passphrase').value) || '';
+            var incSec = !!($('backup-include-secrets') && $('backup-include-secrets').checked);
+            if (incSec && !pass) { toast('Enter an encryption passphrase when including sensitive secrets.', 'error'); return; }
+            var d = await api('POST', '/api/backup/export', { passphrase: pass, include_secrets: incSec });
+            downloadJson('nyxx-backup-' + stamp() + '.json', d.data);
+            toast(pass ? 'Encrypted backup downloaded!' : 'Backup downloaded (AI keys & secrets excluded — add a passphrase to include them).');
+        } catch (e) { toast(e.message, 'error'); }
     });
 }
 
@@ -13494,6 +13951,9 @@ const BACKUP_ITEMS = [
     { id: 'ai_settings', title: 'AI settings', sub: 'Providers, prompts, model choices' },
     { id: 'menu_commands', title: 'Telegram menu', sub: 'Menu button entries' },
     { id: 'bot_config', title: 'Bot config', sub: 'Name, username, webhook URL (not the token)' },
+    { id: 'channels', title: 'Channels', sub: 'Connected channels and their settings' },
+    { id: 'proxies', title: 'Proxies', sub: 'MTProto / SOCKS5 proxy list' },
+    { id: 'game_scores', title: 'Game scores', sub: 'Mini-game leaderboards' },
     { id: 'blocked_users', title: 'Block list', sub: 'Users you blocked' },
     { id: 'broadcast_history', title: 'Broadcast history', sub: 'Past broadcast messages' }
 ];
@@ -13514,7 +13974,10 @@ async function runCustomBackup() {
         var checked = Array.from(document.querySelectorAll('.backup-cb:checked')).map(function (c) { return c.value; });
         if (!checked.length) { toast('Select at least one section.', 'error'); return; }
         try {
-            var d = await api('GET', '/api/backup');
+            var pass = ($('backup-passphrase') && $('backup-passphrase').value) || '';
+            var incSec = !!($('backup-include-secrets') && $('backup-include-secrets').checked);
+            if (incSec && !pass) { toast('Enter an encryption passphrase when including sensitive secrets.', 'error'); return; }
+            var d = await api('POST', '/api/backup/export', { passphrase: pass, include_secrets: incSec, selected: checked });
             var full = d.data;
             var custom = {
                 app: 'nyxx', version: full.version, exported_at: full.exported_at, custom: true,
@@ -13524,6 +13987,9 @@ async function runCustomBackup() {
                 media_library: checked.indexOf('media_library') >= 0 ? (full.media_library || []) : [],
                 users: checked.indexOf('users') >= 0 ? (full.users || []) : [],
                 groups: checked.indexOf('groups') >= 0 ? (full.groups || []) : [],
+                channels: checked.indexOf('channels') >= 0 ? (full.channels || []) : [],
+                proxies: checked.indexOf('proxies') >= 0 ? (full.proxies || []) : [],
+                game_scores: checked.indexOf('game_scores') >= 0 ? (full.game_scores || []) : [],
                 ai_messages: checked.indexOf('ai_messages') >= 0 ? (full.ai_messages || []) : [],
                 dm_messages: checked.indexOf('dm_messages') >= 0 ? (full.dm_messages || []) : [],
                 blocked_users: checked.indexOf('blocked_users') >= 0 ? (full.blocked_users || []) : [],
@@ -13532,7 +13998,8 @@ async function runCustomBackup() {
             };
             if (full.settings) {
                 if (checked.indexOf('ai_settings') >= 0) {
-                    Object.keys(full.settings).forEach(function (k) { if (k.indexOf('ai_') === 0) custom.settings[k] = full.settings[k]; });
+                    Object.keys(full.settings).forEach(function (k) { if (k.indexOf('ai_') === 0 || k.indexOf('mcp_ai') === 0) custom.settings[k] = full.settings[k]; });
+                    if (full.encrypted_secrets) custom.encrypted_secrets = full.encrypted_secrets;
                 }
                 if (checked.indexOf('menu_commands') >= 0 && full.settings.menu_commands !== undefined) custom.settings.menu_commands = full.settings.menu_commands;
                 if (checked.indexOf('bot_config') >= 0) {
@@ -13558,6 +14025,9 @@ function restoreBackup(ev) {
                 ['Featured commands', Array.isArray(parsed.featured) ? parsed.featured.length : 0],
                 ['Users', Array.isArray(parsed.users) ? parsed.users.length : 0],
                 ['Groups', Array.isArray(parsed.groups) ? parsed.groups.length : 0],
+                ['Channels', Array.isArray(parsed.channels) ? parsed.channels.length : 0],
+                ['Proxies', Array.isArray(parsed.proxies) ? parsed.proxies.length : 0],
+                ['Game scores', Array.isArray(parsed.game_scores) ? parsed.game_scores.length : 0],
                 ['AI memory', Array.isArray(parsed.ai_messages) ? parsed.ai_messages.length : 0],
                 ['Direct messages', Array.isArray(parsed.dm_messages) ? parsed.dm_messages.length : 0],
                 ['Block list', Array.isArray(parsed.blocked_users) ? parsed.blocked_users.length : 0],
@@ -13577,7 +14047,12 @@ function restoreBackup(ev) {
             html += '</div>';
             var ok = await confirmDialog('This cannot be undone.', 'Review restore', true, html);
             if (!ok) return;
-            await api('POST', '/api/backup/restore', { data: parsed });
+            var pass = ($('restore-passphrase') && $('restore-passphrase').value) || '';
+            if (parsed.encrypted_secrets && !pass) {
+                pass = prompt('This backup contains encrypted secrets. Enter your decryption passphrase:') || '';
+                if (!pass) return;
+            }
+            await api('POST', '/api/backup/restore', { data: parsed, passphrase: pass });
             toast('Restored.');
             window.commands = [];
             if (typeof window.loadCommands === 'function') window.loadCommands(true);
@@ -13659,6 +14134,15 @@ window.changePassword        = changePassword;
 window.factoryReset          = factoryReset;
 window.loadBotInfo           = loadBotInfo;
 window.publishBotInfo        = publishBotInfo;
+window.renderSystemLanguageSections = renderSystemLanguageSections;
+window.saveSystemLanguageSections   = saveSystemLanguageSections;
+window.applyWebAppPreset     = applyWebAppPreset;
+window.loadPremadeWebAppTemplate = loadPremadeWebAppTemplate;
+window.selectWebAppFile      = selectWebAppFile;
+window.updateCurrentWebAppFile = updateCurrentWebAppFile;
+window.addWebAppFile         = addWebAppFile;
+window.deleteWebAppFile      = deleteWebAppFile;
+window.saveWebAppFiles       = saveWebAppFiles;
 window.loadCron              = loadCron;
 window.toggleCronEnabled     = toggleCronEnabled;
 window.saveCron              = saveCron;
@@ -14581,7 +15065,8 @@ export default {
             if (request.method === 'GET' && url.pathname === '/sw.js') return await handleServiceWorker(request, env);
             if (request.method === 'GET' && url.pathname.startsWith('/js/')) return await serveClientModule(url.pathname);
             if (request.method === 'GET' && url.pathname === '/chat') return await handleChatPage(request, env);
-            if (request.method === 'GET' && url.pathname === '/games') return new Response(GAMES_HTML, { headers: HTML_HEADERS });
+            if (request.method === 'GET' && (url.pathname === '/app' || url.pathname.startsWith('/app/'))) return await serveWebAppHost(env, url.pathname);
+            if (request.method === 'GET' && url.pathname === '/games') return new Response(renderGamesHtml(url), { headers: HTML_HEADERS });
             if (request.method === 'POST' && url.pathname === '/api/games/score') return await handleGameScoreSubmit(request, env, ctx);
             if (request.method === 'GET' && url.pathname === '/api/games/leaderboard') return await handleGameLeaderboardGet(env, url);
             if (request.method === 'GET' && url.pathname === '/oauth/callback') {
@@ -14653,6 +15138,7 @@ export default {
             if (url.pathname === '/api/commands/export' && request.method === 'GET') return await exportCommandPack(env);
             if (url.pathname === '/api/commands/import' && request.method === 'POST') return await importCommandPack(request, env);
             if (url.pathname === '/api/commands/reorder' && request.method === 'POST') return await reorderCommands(request, env);
+            if (url.pathname === '/api/commands/batch_update' && request.method === 'POST') return await batchUpdateCommands(request, env);
             if (url.pathname.startsWith('/api/commands/')) {
                 if (request.method === 'GET') return await getCommandDetail(env, url);
                 if (request.method === 'PUT') return await updateCommand(request, env);
@@ -14784,6 +15270,8 @@ export default {
 
             if (request.method === 'GET' && url.pathname === '/api/bot_info') return await getBotInfo(env);
             if (request.method === 'POST' && url.pathname === '/api/bot_info') return await setBotInfo(request, env);
+            if (request.method === 'GET' && url.pathname === '/api/bot_info/webapp_template') return apiJson({ success: true, files: PREMADE_WEBAPP_TEMPLATE });
+            if (request.method === 'POST' && url.pathname === '/api/bot_info/webapp_files') return await saveWebAppFilesHandler(request, env);
 
             if (request.method === 'GET' && url.pathname === '/api/stats') return await getStats(env);
             if (request.method === 'GET' && url.pathname === '/api/overview') return await getOverview(env, request);
@@ -14820,6 +15308,7 @@ export default {
             if (request.method === 'DELETE' && /^\/api\/chat\/sessions\/[^\/]+$/.test(url.pathname)) return await deleteChatSession(env, url);
 
             if (request.method === 'GET' && url.pathname === '/api/backup') return await exportBackup(env);
+            if (request.method === 'POST' && url.pathname === '/api/backup/export') return await exportBackup(env, request);
             if (request.method === 'POST' && url.pathname === '/api/backup/restore') return await restoreBackup(request, env);
 
             if (request.method === 'POST' && url.pathname === '/api/reset') return await factoryReset(request, env);
@@ -15221,12 +15710,46 @@ async function checkPermissionForChat(env, userId, key, chatId, chatType, chatUs
     return await checkPermission(env, userId, key);
 }
 
+async function getGlobalBotAccess(db) {
+    try {
+        const raw = await getSetting(db, 'global_bot_access_json');
+        if (raw) {
+            const p = JSON.parse(raw);
+            if (p && typeof p === 'object') return p;
+        }
+    } catch (e) {}
+    return { chat_types: '', allowed_users: '', disallowed_users: '', allowed_chats: '', disallowed_chats: '', premium_only: false, require_username: false, maintenance_mode: false, deny_message: '' };
+}
+async function enforceGlobalBotAccess(env, BOT_TOKEN, user, chat, chatType) {
+    if (!user || !user.id) return true;
+    if (await isAdminUser(env, user.id)) return true;
+    const gba = await getGlobalBotAccess(env.DB);
+    let denied = false;
+    if (gba.maintenance_mode) denied = true;
+    if (!denied && gba.premium_only && !user.is_premium) denied = true;
+    if (!denied && gba.require_username && !user.username) denied = true;
+    if (!denied && parseAllowedUserIds(gba.disallowed_users).has(Number(user.id))) denied = true;
+    const alwUsers = parseAllowedUserIds(gba.allowed_users);
+    if (!denied && alwUsers.size > 0 && !alwUsers.has(Number(user.id))) denied = true;
+    if (!denied && !checkChatGate(chatType, chat ? chat.id : user.id, chat ? chat.username : '', gba.chat_types, gba.allowed_chats)) denied = true;
+    if (!denied && gba.disallowed_chats) {
+        const disChats = normalizeAllowedChatIds(gba.disallowed_chats).split(/[\s,;]+/).map(s => s.trim().toLowerCase()).filter(Boolean);
+        const cid = chat ? String(chat.id).toLowerCase() : String(user.id).toLowerCase();
+        const un = chat && chat.username ? ('@' + String(chat.username).toLowerCase()) : '';
+        if (disChats.some(t => t === cid || (un && t === un))) denied = true;
+    }
+    if (!denied) return true;
+    if (gba.deny_message && chat && chat.id && chatType === 'private') {
+        await sendRichText(BOT_TOKEN, chat.id, escapeTelegramHTML(gba.deny_message));
+    }
+    return false;
+}
 async function getPermissionsHandler(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
-        const [permissions, acl] = await Promise.all([getPermissions(env), getPermissionsAcl(env)]);
-        return apiJson({ success: true, permissions, acl, keys: PERMISSION_KEYS });
+        const [permissions, acl, global_bot_access] = await Promise.all([getPermissions(env), getPermissionsAcl(env), getGlobalBotAccess(env.DB)]);
+        return apiJson({ success: true, permissions, acl, global_bot_access, keys: PERMISSION_KEYS });
     } catch (err) { return internalError(err); }
 }
 async function savePermissionsHandler(request, env) {
@@ -15250,10 +15773,25 @@ async function savePermissionsHandler(request, env) {
                 };
             }
         }
-        await setSettingsBatch(env.DB, [
+        const writes = [
             ['permissions_json', JSON.stringify(merged)],
             ['permissions_acl_json', JSON.stringify(mergedAcl)]
-        ]);
+        ];
+        if (body.global_bot_access && typeof body.global_bot_access === 'object') {
+            const g = body.global_bot_access;
+            writes.push(['global_bot_access_json', JSON.stringify({
+                chat_types: normalizeAllowedChatTypes(g.chat_types || ''),
+                allowed_users: normalizeAllowedUsersStr(g.allowed_users || ''),
+                disallowed_users: normalizeAllowedUsersStr(g.disallowed_users || ''),
+                allowed_chats: normalizeAllowedChatIds(g.allowed_chats || ''),
+                disallowed_chats: normalizeAllowedChatIds(g.disallowed_chats || ''),
+                premium_only: !!g.premium_only,
+                require_username: !!g.require_username,
+                maintenance_mode: !!g.maintenance_mode,
+                deny_message: String(g.deny_message || '').slice(0, 500)
+            })]);
+        }
+        await setSettingsBatch(env.DB, writes);
         await bumpDomainEpoch(env.DB, 'perms');
         await logAction(env.DB, null, 'Permissions updated');
         return apiJson({ success: true, permissions: merged, acl: mergedAcl });
@@ -15303,7 +15841,7 @@ async function demoteAdminHandler(request, env) {
 // DATABASE
 // ============================================================================
 const dbInitCache = new WeakMap();
-const SCHEMA_VERSION = 29;
+const SCHEMA_VERSION = 30;
 
 const MIGRATIONS = {
     2: [
@@ -15525,6 +16063,9 @@ const MIGRATIONS = {
     29: [
         `ALTER TABLE commands ADD COLUMN inline_enabled INTEGER DEFAULT 0`,
         `ALTER TABLE featured_replies ADD COLUMN inline_enabled INTEGER DEFAULT 0`,
+    ],
+    30: [
+        `ALTER TABLE media_library ADD COLUMN disallowed_users TEXT DEFAULT ''`,
     ],
 };
 
@@ -15821,6 +16362,7 @@ const DESIRED_SCHEMA = {
         file_name: { type: 'TEXT', default: "''" },
         file_size: { type: 'INTEGER', default: '0' },
         allowed_users: { type: 'TEXT', default: "''" },
+        disallowed_users: { type: 'TEXT', default: "''" },
         expires_at: { type: 'DATETIME' },
         storage_chat_id: { type: 'TEXT', default: "''" },
         storage_message_id: { type: 'INTEGER' },
@@ -16298,6 +16840,7 @@ async function initializeDatabase(db) {
             `ALTER TABLE featured_replies ADD COLUMN allowed_chat_ids TEXT DEFAULT ''`,
             `ALTER TABLE commands ADD COLUMN inline_enabled INTEGER DEFAULT 0`,
             `ALTER TABLE featured_replies ADD COLUMN inline_enabled INTEGER DEFAULT 0`,
+            `ALTER TABLE media_library ADD COLUMN disallowed_users TEXT DEFAULT ''`,
             `ALTER TABLE users ADD COLUMN private_started BOOLEAN DEFAULT 0`,
             `ALTER TABLE users ADD COLUMN last_group_id INTEGER`,
             `ALTER TABLE mcp_sessions ADD COLUMN title TEXT DEFAULT ''`,
@@ -17538,10 +18081,39 @@ async function getMemoryOverview(env) {
             };
         }).sort((a, b) => b.ai_count - a.ai_count);
 
+        let dbStats = null;
+        try {
+            const tableNames = ['users','groups','channels','commands','ai_messages','dm_messages','media_library','logs','broadcast_history','game_scores','mcp_sessions','proxies','featured_replies','blocked_users','settings'];
+            const tables = {};
+            let bytes = 0;
+            // each count is isolated: a missing table no longer breaks everything
+            await Promise.all(tableNames.map(async (t) => {
+                try {
+                    const r = await env.DB.prepare(`SELECT COUNT(*) AS n FROM ${t}`).first();
+                    tables[t] = (r && r.n) || 0;
+                } catch (e) { /* table missing: skip */ }
+            }));
+            // size: try PRAGMAs first, then fall back to D1's own meta.size_after
+            try {
+                const pc = await env.DB.prepare('PRAGMA page_count').first();
+                const ps = await env.DB.prepare('PRAGMA page_size').first();
+                bytes = ((pc && (pc.page_count ?? Object.values(pc)[0])) || 0) * ((ps && (ps.page_size ?? Object.values(ps)[0])) || 4096);
+            } catch (e) {}
+            if (!bytes) {
+                try {
+                    const m = await env.DB.prepare('SELECT 1').run();
+                    bytes = (m && m.meta && m.meta.size_after) || 0;
+                } catch (e) {}
+            }
+            const sizeLabel = bytes >= 1048576 ? (bytes / 1048576).toFixed(2) + ' MB' : (bytes ? Math.max(1, Math.round(bytes / 1024)) + ' KB' : 'n/a');
+            dbStats = { bytes, size_label: sizeLabel, tables };
+        } catch (e) { console.error('db_stats failed:', e.message); }
+
         return apiJson({
             success: true,
             users: usersOut,
             groups: groupsOut,
+            db_stats: dbStats,
             totals: { ai: aiTotal + groupsTotal, dm: dmTotal, users: usersOut.length, groups: groupsOut.length, group_ai: groupsTotal }
         });
     } catch (err) { return internalError(err); }
@@ -17938,7 +18510,7 @@ async function getCommands(env, url) {
         await initializeDatabase(env.DB);
         const summary = url && url.searchParams.get('summary') === '1';
         const cols = summary
-            ? "command, parent, response_type, enabled, access_level, allowed_users, disallowed_users, expires_at, is_admin_only, protect_content, edit_message, cmd_password, force_join_mode, media_items_json, order_idx, CASE WHEN buttons_json != '' THEN 1 ELSE 0 END AS has_buttons, show_reply_keyboard"
+            ? "command, parent, response_type, enabled, access_level, allowed_users, disallowed_users, allowed_chat_types, allowed_chat_ids, expires_at, is_admin_only, protect_content, inline_enabled, edit_message, cmd_password, force_join_mode, media_items_json, order_idx, CASE WHEN buttons_json != '' THEN 1 ELSE 0 END AS has_buttons, show_reply_keyboard"
             : '*';
         const result = await env.DB.prepare(`SELECT ${cols} FROM commands ORDER BY order_idx, command`).all();
         return apiJson({ commands: result.results || [] });
@@ -18180,6 +18752,37 @@ async function reorderCommands(request, env) {
         return apiJson({ success: true });
     } catch (err) { return internalError(err); }
 }
+async function batchUpdateCommands(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const body = await request.json();
+        const cmds = Array.isArray(body.commands) ? body.commands.map(String).filter(Boolean) : [];
+        const patch = body.patch || {};
+        if (!cmds.length) return apiJson({ error: 'No commands selected.' }, 400);
+        const sets = [];
+        const vals = [];
+        if (patch.enabled !== undefined) { sets.push('enabled = ?'); vals.push(patch.enabled ? 1 : 0); }
+        if (patch.edit_message !== undefined) { sets.push('edit_message = ?'); vals.push(patch.edit_message ? 1 : 0); }
+        if (patch.edit_triggers !== undefined) { sets.push('edit_triggers = ?'); vals.push(String(patch.edit_triggers)); }
+        if (patch.protect_content !== undefined) { sets.push('protect_content = ?'); vals.push(patch.protect_content ? 1 : 0); }
+        if (patch.inline_enabled !== undefined) { sets.push('inline_enabled = ?'); vals.push(patch.inline_enabled ? 1 : 0); }
+        if (patch.access_level !== undefined && COMMAND_ACCESS_LEVELS.includes(patch.access_level)) {
+            sets.push('access_level = ?'); vals.push(patch.access_level);
+            sets.push('is_admin_only = ?'); vals.push(patch.access_level === 'admin' ? 1 : 0);
+        }
+        if (patch.force_join_mode !== undefined && ['inherit', 'required', 'off'].includes(patch.force_join_mode)) {
+            sets.push('force_join_mode = ?'); vals.push(patch.force_join_mode);
+        }
+        if (!sets.length) return apiJson({ error: 'Nothing to update.' }, 400);
+        sets.push('version = COALESCE(version, 1) + 1');
+        await initializeDatabase(env.DB);
+        const ph = cmds.map(() => '?').join(', ');
+        const r = await env.DB.prepare(`UPDATE commands SET ${sets.join(', ')} WHERE command IN (${ph})`).bind(...vals, ...cmds).run();
+        await bumpDomainEpoch(env.DB, 'reply_buttons');
+        await logAction(env.DB, null, `Batch updated ${cmds.length} commands`);
+        return apiJson({ success: true, updated: (r && r.meta && r.meta.changes) || cmds.length });
+    } catch (err) { return internalError(err); }
+}
 async function runBatchChunks(db, statements, chunkSize = 60) {
     for (let i = 0; i < statements.length; i += chunkSize) await db.batch(statements.slice(i, i + chunkSize));
 }
@@ -18191,7 +18794,7 @@ async function exportCommandPack(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
-        const commands = await env.DB.prepare('SELECT command, parent, response_type, content, media_url, file_id, media_meta, media_items_json, protect_content, edit_message, edit_triggers, inline_access_level, inline_allowed_users, inline_disallowed_users, inline_auto_back, inline_back_label, buttons_json, is_admin_only, access_level, allowed_users, disallowed_users, force_join_mode, cmd_password, password_prompt, password_dismiss_label, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, auto_back, back_label FROM commands ORDER BY order_idx, command').all();
+        const commands = await env.DB.prepare('SELECT command, parent, response_type, content, media_url, file_id, media_meta, media_items_json, protect_content, inline_enabled, edit_message, edit_triggers, inline_access_level, inline_allowed_users, inline_disallowed_users, inline_auto_back, inline_back_label, buttons_json, is_admin_only, access_level, allowed_users, disallowed_users, allowed_chat_types, allowed_chat_ids, force_join_mode, cmd_password, password_prompt, password_dismiss_label, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, auto_back, back_label FROM commands ORDER BY order_idx, command').all();
         let menu = [];
         const raw = await getSetting(env.DB, 'menu_commands');
         if (raw) { try { menu = JSON.parse(raw); } catch (e) {} }
@@ -18213,23 +18816,25 @@ async function importCommandPack(request, env) {
         const stmts = valid.map((c, i) => {
             const access = effectiveCommandAccess(c);
             return env.DB.prepare(`
-            INSERT INTO commands (command, parent, response_type, content, media_url, file_id, media_meta, media_items_json, protect_content, edit_message, edit_triggers, inline_access_level, inline_allowed_users, inline_disallowed_users, inline_auto_back, inline_back_label, buttons_json, is_admin_only, access_level, allowed_users, disallowed_users, force_join_mode, cmd_password, password_prompt, password_dismiss_label, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, auto_back, back_label, order_idx)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO commands (command, parent, response_type, content, media_url, file_id, media_meta, media_items_json, protect_content, inline_enabled, edit_message, edit_triggers, inline_access_level, inline_allowed_users, inline_disallowed_users, inline_auto_back, inline_back_label, buttons_json, is_admin_only, access_level, allowed_users, disallowed_users, allowed_chat_types, allowed_chat_ids, force_join_mode, cmd_password, password_prompt, password_dismiss_label, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, auto_back, back_label, order_idx)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(command) DO UPDATE SET
                 parent = excluded.parent, response_type = excluded.response_type, content = excluded.content,
                 media_url = excluded.media_url, file_id = excluded.file_id, media_meta = excluded.media_meta,
                 media_items_json = excluded.media_items_json, protect_content = excluded.protect_content,
+                inline_enabled = excluded.inline_enabled,
                 edit_message = excluded.edit_message, edit_triggers = excluded.edit_triggers,
                 inline_access_level = excluded.inline_access_level, inline_allowed_users = excluded.inline_allowed_users, inline_disallowed_users = excluded.inline_disallowed_users,
                 inline_auto_back = excluded.inline_auto_back, inline_back_label = excluded.inline_back_label,
                 buttons_json = excluded.buttons_json,
                 is_admin_only = excluded.is_admin_only, access_level = excluded.access_level,
                 allowed_users = excluded.allowed_users, disallowed_users = excluded.disallowed_users,
+                allowed_chat_types = excluded.allowed_chat_types, allowed_chat_ids = excluded.allowed_chat_ids,
                 force_join_mode = excluded.force_join_mode, cmd_password = excluded.cmd_password, password_prompt = excluded.password_prompt, password_dismiss_label = excluded.password_dismiss_label,
                 expires_at = excluded.expires_at, enabled = excluded.enabled,
                 show_reply_keyboard = excluded.show_reply_keyboard, reply_keyboard_json = excluded.reply_keyboard_json,
                 auto_back = excluded.auto_back, back_label = excluded.back_label
-        `).bind(c.command, c.parent || null, c.response_type || 'text', c.content || '', c.media_url || '', c.file_id || '', c.media_meta || '', c.media_items_json || '', c.protect_content ? 1 : 0, c.edit_message ? 1 : 0, c.edit_triggers || 'inline,reply,command', c.inline_access_level || 'everyone', normalizeAllowedUsersStr(c.inline_allowed_users), normalizeAllowedUsersStr(c.inline_disallowed_users), c.inline_auto_back ? 1 : 0, c.inline_back_label || '', c.buttons_json || '', access === 'admin' ? 1 : 0, access, normalizeAllowedUsersStr(c.allowed_users), normalizeAllowedUsersStr(c.disallowed_users), c.force_join_mode || 'inherit', c.cmd_password || '', c.password_prompt || '', c.password_dismiss_label || '', c.expires_at || null, c.enabled != 0 ? 1 : 0, c.show_reply_keyboard ? 1 : 0, c.reply_keyboard_json || '', c.auto_back !== undefined && c.auto_back !== null ? (c.auto_back ? 1 : 0) : 1, c.back_label || '', i);
+        `).bind(c.command, c.parent || null, c.response_type || 'text', c.content || '', c.media_url || '', c.file_id || '', c.media_meta || '', c.media_items_json || '', c.protect_content ? 1 : 0, c.inline_enabled ? 1 : 0, c.edit_message ? 1 : 0, c.edit_triggers || 'inline,reply,command', c.inline_access_level || 'everyone', normalizeAllowedUsersStr(c.inline_allowed_users), normalizeAllowedUsersStr(c.inline_disallowed_users), c.inline_auto_back ? 1 : 0, c.inline_back_label || '', c.buttons_json || '', access === 'admin' ? 1 : 0, access, normalizeAllowedUsersStr(c.allowed_users), normalizeAllowedUsersStr(c.disallowed_users), normalizeAllowedChatTypes(c.allowed_chat_types), normalizeAllowedChatIds(c.allowed_chat_ids), c.force_join_mode || 'inherit', c.cmd_password || '', c.password_prompt || '', c.password_dismiss_label || '', c.expires_at || null, c.enabled != 0 ? 1 : 0, c.show_reply_keyboard ? 1 : 0, c.reply_keyboard_json || '', c.auto_back !== undefined && c.auto_back !== null ? (c.auto_back ? 1 : 0) : 1, c.back_label || '', i);
         });
         await runBatchChunks(env.DB, stmts);
         if (Array.isArray(data.menu) && data.menu.length) {
@@ -18708,7 +19313,7 @@ async function addUserManually(request, env) {
                 first_name = CASE WHEN excluded.first_name != '' THEN excluded.first_name ELSE users.first_name END,
                 private_started = excluded.private_started,
                 last_active = CURRENT_TIMESTAMP
-        `).bind(userId, username, firstName, privateStarted).run();
+        `).bind(userId, username, cleanUserDisplayName(firstName, 64), privateStarted).run();
         await logAction(env.DB, userId, 'User added manually');
         return apiJson({ success: true, private_started: privateStarted, warning });
     } catch (err) { return internalError(err); }
@@ -19038,6 +19643,7 @@ const GROUP_DEFAULT_SETTINGS = {
     blacklist_words: '', blacklist_level: 'admins',
     anti_bot: false,
     auto_delete_service: false, track_members: false,
+    language: 'inherit',
     exempt_linked_forwards: true,
     auto_comment_enabled: false, auto_comment_text: '',
     dm_notify_admins: false, dm_auto_reply_enabled: false, dm_auto_reply_text: '',
@@ -19062,6 +19668,7 @@ const GROUP_DEFAULT_SETTINGS = {
 function normalizeGroupSettings(raw) {
     const src = raw && typeof raw === 'object' ? raw : {};
     const out = Object.assign({}, GROUP_DEFAULT_SETTINGS, src);
+    if (!['inherit', 'en', 'fa'].includes(out.language)) out.language = 'inherit';
     if (!GROUP_AI_MODES.includes(out.ai)) out.ai = 'inherit';
     if (!src.ai_trigger && src.mention !== undefined) {
         out.ai_trigger = src.mention === '1' ? 'mention' : (src.mention === '0' ? 'none' : 'inherit');
@@ -19432,6 +20039,7 @@ async function getGroupSettings(db, chatId) {
     } catch (e) { return normalizeGroupSettings({}); }
 }
 const CHANNEL_DEFAULT_SETTINGS = {
+    language: 'inherit',
     auto_capture_media: false,
     auto_pin_posts: false,
     auto_signature_enabled: false,
@@ -19444,6 +20052,7 @@ const CHANNEL_DEFAULT_SETTINGS = {
 function normalizeChannelSettings(raw) {
     const src = raw && typeof raw === 'object' ? raw : {};
     return {
+        language: ['inherit', 'en', 'fa'].includes(src.language) ? src.language : 'inherit',
         auto_capture_media: !!src.auto_capture_media,
         auto_pin_posts: !!src.auto_pin_posts,
         auto_signature_enabled: !!src.auto_signature_enabled,
@@ -20391,6 +21000,17 @@ function replacePlaceholders(text, ctx) {
     return result;
 }
 function isSafeTelegramHref(url) { return /^https?:\/\//i.test(url || ''); }
+// Clamps a user-supplied display name: strips control/bidi chars, caps runs of
+// combining marks (zalgo / "tall" glyph abuse) and truncates by code point.
+function cleanUserDisplayName(name, max) {
+    max = max || 32;
+    let s = String(name == null ? '' : name);
+    try { s = s.normalize('NFC'); } catch (e) {}
+    s = s.replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g, '');
+    s = s.replace(/\p{M}{3,}/gu, m => Array.from(m).slice(0, 2).join(''));
+    s = Array.from(s).slice(0, max).join('').trim();
+    return s;
+}
 function escapeTelegramHTML(text) {
     if (!text) return '';
     const escPlain = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -20647,10 +21267,10 @@ async function getSettings(env, originUrl) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
-        const [token, webhook, cfToken, language, mediaStorage, mediaDeleteAfter, navStyle, navStructure,
+        const [token, webhook, cfToken, language, langSectionsRaw, mediaStorage, mediaDeleteAfter, navStyle, navStructure,
             gafEnabled, gafLimit, gafAction, gafMute, gafKickAfter, gafBanAfter, gafExemptMode, gafExempt] = await Promise.all([
             getSetting(env.DB, 'bot_token'), getSetting(env.DB, 'webhook_url'), getSetting(env.DB, 'cf_api_token'),
-            getSetting(env.DB, 'system_language'), getSetting(env.DB, 'media_storage_chat_id'),
+            getSetting(env.DB, 'system_language'), getSetting(env.DB, 'system_language_sections'), getSetting(env.DB, 'media_storage_chat_id'),
             getSetting(env.DB, 'media_storage_delete_after_upload'), getSetting(env.DB, 'nav_style'), getSetting(env.DB, 'nav_structure'),
             getSetting(env.DB, 'global_antiflood_enabled'), getSetting(env.DB, 'global_antiflood_limit'),
             getSetting(env.DB, 'global_antiflood_action'), getSetting(env.DB, 'global_antiflood_mute_minutes'),
@@ -20658,6 +21278,8 @@ async function getSettings(env, originUrl) {
             getSetting(env.DB, 'global_antiflood_exempt'), getSetting(env.DB, 'global_antiflood_exempt_admins'),
         ]);
         const systemLanguage = language || 'en';
+        let systemLanguageSections = {};
+        try { if (langSectionsRaw) systemLanguageSections = JSON.parse(langSectionsRaw) || {}; } catch (e) {}
         const resolvedExempt = ['admins', 'admins_moderators', 'none'].includes(gafExemptMode)
             ? gafExemptMode
             : (gafExempt === '0' ? 'none' : 'admins_moderators');
@@ -20670,7 +21292,8 @@ async function getSettings(env, originUrl) {
             media_storage_chat_id: mediaStorage || '',
             media_storage_delete_after_upload: mediaDeleteAfter === '1' ? '1' : '0',
             system_language: systemLanguage === 'fa' ? 'fa' : 'en',
-            nav_style: ['classic', 'pills', 'glass', 'compact'].includes(navStyle) ? navStyle : 'classic',
+            system_language_sections: systemLanguageSections,
+            nav_style: ['classic', 'pills', 'glass', 'compact'].includes(navStyle) ? navStyle : 'glass',
             nav_structure: ['grouped', 'flat', 'topbar'].includes(navStructure) ? navStructure : 'topbar',
             global_antiflood_enabled: gafEnabled === '1' ? '1' : '0',
             global_antiflood_limit: gafLimit || '12',
@@ -20716,7 +21339,7 @@ async function saveNavLayoutSetting(request, env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         const body = await request.json();
-        const style = ['classic', 'pills', 'glass', 'compact'].includes(body.nav_style) ? body.nav_style : 'classic';
+        const style = ['classic', 'pills', 'glass', 'compact'].includes(body.nav_style) ? body.nav_style : 'glass';
         const structure = ['grouped', 'flat', 'topbar'].includes(body.nav_structure) ? body.nav_structure : 'topbar';
         await initializeDatabase(env.DB);
         await setSettingsBatch(env.DB, [['nav_style', style], ['nav_structure', structure]]);
@@ -20812,8 +21435,17 @@ async function saveSystemLanguage(request, env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         const body = await request.json();
-        const lang = body.language === 'fa' ? 'fa' : 'en';
         await initializeDatabase(env.DB);
+        if (body.sections && typeof body.sections === 'object') {
+            const clean = {};
+            for (const [k, v] of Object.entries(body.sections)) {
+                clean[String(k)] = ['en', 'fa'].includes(v) ? v : 'inherit';
+            }
+            await setSetting(env.DB, 'system_language_sections', JSON.stringify(clean));
+            await logAction(env.DB, null, 'Section language overrides updated');
+            return apiJson({ success: true, sections: clean });
+        }
+        const lang = body.language === 'fa' ? 'fa' : 'en';
         await setSetting(env.DB, 'system_language', lang);
         await logAction(env.DB, null, 'System language set to ' + lang);
         return apiJson({ success: true, language: lang });
@@ -21032,12 +21664,84 @@ async function changeAdminPassword(request, env) {
 // ============================================================================
 // BOT INFO
 // ============================================================================
+const PREMADE_WEBAPP_TEMPLATE = {
+    'index.html': `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="https://cdn.jsdelivr.net/gh/Mahan07dev/Nyxx@main/logo.webp" type="image/webp">
+<title>Nyxx Mini App</title>
+<link rel="stylesheet" href="/app/styles.css">
+</head><body>
+<div class="card">
+  <img src="https://cdn.jsdelivr.net/gh/Mahan07dev/Nyxx@main/logo.webp" class="logo" alt="Logo">
+  <h1>Welcome to Our Bot Portal</h1>
+  <p>Explore our Mini-Games, announcements, and links right inside Telegram.</p>
+  <div class="btns">
+    <a class="btn primary" href="/games">🎮 Play Mini-Games</a>
+    <a class="btn" href="/app/about.html">ℹ️ About</a>
+  </div>
+</div>
+</body></html>`,
+    'about.html': `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>About | Mini App</title>
+<link rel="stylesheet" href="/app/styles.css">
+</head><body>
+<div class="card">
+  <h1>About This Bot</h1>
+  <p>Powered by Nyxx Multi-Page Web App Host on Cloudflare Workers.</p>
+  <div class="btns"><a class="btn primary" href="/app">← Back Home</a></div>
+</div>
+</body></html>`,
+    'styles.css': `*{box-sizing:border-box}body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(circle at top,#16233b,#070a10);color:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}.card{max-width:420px;width:100%;background:rgba(255,255,255,.06);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:28px;text-align:center}.logo{width:64px;height:64px;border-radius:16px;margin-bottom:12px}h1{font-size:22px;margin:0 0 8px}p{color:#94a3b8;font-size:14px;line-height:1.5;margin:0 0 20px}.btns{display:flex;flex-direction:column;gap:10px}.btn{display:block;padding:12px 16px;border-radius:12px;background:rgba(255,255,255,.09);color:#fff;text-decoration:none;font-weight:700}.btn.primary{background:#0a84ff}`
+};
+async function serveWebAppHost(env, pathname) {
+    if (!env.DB) return new Response('DB not available', { status: 500 });
+    await initializeDatabase(env.DB);
+    let files = PREMADE_WEBAPP_TEMPLATE;
+    try {
+        const raw = await getSetting(env.DB, 'webapp_files_json');
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && typeof parsed === 'object' && Object.keys(parsed).length) files = parsed;
+        }
+    } catch (e) {}
+    let rel = pathname.replace(/^\/app\/?/, '').replace(/^\/+/, '');
+    if (!rel || rel.endsWith('/')) rel += 'index.html';
+    if (files[rel] === undefined && files[rel + '/index.html'] !== undefined) rel = rel + '/index.html';
+    if (files[rel] === undefined) return new Response('Not Found', { status: 404, headers: SECURITY_HEADERS });
+    const ct = rel.endsWith('.css') ? 'text/css; charset=utf-8'
+        : rel.endsWith('.js') ? 'application/javascript; charset=utf-8'
+        : rel.endsWith('.json') ? 'application/json; charset=utf-8'
+        : 'text/html; charset=utf-8';
+    return new Response(String(files[rel]), { headers: Object.assign({}, SECURITY_HEADERS, { 'Content-Type': ct, 'Cache-Control': 'no-store' }) });
+}
+async function saveWebAppFilesHandler(request, env) {
+    if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
+    try {
+        const body = await request.json();
+        const rawFiles = body.files || {};
+        const clean = {};
+        for (const [k, v] of Object.entries(rawFiles)) {
+            const p = String(k || '').trim().replace(/^\/+/, '').replace(/\.\./g, '');
+            if (p) clean[p] = String(v || '');
+        }
+        await initializeDatabase(env.DB);
+        await setSetting(env.DB, 'webapp_files_json', JSON.stringify(clean));
+        await logAction(env.DB, null, 'WebApp files updated (' + Object.keys(clean).length + ' files)');
+        return apiJson({ success: true });
+    } catch (err) { return internalError(err); }
+}
 async function getBotInfo(env) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
+        let webappFiles = Object.assign({}, PREMADE_WEBAPP_TEMPLATE);
+        try {
+            const raw = await getSetting(env.DB, 'webapp_files_json');
+            if (raw) { const p = JSON.parse(raw); if (p && Object.keys(p).length) webappFiles = p; }
+        } catch (e) {}
         const token = await getSetting(env.DB, 'bot_token');
-        if (!token) return apiJson({ error: 'Bot token is not set.' }, 400);
+        if (!token) return apiJson({ error: 'Bot token is not set.', webapp_files: webappFiles }, 400);
         const [meRes, nameRes, descRes, shortRes, menuRes, rightsGrp, rightsCh] = await Promise.all([
             tgFetchJson(`https://api.telegram.org/bot${token}/getMe`),
             tgFetchJson(`https://api.telegram.org/bot${token}/getMyName`),
@@ -21068,6 +21772,7 @@ async function getBotInfo(env) {
             menu_button: (menuRes && menuRes.ok) ? menuRes.result : { type: 'commands' },
             default_admin_rights_groups: (rightsGrp && rightsGrp.ok) ? rightsGrp.result : {},
             default_admin_rights_channels: (rightsCh && rightsCh.ok) ? rightsCh.result : {},
+            webapp_files: webappFiles,
         });
     } catch (err) { return internalError(err); }
 }
@@ -21096,40 +21801,114 @@ async function setBotInfo(request, env) {
 // ============================================================================
 // Bot token and webhook secret stay excluded from backups. AI keys are INCLUDED by
 // user request, but the frontend warns loudly before exporting them.
+// Generic table restore: inserts every column present in the backup row that
+// still exists in the live schema, so new columns are never silently dropped.
+async function getTableColumnNames(db, table) {
+    const r = await db.prepare(`PRAGMA table_info(${table})`).all();
+    return (r.results || []).map(c => c.name);
+}
+async function buildGenericRestoreStmts(db, table, rows, opts) {
+    opts = opts || {};
+    const cols = await getTableColumnNames(db, table);
+    const skip = new Set(opts.skip || []);
+    const stmts = [];
+    for (const row of (rows || [])) {
+        if (!row || typeof row !== 'object') continue;
+        const r = opts.map ? opts.map(row) : row;
+        if (!r) continue;
+        const present = cols.filter(c => !skip.has(c) && r[c] !== undefined);
+        if (!present.length) continue;
+        const vals = present.map(c => {
+            const v = r[c];
+            if (v === null) return null;
+            if (typeof v === 'object') return JSON.stringify(v);
+            if (typeof v === 'boolean') return v ? 1 : 0;
+            return v;
+        });
+        stmts.push(db.prepare(`INSERT OR REPLACE INTO ${table} (${present.join(', ')}) VALUES (${present.map(() => '?').join(', ')})`).bind(...vals));
+    }
+    return stmts;
+}
 const SECRET_SETTING_KEYS = ['bot_token', 'webhook_secret', 'cf_api_token',
-    'cf_oauth_access_token', 'cf_oauth_refresh_token', 'cf_oauth_expires_at', 'cf_oauth_scope', 'cf_oauth_relay_verifier'];
-async function exportBackup(env) {
+    'cf_oauth_access_token', 'cf_oauth_refresh_token', 'cf_oauth_expires_at', 'cf_oauth_scope', 'cf_oauth_relay_verifier', 'game_hmac_secret', 'vapid_private_jwk'];
+const AI_SECRET_KEYS = ['ai_api_key', 'ai_alt_providers', 'mcp_ai_api_key'];
+async function encryptBackupSecrets(obj, passphrase) {
+    const enc = new TextEncoder();
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const km = await crypto.subtle.importKey('raw', enc.encode(passphrase), 'PBKDF2', false, ['deriveKey']);
+    const aesKey = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' }, km, { name: 'AES-GCM', length: 256 }, false, ['encrypt']);
+    const cipher = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, aesKey, enc.encode(JSON.stringify(obj))));
+    return { alg: 'AES-GCM', salt: b64uEncode(salt), iv: b64uEncode(iv), data: b64uEncode(cipher) };
+}
+async function decryptBackupSecrets(box, passphrase) {
+    const enc = new TextEncoder();
+    const km = await crypto.subtle.importKey('raw', enc.encode(passphrase), 'PBKDF2', false, ['deriveKey']);
+    const aesKey = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: b64uDecode(box.salt), iterations: 100000, hash: 'SHA-256' }, km, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+    const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64uDecode(box.iv) }, aesKey, b64uDecode(box.data));
+    return JSON.parse(new TextDecoder().decode(plain));
+}
+async function exportBackup(env, request) {
     if (!env.DB) return apiJson({ error: 'DB not available' }, 500);
     try {
         await initializeDatabase(env.DB);
-        const [commands, featured, mediaLib, users, messages, settingsRows, broadcastRows, groupsRows, dmRows] = await Promise.all([
+        let passphrase = '', includeSecrets = false;
+        if (request) {
+            const b = await request.json().catch(() => ({}));
+            passphrase = String(b.passphrase || '');
+            includeSecrets = !!b.include_secrets;
+        }
+        const [commands, featured, mediaLib, users, messages, settingsRows, broadcastRows, groupsRows, dmRows, channelsRows, proxiesRows, scoresRows] = await Promise.all([
             env.DB.prepare('SELECT * FROM commands').all(),
-            env.DB.prepare('SELECT command, kind, content, buttons_json, success_text, failure_text, admin_only, access_level, allowed_users, disallowed_users, extra_config, enabled, button_style FROM featured_replies').all(),
-            env.DB.prepare('SELECT file_id, media_type, media_meta, label, caption, file_name, file_size, allowed_users, expires_at, storage_chat_id, storage_message_id, is_valid, last_validated_at, uploaded_at FROM media_library ORDER BY id').all(),
+            env.DB.prepare('SELECT command, kind, content, buttons_json, success_text, failure_text, admin_only, access_level, allowed_users, disallowed_users, allowed_chat_types, allowed_chat_ids, extra_config, inline_enabled, enabled, button_style FROM featured_replies').all(),
+            env.DB.prepare('SELECT file_id, media_type, media_meta, label, caption, file_name, file_size, allowed_users, disallowed_users, expires_at, storage_chat_id, storage_message_id, is_valid, last_validated_at, uploaded_at FROM media_library ORDER BY id').all(),
             env.DB.prepare('SELECT * FROM users').all(),
             env.DB.prepare('SELECT chat_id, role, content, timestamp FROM ai_messages ORDER BY id').all(),
             env.DB.prepare('SELECT key, value FROM settings').all(),
             env.DB.prepare('SELECT message, photo_url, kind, buttons_json, file_id, media_meta, media_items_json, recipient_count, sent_count, sent_at FROM broadcast_history ORDER BY id').all(),
             env.DB.prepare('SELECT * FROM groups').all(),
             env.DB.prepare('SELECT chat_id, message_id, direction, source, kind, text, photo_url, file_id, media_meta, media_items_json, buttons_json, created_at, edited_at FROM dm_messages ORDER BY id').all(),
+            env.DB.prepare('SELECT * FROM channels').all(),
+            env.DB.prepare('SELECT * FROM proxies').all(),
+            env.DB.prepare('SELECT * FROM game_scores').all(),
         ]);
         const settings = {};
+        const encryptedPayload = {};
         for (const row of settingsRows.results) settings[row.key] = row.value;
         delete settings.session;
-        for (const k of SECRET_SETTING_KEYS) delete settings[k];
-        const blockedRows = await env.DB.prepare('SELECT user_id, block_type, blocked_at FROM blocked_users').all();
-        return apiJson({
-            success: true,
-            data: {
-                app: 'nyxx', version: VERSION, exported_at: new Date().toISOString(),
-                commands: commands.results || [], featured: featured.results || [],
-                media_library: mediaLib.results || [],
-                users: users.results || [],
-                ai_messages: messages.results || [], dm_messages: dmRows.results || [],
-                groups: groupsRows.results || [], settings,
-                blocked_users: blockedRows.results || [], broadcast_history: broadcastRows.results || [],
+        if (passphrase) {
+            for (const k of AI_SECRET_KEYS) {
+                if (settings[k] !== undefined) { encryptedPayload[k] = settings[k]; delete settings[k]; }
             }
-        });
+            if (includeSecrets) {
+                for (const k of SECRET_SETTING_KEYS) {
+                    if (settings[k] !== undefined) { encryptedPayload[k] = settings[k]; delete settings[k]; }
+                }
+            } else {
+                for (const k of SECRET_SETTING_KEYS) delete settings[k];
+            }
+        } else {
+            // No passphrase: AI keys and every other secret stay OUT of the file.
+            for (const k of SECRET_SETTING_KEYS) delete settings[k];
+            for (const k of AI_SECRET_KEYS) delete settings[k];
+        }
+        const blockedRows = await env.DB.prepare('SELECT user_id, block_type, blocked_at FROM blocked_users').all();
+        const outData = {
+            app: 'nyxx', version: VERSION, exported_at: new Date().toISOString(),
+            commands: commands.results || [], featured: featured.results || [],
+            media_library: mediaLib.results || [],
+            users: users.results || [],
+            ai_messages: messages.results || [], dm_messages: dmRows.results || [],
+            groups: groupsRows.results || [], channels: channelsRows.results || [],
+            proxies: proxiesRows.results || [], game_scores: scoresRows.results || [],
+            settings,
+            blocked_users: blockedRows.results || [], broadcast_history: broadcastRows.results || [],
+            secrets_excluded: !passphrase,
+        };
+        if (passphrase && Object.keys(encryptedPayload).length) {
+            outData.encrypted_secrets = await encryptBackupSecrets(encryptedPayload, passphrase);
+        }
+        return apiJson({ success: true, data: outData });
     } catch (err) { return internalError(err); }
 }
 async function restoreBackup(request, env) {
@@ -21140,6 +21919,13 @@ async function restoreBackup(request, env) {
         if (!data || data.app !== 'nyxx') return apiJson({ error: 'This is not a valid Nyxx backup file.' }, 400);
         const selected = Array.isArray(data.selected) ? data.selected : null;
         const wants = (key) => !selected || selected.indexOf(key) >= 0;
+        let decryptedSecrets = null;
+        if (data.encrypted_secrets) {
+            const pass = String(body.passphrase || '');
+            if (!pass) return apiJson({ error: 'This backup is encrypted. Please provide the decryption passphrase.' }, 400);
+            try { decryptedSecrets = await decryptBackupSecrets(data.encrypted_secrets, pass); }
+            catch (e) { return apiJson({ error: 'Wrong decryption passphrase or corrupted backup.' }, 400); }
+        }
         await initializeDatabase(env.DB);
         const clearOps = [];
         if (wants('commands')) clearOps.push(env.DB.prepare('DELETE FROM commands'));
@@ -21148,19 +21934,22 @@ async function restoreBackup(request, env) {
         if (wants('users')) clearOps.push(env.DB.prepare('DELETE FROM users'));
         if (wants('ai_messages')) clearOps.push(env.DB.prepare('DELETE FROM ai_messages'));
         if (wants('dm_messages')) clearOps.push(env.DB.prepare('DELETE FROM dm_messages'));
+        if (wants('proxies') && Array.isArray(data.proxies)) clearOps.push(env.DB.prepare('DELETE FROM proxies'));
+        if (wants('game_scores') && Array.isArray(data.game_scores)) clearOps.push(env.DB.prepare('DELETE FROM game_scores'));
         if (clearOps.length) await env.DB.batch(clearOps);
 
         if (wants('commands') && Array.isArray(data.commands)) {
-            await runBatchChunks(env.DB, data.commands.filter(c => c && c.command).map(c => {
-                const access = effectiveCommandAccess(c);
-                return env.DB.prepare(`INSERT INTO commands (command, parent, response_type, content, media_url, file_id, media_meta, media_items_json, protect_content, edit_message, inline_auto_back, inline_back_label, buttons_json, is_admin_only, access_level, allowed_users, expires_at, enabled, show_reply_keyboard, reply_keyboard_json, order_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-                    .bind(c.command, c.parent || null, c.response_type || 'text', c.content || '', c.media_url || '', c.file_id || '', c.media_meta || '', c.media_items_json || '', c.protect_content ? 1 : 0, c.edit_message ? 1 : 0, c.inline_auto_back ? 1 : 0, c.inline_back_label || '', c.buttons_json || '', access === 'admin' ? 1 : 0, access, normalizeAllowedUsersStr(c.allowed_users), c.expires_at || null, c.enabled !== undefined ? c.enabled : 1, c.show_reply_keyboard ? 1 : 0, c.reply_keyboard_json || '', c.order_idx || 0);
+            await runBatchChunks(env.DB, await buildGenericRestoreStmts(env.DB, 'commands', data.commands.filter(c => c && c.command), {
+                map: (c) => {
+                    const access = effectiveCommandAccess(c);
+                    return Object.assign({}, c, { access_level: access, is_admin_only: access === 'admin' ? 1 : 0 });
+                }
             }));
         }
         if (wants('media_library') && Array.isArray(data.media_library)) {
             await runBatchChunks(env.DB, data.media_library.filter(m => m && m.file_id).map(m =>
-                env.DB.prepare('INSERT INTO media_library (file_id, media_type, media_meta, label, caption, file_name, file_size, allowed_users, expires_at, storage_chat_id, storage_message_id, is_valid, last_validated_at, uploaded_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-                    .bind(m.file_id, m.media_type || 'document', m.media_meta || '{}', m.label || '', m.caption || '', m.file_name || '', m.file_size || 0, normalizeAllowedUsersStr(m.allowed_users), m.expires_at || null, m.storage_chat_id || '', m.storage_message_id || null, m.is_valid !== undefined ? m.is_valid : 1, m.last_validated_at || null, m.uploaded_at || new Date().toISOString())
+                env.DB.prepare('INSERT INTO media_library (file_id, media_type, media_meta, label, caption, file_name, file_size, allowed_users, disallowed_users, expires_at, storage_chat_id, storage_message_id, is_valid, last_validated_at, uploaded_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+                    .bind(m.file_id, m.media_type || 'document', m.media_meta || '{}', m.label || '', m.caption || '', m.file_name || '', m.file_size || 0, normalizeAllowedUsersStr(m.allowed_users), normalizeAllowedUsersStr(m.disallowed_users), m.expires_at || null, m.storage_chat_id || '', m.storage_message_id || null, m.is_valid !== undefined ? m.is_valid : 1, m.last_validated_at || null, m.uploaded_at || new Date().toISOString())
             ));
         }
         if (wants('featured') && Array.isArray(data.featured)) {
@@ -21201,21 +21990,26 @@ async function restoreBackup(request, env) {
                 .bind(m.chat_id, m.direction || 'in', m.source || null, m.kind || 'text', m.text || '', m.photo_url || null, m.file_id || null, m.media_meta || null, m.media_items_json || '', m.created_at || new Date().toISOString())));
         }
         if (wants('groups') && Array.isArray(data.groups)) {
-            for (const g of data.groups) {
-                if (!g || !g.id) continue;
-                await env.DB.prepare('INSERT INTO groups (id, title, type, username, is_active, settings_json, member_count) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET title = excluded.title, settings_json = excluded.settings_json')
-                    .bind(g.id, g.title || '', g.type || 'group', g.username || '', g.is_active != 0 ? 1 : 0, g.settings_json || null, g.member_count || 0).run();
-            }
+            await runBatchChunks(env.DB, await buildGenericRestoreStmts(env.DB, 'groups', data.groups.filter(g => g && g.id)));
+        }
+        if (wants('channels') && Array.isArray(data.channels)) {
+            await runBatchChunks(env.DB, await buildGenericRestoreStmts(env.DB, 'channels', data.channels.filter(c => c && c.id)));
+        }
+        if (wants('proxies') && Array.isArray(data.proxies)) {
+            await runBatchChunks(env.DB, await buildGenericRestoreStmts(env.DB, 'proxies', data.proxies.filter(x => x && x.server), { skip: ['id'] }));
+        }
+        if (wants('game_scores') && Array.isArray(data.game_scores)) {
+            await runBatchChunks(env.DB, await buildGenericRestoreStmts(env.DB, 'game_scores', data.game_scores.filter(x => x && x.game_id)));
         }
         if (wants('broadcast_history') && Array.isArray(data.broadcast_history)) {
             await runBatchChunks(env.DB, data.broadcast_history.filter(h => h && (h.message || h.file_id || h.photo_url || h.media_items_json)).map(h => env.DB.prepare('INSERT INTO broadcast_history (message, photo_url, kind, buttons_json, file_id, media_meta, media_items_json, recipient_count, sent_count, sent_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
                 .bind(h.message || '', h.photo_url || null, h.kind || 'text', h.buttons_json || null, h.file_id || null, h.media_meta || null, h.media_items_json || '', h.recipient_count || 0, h.sent_count || 0, h.sent_at || new Date().toISOString())));
         }
-        const settings = data.settings || {};
+        const settings = Object.assign({}, data.settings || {}, decryptedSecrets || {});
         const setStmts = [];
         for (const [k, v] of Object.entries(settings)) {
             if (k === 'session' || k === 'schema_version') continue;
-            if (SECRET_SETTING_KEYS.includes(k)) continue;
+            if (!decryptedSecrets && SECRET_SETTING_KEYS.includes(k)) continue;
             if (v === null || v === undefined) continue;
             setStmts.push(env.DB.prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value').bind(k, String(v)));
         }
@@ -21296,6 +22090,7 @@ async function handleUploadMedia(request, env) {
         const caption = form.get('caption') ? String(form.get('caption')).slice(0, 1024) : '';
         const labelIn = form.get('label') ? String(form.get('label')).trim().slice(0, 120) : '';
         const allowedUsers = normalizeAllowedUsersStr(form.get('allowed_users') || '');
+        const disallowedUsersIn = normalizeAllowedUsersStr(form.get('disallowed_users') || '');
         const expiresAt = form.get('expires_at') ? String(form.get('expires_at')).trim() : null;
 
         const tgForm = new FormData();
@@ -21344,8 +22139,8 @@ async function handleUploadMedia(request, env) {
             const fileSize = (mediaObj && mediaObj.file_size) || file.size || 0;
             const metaStr = JSON.stringify(Object.assign({}, mediaMeta, { file_size: fileSize }));
             await env.DB.prepare(
-                'INSERT INTO media_library (file_id, media_type, media_meta, label, caption, file_name, file_size, allowed_users, expires_at, storage_chat_id, storage_message_id, is_valid, last_validated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP)'
-            ).bind(fileId, mediaType, metaStr, labelIn || fileName || mediaType, caption, fileName, fileSize, allowedUsers, expiresAt, String(storageChat), storedMsgId).run();
+                'INSERT INTO media_library (file_id, media_type, media_meta, label, caption, file_name, file_size, allowed_users, disallowed_users, expires_at, storage_chat_id, storage_message_id, is_valid, last_validated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP)'
+            ).bind(fileId, mediaType, metaStr, labelIn || fileName || mediaType, caption, fileName, fileSize, allowedUsers, disallowedUsersIn, expiresAt, String(storageChat), storedMsgId).run();
         } catch (e) { console.warn('media library insert failed:', e.message); }
 
         return apiJson({ success: true, file_id: fileId, media_type: mediaType, media_meta: mediaMeta, kept_in_storage: !deleteAfterUpload });
@@ -21356,7 +22151,7 @@ async function getMediaLibrary(env) {
     try {
         await initializeDatabase(env.DB);
         const rows = await env.DB.prepare(
-            'SELECT id, file_id, media_type, media_meta, label, caption, file_name, file_size, allowed_users, expires_at, storage_chat_id, storage_message_id, is_valid, last_validated_at, uploaded_at FROM media_library ORDER BY id DESC LIMIT 500'
+            'SELECT id, file_id, media_type, media_meta, label, caption, file_name, file_size, allowed_users, disallowed_users, expires_at, storage_chat_id, storage_message_id, is_valid, last_validated_at, uploaded_at FROM media_library ORDER BY id DESC LIMIT 500'
         ).all();
         return apiJson({ items: rows.results || [] });
     } catch (err) { return internalError(err); }
@@ -21390,6 +22185,7 @@ async function updateMediaLibraryItem(request, env) {
         const label = body.label !== undefined ? String(body.label).trim().slice(0, 120) : undefined;
         const caption = body.caption !== undefined ? String(body.caption).slice(0, 1024) : undefined;
         const allowedUsers = body.allowed_users !== undefined ? normalizeAllowedUsersStr(body.allowed_users) : undefined;
+        const disallowedUsers = body.disallowed_users !== undefined ? normalizeAllowedUsersStr(body.disallowed_users) : undefined;
         const expiresAt = body.expires_at !== undefined ? (body.expires_at ? String(body.expires_at).trim() : null) : undefined;
 
         const sets = [];
@@ -21397,6 +22193,7 @@ async function updateMediaLibraryItem(request, env) {
         if (label !== undefined) { sets.push('label = ?'); vals.push(label); }
         if (caption !== undefined) { sets.push('caption = ?'); vals.push(caption); }
         if (allowedUsers !== undefined) { sets.push('allowed_users = ?'); vals.push(allowedUsers); }
+        if (disallowedUsers !== undefined) { sets.push('disallowed_users = ?'); vals.push(disallowedUsers); }
         if (expiresAt !== undefined) { sets.push('expires_at = ?'); vals.push(expiresAt); }
         if (!sets.length) return apiJson({ success: true });
         vals.push(id);
@@ -24236,8 +25033,9 @@ async function getMcpCalls(env) {
 // DEDICATED CHAT ROUTE (ChatGPT-like)
 // ============================================================================
 const CHAT_HTML = `<!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"><meta name="theme-color" content="#0a0a0a"><title>Nyxx | Chat</title>
-<link rel="shortcut icon" href="https://cdn.jsdelivr.net/gh/Mahan07dev/Nyxx@main/logo.webp" type="image/x-icon">
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"><meta name="theme-color" content="#0a0a0a"><meta name="description" content="Nyxx AI Support, Bot AI Playground, and MCP Bot Manager chat interface."><title>Nyxx | Chat</title>
+<link rel="icon" href="https://cdn.jsdelivr.net/gh/Mahan07dev/Nyxx@main/logo.webp" type="image/webp">
+<link rel="shortcut icon" href="https://cdn.jsdelivr.net/gh/Mahan07dev/Nyxx@main/logo.webp" type="image/webp">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <style>
 :root{--bg:#0a0a0a;--surface:#161616;--surface-2:#212121;--border:#2a2a2a;--text:#ececec;--text-2:#a3a3a3;--accent:#10a37f;--danger:#ef4444;--radius:12px}
@@ -25614,6 +26412,7 @@ const SYSTEM_STRINGS = {
         games_lb_title: (g) => `🏆 <b>${g} — Top 10 Leaderboard</b>`,
         games_lb_empty: (g) => `🏆 <b>${g}</b>: No scores in this chat yet!`,
         games_new_best: (u, s, g) => `🏆 <b>New Personal Best!</b> <b>${u}</b> scored <b>${s}</b> in <b>${g}</b>!`,
+        games_new_best_silent: (u, s, g) => `<i>🏆 ${u} · ${g} · <b>${s}</b></i>`,
         games_my_none: (g) => `🎯 ${g}\n\nYou haven't played this game in this chat yet!\nTap Launch to set your first score.`,
         games_my_stats: (g, s, r, p) => `🎯 Your ${g} Stats\n\n🏆 Best Score: ${s}\n📊 Chat Rank: #${r}\n🎮 Plays: ${p}`,
         // MCP & Featured
@@ -25755,6 +26554,7 @@ Guidelines:
         games_lb_title: (g) => `🏆 <b>جدول ۱۰ نفر برتر — ${g}</b>`,
         games_lb_empty: (g) => `🏆 <b>${g}</b>: هنوز امتیازی در این چت ثبت نشده است!`,
         games_new_best: (u, s, g) => `🏆 <b>رکورد شخصی جدید!</b> <b>${u}</b> امتیاز <b>${s}</b> را در بازی <b>${g}</b> ثبت کرد!`,
+        games_new_best_silent: (u, s, g) => `<i>🏆 ${u} · ${g} · <b>${s}</b></i>`,
         games_my_none: (g) => `🎯 ${g}\n\nشما هنوز این بازی را در این چت انجام نداده‌اید!\nبرای ثبت اولین امتیاز روی دکمه شروع بزنید.`,
         games_my_stats: (g, s, r, p) => `🎯 آمار شما در ${g}\n\n🏆 بهترین امتیاز: ${s}\n📊 رتبه در چت: #${r}\n🎮 تعداد بازی: ${p}`,
         // MCP & Featured
@@ -25801,7 +26601,8 @@ Guidelines:
         },
     },
 };
-let cachedSystemLang = { lang: 'en', epoch: null };
+let cachedSystemLang = { lang: 'en', sections: {}, epoch: null };
+let activeChatLanguage = null;
 async function getSystemLanguageFromDb(env) {
     if (!env || !env.DB) return 'en';
     try {
@@ -25809,17 +26610,28 @@ async function getSystemLanguageFromDb(env) {
         if (cachedSystemLang.lang && cachedSystemLang.epoch === currentEpoch) {
             return cachedSystemLang.lang;
         }
-        const val = await getSetting(env.DB, 'system_language');
+        const [val, secRaw] = await Promise.all([
+            getSetting(env.DB, 'system_language'),
+            getSetting(env.DB, 'system_language_sections')
+        ]);
         const lang = val === 'fa' ? 'fa' : 'en';
-        cachedSystemLang = { lang: lang, epoch: currentEpoch };
+        let sections = {};
+        try { if (secRaw) sections = JSON.parse(secRaw) || {}; } catch (e) {}
+        cachedSystemLang = { lang, sections, epoch: currentEpoch };
         return lang;
     } catch (e) {
         return cachedSystemLang.lang || 'en';
     }
 }
-function currentSystemLang() { return cachedSystemLang.lang || 'en'; }
-function sysStr() { return SYSTEM_STRINGS[currentSystemLang()] || SYSTEM_STRINGS.en; }
-function botStrings() { return sysStr(); }
+function currentSystemLang(section) {
+    if (activeChatLanguage === 'en' || activeChatLanguage === 'fa') return activeChatLanguage;
+    if (section && cachedSystemLang.sections && (cachedSystemLang.sections[section] === 'en' || cachedSystemLang.sections[section] === 'fa')) {
+        return cachedSystemLang.sections[section];
+    }
+    return cachedSystemLang.lang || 'en';
+}
+function sysStr(section) { return SYSTEM_STRINGS[currentSystemLang(section)] || SYSTEM_STRINGS.en; }
+function botStrings(section) { return sysStr(section); }
 function isBackWord(text) {
     const t = (text || '').trim().toLowerCase();
     return t === 'back' || t === 'بازگشت';
@@ -25960,6 +26772,7 @@ async function processTelegramUpdate(update, env, ctx) {
     if (!BOT_TOKEN) return;
     // Prime the language cache so all subsequent botStrings() calls are correct.
     await getSystemLanguageFromDb(env);
+    activeChatLanguage = null;
     const upsertUser = async (from, opts) => {
         if (!from || !from.id) return;
         const privateStarted = opts && opts.privateStarted ? 1 : 0;
@@ -25978,7 +26791,7 @@ async function processTelegramUpdate(update, env, ctx) {
                 last_active = CURRENT_TIMESTAMP,
                 private_started = MAX(COALESCE(users.private_started, 0), excluded.private_started),
                 last_group_id = COALESCE(excluded.last_group_id, users.last_group_id)
-        `).bind(from.id, from.username || '', from.first_name || '', privateStarted, groupId).run();
+        `).bind(from.id, from.username || '', cleanUserDisplayName(from.first_name, 64), privateStarted, groupId).run();
     };
     const extractMediaFromTgMsg = extractMediaFromTgMessage;
     const saveCapturedMedia = async (m, extracted) => {
@@ -26001,6 +26814,7 @@ async function processTelegramUpdate(update, env, ctx) {
             const cp = update.channel_post;
             await upsertChannel(env.DB, cp.chat, true, 0);
             const chSettings = await getChannelSettings(env.DB, cp.chat.id);
+            if (chSettings.language === 'en' || chSettings.language === 'fa') activeChatLanguage = chSettings.language;
             const storageChat = String((await getSetting(env.DB, 'media_storage_chat_id')) || '').trim();
             const matchesId = storageChat && String(cp.chat.id) === storageChat;
             const matchesUser = storageChat && cp.chat.username && ('@' + cp.chat.username.toLowerCase()) === storageChat.toLowerCase();
@@ -26075,6 +26889,7 @@ async function processTelegramUpdate(update, env, ctx) {
                 await initializeDatabase(env.DB);
                 await upsertGroup(env.DB, msg.chat, true, msg);
                 groupSettings = await getGroupSettings(env.DB, chatId);
+                if (groupSettings && (groupSettings.language === 'en' || groupSettings.language === 'fa')) activeChatLanguage = groupSettings.language;
                 if (msg.is_automatic_forward && groupSettings && groupSettings.auto_comment_enabled && groupSettings.auto_comment_text) {
                     try {
                         await tgCall(BOT_TOKEN, 'sendMessage', {
@@ -26282,6 +27097,7 @@ async function processTelegramUpdate(update, env, ctx) {
                 }
                 const blockType = await isUserBlocked(env, userId);
                 if (blockType === 'full') return;
+                if (!await enforceGlobalBotAccess(env, BOT_TOKEN, msg.from, msg.chat, msg.chat.type)) return;
                 if (!isGroup && !await enforceFloodPolicy(env, BOT_TOKEN, chatId, userId, msg, false, null)) return;
 
                 if (isGroup && groupSettings && (msg.chat.is_direct_messages || msg.direct_messages_topic)) {
@@ -26694,6 +27510,14 @@ async function processTelegramUpdate(update, env, ctx) {
             if (cb.from) await upsertUser(cb.from, { privateStarted: cb.message.chat.type === 'private' });
             const cbBlockType = cb.from ? await isUserBlocked(env, cb.from.id) : null;
             if (cbBlockType === 'full') { await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id }); return; }
+            if (cb.message && cb.message.chat && (cb.message.chat.type === 'group' || cb.message.chat.type === 'supergroup')) {
+                const cgs = await getGroupSettings(env.DB, chatId);
+                if (cgs && (cgs.language === 'en' || cgs.language === 'fa')) activeChatLanguage = cgs.language;
+            }
+            if (cb.from && !await enforceGlobalBotAccess(env, BOT_TOKEN, cb.from, cb.message.chat, cb.message.chat.type)) {
+                await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id, text: botStrings().unauthorized, show_alert: true });
+                return;
+            }
 
             // Contact reply callback — must run before other checks so admins
             // can always reply regardless of callback_queries permission.
@@ -27228,10 +28052,14 @@ const GAME_CATALOG = {
     flappy: { id: 'flappy', name: 'Sky Dash' },
     tetris: { id: 'tetris', name: 'Neon Blocks' },
     mines: { id: 'mines', name: 'Minesweeper' },
+    runner: { id: 'runner', name: 'Cyber Runner' },
 };
 const DEFAULT_GAMES_CONFIG = {
     announce_mode: 'message',
     announce_cooldown_sec: 20,
+    ready_text: '',
+    edit_message: false,
+    edit_triggers: 'inline,reply,command',
     games: {
         snake:    { enabled: true, inline_enabled: false, access: 'everyone', allowed: '', disallowed: '' },
         corsairs: { enabled: true, inline_enabled: false, access: 'everyone', allowed: '', disallowed: '' },
@@ -27239,6 +28067,7 @@ const DEFAULT_GAMES_CONFIG = {
         flappy:   { enabled: true, inline_enabled: false, access: 'everyone', allowed: '', disallowed: '' },
         tetris:   { enabled: true, inline_enabled: false, access: 'everyone', allowed: '', disallowed: '' },
         mines:    { enabled: true, inline_enabled: false, access: 'everyone', allowed: '', disallowed: '' },
+        runner:   { enabled: true, inline_enabled: false, access: 'everyone', allowed: '', disallowed: '' },
     }
 };
 async function getGamesConfig(db) {
@@ -27250,6 +28079,9 @@ async function getGamesConfig(db) {
                 return {
                     announce_mode: ['message', 'silent', 'off'].includes(p.announce_mode) ? p.announce_mode : 'message',
                     announce_cooldown_sec: Math.min(Math.max(parseInt(p.announce_cooldown_sec, 10) || 20, 5), 600),
+                    ready_text: String(p.ready_text || ''),
+                    edit_message: !!p.edit_message,
+                    edit_triggers: String(p.edit_triggers || 'inline,reply,command'),
                     games: Object.assign({}, DEFAULT_GAMES_CONFIG.games, p.games || {})
                 };
             }
@@ -27284,6 +28116,9 @@ async function saveGamesConfigHandler(request, env) {
         const clean = {
             announce_mode: ['message', 'silent', 'off'].includes(cfg.announce_mode) ? cfg.announce_mode : 'message',
             announce_cooldown_sec: Math.min(Math.max(parseInt(cfg.announce_cooldown_sec, 10) || 20, 5), 600),
+            ready_text: String(cfg.ready_text || '').slice(0, 500),
+            edit_message: !!cfg.edit_message,
+            edit_triggers: String(cfg.edit_triggers || 'inline,reply,command'),
             games: cleanGames,
         };
         await setSetting(env.DB, 'games_config_json', JSON.stringify(clean));
@@ -27359,8 +28194,11 @@ async function handleGamesCommand(env, BOT_TOKEN, chatId, userId, userInfo, chat
     await sendRichText(BOT_TOKEN, chatId, L.games_hub_title, Object.assign({ reply_markup: { inline_keyboard: rows } }, threadId ? { message_thread_id: threadId } : {}));
 }
 async function handleGameCallback(env, BOT_TOKEN, chatId, cb, data) {
-    const L = sysStr();
+    const L = sysStr('games');
     const userId = cb.from && cb.from.id;
+    const cfg = await getGamesConfig(env.DB);
+    const shouldEdit = !!(cfg.edit_message && parseEditTriggers(cfg.edit_triggers).has('inline') && cb.message && cb.message.message_id);
+
     if (data.startsWith('GAMEMY:')) {
         const gid = data.slice(7);
         const g = GAME_CATALOG[gid] || { name: gid };
@@ -27390,9 +28228,14 @@ async function handleGameCallback(env, BOT_TOKEN, chatId, cb, data) {
         await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
         const medals = ['🥇', '🥈', '🥉'];
         const text = list.length
-            ? (L.games_lb_title(escapeTelegramHTML(g.name)) + '\n\n' + list.map((r, i) => `${medals[i] || (i + 1) + '.'} <b>${escapeTelegramHTML(r.user_name || 'Player')}</b> — <code>${Number(r.best_score || 0).toLocaleString()}</code>`).join('\n'))
+            ? (L.games_lb_title(escapeTelegramHTML(g.name)) + '\n\n' + list.map((r, i) => `${medals[i] || (i + 1) + '.'} <b>${escapeTelegramHTML(cleanUserDisplayName(r.user_name, 32) || 'Player')}</b> — <code>${Number(r.best_score || 0).toLocaleString()}</code>`).join('\n'))
             : L.games_lb_empty(escapeTelegramHTML(g.name));
-        await sendRichText(BOT_TOKEN, chatId, text);
+        const backKb = { inline_keyboard: [[{ text: '🎮 ' + g.name, callback_data: 'GAME:' + gid, style: 'primary' }]] };
+        if (shouldEdit) {
+            const ed = await tgCall(BOT_TOKEN, 'editMessageText', { chat_id: chatId, message_id: cb.message.message_id, text, parse_mode: 'HTML', reply_markup: backKb }, { retry: false });
+            if (ed && ed.ok) return;
+        }
+        await sendRichText(BOT_TOKEN, chatId, text, { reply_markup: backKb });
         return;
     }
     const gid = data.slice(5);
@@ -27410,15 +28253,23 @@ async function handleGameCallback(env, BOT_TOKEN, chatId, cb, data) {
     const btn = isPrivate ? { text: L.games_launch(GAME_CATALOG[gid].name), web_app: { url: launchUrl }, style: 'primary' }
                           : { text: L.games_launch(GAME_CATALOG[gid].name), url: launchUrl, style: 'primary' };
     await tgCall(BOT_TOKEN, 'answerCallbackQuery', { callback_query_id: cb.id });
-    await sendRichText(BOT_TOKEN, chatId, L.games_ready(escapeTelegramHTML(GAME_CATALOG[gid].name), escapeTelegramHTML((cb.from && cb.from.first_name) || 'you')), {
-        reply_markup: {
-            inline_keyboard: [
-                [btn],
-                [{ text: L.games_my_score, callback_data: 'GAMEMY:' + gid }],
-                [{ text: L.games_leaderboard, callback_data: 'GAMELB:' + gid }]
-            ]
-        }
-    });
+    const gNameEsc = escapeTelegramHTML(GAME_CATALOG[gid].name);
+    const uNameEsc = escapeTelegramHTML(cleanUserDisplayName(cb.from && cb.from.first_name, 40) || 'you');
+    const readyMsg = cfg.ready_text
+        ? cfg.ready_text.split('{{game}}').join(gNameEsc).split('{{user}}').join(uNameEsc).split('{{first_name}}').join(uNameEsc)
+        : L.games_ready(gNameEsc, uNameEsc);
+    const kb = {
+        inline_keyboard: [
+            [btn],
+            [{ text: L.games_my_score, callback_data: 'GAMEMY:' + gid }],
+            [{ text: L.games_leaderboard, callback_data: 'GAMELB:' + gid }]
+        ]
+    };
+    if (shouldEdit) {
+        const ed = await tgCall(BOT_TOKEN, 'editMessageText', { chat_id: chatId, message_id: cb.message.message_id, text: readyMsg, parse_mode: 'HTML', reply_markup: kb }, { retry: false });
+        if (ed && ed.ok) return;
+    }
+    await sendRichText(BOT_TOKEN, chatId, readyMsg, { reply_markup: kb });
 }
 const gameAnnounceCooldownMap = new Map();
 async function handleGameScoreSubmit(request, env, ctx) {
@@ -27431,7 +28282,7 @@ async function handleGameScoreSubmit(request, env, ctx) {
         const chatId = parseInt(body.chat_id, 10);
         const userId = parseInt(body.user_id, 10);
         const score = Math.max(0, parseInt(body.score, 10) || 0);
-        const userName = String(body.user_name || 'Player').slice(0, 64);
+        const userName = cleanUserDisplayName(body.user_name, 64) || 'Player';
         const username = String(body.username || '').slice(0, 64);
         if (!GAME_CATALOG[gameId] || !chatId || !userId) return apiJson({ error: 'Invalid game parameters.' }, 400);
         const sigOk = await verifyGameSig(env, gameId, chatId, userId, body.ts, body.sig);
@@ -27467,13 +28318,28 @@ async function handleGameScoreSubmit(request, env, ctx) {
                     const token = await getSetting(env.DB, 'bot_token');
                     if (token) {
                         await getSystemLanguageFromDb(env);
-                        const msgText = sysStr().games_new_best(escapeTelegramHTML(userName), score.toLocaleString(), escapeTelegramHTML(GAME_CATALOG[gameId].name));
-                        const announceP = tgCall(token, 'sendMessage', {
-                            chat_id: chatId,
-                            text: msgText,
-                            parse_mode: 'HTML',
-                            disable_notification: cfg.announce_mode === 'silent'
-                        }, { retry: false });
+                        const isSilent = cfg.announce_mode === 'silent';
+                        const safeUser = escapeTelegramHTML(cleanUserDisplayName(userName, 32) || 'Player');
+                        const safeGame = escapeTelegramHTML(GAME_CATALOG[gameId].name);
+                        const GS = sysStr('games');
+                        const scoreTxt = Number(score).toLocaleString('en-US');
+                        const msgText = isSilent
+                            ? GS.games_new_best_silent(safeUser, scoreTxt, safeGame)
+                            : GS.games_new_best(safeUser, scoreTxt, safeGame);
+                        const announceP = (async () => {
+                            const r = await tgCall(token, 'sendMessage', {
+                                chat_id: chatId, text: msgText, parse_mode: 'HTML',
+                                disable_notification: isSilent, disable_web_page_preview: true
+                            }, { retry: false });
+                            if (r && r.ok === false && /parse entities/i.test(String(r.description || ''))) {
+                                // Never leak raw markup: retry as clean plain text.
+                                return tgCall(token, 'sendMessage', {
+                                    chat_id: chatId, text: msgText.replace(/<[^>]+>/g, ''),
+                                    disable_notification: isSilent, disable_web_page_preview: true
+                                }, { retry: false });
+                            }
+                            return r;
+                        })();
                         if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(announceP);
                         else await announceP;
                     }
@@ -27507,99 +28373,123 @@ async function handleGameLeaderboardGet(env, url) {
     } catch (err) { return internalError(err); }
 }
 
+function renderGamesHtml(url) {
+    const gParam = (url && url.searchParams && url.searchParams.get('game')) || 'snake';
+    const gInfo = GAME_CATALOG[gParam] || { name: 'Mini-Games' };
+    const metaTitle = `${gInfo.name} | Nyxx Arcade`;
+    const metaDesc = `Play ${gInfo.name} and compete on your Telegram chat leaderboard in the Nyxx Mini-Games Arcade.`;
+    return GAMES_HTML.replace('__GAMES_TITLE__', escapeTelegramHTML(metaTitle)).replace('__GAMES_DESC__', escapeTelegramHTML(metaDesc));
+}
 const GAMES_HTML = `<!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>Nyxx | Mini-Games</title>
+<meta name="description" content="__GAMES_DESC__">
+<link rel="icon" href="https://cdn.jsdelivr.net/gh/Mahan07dev/Nyxx@main/logo.webp" type="image/webp">
+<link rel="shortcut icon" href="https://cdn.jsdelivr.net/gh/Mahan07dev/Nyxx@main/logo.webp" type="image/webp">
+<title>__GAMES_TITLE__</title>
 <style>
-:root{--bg:#090c12;--surface:#131824;--surface2:#1b2333;--border:rgba(255,255,255,.09);--text:#f3f4f6;--muted:#9ca3af;--accent:#0a84ff;--green:#30d158;--orange:#ff9f0a;--purple:#bf5af2;--red:#ff453a}
+:root{--bg:#060911;--surface:rgba(19,25,38,.86);--surface2:rgba(30,39,58,.85);--border:rgba(255,255,255,.1);--text:#f8fafc;--muted:#94a3b8;--accent:#0a84ff;--green:#30d158;--orange:#ff9f0a;--purple:#bf5af2;--red:#ff453a}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
-html,body{margin:0;padding:0;background:radial-gradient(circle at top,#141d30 0%,var(--bg) 55%);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;min-height:100dvh;overflow-x:hidden}
-body{display:flex;flex-direction:column;align-items:center;padding:14px 12px 28px}
-.wrap{width:100%;max-width:740px;display:flex;flex-direction:column;gap:12px}
-.hdr{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:10px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
-.tabs{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
-@media(max-width:600px){.tabs{grid-template-columns:repeat(3,minmax(0,1fr))}}
-.tab{border:1px solid var(--border);background:var(--surface2);color:var(--muted);padding:9px 6px;border-radius:10px;font-size:12.5px;font-weight:700;cursor:pointer;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:all .15s}
-.tab:hover{color:var(--text);border-color:rgba(255,255,255,.22)}
-.tab.active{background:linear-gradient(135deg,var(--accent),#5e5ce6);color:#fff;border-color:transparent;box-shadow:0 4px 14px rgba(10,132,255,.35)}
-.main-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.85fr);gap:12px;align-items:start}
-@media(max-width:700px){.main-grid{grid-template-columns:1fr}}
-.game-col{display:flex;flex-direction:column;gap:12px;min-width:0}
-.hud{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:10px 14px}
+html,body{margin:0;padding:0;background:radial-gradient(circle at 50% 0%,#16233b 0%,var(--bg) 65%);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;min-height:100dvh;overflow-x:hidden}
+body{display:flex;flex-direction:column;align-items:center;padding:12px 10px 24px}
+.wrap{width:100%;max-width:600px;display:flex;flex-direction:column;gap:10px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--surface);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:16px;padding:10px 14px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.brand img{width:28px;height:28px;border-radius:8px;flex-shrink:0}
+.brand-title{font-weight:800;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top-actions{display:flex;gap:6px;flex-shrink:0}
+.hud{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--surface);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:14px;padding:10px 14px}
 .hud-box{display:flex;flex-direction:column}
-.hud-lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700}
-.hud-val{font-size:21px;font-weight:800;font-variant-numeric:tabular-nums}
-.btn{border:none;border-radius:10px;padding:9px 14px;font-weight:700;font-size:13px;cursor:pointer;background:var(--accent);color:#fff;transition:transform .1s,filter .15s}
+.hud-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
+.hud-val{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+.btn{border:none;border-radius:10px;padding:8px 13px;font-weight:700;font-size:13px;cursor:pointer;background:linear-gradient(135deg,var(--accent),#409cff);color:#fff;transition:transform .1s,filter .15s;display:inline-flex;align-items:center;gap:5px}
 .btn:hover{filter:brightness(1.08)}
 .btn:active{transform:scale(.96)}
 .btn-ghost{background:var(--surface2);border:1px solid var(--border);color:var(--text)}
-.stage{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;display:flex;flex-direction:column;align-items:center;position:relative;touch-action:none;min-height:360px;justify-content:center}
-.stage-box{position:relative;display:inline-flex;flex-direction:column;align-items:center;max-width:100%}
-canvas{background:#070a10;border-radius:12px;border:1px solid var(--border);max-width:100%;height:auto;display:block}
-.gate-overlay{position:absolute;inset:0;background:rgba(7,10,16,.82);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px;text-align:center;z-index:5;gap:10px}
+.stage{background:var(--surface);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:18px;padding:14px;display:flex;flex-direction:column;align-items:center;position:relative;touch-action:none;min-height:420px;justify-content:center;box-shadow:0 16px 40px rgba(0,0,0,.4)}
+.stage-box{position:relative;display:inline-flex;flex-direction:column;align-items:center;width:100%;max-width:440px}
+canvas{background:#05080f;border-radius:14px;border:1px solid rgba(255,255,255,.12);width:100%;max-width:440px;height:auto;display:block;box-shadow:inset 0 0 24px rgba(0,0,0,.6)}
+.gate-overlay{position:absolute;inset:0;background:rgba(6,9,17,.84);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center;z-index:5;gap:12px}
 .gate-overlay.hidden{display:none}
-.gate-title{font-size:20px;font-weight:800}
-.gate-sub{font-size:12.5px;color:var(--muted);max-width:260px;line-height:1.45}
-.gate-btn{padding:11px 24px;font-size:15px;border-radius:12px;background:linear-gradient(135deg,var(--green),#24a848);color:#041208;font-weight:800;border:none;cursor:pointer;box-shadow:0 6px 20px rgba(48,209,88,.35)}
+.gate-title{font-size:22px;font-weight:800}
+.gate-sub{font-size:13px;color:var(--muted);max-width:280px;line-height:1.5}
+.gate-btn{padding:12px 28px;font-size:15px;border-radius:12px;background:linear-gradient(135deg,var(--green),#24a848);color:#041208;font-weight:800;border:none;cursor:pointer;box-shadow:0 6px 22px rgba(48,209,88,.4)}
 .gate-btn:active{transform:scale(.96)}
-.dpad{display:grid;grid-template-columns:repeat(3,56px);gap:6px;margin-top:12px}
-.dpad button{height:46px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:17px;font-weight:700;cursor:pointer}
+.dpad{display:grid;grid-template-columns:repeat(3,62px);gap:8px;margin-top:14px}
+.dpad button{height:48px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:18px;font-weight:700;cursor:pointer}
 .dpad button:active{background:var(--accent);color:#fff}
-.ctrl-row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;justify-content:center}
-.ctrl-row button{min-width:54px;height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;font-weight:700;cursor:pointer}
+.ctrl-row{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;justify-content:center}
+.ctrl-row button{min-width:58px;height:46px;padding:0 14px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:15px;font-weight:700;cursor:pointer}
 .ctrl-row button:active{background:var(--accent);color:#fff}
-.g2048-board{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:320px;max-width:100%;aspect-ratio:1;background:#070a10;padding:10px;border-radius:12px;border:1px solid var(--border)}
-.g2048-cell{display:flex;align-items:center;justify-content:center;border-radius:8px;font-weight:800;font-size:22px;background:var(--surface2);color:#fff;transition:transform .08s}
-.mines-board{display:grid;grid-template-columns:repeat(9,1fr);gap:3px;width:320px;max-width:100%;aspect-ratio:1;background:#070a10;padding:8px;border-radius:12px;border:1px solid var(--border)}
-.m-cell{display:flex;align-items:center;justify-content:center;border-radius:5px;font-weight:800;font-size:14px;background:#222c40;color:#fff;cursor:pointer;border:1px solid rgba(255,255,255,.06)}
-.m-cell.open{background:#0e131e;border-color:rgba(255,255,255,.03);cursor:default}
+.mines-board{display:grid;grid-template-columns:repeat(9,1fr);gap:4px;width:100%;max-width:380px;aspect-ratio:1;background:#05080f;padding:10px;border-radius:14px;border:1px solid var(--border)}
+.m-cell{display:flex;align-items:center;justify-content:center;border-radius:6px;font-weight:800;font-size:15px;background:#202b40;color:#fff;cursor:pointer;border:1px solid rgba(255,255,255,.07);min-height:30px;min-width:20px;}
+.m-cell.open{background:#0c121e;border-color:rgba(255,255,255,.03);cursor:default}
 .m-cell.mine{background:var(--red)}
 .m-cell.flag{background:#2d2415;color:var(--orange)}
-.lb{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px}
-.lb-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.lb-row{display:flex;justify-content:space-between;align-items:center;padding:8px 6px;border-bottom:1px solid var(--border);font-size:13px;gap:8px}
+.drawer{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.65);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:16px}
+.drawer.hidden{display:none}
+.drawer-card{width:100%;max-width:440px;max-height:85vh;overflow-y:auto;background:#111726;border:1px solid var(--border);border-radius:18px;padding:16px;box-shadow:0 24px 60px rgba(0,0,0,.6)}
+.drawer-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.games-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.g-pick{border:1px solid var(--border);background:var(--surface2);color:var(--text);padding:12px;border-radius:12px;font-size:13.5px;font-weight:700;cursor:pointer;text-align:left;display:flex;align-items:center;gap:8px}
+.g-pick.active{background:linear-gradient(135deg,var(--accent),#5e5ce6);border-color:transparent}
+.lb-row{display:flex;justify-content:space-between;align-items:center;padding:9px 8px;border-bottom:1px solid var(--border);font-size:13px;gap:8px}
 .lb-row:last-child{border-bottom:none}
-.lb-row.me{background:rgba(10,132,255,.14);border-radius:8px;padding:8px 8px}
+.lb-row.me{background:rgba(10,132,255,.16);border-radius:8px}
+.lb-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-height:1.4em;line-height:1.4}
 .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:var(--green);color:#041208;font-weight:800;padding:9px 18px;border-radius:999px;font-size:13px;z-index:99;display:none;box-shadow:0 8px 24px rgba(0,0,0,.4)}
 </style></head><body>
 <div class="toast" id="toast"></div>
 <div class="wrap">
-  <div class="hdr">
-    <div class="tabs" id="tabs">
-      <button class="tab" data-g="snake" onclick="switchGame('snake')">🐍 Snake</button>
-      <button class="tab" data-g="corsairs" onclick="switchGame('corsairs')">🏴‍☠️ Corsairs</button>
-      <button class="tab" data-g="breaker" onclick="switchGame('breaker')">🧱 Breaker</button>
-      <button class="tab" data-g="flappy" onclick="switchGame('flappy')">🚀 Sky Dash</button>
-      <button class="tab" data-g="tetris" onclick="switchGame('tetris')">🧩 Blocks</button>
-      <button class="tab" data-g="mines" onclick="switchGame('mines')">💣 Mines</button>
+  <div class="topbar">
+    <div class="brand">
+      <img src="https://cdn.jsdelivr.net/gh/Mahan07dev/Nyxx@main/logo.webp" alt="Nyxx">
+      <span class="brand-title" id="cur-game-title">Nyxx Arcade</span>
+    </div>
+    <div class="top-actions">
+      <button class="btn btn-ghost" onclick="openDrawer('games')">🎮 Games</button>
+      <button class="btn btn-ghost" onclick="openDrawer('lb')">🏆 Top 10</button>
     </div>
   </div>
-  <div class="main-grid">
-    <div class="game-col">
-      <div class="hud">
-        <div class="hud-box"><span class="hud-lbl">Score</span><span class="hud-val" id="score">0</span></div>
-        <div class="hud-box"><span class="hud-lbl">Best</span><span class="hud-val" id="best" style="color:var(--orange)">0</span></div>
-        <div style="display:flex;gap:6px;align-items:center;">
-          <button class="btn btn-ghost" id="sfx-btn" onclick="toggleSfx()" title="Toggle sound">🔊</button>
-          <button class="btn" id="restart-btn" onclick="resetCurrentGame()">New Game</button>
-        </div>
-      </div>
-      <div class="stage" id="stage"></div>
+  <div class="hud">
+    <div class="hud-box"><span class="hud-lbl">Score</span><span class="hud-val" id="score">0</span></div>
+    <div class="hud-box"><span class="hud-lbl">Best</span><span class="hud-val" id="best" style="color:var(--orange)">0</span></div>
+    <div style="display:flex;gap:6px;align-items:center;">
+      <button class="btn btn-ghost" id="sfx-btn" onclick="toggleSfx()" title="Toggle sound">🔊</button>
+      <button class="btn" id="restart-btn" onclick="resetCurrentGame()">New Game</button>
     </div>
-    <div class="lb">
-      <div class="lb-head">
-        <span style="font-weight:800;font-size:14px;">🏆 Top 10 Leaderboard</span>
-        <button class="btn btn-ghost" style="padding:5px 10px;font-size:11px;" onclick="loadLb()">↻ Refresh</button>
-      </div>
-      <div id="lb-rows" style="color:var(--muted);font-size:13px;">Loading…</div>
+  </div>
+  <div class="stage" id="stage"></div>
+</div>
+
+<div class="drawer hidden" id="drawer-games" onclick="if(event.target===this)closeDrawers()">
+  <div class="drawer-card">
+    <div class="drawer-head"><strong style="font-size:16px;">🎮 Choose Game</strong><button class="btn btn-ghost" style="padding:5px 10px;" onclick="closeDrawers()">✕</button></div>
+    <div class="games-grid" id="tabs">
+      <button class="g-pick" data-g="snake" onclick="switchGame('snake');closeDrawers()">🐍 Neon Snake</button>
+      <button class="g-pick" data-g="corsairs" onclick="switchGame('corsairs');closeDrawers()">🏴‍☠️ Corsairs</button>
+      <button class="g-pick" data-g="breaker" onclick="switchGame('breaker');closeDrawers()">🧱 Brick Breaker</button>
+      <button class="g-pick" data-g="flappy" onclick="switchGame('flappy');closeDrawers()">🚀 Sky Dash</button>
+      <button class="g-pick" data-g="tetris" onclick="switchGame('tetris');closeDrawers()">🧩 Neon Blocks</button>
+      <button class="g-pick" data-g="mines" onclick="switchGame('mines');closeDrawers()">💣 Minesweeper</button>
+      <button class="g-pick" data-g="runner" onclick="switchGame('runner');closeDrawers()">⚡ Cyber Runner</button>
     </div>
+  </div>
+</div>
+
+<div class="drawer hidden" id="drawer-lb" onclick="if(event.target===this)closeDrawers()">
+  <div class="drawer-card">
+    <div class="drawer-head"><strong style="font-size:16px;">🏆 Top 10 Leaderboard</strong><div style="display:flex;gap:6px;"><button class="btn btn-ghost" style="padding:5px 10px;" onclick="loadLb()">↻</button><button class="btn btn-ghost" style="padding:5px 10px;" onclick="closeDrawers()">✕</button></div></div>
+    <div id="lb-rows" style="color:var(--muted);font-size:13px;">Loading…</div>
   </div>
 </div>
 <script>
 var Q = new URLSearchParams(location.search);
 var GAME = Q.get('game') || 'snake';
-var VALID_GAMES = ['snake','corsairs','breaker','flappy','tetris','mines'];
+var VALID_GAMES = ['snake','corsairs','breaker','flappy','tetris','mines','runner'];
+var GAME_TITLES = { snake:'🐍 Neon Snake', corsairs:'🏴‍☠️ Corsairs', breaker:'🧱 Brick Breaker', flappy:'🚀 Sky Dash', tetris:'🧩 Neon Blocks', mines:'💣 Minesweeper', runner:'⚡ Cyber Runner' };
 if (VALID_GAMES.indexOf(GAME) < 0) GAME = 'snake';
+function openDrawer(which){ closeDrawers(); $('drawer-' + which).classList.remove('hidden'); if (which === 'lb') loadLb(); }
+function closeDrawers(){ $('drawer-games').classList.add('hidden'); $('drawer-lb').classList.add('hidden'); }
 var CID = Q.get('cid') || '0';
 var UID = Q.get('uid') || '0';
 var UNAME = Q.get('name') || 'Player';
@@ -27667,7 +28557,7 @@ function renderLb(rows){
   var medals = ['🥇','🥈','🥉'];
   box.innerHTML = rows.slice(0, 10).map(function(r, i){
     var isMe = Number(UID) && Number(r.user_id) === Number(UID);
-    return '<div class="lb-row' + (isMe ? ' me' : '') + '"><span>' + (medals[i] || ('#' + (i+1))) + ' ' + String(r.user_name||'Player').replace(/</g,'&lt;') + '</span><b>' + Number(r.best_score||0).toLocaleString() + '</b></div>';
+    return '<div class="lb-row' + (isMe ? ' me' : '') + '"><span class="lb-name">' + (medals[i] || ('#' + (i+1))) + ' ' + String(r.user_name||'Player').replace(/</g,'&lt;') + '</span><b>' + Number(r.best_score||0).toLocaleString() + '</b></div>';
   }).join('');
 }
 async function loadLb(){
@@ -27684,7 +28574,9 @@ async function loadLb(){
 }
 function switchGame(g){
   GAME = g;
-  document.querySelectorAll('#tabs .tab').forEach(function(b){ b.classList.toggle('active', b.dataset.g === g); });
+  if ($('cur-game-title')) $('cur-game-title').textContent = GAME_TITLES[g] || 'Nyxx Arcade';
+  document.title = (GAME_TITLES[g] || 'Mini-Games') + ' | Nyxx Arcade';
+  document.querySelectorAll('#tabs .g-pick').forEach(function(b){ b.classList.toggle('active', b.dataset.g === g); });
   bestScore = Number(localStorage.getItem('nyxx_best_' + g) || 0);
   $('best').textContent = bestScore;
   resetCurrentGame();
@@ -27710,6 +28602,7 @@ function resetCurrentGame(){
   else if (GAME === 'breaker') runBreaker();
   else if (GAME === 'flappy') runFlappy();
   else if (GAME === 'tetris') runTetris();
+  else if (GAME === 'runner') runRunner();
   else runMines();
 }
 function makeGate(title, sub, onStart){
@@ -28160,6 +29053,55 @@ function runMines(){
   draw();
   $('mboard').parentNode.appendChild(document.createElement('div')).outerHTML = '<div id="stage-gate" class="gate-overlay hidden"><div class="gate-title"></div><div class="gate-sub"></div><button class="gate-btn" onclick="resetCurrentGame()">↻ Play Again</button></div>';
 }
+
+/* 7. CYBER RUNNER */
+function runRunner(){
+  $('stage').innerHTML = '<div class="stage-box"><canvas id="cv" width="360" height="300"></canvas></div><div style="font-size:12px;color:var(--muted);margin-top:8px;">Tap canvas or press Space / ▲ to jump</div>';
+  var cv = $('cv'), ctx = cv.getContext('2d');
+  var py = 228, pvy = 0, groundY = 250, speed = 3.8, tickN = 0;
+  var obs = [], coins = [];
+  function jump(){
+    if (!gameStarted && !gameOverFlag) { var g = $('stage-gate'); if (g) g.querySelector('.gate-btn').click(); }
+    if (gameStarted && !gameOverFlag && py >= groundY - 22) { pvy = -8.8; playSfx('flap'); }
+  }
+  cv.onmousedown = jump;
+  cv.ontouchstart = function(e){ e.preventDefault(); jump(); };
+  document.onkeydown = function(e){ if (e.code === 'Space' || e.key === 'ArrowUp' || e.key === 'w') { e.preventDefault(); jump(); } };
+  function draw(){
+    ctx.fillStyle = '#05080f'; ctx.fillRect(0,0,360,300);
+    ctx.strokeStyle = '#0a84ff'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(360, groundY); ctx.stroke();
+    ctx.fillStyle = '#30d158'; ctx.fillRect(46, py, 22, 22);
+    obs.forEach(function(o){ ctx.fillStyle = '#ff453a'; ctx.fillRect(o.x, groundY - o.h, o.w, o.h); });
+    coins.forEach(function(c){ ctx.fillStyle = '#ffd60a'; ctx.beginPath(); ctx.arc(c.x, c.y, 7, 0, Math.PI*2); ctx.fill(); });
+  }
+  function tick(){
+    tickN++;
+    speed = Math.min(7.5, 3.8 + tickN / 700);
+    pvy += 0.45; py += pvy;
+    if (py > groundY - 22) { py = groundY - 22; pvy = 0; }
+    if (tickN % Math.max(46, Math.round(92 - speed * 5)) === 0) {
+      var h = 24 + Math.random() * 24;
+      obs.push({ x: 370, w: 18 + Math.random() * 12, h: h });
+      if (Math.random() < 0.6) coins.push({ x: 380, y: groundY - h - 36 });
+    }
+    if (tickN % 12 === 0) setScore(curScore + 2);
+    for (var i = obs.length - 1; i >= 0; i--) {
+      var o = obs[i]; o.x -= speed;
+      if (46 + 20 > o.x && 46 + 2 < o.x + o.w && py + 20 > groundY - o.h) { draw(); endGame(); return; }
+      if (o.x < -40) obs.splice(i, 1);
+    }
+    for (var j = coins.length - 1; j >= 0; j--) {
+      var c = coins[j]; c.x -= speed;
+      if (Math.hypot(c.x - 57, c.y - (py + 11)) < 18) { coins.splice(j, 1); setScore(curScore + 25); playSfx('coin'); }
+      else if (c.x < -20) coins.splice(j, 1);
+    }
+    draw();
+    animId = requestAnimationFrame(tick);
+  }
+  draw();
+  cv.parentNode.appendChild(makeGate('⚡ Cyber Runner', 'Jump over neon barriers and grab gold orbs!', function(){ animId = requestAnimationFrame(tick); }));
+}
 switchGame(GAME);
 </script></body></html>`;
 
@@ -28415,6 +29357,7 @@ function formatBytesShort(b) {
 async function canAccessMediaRow(env, userId, row) {
     if (!row || row.is_valid === 0) return { ok: false, reason: botStrings().media_unavailable };
     if (await isAdminUser(env, userId)) return { ok: true };
+    if (parseAllowedUserIds(row.disallowed_users).has(Number(userId))) return { ok: false, reason: botStrings().unauthorized };
     if (row.expires_at) {
         const expMs = parseDbTimestamp(row.expires_at);
         if (expMs && Date.now() > expMs) return { ok: false, reason: botStrings().command_expired };
@@ -29115,11 +30058,15 @@ async function executeCommand(chatId, userId, cmdRecord, BOT_TOKEN, env, chatTyp
         try {
             const ph = fileIdsToCheck.map(() => '?').join(', ');
             const mediaRows = await env.DB.prepare(
-                `SELECT is_valid, allowed_users, expires_at FROM media_library WHERE file_id IN (${ph})`
+                `SELECT is_valid, allowed_users, disallowed_users, expires_at FROM media_library WHERE file_id IN (${ph})`
             ).bind(...fileIdsToCheck).all();
             for (const mediaRow of (mediaRows.results || [])) {
                 if (mediaRow.is_valid === 0) {
                     await sendMessage(chatId, strings.media_unavailable, BOT_TOKEN, 'HTML');
+                    return;
+                }
+                if (parseAllowedUserIds(mediaRow.disallowed_users).has(Number(userId))) {
+                    await sendMessage(chatId, strings.unauthorized, BOT_TOKEN, 'HTML');
                     return;
                 }
                 if (mediaRow.expires_at) {

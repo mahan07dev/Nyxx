@@ -1,51 +1,47 @@
-# Nyxx v5.3.0
+# Nyxx v5.4.0
 
-This release overhauls **Mini-Games**, adds **inline query (`@bot`) support**, introduces **chat-type & exact-chat permission gates**, and expands **Farsi system language** coverage across the entire bot.
+Release date: 2026-11-27
 
-## ✨ Highlights
-
-- 🎮 **Mini-Games overhaul**: 6 polished games (including **Corsairs**, **Neon Blocks**, and **Minesweeper**), Web Audio sound effects, Tap-to-Play gates, and synced leaderboards
-- 🔍 **Inline query support**: toggle `@yourbot` inline search per command, per featured command, per game, and globally in Permissions
-- 🛡️ **Chat-type & exact-chat gates**: restrict commands, featured commands, global permissions, and games to specific chat types (Private DM, Group, Supergroup, Channel) and/or exact chat IDs / `@usernames`
-- 🌐 **Full Farsi (`fa`) system language**: translated all remaining hardcoded bot messages across moderation, flood protection, captcha, Force Join, proxies, mini-games, and passwords
+Mini-games, access control, bulk editing, backups and Web App hosting all get major upgrades in this release.
 
 ## 🎮 Mini-Games
+- Game library expanded to **7 games** (classic arcade favorites such as Snake, Tetris, Minesweeper and a runner)
+- New, wider game screen so playing on mobile and desktop is comfortable
+- **Fixed:** the silent personal-best notice now sends a proper localized message (EN/FA)
+- Per-game **Disallowed IDs** alongside Allowed IDs
+- **"Edit current message"** option for game responses, with the same 3 triggers as elsewhere (inline button / reply button / typed command)
+- Optional **custom label** for the "game is ready for username" message (`{{game}}`, `{{user}}`, `{{first_name}}`)
+- Choose a game's **leaderboard as a button** when creating commands
 
-- **6 games in the Game Hub**:
-  - 🐍 **Neon Snake**
-  - 🏴‍☠️ **Corsairs** *(new — replaces 2048)*: dodge cannonballs and collect gold to advance levels
-  - 🧱 **Brick Breaker**
-  - 🚀 **Sky Dash**
-  - 🧩 **Neon Blocks** *(new)*: falling block puzzle with rotation, hard drop, and line combos
-  - 💣 **Minesweeper** *(new)*: 9×9 logic puzzle with flag mode and timer-based bonus scoring
-- **Sound effects**: built-in Web Audio API retro synth sounds with a **🔊 / 🔇 mute toggle** in the HUD.
-- **No more auto-start**: added a **Tap to Play** overlay on action games so games never start or end before you click.
-- **Responsive PC + Mobile UI**: cleaner 2-column desktop / stacked mobile layout, D-pad/touch controls, and live Top 10 leaderboard sidebar.
-- **3-row Telegram game card**: when a game is ready for a user, buttons are arranged in 3 clean rows: **Launch** (row 1), **🎯 My Score** (row 2, shows personal best, chat rank, and play count), and **🏆 Leaderboard** (row 3, Top 10 in the current chat).
-- **Leaderboard sync fix**: hub launch signatures now work across all games when switching tabs inside the Game Hub, and personal bests sync directly with the server.
+## 🔐 Access Control
+- New **Global Bot Access** setting: DM-only, group-only, channel-only, allowed IDs, disallowed IDs, premium-only, username-required, maintenance mode, and a custom deny message
+- **Disallowed IDs** added to every media modal
+- Account-based tab permissions: empty nav groups now disappear completely, and gates are more reliable
 
-## 🔍 Inline Query Support
+## ⚡ Productivity
+- **Batch edit commands**: select many commands and change one setting (e.g. "Edit current message") for all of them at once
 
-- **Per-command & per-item switches**: enable **Available in inline queries (`@bot`)** on individual **Commands**, **Featured Commands**, and **Mini-Games**.
-- **Global permission gate**: added **Inline queries (`@bot ...`)** to **System → Permissions** (`Everyone` / `Moderator+` / `Admin only` + user & chat gates).
-- Includes dashboard hints reminding you to enable Inline Mode (`/setinline`) in **@BotFather**.
+## 🌍 Language
+- Choose which sections and messages use **Farsi** and which use **English**
+- **Per-group / per-channel language** overrides the global language
 
-## 🛡️ Chat-Type & Exact-Chat Permission Gates
+## 🌐 Web App
+- Default button can be set to a **Web App** button
+- Pick one of your games or a **premade Nyxx template** as the main page
+- Paste your own HTML, or build a **multi-page site with folders** from the dashboard (`/app/*`)
 
-- Multi-select **Allowed chat types** (`Private DM`, `Group`, `Supergroup`, `Channel`) and optional **Exact allowed chat IDs / `@usernames`** added to:
-  - **Commands → Access**
-  - **Menu & Featured** editor
-  - **System → Permissions** (under User & Chat gates)
-  - **Content → Mini-Games** (per-game User & Chat gates)
+## 💾 Backup & Restore
+- Backups include every setting and restore applies them
+- AI tokens and other sensitive settings are **encrypted (AES-GCM, passphrase-based)** and decrypted on restore
+- Optional inclusion of other sensitive settings in the encrypted payload
 
-## 🌐 System Language (Farsi)
+## 🎨 UI / UX
+- Memory tab shows all D1 memory details and storage breakdown
+- **Frosted Glass** is the default navigation style on fresh D1 installs
+- Favicon on every page and game page, with proper meta titles and descriptions
+- User names and display names are length- and overflow-protected so huge or stacked-glyph names can't break the layout
 
-- Switching **System → Settings → System language** to **فارسی (`fa`)** now translates all bot user-facing strings, including flood cooldowns/bans, group moderation (`/warn`, `/mute`, `/kick`, `/ban`, `/lock`), captcha prompts, Force Join defaults, proxy checker alerts, command password prompts, and mini-game messages.
+## 🛠 Fixes
+- Many UI and logic fixes across commands, games, media and settings
 
-## ⬆️ Upgrading from v5.1.0
-
-1. Deploy the new `worker.js` (or update via **System → Update**).
-2. The database schema auto-migrates to v29 (`allowed_chat_types`, `allowed_chat_ids`, `inline_enabled`).
-3. If you want to use inline queries, enable `/setinline` in **@BotFather** and toggle inline support on the commands or games you want to expose.
-
-**Full changelog**: https://github.com/mahan07dev/nyxx/compare/v5.1.0...v5.3.0
+Update from the dashboard's Update tab. Your bindings and secrets are preserved.

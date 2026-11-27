@@ -1,8 +1,8 @@
 {
-  "version": "5.3.0",
-  "released": "2026-11-26",
-  "notes": "🔔 6 polished games, Sound effects, Inline query support, etc.",
+  "version": "5.4.0",
+  "released": "2026-11-27",
+  "notes": "🔔 1 More game, Better UI, Global Bot Access, etc.",
   "worker_url": "https://raw.githubusercontent.com/Mahan07dev/Nyxx/main/worker.js",
-  "worker_sha256": "d6a2a2ba980cd7b4718faadefa5bb311c5509e010c1ff61e97ef3f107c22761b",
+  "worker_sha256": "71de99bb98ae0aab42d546184ce9f9f06e434ac18b577be3c0397d7dede207e9",
   "worker_urls": []
 }
